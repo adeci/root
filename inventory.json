@@ -1,0 +1,10 @@
+{
+  "machines": {
+    "test-vm": {
+      "installedAt": 1763797704
+    },
+    "spud": {
+      "installedAt": 1763800766
+    }
+  }
+}
