@@ -3,3 +3,5 @@ CLAUDE.md
 
 result
 .direnv/
+.envrc
+.direnv/

@@ -13,56 +13,41 @@ in
 
   imports = [
     inputs.grub2-themes.nixosModules.default
-    ../../modules/adeci/standard.nix
+
+    ../../modules/adeci/all.nix
     ../../modules/adeci/dev.nix
-    ../../modules/adeci/sway.nix
+    ../../modules/adeci/sway-laptop.nix
+    ../../modules/adeci/social.nix
+    ../../modules/adeci/shell.nix
   ];
 
-  # Leviathan remote builder configuration
-  nix = {
-    distributedBuilds = true;
-    settings = {
-      builders-use-substitutes = true;
-      trusted-users = [
-        "root"
-        "alex"
-      ];
-    };
-    buildMachines = [
-      {
-        protocol = "ssh-ng";
-        hostName = "leviathan.cymric-daggertooth.ts.net";
-        systems = [ "x86_64-linux" ];
-        maxJobs = 7;
-        speedFactor = 20;
-        supportedFeatures = [
-          "nixos-test"
-          "benchmark"
-          "big-parallel"
-          "kvm"
-        ];
-        mandatoryFeatures = [ ];
-        sshUser = "alex";
-      }
-    ];
-  };
+  environment.systemPackages = with pkgs; [
+    imagemagick # required for grub2-theme
+    os-prober
+    framework-tool
+    prismlauncher
+    firefox
+    blender
+    calibre
+    bambu-studio
+  ];
+
+  # btop needs rocm-smi and libdrm in ld path for gpu monitoring
+  environment.sessionVariables.LD_LIBRARY_PATH = "${pkgs.rocmPackages.rocm-smi}/lib:${pkgs.libdrm}/lib";
 
   programs.ssh = {
-    knownHosts = {
-      leviathan = {
-        hostNames = [
-          "leviathan.cymric-daggertooth.ts.net"
-          "192.168.50.189"
-        ];
-        publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOEtV2xoOv+N4c5sg5oBqM/Xy+aZHf+5GHOhzXKYduXG";
-      };
-    };
     extraConfig = ''
-      Host leviathan.cymric-daggertooth.ts.net
-        IdentityAgent /run/user/3801/gcr/ssh
+      Host *
+        AddKeysToAgent yes
+
+      Host leviathan
+        HostName leviathan.cymric-daggertooth.ts.net
+        User alex
+        ForwardAgent yes
     '';
   };
 
+  hardware.amdgpu.opencl.enable = true;
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
@@ -82,16 +67,6 @@ in
   # vm building
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
-
-  environment.systemPackages = with pkgs; [
-    imagemagick # required for grub2-theme
-    os-prober
-    framework-tool
-    signal-desktop
-    prismlauncher
-    firefox
-    blender
-  ];
 
   boot.loader = {
     timeout = 1;

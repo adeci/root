@@ -1,4 +1,8 @@
+{ inputs, ... }:
 let
+  pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+
   roster-users = {
 
     alex = {
@@ -15,7 +19,11 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeeoL1jwVSachA9GdJxm/5TgCRBULfSDGLyP/nfmkMq alex@DESKTOP-SVRV9Q8"
       ];
       defaultPosition = "owner";
-      defaultShell = "fish";
+      defaultShell = pkgs.fish;
+      packages = [
+        dotpkgs.git
+        dotpkgs.starship
+      ];
     };
 
   };

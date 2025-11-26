@@ -13,7 +13,7 @@
     adeci-nixvim.url = "github:adeci/nixvim-config";
     adeci-nixvim.inputs.nixpkgs.follows = "nixpkgs";
 
-    adeci-dotpkgs.url = "github:adeci/dotpkgs";
+    adeci-dotpkgs.url = "path:///home/alex/git/dotpkgs";
     adeci-dotpkgs.inputs.nixpkgs.follows = "nixpkgs";
 
     grub2-themes.url = "github:vinceliuice/grub2-themes";
@@ -33,7 +33,10 @@
         inherit self;
         meta.name = "ONIX";
         meta.tld = "onix";
-        inventory = import ./inventory { lib = nixpkgs.lib; };
+        inventory = import ./inventory {
+          lib = nixpkgs.lib;
+          inherit inputs;
+        };
         modules = import ./services { inherit nixpkgs; };
         specialArgs = { inherit inputs; };
       };

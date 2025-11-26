@@ -58,7 +58,10 @@ Built-in permission levels that control user privileges:
             description = "Alice Smith";
             groups = ["networkmanager" "docker"];
             sshAuthorizedKeys = ["ssh-ed25519 AAAA..."];
-            defaultShell = "fish";
+            defaultShell = pkgs.fish;  # Or your custom wrapped shell package
+            packages = with pkgs; [  # Default packages on all machines
+              git vim htop tmux
+            ];
           };
         };
 
@@ -75,7 +78,12 @@ Built-in permission levels that control user privileges:
               alice = {
                 position = "admin";  # Override position for this machine
                 extraGroups = ["libvirtd"];  # Add extra groups
-                shell = "bash";  # Override shell
+                shell = pkgs.bash;  # Override shell with different package
+                extraPackages = with pkgs; [  # Add packages to defaults
+                  docker-compose kubectl
+                ];
+                # Or replace all packages entirely:
+                # packages = with pkgs; [ git neovim ];
               };
             };
           };
@@ -99,12 +107,32 @@ Override any user property per machine:
 - `shell` - Different shell on this machine
 - `sshAuthorizedKeys` - Replace SSH keys
 - `extraSshAuthorizedKeys` - Add SSH keys to defaults
+- `packages` - Replace default packages entirely
+- `extraPackages` - Add packages to defaults
+
+### Custom Shell Packages
+
+Since shells are defined as package references, you can easily use custom wrapped shells:
+
+```nix
+users.alice = {
+  # Use a custom fish with plugins
+  defaultShell = pkgs.fish.overrideAttrs (old: {
+    # Your customizations
+  });
+
+  # Or reference a custom shell package defined elsewhere
+  defaultShell = myCustomZsh;
+
+  # The custom shell package will be used directly
+  # No need to include it in packages list
+};
+```
 
 ### Automatic Features
 
 - **Password Generation**: Based on position's `generatePassword` flag
 - **Root SSH Access**: Users with `sudoAccess = true` get SSH keys added to root
-- **Shell Management**: Automatically installs required shells
 - **Immutable Users**: Sets `users.mutableUsers = false` for security
 
 ### Configuration Precedence

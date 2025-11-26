@@ -1,8 +1,23 @@
-_: {
+{
+  inputs,
+  pkgs,
+  ...
+}:
+let
+  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+in
+{
+  imports = [ ./sway-base.nix ];
+
+  environment.systemPackages = [
+    dotpkgs.waybar-laptop
+  ];
+
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
   };
+
   services.blueman.enable = true;
 
   services.libinput = {
@@ -11,10 +26,11 @@ _: {
       tapping = true;
       disableWhileTyping = true;
       naturalScrolling = true;
+      tappingDragLock = false;
     };
   };
 
-  services.xserver.xkb.layout = "us";
-
   powerManagement.enable = true;
+
+  services.xserver.xkb.layout = "us";
 }

@@ -1,4 +1,7 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
+let
+  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+in
 {
   nixpkgs.config.allowUnfree = true;
 
@@ -10,9 +13,19 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    kitty.terminfo
-  ];
+  environment.systemPackages =
+    with pkgs;
+    [
+      kitty.terminfo
+      ripgrep
+      fd
+      wget
+      unzip
+      tmux # TODO: wrap me!
+    ]
+    ++ [
+      dotpkgs.btop
+    ];
 
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {

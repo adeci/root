@@ -1,0 +1,12 @@
+{ pkgs, ... }:
+{
+
+  environment.systemPackages = with pkgs; [
+    prismlauncher
+    steam-tui
+  ];
+
+  programs.steam.enable = true;
+  programs.steam.extraCompatPackages = [ pkgs.proton-ge-bin ];
+
+}

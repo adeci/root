@@ -9,17 +9,14 @@
         "wrappers": "wrappers"
       },
       "locked": {
-        "lastModified": 1763801583,
-        "narHash": "sha256-5nsGXeDbUXZQc9DhoKSXCQ+cbg6WQxdIPkviIRvXM/c=",
-        "owner": "adeci",
-        "repo": "dotpkgs",
-        "rev": "0e921be9d2888603fbe4fd8f24624560d8e68d1f",
-        "type": "github"
+        "lastModified": 1764159461,
+        "narHash": "sha256-xoSDUo3FR6njxiID3x+Wm8vhdDjbLdi5u0tzBsV4ySM=",
+        "path": "/home/alex/git/dotpkgs",
+        "type": "path"
       },
       "original": {
-        "owner": "adeci",
-        "repo": "dotpkgs",
-        "type": "github"
+        "path": "/home/alex/git/dotpkgs",
+        "type": "path"
       }
     },
     "adeci-nixvim": {
@@ -61,11 +58,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1763776683,
-        "narHash": "sha256-CMS8VKS1Tx0zdKebOgHWyPFFdszHPga1ryw9w8Hbli4=",
-        "rev": "583572cf29603a33ce20e314833bdf43cab510a9",
+        "lastModified": 1764148733,
+        "narHash": "sha256-PurtL8gGadNt+QY/P+uAoXdvjGp2rsfKziL9AAtxv2A=",
+        "rev": "8362ed89d4ed7ac94a8eefb978a30da3384cede1",
         "type": "tarball",
-        "url": "https://git.clan.lol/api/v1/repos/clan/clan-core/archive/583572cf29603a33ce20e314833bdf43cab510a9.tar.gz"
+        "url": "https://git.clan.lol/api/v1/repos/clan/clan-core/archive/8362ed89d4ed7ac94a8eefb978a30da3384cede1.tar.gz"
       },
       "original": {
         "type": "tarball",
@@ -107,11 +104,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1763651264,
-        "narHash": "sha256-8vvwZbw0s7YvBMJeyPVpWke6lg6ROgtts5N2/SMCcv4=",
+        "lastModified": 1764110879,
+        "narHash": "sha256-xanUzIb0tf3kJ+PoOFmXEXV1jM3PjkDT/TQ5DYeNYRc=",
         "owner": "nix-community",
         "repo": "disko",
-        "rev": "e86a89079587497174ccab6d0d142a65811a4fd9",
+        "rev": "aecba248f9a7d68c5d1ed15de2d1c8a4c994a3c5",
         "type": "github"
       },
       "original": {
@@ -150,11 +147,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1762980239,
-        "narHash": "sha256-8oNVE8TrD19ulHinjaqONf9QWCKK+w4url56cdStMpM=",
+        "lastModified": 1763759067,
+        "narHash": "sha256-LlLt2Jo/gMNYAwOgdRQBrsRoOz7BPRkzvNaI/fzXi2Q=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "52a2caecc898d0b46b2b905f058ccc5081f842da",
+        "rev": "2cccadc7357c0ba201788ae99c4dfa90728ef5e0",
         "type": "github"
       },
       "original": {
@@ -334,11 +331,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1763421233,
-        "narHash": "sha256-Stk9ZYRkGrnnpyJ4eqt9eQtdFWRRIvMxpNRf4sIegnw=",
+        "lastModified": 1763966396,
+        "narHash": "sha256-6eeL1YPcY1MV3DDStIDIdy/zZCDKgHdkCmsrLJFiZf0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "89c2b2330e733d6cdb5eae7b899326930c2c0648",
+        "rev": "5ae3b07d8d6527c42f17c876e404993199144b6a",
         "type": "github"
       },
       "original": {
@@ -414,11 +411,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1763607916,
-        "narHash": "sha256-VefBA1JWRXM929mBAFohFUtQJLUnEwZ2vmYUNkFnSjE=",
+        "lastModified": 1764021963,
+        "narHash": "sha256-1m84V2ROwNEbqeS9t37/mkry23GBhfMt8qb6aHHmjuc=",
         "owner": "Mic92",
         "repo": "sops-nix",
-        "rev": "877bb495a6f8faf0d89fc10bd142c4b7ed2bcc0b",
+        "rev": "c482a1c1bbe030be6688ed7dc84f7213f304f1ec",
         "type": "github"
       },
       "original": {
@@ -569,18 +566,14 @@
         ]
       },
       "locked": {
-        "lastModified": 1763786680,
-        "narHash": "sha256-tNKxG9qfjB+IQKNL+dpp8s+FW7kuQZ0pvA6l3OQicOs=",
-        "owner": "adeci",
-        "repo": "wrappers",
-        "rev": "4fa69918b445f40a854ec9e10d5a827716e7d43e",
-        "type": "github"
+        "lastModified": 1764070509,
+        "narHash": "sha256-be6QoJXKzz1lcImboNeUziBxUXBD+ru5R/rTv3qRnd0=",
+        "path": "/home/alex/git/wrappers",
+        "type": "path"
       },
       "original": {
-        "owner": "adeci",
-        "ref": "adeci-wrappers",
-        "repo": "wrappers",
-        "type": "github"
+        "path": "/home/alex/git/wrappers",
+        "type": "path"
       }
     }
   },

@@ -112,9 +112,14 @@ in
                     description = "SSH public keys for this user";
                   };
                   defaultShell = lib.mkOption {
-                    type = lib.types.nullOr lib.types.str;
+                    type = lib.types.nullOr lib.types.package;
                     default = null;
-                    description = "Default shell for this user (e.g., 'bash', 'zsh', 'fish')";
+                    description = "Default shell package for this user (e.g., pkgs.bash, pkgs.fish, or a custom wrapped shell)";
+                  };
+                  packages = lib.mkOption {
+                    type = lib.types.listOf lib.types.package;
+                    default = [ ];
+                    description = "Default packages to install for this user on all systems";
                   };
                 };
               }
@@ -153,9 +158,9 @@ in
                             description = "Additional groups for this user on this machine (adds to default groups)";
                           };
                           shell = lib.mkOption {
-                            type = lib.types.nullOr lib.types.str;
+                            type = lib.types.nullOr lib.types.package;
                             default = null;
-                            description = "Override shell for this user on this machine";
+                            description = "Override shell package for this user on this machine";
                           };
                           sshAuthorizedKeys = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.str);
@@ -166,6 +171,16 @@ in
                             type = lib.types.listOf lib.types.str;
                             default = [ ];
                             description = "Additional SSH keys for this user on this machine";
+                          };
+                          packages = lib.mkOption {
+                            type = lib.types.nullOr (lib.types.listOf lib.types.package);
+                            default = null;
+                            description = "Override packages for this user on this machine (replaces default packages)";
+                          };
+                          extraPackages = lib.mkOption {
+                            type = lib.types.listOf lib.types.package;
+                            default = [ ];
+                            description = "Additional packages for this user on this machine (adds to default packages)";
                           };
                         };
                       }
@@ -232,6 +247,11 @@ in
                     machineUserConfig.sshAuthorizedKeys ++ machineUserConfig.extraSshAuthorizedKeys
                   else
                     userDef.sshAuthorizedKeys ++ machineUserConfig.extraSshAuthorizedKeys;
+                effectivePackages =
+                  if machineUserConfig.packages != null then
+                    machineUserConfig.packages ++ machineUserConfig.extraPackages
+                  else
+                    (userDef.packages or [ ]) ++ machineUserConfig.extraPackages;
 
               in
               {
@@ -241,6 +261,7 @@ in
                   effectiveGroups
                   effectiveShell
                   effectiveSshKeys
+                  effectivePackages
                   ;
                 inherit effectivePosition;
               };
@@ -258,11 +279,6 @@ in
               lib.mapAttrsToList (
                 _: cfg: if cfg.positionConfig.sudoAccess then cfg.effectiveSshKeys else [ ]
               ) allUserConfigs
-            );
-
-            # Get all unique shells needed
-            requiredShells = lib.unique (
-              lib.filter (s: s != null) (lib.mapAttrsToList (_: cfg: cfg.effectiveShell) allUserConfigs)
             );
 
           in
@@ -287,7 +303,7 @@ in
 
                   # Shell configuration
                   (lib.mkIf (cfg.effectiveShell != null) {
-                    shell = pkgs.${cfg.effectiveShell};
+                    shell = cfg.effectiveShell;
                     useDefaultShell = false;
                   })
 
@@ -295,6 +311,11 @@ in
                   (lib.mkIf cfg.positionConfig.generatePassword {
                     hashedPasswordFile =
                       config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
+                  })
+
+                  # Packages configuration
+                  (lib.mkIf (cfg.effectivePackages != [ ]) {
+                    packages = cfg.effectivePackages;
                   })
                 ]
               ) allUserConfigs;
@@ -368,13 +389,6 @@ in
                   '';
                 };
               }) usersNeedingPasswords;
-            }
-
-            # Enable required shells
-            {
-              programs = lib.genAttrs requiredShells (_: {
-                enable = true;
-              });
             }
 
             # Make users immutable

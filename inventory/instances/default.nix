@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, inputs, ... }:
 let
   instanceFiles = builtins.filter (name: name != "default.nix") (
     builtins.attrNames (
@@ -6,7 +6,15 @@ let
     )
   );
 
-  importedInstances = map (file: import (./. + "/${file}")) instanceFiles;
+  # Import each file, passing inputs if it's a function
+  importInstance =
+    file:
+    let
+      module = import (./. + "/${file}");
+    in
+    if builtins.isFunction module then module { inherit inputs; } else module;
+
+  importedInstances = map importInstance instanceFiles;
 
   mergedInstances = lib.foldl' (
     acc: instanceSet: lib.recursiveUpdate acc instanceSet
