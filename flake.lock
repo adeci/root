@@ -9,8 +9,8 @@
         "wrappers": "wrappers"
       },
       "locked": {
-        "lastModified": 1764159461,
-        "narHash": "sha256-xoSDUo3FR6njxiID3x+Wm8vhdDjbLdi5u0tzBsV4ySM=",
+        "lastModified": 1764234451,
+        "narHash": "sha256-aTzho8DWe/YbL2POy4nGSNGpRDDlFyFPn9RNp58/f3Q=",
         "path": "/home/alex/git/dotpkgs",
         "type": "path"
       },
@@ -58,11 +58,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1764148733,
-        "narHash": "sha256-PurtL8gGadNt+QY/P+uAoXdvjGp2rsfKziL9AAtxv2A=",
-        "rev": "8362ed89d4ed7ac94a8eefb978a30da3384cede1",
+        "lastModified": 1764220269,
+        "narHash": "sha256-rSSmhTCjfZLZog3qO6Q5C58pINmDv8EheGUhcojxd6c=",
+        "rev": "c70c04d09477ceee5820a8da4d9c0d1b50eb6cc6",
         "type": "tarball",
-        "url": "https://git.clan.lol/api/v1/repos/clan/clan-core/archive/8362ed89d4ed7ac94a8eefb978a30da3384cede1.tar.gz"
+        "url": "https://git.clan.lol/api/v1/repos/clan/clan-core/archive/c70c04d09477ceee5820a8da4d9c0d1b50eb6cc6.tar.gz"
       },
       "original": {
         "type": "tarball",
@@ -272,11 +272,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1763505477,
-        "narHash": "sha256-nJRd4LY2kT3OELfHqdgWjvToNZ4w+zKCMzS2R6z4sXE=",
+        "lastModified": 1764161084,
+        "narHash": "sha256-HN84sByg9FhJnojkGGDSrcjcbeioFWoNXfuyYfJ1kBE=",
         "owner": "nix-darwin",
         "repo": "nix-darwin",
-        "rev": "3bda9f6b14161becbd07b3c56411f1670e19b9b5",
+        "rev": "e95de00a471d07435e0527ff4db092c84998698e",
         "type": "github"
       },
       "original": {

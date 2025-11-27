@@ -118,4 +118,15 @@ in
     };
   };
 
+  nix.settings = {
+    http-connections = 64;
+    max-substitution-jobs = 64;
+    download-buffer-size = 268435456; # 256MB
+
+    trusted-users = [
+      "root"
+      "alex"
+    ];
+  };
+
 }
