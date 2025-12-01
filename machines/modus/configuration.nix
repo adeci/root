@@ -18,6 +18,7 @@ in
     ../../modules/adeci/dev.nix
     ../../modules/adeci/sway-laptop.nix
     ../../modules/adeci/social.nix
+    ../../modules/adeci/gaming.nix
     ../../modules/adeci/shell.nix
   ];
 
