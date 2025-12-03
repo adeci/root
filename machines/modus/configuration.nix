@@ -26,11 +26,8 @@ in
     imagemagick # required for grub2-theme
     os-prober
     framework-tool
-    prismlauncher
     firefox
-    blender
     calibre
-    bambu-studio
   ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring

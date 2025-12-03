@@ -11,6 +11,7 @@ in
 
   environment.systemPackages = [
     dotpkgs.waybar-laptop
+    pkgs.cheese
   ];
 
   hardware.bluetooth = {
