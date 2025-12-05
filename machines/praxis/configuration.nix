@@ -27,6 +27,7 @@ in
       imagemagick # required for grub2-theme
       firefox
       calibre
+      modem-manager-gui
     ]
     ++ [
       dotpkgs.gpd4-wm
@@ -59,6 +60,10 @@ in
   networking = {
     networkmanager.enable = true;
     hostName = "praxis";
+  };
+
+  systemd.services.ModemManager = {
+    wantedBy = [ "multi-user.target" ];
   };
 
   #time.timeZone = "America/New_York";
