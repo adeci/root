@@ -40,6 +40,14 @@
     deploy.targetHost = "root@modus";
   };
 
+  praxis = {
+    name = "praxis";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@praxis";
+  };
+
   # sequoia = {
   #   name = "sequoia";
   #   tags = [

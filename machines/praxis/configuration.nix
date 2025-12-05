@@ -4,12 +4,6 @@ let
 
   dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
 
-  grubWallpaper = pkgs.fetchurl {
-    name = "nixos-grub-wallpaper.jpg";
-    url = "https://raw.githubusercontent.com/adeci/wallpapers/main/nix-grub-2880x1920.jpg";
-    sha256 = "sha256-Xu3KlpNMiZzS2fXYGGx0u0Qch7CoEus6ODwNVL4Bq4U=";
-  };
-
 in
 {
 
@@ -31,13 +25,11 @@ in
     with pkgs;
     [
       imagemagick # required for grub2-theme
-      os-prober
-      framework-tool
       firefox
       calibre
     ]
     ++ [
-      dotpkgs.fw13-wm
+      dotpkgs.gpd4-wm
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring
@@ -66,7 +58,7 @@ in
 
   networking = {
     networkmanager.enable = true;
-    hostName = "modus";
+    hostName = "praxis";
   };
 
   #time.timeZone = "America/New_York";
@@ -76,20 +68,9 @@ in
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
-  boot.loader = {
-    timeout = 1;
-    grub = {
-      timeoutStyle = "menu";
-      useOSProber = true;
-    };
-    grub2-theme = {
-      enable = true;
-      theme = "stylish";
-      footer = true;
-      customResolution = "2880x1920";
-      splashImage = grubWallpaper;
-    };
-  };
+  boot.kernelParams = [
+    "video=eDP-1:panel_orientation=right_side_up"
+  ];
 
   boot.kernel.sysctl = {
     "vm.swappiness" = 60; # Balanced swapping
@@ -107,9 +88,6 @@ in
   };
 
   services = {
-    fprintd.enable = true; # fingerprint sensor
-    fwupd.enable = true; # framework bios/firmware updates
-
     # Keyd for dual-function keys (Caps Lock = Esc on tap, Ctrl on hold)
     keyd = {
       enable = true;

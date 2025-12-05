@@ -36,6 +36,12 @@ let
       };
     };
 
+    praxis = {
+      users = {
+        alex = { };
+      };
+    };
+
     spud = {
       users = {
         alex = { };

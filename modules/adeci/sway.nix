@@ -1,29 +1,16 @@
 {
-  inputs,
   pkgs,
   lib,
   ...
 }:
-let
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
-in
 {
   environment.systemPackages = [
-    dotpkgs.sway
-    dotpkgs.fuzzel
-    dotpkgs.kitty
-
-    dotpkgs.kanshi
-
-    dotpkgs.swaylock
-    dotpkgs.swayosd
     pkgs.swayidle
 
     pkgs.swaybg
     pkgs.swaycwd
 
     pkgs.libnotify
-    dotpkgs.mako
 
     pkgs.playerctl
 
