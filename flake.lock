@@ -9,8 +9,8 @@
         "wrappers": "wrappers"
       },
       "locked": {
-        "lastModified": 1764925296,
-        "narHash": "sha256-Q8A8OALD9Lf/SStgHm2wkjQB/4jWXrpuK/ZSvWSowng=",
+        "lastModified": 1765008574,
+        "narHash": "sha256-SfYSNd97NK5QvLFq5HUXqCsHkU570uBxrrEjjApHGuc=",
         "path": "/home/alex/git/dotpkgs",
         "type": "path"
       },
@@ -566,14 +566,18 @@
         ]
       },
       "locked": {
-        "lastModified": 1764070509,
-        "narHash": "sha256-be6QoJXKzz1lcImboNeUziBxUXBD+ru5R/rTv3qRnd0=",
-        "path": "/home/alex/git/wrappers",
-        "type": "path"
+        "lastModified": 1764070467,
+        "narHash": "sha256-z4PVKbOae+L4rQv76hOmEFRXNVsWi3AMEI9/CwehOfc=",
+        "owner": "adeci",
+        "repo": "wrappers",
+        "rev": "4417c33df576d45c09e5a6484fbe4f14b33ede6e",
+        "type": "github"
       },
       "original": {
-        "path": "/home/alex/git/wrappers",
-        "type": "path"
+        "owner": "adeci",
+        "ref": "adeci-wrappers",
+        "repo": "wrappers",
+        "type": "github"
       }
     }
   },

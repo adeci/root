@@ -93,6 +93,9 @@ in
   };
 
   services = {
+
+    fwupd.enable = true; # framework bios/firmware updates
+
     # Keyd for dual-function keys (Caps Lock = Esc on tap, Ctrl on hold)
     keyd = {
       enable = true;

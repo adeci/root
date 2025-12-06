@@ -5,7 +5,7 @@
 }:
 {
   environment.systemPackages = [
-    pkgs.swayidle
+    # pkgs.swayidle
 
     pkgs.swaybg
     pkgs.swaycwd
