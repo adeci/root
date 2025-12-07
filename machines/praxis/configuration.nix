@@ -92,6 +92,37 @@ in
     priority = 100; # prio over disk swap
   };
 
+  # Fix gpd pocket 4 USB devices blocking suspend
+  services.udev.extraRules = ''
+
+    # Keep keyboard always-on but disable wakeup
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="000c", ATTR{power/wakeup}="disabled", ATTR{power/control}="on"
+
+  '';
+  # # Allow autosuspend for fingerprint reader
+  # ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="2808", ATTRS{idProduct}=="0752", ATTR{power/wakeup}="disabled", ATTR{power/control}="auto"
+
+  systemd.services.fix-touchscreen = {
+    description = "Manually reload i2c_hid_acpi module to fix touchscreen";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStartPre = "${pkgs.kmod}/bin/modprobe -r i2c_hid_acpi";
+      ExecStart = "${pkgs.kmod}/bin/modprobe i2c_hid_acpi";
+    };
+  };
+
+  # Disable USB controller wakeup to prevent wakes from suspend
+  systemd.services.disable-usb-wakeup = {
+    description = "Disable XHC0 USB controller wakeup";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'echo XHC0 > /proc/acpi/wakeup'";
+      RemainAfterExit = true;
+    };
+  };
+
   services = {
 
     fwupd.enable = true; # framework bios/firmware updates
