@@ -13,6 +13,7 @@ in
   environment.systemPackages =
     with pkgs;
     [
+      unrar
       claude-code
       gh
       jujutsu

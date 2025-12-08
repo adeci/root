@@ -14,6 +14,9 @@ in
 {
 
   imports = [
+
+    inputs.nixos-hardware.nixosModules.framework-13-7040-amd
+
     inputs.grub2-themes.nixosModules.default
 
     ../../modules/adeci/all.nix
@@ -32,7 +35,6 @@ in
     [
       imagemagick # required for grub2-theme
       os-prober
-      framework-tool
       firefox
       calibre
     ]
@@ -56,12 +58,12 @@ in
   };
 
   hardware.amdgpu.opencl.enable = true;
+
+  services.xserver.videoDrivers = [ "amdgpu" ];
+
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
-    extraPackages = with pkgs; [
-      libva
-    ];
   };
 
   networking = {
@@ -107,8 +109,6 @@ in
   };
 
   services = {
-    fprintd.enable = true; # fingerprint sensor
-    fwupd.enable = true; # framework bios/firmware updates
 
     # Keyd for dual-function keys (Caps Lock = Esc on tap, Ctrl on hold)
     keyd = {
