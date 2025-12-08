@@ -31,6 +31,7 @@
     pkgs.glib
 
     pkgs.nmgui
+
   ];
 
   fonts.packages = with pkgs; [
