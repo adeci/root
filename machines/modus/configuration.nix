@@ -39,7 +39,7 @@ in
       calibre
     ]
     ++ [
-      dotpkgs.fw13-wm
+      dotpkgs.bundles.framework-13
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring

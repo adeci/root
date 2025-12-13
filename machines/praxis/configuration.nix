@@ -30,9 +30,10 @@ in
       firefox
       calibre
       modem-manager-gui
+      linux-wifi-hotspot
     ]
     ++ [
-      dotpkgs.gpd4-wm
+      dotpkgs.bundles.gpd-pocket-4
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring
