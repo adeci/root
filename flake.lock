@@ -9,8 +9,8 @@
         "wrappers": "wrappers"
       },
       "locked": {
-        "lastModified": 1765564331,
-        "narHash": "sha256-Y39xeqEa2mMkrqBrpQSq7zI+JUAMBHqbZrfKrBVFAHo=",
+        "lastModified": 1765995115,
+        "narHash": "sha256-HDDnnQ+D0F9ztaN8yWGyxEp3c9XsCL7xlLMaR3CeZqU=",
         "path": "/home/alex/git/dotpkgs",
         "type": "path"
       },
@@ -39,6 +39,27 @@
       "original": {
         "owner": "adeci",
         "repo": "nixvim-config",
+        "type": "github"
+      }
+    },
+    "adeci-wrappers": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764070467,
+        "narHash": "sha256-z4PVKbOae+L4rQv76hOmEFRXNVsWi3AMEI9/CwehOfc=",
+        "owner": "adeci",
+        "repo": "wrappers",
+        "rev": "4417c33df576d45c09e5a6484fbe4f14b33ede6e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "adeci",
+        "ref": "adeci-wrappers",
+        "repo": "wrappers",
         "type": "github"
       }
     },
@@ -413,6 +434,7 @@
       "inputs": {
         "adeci-dotpkgs": "adeci-dotpkgs",
         "adeci-nixvim": "adeci-nixvim",
+        "adeci-wrappers": "adeci-wrappers",
         "clan-core": "clan-core",
         "grub2-themes": "grub2-themes",
         "nixos-hardware": "nixos-hardware",

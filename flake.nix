@@ -15,6 +15,9 @@
     adeci-nixvim.url = "github:adeci/nixvim-config";
     adeci-nixvim.inputs.nixpkgs.follows = "nixpkgs";
 
+    adeci-wrappers.url = "github:adeci/wrappers?ref=adeci-wrappers";
+    adeci-wrappers.inputs.nixpkgs.follows = "nixpkgs";
+
     adeci-dotpkgs.url = "path:///home/alex/git/dotpkgs";
     adeci-dotpkgs.inputs.nixpkgs.follows = "nixpkgs";
 

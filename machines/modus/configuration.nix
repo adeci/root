@@ -1,8 +1,9 @@
 { inputs, pkgs, ... }:
 
 let
+  wrappers = inputs.adeci-wrappers;
 
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  modus-waybar = (import ./modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
 
   grubWallpaper = pkgs.fetchurl {
     name = "nixos-grub-wallpaper.jpg";
@@ -22,7 +23,7 @@ in
     ../../modules/adeci/all.nix
     ../../modules/adeci/dev.nix
 
-    ../../modules/adeci/sway.nix
+    ../../modules/adeci/niri.nix
     ../../modules/adeci/laptop.nix
 
     ../../modules/adeci/social.nix
@@ -39,7 +40,7 @@ in
       calibre
     ]
     ++ [
-      dotpkgs.bundles.framework-13
+      modus-waybar
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring
