@@ -2,7 +2,9 @@
 
 let
 
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  wrappers = inputs.adeci-wrappers;
+  praxis-waybar = (import ./modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
+  praxis-swayosd = (import ./modules/swayosd/module.nix { inherit pkgs wrappers; }).swayosd;
 
 in
 {
@@ -16,7 +18,7 @@ in
     ../../modules/adeci/all.nix
     ../../modules/adeci/dev.nix
 
-    ../../modules/adeci/sway.nix
+    ../../modules/adeci/niri.nix
     ../../modules/adeci/laptop.nix
 
     ../../modules/adeci/social.nix
@@ -33,7 +35,8 @@ in
       linux-wifi-hotspot
     ]
     ++ [
-      dotpkgs.bundles.gpd-pocket-4
+      praxis-waybar
+      praxis-swayosd
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring

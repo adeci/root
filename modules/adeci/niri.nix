@@ -34,7 +34,7 @@ in
     pkgs.playerctl
     pkgs.pulseaudio
     pkgs.pavucontrol
-    dotpkgs.swayosd
+    #dotpkgs.swayosd
 
     # Clipboard
     pkgs.wl-clipboard
@@ -144,31 +144,31 @@ in
       wantedBy = [ "niri.service" ];
     };
 
-    mako = {
-      description = "Mako notification daemon";
-      partOf = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      requisite = [ "graphical-session.target" ];
-      serviceConfig = {
-        ExecStart = "${dotpkgs.mako}/bin/mako";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
-      wantedBy = [ "niri.service" ];
-    };
-
-    swayosd = {
-      description = "SwayOSD server";
-      partOf = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      requisite = [ "graphical-session.target" ];
-      serviceConfig = {
-        ExecStart = "${dotpkgs.swayosd}/bin/swayosd-server";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
-      wantedBy = [ "niri.service" ];
-    };
+    # mako = {
+    #   description = "Mako notification daemon";
+    #   partOf = [ "graphical-session.target" ];
+    #   after = [ "graphical-session.target" ];
+    #   requisite = [ "graphical-session.target" ];
+    #   serviceConfig = {
+    #     ExecStart = "${dotpkgs.mako}/bin/mako";
+    #     Restart = "on-failure";
+    #     RestartSec = 1;
+    #   };
+    #   wantedBy = [ "niri.service" ];
+    # };
+    #
+    # swayosd = {
+    #   description = "SwayOSD server";
+    #   partOf = [ "graphical-session.target" ];
+    #   after = [ "graphical-session.target" ];
+    #   requisite = [ "graphical-session.target" ];
+    #   serviceConfig = {
+    #     ExecStart = "${dotpkgs.swayosd}/bin/swayosd-server";
+    #     Restart = "on-failure";
+    #     RestartSec = 1;
+    #   };
+    #   wantedBy = [ "niri.service" ];
+    # };
 
     swaybg = {
       description = "Swaybg wallpaper";

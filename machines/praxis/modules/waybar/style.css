@@ -1,0 +1,72 @@
+* {
+  border: none;
+  border-radius: 0;
+  font-family: "CaskaydiaMono Nerd Font", "Cascadia Mono", monospace;
+  font-size: 10px;
+  min-height: 0;
+}
+
+window#waybar {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+#workspaces button {
+  padding: 0 3px;
+  margin: 0;
+  min-width: 12px;
+  color: #555555;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  border: none;
+}
+
+#workspaces button:hover {
+  color: #888888;
+  background: transparent;
+  box-shadow: none;
+}
+
+#workspaces button.focused {
+  color: #ffffff;
+  background: transparent;
+  box-shadow: none;
+}
+
+#workspaces button.urgent {
+  color: #f7768e;
+  background: transparent;
+}
+
+#network,
+#network.wwan,
+#custom-battery,
+#custom-cpu,
+#custom-gpu,
+#memory,
+#disk,
+#backlight,
+#pulseaudio,
+#bluetooth,
+#clock {
+  padding: 0 8px;
+  color: #ffffff;
+  border-right: 1px solid #444444;
+}
+
+#network {
+  border-left: 1px solid #444444;
+}
+
+#clock {
+  border-right: none;
+}
+
+#network.disabled {
+  color: #666666;
+}
+
+#network.wwan.disabled {
+  color: #666666;
+}
