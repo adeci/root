@@ -13,7 +13,7 @@ in
 
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
 
-    ./gpdp4-patches.nix
+    ./modules/gpdp4-patches.nix
 
     ../../modules/adeci/all.nix
     ../../modules/adeci/dev.nix

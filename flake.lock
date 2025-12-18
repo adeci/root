@@ -9,8 +9,8 @@
         "wrappers": "wrappers"
       },
       "locked": {
-        "lastModified": 1766051382,
-        "narHash": "sha256-d061mdouno8iMvKws9yG1vUH3Q21fyLYPCs3aUWqups=",
+        "lastModified": 1766064725,
+        "narHash": "sha256-41ZySgsS7FJzSYY04QgxdX4j6lcvaPAlOC+KgUYpuYQ=",
         "path": "/home/alex/git/dotpkgs",
         "type": "path"
       },
