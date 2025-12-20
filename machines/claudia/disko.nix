@@ -1,7 +1,7 @@
 # ---
 # schema = "single-disk"
 # [placeholders]
-# mainDisk = "/dev/xvda" 
+# mainDisk = "/dev/xvda"
 # ---
 # This file was automatically generated!
 # CHANGING this configuration requires wiping and reinstalling the machine
@@ -32,6 +32,13 @@
                 format = "vfat";
                 mountpoint = "/boot";
                 mountOptions = [ "umask=0077" ];
+              };
+            };
+            swap = {
+              name = "swap";
+              size = "4G";
+              content = {
+                type = "swap";
               };
             };
             root = {

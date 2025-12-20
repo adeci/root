@@ -19,12 +19,17 @@ in
       kitty.terminfo
       ripgrep
       fd
+      eza
+      bat
       wget
       unzip
+      unrar
+      fzf
       tmux # TODO: wrap me!
     ]
     ++ [
       dotpkgs.btop
+      inputs.adeci-nixvim.packages.${pkgs.stdenv.hostPlatform.system}.default
     ];
 
   i18n.defaultLocale = "en_US.UTF-8";

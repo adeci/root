@@ -4,4 +4,8 @@ CLAUDE.md
 result
 .direnv/
 .envrc
-.direnv/
+
+cloud/.terraform/
+cloud/*.tfstate
+cloud/*.tfstate.*
+cloud/config.tf.json

@@ -7,14 +7,14 @@
   #   ];
   #   deploy.targetHost = "root@bambrew";
   # };
-  #
-  # claudia = {
-  #   name = "claudia";
-  #   tags = [
-  #     "adeci-net"
-  #   ];
-  #   deploy.targetHost = "root@claudia";
-  # };
+
+  claudia = {
+    name = "claudia";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@claudia";
+  };
 
   leviathan = {
     name = "leviathan";

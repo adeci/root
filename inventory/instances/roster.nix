@@ -93,6 +93,12 @@ let
 
   roster-machines = {
 
+    claudia = {
+      users = {
+        alex = { };
+      };
+    };
+
     leviathan = {
       users = {
         alex = { };
