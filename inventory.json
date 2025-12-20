@@ -2,6 +2,9 @@
   "machines": {
     "praxis": {
       "installedAt": 1764845359
+    },
+    "claudia": {
+      "installedAt": 1766250355
     }
   }
 }
