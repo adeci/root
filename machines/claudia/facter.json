@@ -508,7 +508,7 @@
           {
             "type": "mem",
             "base": 0,
-            "range": 2061148160,
+            "range": 2061139968,
             "enabled": true,
             "access": "read_write",
             "prefetch": "unknown"
