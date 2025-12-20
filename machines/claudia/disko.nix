@@ -13,7 +13,7 @@
   disko.devices = {
     disk = {
       main = {
-        name = "main-0a662f32855e4a20ad0e447a382e1896";
+        name = "main-f46a9c799ce64b34a9a04b48b35ff945";
         device = "/dev/xvda";
         type = "disk";
         content = {
