@@ -16,6 +16,8 @@ in
       unrar
       claude-code
       gh
+      eza
+      bat
       jujutsu
       nixpkgs-review
       nix-output-monitor
