@@ -1,5 +1,11 @@
 _: {
 
+  imports = [
+    ../../modules/adeci/all.nix
+    ../../modules/adeci/dev.nix
+    ../../modules/adeci/shell.nix
+  ];
+
   networking = {
     networkmanager.enable = true;
     hostName = "marine";

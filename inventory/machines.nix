@@ -15,22 +15,22 @@
   #   ];
   #   deploy.targetHost = "root@claudia";
   # };
-  #
-  # leviathan = {
-  #   name = "leviathan";
-  #   tags = [
-  #     "adeci-net"
-  #   ];
-  #   deploy.targetHost = "root@leviathan";
-  # };
-  #
-  # marine = {
-  #   name = "marine";
-  #   tags = [
-  #     "adeci-net"
-  #   ];
-  #   deploy.targetHost = "root@marine";
-  # };
+
+  leviathan = {
+    name = "leviathan";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@leviathan";
+  };
+
+  marine = {
+    name = "marine";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@marine";
+  };
 
   modus = {
     name = "modus";

@@ -37,7 +37,7 @@
       clan = clan-core.lib.clan {
         inherit self;
         meta.name = "ONIX";
-        meta.tld = "onix";
+        meta.domain = "onix";
         inventory = import ./inventory {
           lib = nixpkgs.lib;
           inherit inputs;

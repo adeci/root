@@ -6,7 +6,7 @@
 
       settings = {
         server = {
-          top_margin = 0.3;
+          top_margin = 0.4;
         };
       };
 

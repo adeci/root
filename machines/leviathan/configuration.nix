@@ -1,4 +1,11 @@
-_: {
+{ pkgs, ... }:
+{
+
+  imports = [
+    ../../modules/adeci/all.nix
+    ../../modules/adeci/dev.nix
+    ../../modules/adeci/shell.nix
+  ];
 
   networking = {
     networkmanager.enable = true;
@@ -37,6 +44,26 @@ _: {
       "dima"
       "fmzakari"
     ];
+  };
+
+  # A fuse filesystem that dynamically populates contents of /bin
+  # and /usr/bin/ so that it contains all executables from the PATH
+  # of the requesting process.
+  services.envfs.enable = true;
+
+  programs = {
+
+    # I got tired of facing NixOS issues
+    # Let's be more pragmatic and try to run binaries sometimes
+    # at the cost of sweeping bugs under the rug.
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        stdenv.cc.cc.lib
+        zlib # numpy
+      ];
+    };
+
   };
 
 }
