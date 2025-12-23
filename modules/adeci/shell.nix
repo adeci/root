@@ -80,6 +80,10 @@ in
         and cd $argv[1]
       end
 
+      function update-claude-code
+        bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
+      end
+
       # Initialize starship if available (prompt)
       if type -q starship
         starship init fish | source

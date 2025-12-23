@@ -26,6 +26,8 @@ in
     ../../modules/adeci/gaming.nix
   ];
 
+  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
+
   environment.systemPackages =
     with pkgs;
     [
