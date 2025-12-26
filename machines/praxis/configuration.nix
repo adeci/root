@@ -73,6 +73,9 @@ in
 
   systemd.services.ModemManager = {
     wantedBy = [ "multi-user.target" ];
+    # Prevent disconnection during nixos-rebuild switch
+    restartIfChanged = false;
+    stopIfChanged = false;
   };
 
   #time.timeZone = "America/New_York";
