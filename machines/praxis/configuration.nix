@@ -24,6 +24,7 @@ in
 
     ../../modules/adeci/social.nix
     ../../modules/adeci/gaming.nix
+    ../../modules/adeci/creative.nix
   ];
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;

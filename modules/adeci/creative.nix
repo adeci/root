@@ -2,8 +2,9 @@
 {
 
   environment.systemPackages = with pkgs; [
-    bambu-studio
     blender
+    freecad
+    audacity
     obs-studio
   ];
 
