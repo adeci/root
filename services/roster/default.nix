@@ -1,4 +1,4 @@
-_:
+{ ... }:
 let
   # Default position definitions
   defaultPositions = {
@@ -80,6 +80,17 @@ in
               }
             );
             default = { };
+            example = lib.literalExpression ''
+              {
+                developer = {
+                  sudoAccess = false;
+                  generatePassword = true;
+                  homeDirectory = true;
+                  isSystemUser = false;
+                  description = "Developer without sudo access";
+                };
+              }
+            '';
             description = "Custom position definitions that extend or override the defaults";
           };
 
@@ -90,47 +101,71 @@ in
                 options = {
                   uid = lib.mkOption {
                     type = lib.types.int;
+                    example = 1000;
                     description = "User's UID (must be consistent across machines)";
                   };
                   defaultPosition = lib.mkOption {
                     type = lib.types.str;
+                    example = "owner";
                     description = "Default position for this user (owner/admin/basic/service or custom)";
                   };
                   description = lib.mkOption {
                     type = lib.types.str;
                     default = "";
+                    example = "Alice Smith";
                     description = "Human-readable description of the user";
                   };
                   groups = lib.mkOption {
                     type = lib.types.listOf lib.types.str;
                     default = [ ];
+                    example = [
+                      "wheel"
+                      "video"
+                      "audio"
+                    ];
                     description = "Default groups for this user";
                   };
                   sshAuthorizedKeys = lib.mkOption {
                     type = lib.types.listOf lib.types.str;
                     default = [ ];
+                    example = [ "ssh-ed25519 AAAAC3Nza... user@host" ];
                     description = "SSH public keys for this user";
                   };
                   defaultShell = lib.mkOption {
                     type = lib.types.nullOr lib.types.package;
                     default = null;
+                    example = lib.literalExpression "pkgs.fish";
                     description = "Default shell package for this user (e.g., pkgs.bash, pkgs.fish, or a custom wrapped shell)";
                   };
                   packages = lib.mkOption {
                     type = lib.types.listOf lib.types.package;
                     default = [ ];
+                    example = lib.literalExpression "[ pkgs.git pkgs.vim ]";
                     description = "Default packages to install for this user on all systems";
                   };
                   # Home-manager integration
                   homeModules = lib.mkOption {
                     type = lib.types.listOf lib.types.deferredModule;
                     default = [ ];
+                    example = lib.literalExpression "[ ./home/git.nix ./home/shell.nix ]";
                     description = "Home-manager modules applied to this user on all machines";
                   };
                 };
               }
             );
             default = { };
+            example = lib.literalExpression ''
+              {
+                alice = {
+                  uid = 1000;
+                  defaultPosition = "owner";
+                  description = "Alice";
+                  groups = [ "wheel" "video" ];
+                  sshAuthorizedKeys = [ "ssh-ed25519 AAAAC3Nza..." ];
+                  defaultShell = pkgs.fish;
+                };
+              }
+            '';
             description = "Global user definitions";
           };
 
@@ -162,16 +197,25 @@ in
                 extraSpecialArgs = lib.mkOption {
                   type = lib.types.attrs;
                   default = { };
+                  example = lib.literalExpression "{ inherit inputs; }";
                   description = "Extra arguments passed to all home-manager modules";
                 };
                 sharedModules = lib.mkOption {
                   type = lib.types.listOf lib.types.deferredModule;
                   default = [ ];
+                  example = lib.literalExpression "[ ./home/common.nix ]";
                   description = "Home-manager modules applied to all users";
                 };
               };
             };
             default = { };
+            example = lib.literalExpression ''
+              {
+                module = inputs.home-manager.nixosModules.home-manager;
+                useGlobalPkgs = true;
+                sharedModules = [ ./home/common.nix ];
+              }
+            '';
             description = "Home-manager configuration settings";
           };
 
@@ -187,57 +231,71 @@ in
                           position = lib.mkOption {
                             type = lib.types.nullOr lib.types.str;
                             default = null;
+                            example = "admin";
                             description = "Override position for this user on this machine";
                           };
                           uid = lib.mkOption {
                             type = lib.types.nullOr lib.types.int;
                             default = null;
+                            example = 1001;
                             description = "Override UID for this user on this machine";
                           };
                           groups = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.str);
                             default = null;
+                            example = [
+                              "docker"
+                              "libvirt"
+                            ];
                             description = "Override groups for this user on this machine";
                           };
                           extraGroups = lib.mkOption {
                             type = lib.types.listOf lib.types.str;
                             default = [ ];
+                            example = [ "docker" ];
                             description = "Additional groups for this user on this machine (adds to default groups)";
                           };
                           shell = lib.mkOption {
                             type = lib.types.nullOr lib.types.package;
                             default = null;
+                            example = lib.literalExpression "pkgs.zsh";
                             description = "Override shell package for this user on this machine";
                           };
                           sshAuthorizedKeys = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.str);
                             default = null;
+                            example = [ "ssh-ed25519 AAAAC3Nza... workstation" ];
                             description = "Override SSH keys for this user on this machine";
                           };
                           extraSshAuthorizedKeys = lib.mkOption {
                             type = lib.types.listOf lib.types.str;
                             default = [ ];
+                            example = [ "ssh-ed25519 AAAAC3Nza... extra-key" ];
                             description = "Additional SSH keys for this user on this machine";
                           };
                           packages = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.package);
                             default = null;
+                            example = lib.literalExpression "[ pkgs.docker-compose ]";
                             description = "Override packages for this user on this machine (replaces default packages)";
                           };
                           extraPackages = lib.mkOption {
                             type = lib.types.listOf lib.types.package;
                             default = [ ];
+                            example = lib.literalExpression "[ pkgs.kubectl ]";
                             description = "Additional packages for this user on this machine (adds to default packages)";
                           };
                           # Home-manager integration
                           homeModules = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.deferredModule);
                             default = null;
+                            example = lib.literalExpression "[ ./home/server.nix ]";
                             description = "Override home-manager modules for this user on this machine (replaces default homeModules)";
                           };
                           extraHomeModules = lib.mkOption {
                             type = lib.types.listOf lib.types.deferredModule;
                             default = [ ];
+                            example = lib.literalExpression "[ ./home/workstation.nix ]";
                             description = "Additional home-manager modules for this user on this machine (adds to default homeModules)";
                           };
                         };
@@ -250,6 +308,17 @@ in
               }
             );
             default = { };
+            example = lib.literalExpression ''
+              {
+                server1 = {
+                  users.alice = { };  # Use defaults from user definition
+                  users.bob = {
+                    position = "admin";  # Override position
+                    extraGroups = [ "docker" ];
+                  };
+                };
+              }
+            '';
             description = "Machine-specific user assignments and overrides";
           };
         };
@@ -277,6 +346,28 @@ in
             # Home-manager is enabled when the module is provided
             homeManagerEnabled = settings.homeManager.module != null;
 
+            # =================================================================
+            # Pre-validation: collect all configuration errors for clear reporting
+            # =================================================================
+            machineUserNames = builtins.attrNames machineConfig.users;
+
+            # Find users referenced in machine but not defined globally
+            undefinedUsers = lib.filter (u: !(settings.users ? ${u})) machineUserNames;
+
+            # Find positions that don't exist (from both user defaults and machine overrides)
+            # Note: handles undefined users gracefully (they're caught by separate assertion)
+            getPosition =
+              username: machineUserCfg:
+              if machineUserCfg.position != null then
+                machineUserCfg.position
+              else
+                (settings.users.${username} or { }).defaultPosition or null;
+
+            usedPositions = lib.unique (
+              lib.filter (p: p != null) (lib.mapAttrsToList getPosition machineConfig.users)
+            );
+            invalidPositions = lib.filter (p: !(allPositions ? ${p})) usedPositions;
+
             getUserConfig =
               username: machineUserConfig:
               let
@@ -298,32 +389,58 @@ in
                   allPositions.${effectivePosition}
                     or (throw "Unknown position '${effectivePosition}' for user '${username}' on machine '${machine.name}'. Available positions: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}");
 
-                # Determine effective values (machine overrides > user defaults)
+                # =================================================================
+                # Override Resolution Pattern:
+                # For list-type options (groups, sshKeys, packages, homeModules):
+                #   - If machine.<option> is set: use it (replaces user default entirely)
+                #   - Otherwise: use user default
+                #   - In both cases: append machine.extra<Option> to the result
+                #
+                # This allows:
+                #   - Full override: set groups = [...] on machine user
+                #   - Additive only: leave groups null, set extraGroups = [...]
+                # =================================================================
+
                 effectiveUid = if machineUserConfig.uid != null then machineUserConfig.uid else userDef.uid;
+
                 effectiveGroups =
-                  if machineUserConfig.groups != null then
-                    machineUserConfig.groups ++ machineUserConfig.extraGroups
-                  else
-                    userDef.groups ++ machineUserConfig.extraGroups;
+                  let
+                    base = if machineUserConfig.groups != null then machineUserConfig.groups else userDef.groups;
+                  in
+                  base ++ machineUserConfig.extraGroups;
+
                 effectiveShell =
                   if machineUserConfig.shell != null then machineUserConfig.shell else userDef.defaultShell;
-                effectiveSshKeys =
-                  if machineUserConfig.sshAuthorizedKeys != null then
-                    machineUserConfig.sshAuthorizedKeys ++ machineUserConfig.extraSshAuthorizedKeys
-                  else
-                    userDef.sshAuthorizedKeys ++ machineUserConfig.extraSshAuthorizedKeys;
-                effectivePackages =
-                  if machineUserConfig.packages != null then
-                    machineUserConfig.packages ++ machineUserConfig.extraPackages
-                  else
-                    (userDef.packages or [ ]) ++ machineUserConfig.extraPackages;
 
-                # Home-manager modules resolution (same pattern as groups/packages)
+                effectiveSshKeys =
+                  let
+                    base =
+                      if machineUserConfig.sshAuthorizedKeys != null then
+                        machineUserConfig.sshAuthorizedKeys
+                      else
+                        userDef.sshAuthorizedKeys;
+                  in
+                  base ++ machineUserConfig.extraSshAuthorizedKeys;
+
+                effectivePackages =
+                  let
+                    base =
+                      if machineUserConfig.packages != null then
+                        machineUserConfig.packages
+                      else
+                        (userDef.packages or [ ]);
+                  in
+                  base ++ machineUserConfig.extraPackages;
+
                 effectiveHomeModules =
-                  if machineUserConfig.homeModules != null then
-                    machineUserConfig.homeModules
-                  else
-                    userDef.homeModules ++ machineUserConfig.extraHomeModules;
+                  let
+                    base =
+                      if machineUserConfig.homeModules != null then
+                        machineUserConfig.homeModules
+                      else
+                        userDef.homeModules;
+                  in
+                  base ++ machineUserConfig.extraHomeModules;
 
               in
               {
@@ -367,6 +484,20 @@ in
             imports = lib.optionals homeManagerEnabled [ settings.homeManager.module ];
 
             config = lib.mkMerge [
+              # Configuration validation assertions
+              {
+                assertions = [
+                  {
+                    assertion = undefinedUsers == [ ];
+                    message = "Roster: Users referenced in machine '${machine.name}' but not defined: ${builtins.concatStringsSep ", " undefinedUsers}";
+                  }
+                  {
+                    assertion = invalidPositions == [ ];
+                    message = "Roster: Unknown positions used in machine '${machine.name}': ${builtins.concatStringsSep ", " invalidPositions}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}";
+                  }
+                ];
+              }
+
               # User accounts
               {
                 users.users = lib.mapAttrs (
@@ -388,7 +519,6 @@ in
                     # Shell configuration
                     (lib.mkIf (cfg.effectiveShell != null) {
                       shell = cfg.effectiveShell;
-                      useDefaultShell = false;
                     })
 
                     # Password configuration
@@ -410,24 +540,10 @@ in
                 users.users.root.openssh.authorizedKeys.keys = rootSshKeys;
               }
 
-              # System user groups
+              # System user groups (system users need their own group)
               {
-                users.groups = lib.listToAttrs (
-                  lib.filter (g: g.value != { }) (
-                    lib.mapAttrsToList (
-                      username: cfg:
-                      if cfg.positionConfig.isSystemUser then
-                        {
-                          name = username;
-                          value = { };
-                        }
-                      else
-                        {
-                          name = "";
-                          value = { };
-                        }
-                    ) allUserConfigs
-                  )
+                users.groups = lib.mapAttrs' (username: _: lib.nameValuePair username { }) (
+                  lib.filterAttrs (_: cfg: cfg.positionConfig.isSystemUser) allUserConfigs
                 );
               }
 
@@ -475,11 +591,6 @@ in
                 }) usersNeedingPasswords;
               }
 
-              # Make users immutable
-              {
-                users.mutableUsers = false;
-              }
-
               # Warning when home-manager modules are configured but module not provided
               (lib.mkIf (anyUserHasHomeModules && !homeManagerEnabled) {
                 warnings = [
@@ -518,5 +629,13 @@ in
             ];
           };
       };
+  };
+
+  # Applied to all machines regardless of instance
+  perMachine = {
+    nixosModule = {
+      # Immutable users to ensure roster has exclusive control over user management
+      users.mutableUsers = false;
+    };
   };
 }
