@@ -21,8 +21,12 @@ let
       defaultPosition = "owner";
       defaultShell = pkgs.fish;
       packages = [
-        dotpkgs.git
+        # dotpkgs.git
         dotpkgs.starship
+      ];
+      # Home-manager modules
+      homeModules = [
+        ../../modules/adeci/home-manager/git.nix
       ];
     };
 
@@ -145,6 +149,9 @@ in
       settings = {
         users = roster-users;
         machines = roster-machines;
+
+        # Enable home-manager integration
+        homeManager.module = inputs.home-manager.nixosModules.home-manager;
       };
     };
   };

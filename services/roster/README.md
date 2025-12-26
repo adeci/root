@@ -109,6 +109,8 @@ Override any user property per machine:
 - `extraSshAuthorizedKeys` - Add SSH keys to defaults
 - `packages` - Replace default packages entirely
 - `extraPackages` - Add packages to defaults
+- `homeModules` - Replace home-manager modules entirely
+- `extraHomeModules` - Add home-manager modules to defaults
 
 ### Custom Shell Packages
 
@@ -141,9 +143,90 @@ users.alice = {
 2. User defaults
 3. Position defaults
 
+### Home-Manager Integration
+
+Roster provides optional, first-class home-manager support. Define home-manager modules per user with machine-specific overrides.
+
+**Requirements**: Add `home-manager` to your flake inputs:
+
+```nix
+inputs.home-manager.url = "github:nix-community/home-manager";
+inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
+```
+
+**Per-User Configuration**:
+
+```nix
+users.alice = {
+  uid = 1001;
+  defaultPosition = "owner";
+
+  # Home-manager modules applied on all machines
+  homeModules = [
+    ./users/alice/home.nix
+    ./users/alice/git.nix
+    ({ pkgs, ... }: {
+      home.packages = [ pkgs.ripgrep ];
+    })
+  ];
+};
+```
+
+**Machine-Specific Overrides**:
+
+```nix
+machines.desktop = {
+  users.alice = {
+    # Add extra modules (merged with defaults)
+    extraHomeModules = [
+      ./users/alice/desktop.nix
+      ./users/alice/gui-apps.nix
+    ];
+  };
+};
+
+machines.server = {
+  users.alice = {
+    # Override entirely (replaces defaults)
+    homeModules = [
+      ./users/alice/server-minimal.nix
+    ];
+  };
+};
+```
+
+**Global Home-Manager Settings**:
+
+```nix
+homeManager = {
+  useGlobalPkgs = true;      # Use system nixpkgs (recommended)
+  useUserPackages = true;    # Install packages to user profile
+  extraSpecialArgs = { };    # Extra args for all home modules
+  sharedModules = [ ];       # Modules applied to ALL users
+};
+```
+
+**Context Available in Home Modules**:
+
+Home modules receive `rosterMachine` in their arguments:
+
+```nix
+{ rosterMachine, ... }:
+{
+  home.sessionVariables.MACHINE = rosterMachine;
+}
+```
+
+**Conditional Behavior**:
+
+- If no users have `homeModules`, home-manager is not imported
+- If `homeModules` exist but `home-manager` input is missing, a warning is shown
+- Only users with non-empty `effectiveHomeModules` get home-manager configuration
+
 ## Benefits
 
 **Audit-Friendly**: Review `machines.<name>.users` to see all access at a glance
 **Consistent UIDs**: Same UID across fleet prevents permission issues
 **DRY Principle**: Define user details once
 **Flexible**: Override anything per-machine when needed
+**Home-Manager Ready**: Optional per-user home configuration with machine overrides

@@ -121,11 +121,58 @@ in
                     default = [ ];
                     description = "Default packages to install for this user on all systems";
                   };
+                  # Home-manager integration
+                  homeModules = lib.mkOption {
+                    type = lib.types.listOf lib.types.deferredModule;
+                    default = [ ];
+                    description = "Home-manager modules applied to this user on all machines";
+                  };
                 };
               }
             );
             default = { };
             description = "Global user definitions";
+          };
+
+          # Home-manager settings
+          homeManager = lib.mkOption {
+            type = lib.types.submodule {
+              options = {
+                module = lib.mkOption {
+                  type = lib.types.nullOr lib.types.deferredModule;
+                  default = null;
+                  description = ''
+                    The home-manager NixOS module to import.
+                    Set this to enable home-manager integration.
+
+                    Example: `inputs.home-manager.nixosModules.home-manager`
+                  '';
+                  example = lib.literalExpression "inputs.home-manager.nixosModules.home-manager";
+                };
+                useGlobalPkgs = lib.mkOption {
+                  type = lib.types.bool;
+                  default = true;
+                  description = "Whether to use the system's nixpkgs for home-manager packages";
+                };
+                useUserPackages = lib.mkOption {
+                  type = lib.types.bool;
+                  default = true;
+                  description = "Whether to install user packages via home-manager";
+                };
+                extraSpecialArgs = lib.mkOption {
+                  type = lib.types.attrs;
+                  default = { };
+                  description = "Extra arguments passed to all home-manager modules";
+                };
+                sharedModules = lib.mkOption {
+                  type = lib.types.listOf lib.types.deferredModule;
+                  default = [ ];
+                  description = "Home-manager modules applied to all users";
+                };
+              };
+            };
+            default = { };
+            description = "Home-manager configuration settings";
           };
 
           # Machine-specific user assignments
@@ -182,6 +229,17 @@ in
                             default = [ ];
                             description = "Additional packages for this user on this machine (adds to default packages)";
                           };
+                          # Home-manager integration
+                          homeModules = lib.mkOption {
+                            type = lib.types.nullOr (lib.types.listOf lib.types.deferredModule);
+                            default = null;
+                            description = "Override home-manager modules for this user on this machine (replaces default homeModules)";
+                          };
+                          extraHomeModules = lib.mkOption {
+                            type = lib.types.listOf lib.types.deferredModule;
+                            default = [ ];
+                            description = "Additional home-manager modules for this user on this machine (adds to default homeModules)";
+                          };
                         };
                       }
                     );
@@ -201,6 +259,10 @@ in
       { settings, machine, ... }:
       {
         nixosModule =
+          # We need to structure this carefully:
+          # 1. imports must be at module level, not inside config
+          # 2. We can't conditionally import based on runtime values
+          # So we build the module structure with imports at the top level
           {
             config,
             lib,
@@ -211,6 +273,9 @@ in
             allPositions = defaultPositions // settings.positions;
 
             machineConfig = settings.machines.${machine.name} or { users = { }; };
+
+            # Home-manager is enabled when the module is provided
+            homeManagerEnabled = settings.homeManager.module != null;
 
             getUserConfig =
               username: machineUserConfig:
@@ -253,6 +318,13 @@ in
                   else
                     (userDef.packages or [ ]) ++ machineUserConfig.extraPackages;
 
+                # Home-manager modules resolution (same pattern as groups/packages)
+                effectiveHomeModules =
+                  if machineUserConfig.homeModules != null then
+                    machineUserConfig.homeModules
+                  else
+                    userDef.homeModules ++ machineUserConfig.extraHomeModules;
+
               in
               {
                 inherit username userDef positionConfig;
@@ -262,6 +334,7 @@ in
                   effectiveShell
                   effectiveSshKeys
                   effectivePackages
+                  effectiveHomeModules
                   ;
                 inherit effectivePosition;
               };
@@ -281,121 +354,169 @@ in
               ) allUserConfigs
             );
 
+            # Collect users with home-manager modules
+            usersWithHomeModules = lib.filterAttrs (_: cfg: cfg.effectiveHomeModules != [ ]) allUserConfigs;
+
+            anyUserHasHomeModules = usersWithHomeModules != { };
+
+            usersWithHomeModulesList = builtins.attrNames usersWithHomeModules;
+
           in
-          lib.mkMerge [
-            # User accounts
-            {
-              users.users = lib.mapAttrs (
-                username: cfg:
-                lib.mkMerge [
-                  # Base configuration
-                  {
-                    uid = cfg.effectiveUid;
-                    description = cfg.userDef.description;
-                    isSystemUser = cfg.positionConfig.isSystemUser;
-                    isNormalUser = !cfg.positionConfig.isSystemUser;
-                    createHome = cfg.positionConfig.homeDirectory;
-                    home = if cfg.positionConfig.homeDirectory then "/home/${username}" else "/var/empty";
-                    group = if cfg.positionConfig.isSystemUser then username else "users";
-                    extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.positionConfig.sudoAccess "wheel");
-                    openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
-                  }
+          {
+            # Import home-manager module when enabled
+            imports = lib.optionals homeManagerEnabled [ settings.homeManager.module ];
 
-                  # Shell configuration
-                  (lib.mkIf (cfg.effectiveShell != null) {
-                    shell = cfg.effectiveShell;
-                    useDefaultShell = false;
-                  })
+            config = lib.mkMerge [
+              # User accounts
+              {
+                users.users = lib.mapAttrs (
+                  username: cfg:
+                  lib.mkMerge [
+                    # Base configuration
+                    {
+                      uid = cfg.effectiveUid;
+                      description = cfg.userDef.description;
+                      isSystemUser = cfg.positionConfig.isSystemUser;
+                      isNormalUser = !cfg.positionConfig.isSystemUser;
+                      createHome = cfg.positionConfig.homeDirectory;
+                      home = if cfg.positionConfig.homeDirectory then "/home/${username}" else "/var/empty";
+                      group = if cfg.positionConfig.isSystemUser then username else "users";
+                      extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.positionConfig.sudoAccess "wheel");
+                      openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
+                    }
 
-                  # Password configuration
-                  (lib.mkIf cfg.positionConfig.generatePassword {
-                    hashedPasswordFile =
-                      config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
-                  })
+                    # Shell configuration
+                    (lib.mkIf (cfg.effectiveShell != null) {
+                      shell = cfg.effectiveShell;
+                      useDefaultShell = false;
+                    })
 
-                  # Packages configuration
-                  (lib.mkIf (cfg.effectivePackages != [ ]) {
-                    packages = cfg.effectivePackages;
-                  })
-                ]
-              ) allUserConfigs;
-            }
+                    # Password configuration
+                    (lib.mkIf cfg.positionConfig.generatePassword {
+                      hashedPasswordFile =
+                        config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
+                    })
 
-            # Root SSH access for admins
-            {
-              users.users.root.openssh.authorizedKeys.keys = rootSshKeys;
-            }
+                    # Packages configuration
+                    (lib.mkIf (cfg.effectivePackages != [ ]) {
+                      packages = cfg.effectivePackages;
+                    })
+                  ]
+                ) allUserConfigs;
+              }
 
-            # System user groups
-            {
-              users.groups = lib.listToAttrs (
-                lib.filter (g: g.value != { }) (
-                  lib.mapAttrsToList (
-                    username: cfg:
-                    if cfg.positionConfig.isSystemUser then
-                      {
-                        name = username;
-                        value = { };
-                      }
-                    else
-                      {
-                        name = "";
-                        value = { };
-                      }
-                  ) allUserConfigs
-                )
-              );
-            }
+              # Root SSH access for admins
+              {
+                users.users.root.openssh.authorizedKeys.keys = rootSshKeys;
+              }
 
-            # Password generators
-            {
-              clan.core.vars.generators = lib.mapAttrs' (username: _: {
-                name = "user-password-${username}";
-                value = {
-                  files.user-password-hash = {
-                    neededFor = "users";
-                    restartUnits = lib.optional config.services.userborn.enable "userborn.service";
-                  };
-                  files.user-password.deploy = false;
+              # System user groups
+              {
+                users.groups = lib.listToAttrs (
+                  lib.filter (g: g.value != { }) (
+                    lib.mapAttrsToList (
+                      username: cfg:
+                      if cfg.positionConfig.isSystemUser then
+                        {
+                          name = username;
+                          value = { };
+                        }
+                      else
+                        {
+                          name = "";
+                          value = { };
+                        }
+                    ) allUserConfigs
+                  )
+                );
+              }
 
-                  prompts.user-password = {
-                    display = {
-                      group = username;
-                      label = "password";
-                      required = false;
-                      helperText = "Leave empty to auto-generate a secure password";
+              # Password generators
+              {
+                clan.core.vars.generators = lib.mapAttrs' (username: _: {
+                  name = "user-password-${username}";
+                  value = {
+                    files.user-password-hash = {
+                      neededFor = "users";
+                      restartUnits = lib.optional config.services.userborn.enable "userborn.service";
                     };
-                    type = "hidden";
-                    persist = true;
-                    description = "Password for user ${username}";
+                    files.user-password.deploy = false;
+
+                    prompts.user-password = {
+                      display = {
+                        group = username;
+                        label = "password";
+                        required = false;
+                        helperText = "Leave empty to auto-generate a secure password";
+                      };
+                      type = "hidden";
+                      persist = true;
+                      description = "Password for user ${username}";
+                    };
+
+                    share = true; # Same password across all machines
+
+                    runtimeInputs = [
+                      pkgs.coreutils
+                      pkgs.xkcdpass
+                      pkgs.mkpasswd
+                    ];
+
+                    script = ''
+                      prompt_value=$(cat "$prompts"/user-password)
+                      if [[ -n "''${prompt_value-}" ]]; then
+                        echo "$prompt_value" | tr -d "\n" > "$out"/user-password
+                      else
+                        xkcdpass --numwords 4 --delimiter - --count 1 | tr -d "\n" > "$out"/user-password
+                      fi
+                      mkpasswd -s -m sha-512 < "$out"/user-password | tr -d "\n" > "$out"/user-password-hash
+                    '';
                   };
+                }) usersNeedingPasswords;
+              }
 
-                  share = true; # Same password across all machines
+              # Make users immutable
+              {
+                users.mutableUsers = false;
+              }
 
-                  runtimeInputs = [
-                    pkgs.coreutils
-                    pkgs.xkcdpass
-                    pkgs.mkpasswd
-                  ];
+              # Warning when home-manager modules are configured but module not provided
+              (lib.mkIf (anyUserHasHomeModules && !homeManagerEnabled) {
+                warnings = [
+                  ''
+                    Roster: Home-manager modules are configured for users [${builtins.concatStringsSep ", " usersWithHomeModulesList}]
+                    on machine '${machine.name}', but homeManager.module is not set.
 
-                  script = ''
-                    prompt_value=$(cat "$prompts"/user-password)
-                    if [[ -n "''${prompt_value-}" ]]; then
-                      echo "$prompt_value" | tr -d "\n" > "$out"/user-password
-                    else
-                      xkcdpass --numwords 4 --delimiter - --count 1 | tr -d "\n" > "$out"/user-password
-                    fi
-                    mkpasswd -s -m sha-512 < "$out"/user-password | tr -d "\n" > "$out"/user-password-hash
-                  '';
+                    To enable home-manager support, add to your roster settings:
+                      homeManager.module = inputs.home-manager.nixosModules.home-manager;
+
+                    The homeModules configuration will be ignored until this is set.
+                  ''
+                ];
+              })
+
+              # Home-manager configuration when enabled and users have modules
+              (lib.mkIf (anyUserHasHomeModules && homeManagerEnabled) {
+                home-manager = {
+                  useGlobalPkgs = settings.homeManager.useGlobalPkgs;
+                  useUserPackages = settings.homeManager.useUserPackages;
+                  extraSpecialArgs = settings.homeManager.extraSpecialArgs // {
+                    # Inject roster context for home modules to use
+                    rosterMachine = machine.name;
+                  };
+                  sharedModules = settings.homeManager.sharedModules;
+
+                  users = lib.mapAttrs (username: cfg: {
+                    imports = cfg.effectiveHomeModules;
+                    home.username = username;
+                    home.homeDirectory = "/home/${username}";
+                    # Match NixOS stateVersion by default for consistency
+                    home.stateVersion = lib.mkDefault config.system.stateVersion;
+                  }) usersWithHomeModules;
                 };
-              }) usersNeedingPasswords;
-            }
-
-            # Make users immutable
-            {
-              users.mutableUsers = false;
-            }
-          ];
+              })
+            ];
+          };
       };
   };
 }

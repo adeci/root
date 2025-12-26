@@ -24,6 +24,9 @@
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
   };
 
   outputs =
@@ -57,6 +60,7 @@
       imports = [
         ./formatter.nix
         ./devshell.nix
+        ./services/roster/flake-module.nix
       ];
 
       flake = {
