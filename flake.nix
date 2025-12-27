@@ -60,7 +60,7 @@
       imports = [
         ./formatter.nix
         ./devshell.nix
-        ./services/roster/flake-module.nix
+        ./services/roster/flake-module.nix # for .#checks for roster
       ];
 
       flake = {
