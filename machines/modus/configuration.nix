@@ -39,6 +39,7 @@ in
       os-prober
       firefox
       calibre
+      rustdesk
     ]
     ++ [
       modus-waybar

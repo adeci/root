@@ -93,6 +93,23 @@ let
       ];
     };
 
+    natalya = {
+      description = "Natalya";
+      uid = 3899;
+      groups = [
+        "networkmanager"
+        "video"
+        "audio"
+        "input"
+        "kvm"
+      ];
+      sshAuthorizedKeys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeeoL1jwVSachA9GdJxm/5TgCRBULfSDGLyP/nfmkMq alex@DESKTOP-SVRV9Q8"
+      ];
+      defaultPosition = "basic";
+      defaultShell = pkgs.bash;
+    };
+
   };
 
   roster-machines = {
@@ -100,6 +117,15 @@ let
     claudia = {
       users = {
         alex = { };
+      };
+    };
+
+    kasha = {
+      users = {
+        alex = { };
+        natalya = {
+          position = "owner";
+        };
       };
     };
 

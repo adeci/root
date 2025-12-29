@@ -1,7 +1,7 @@
 # ---
 # schema = "single-disk"
 # [placeholders]
-# mainDisk = "/dev/disk/by-id/nvme-WDC_WDS100T2B0C-00PXH0_202322440701" 
+# mainDisk = "/dev/disk/by-id/nvme-WDC_WDS100T2B0C-00PXH0_202322440701"
 # ---
 # This file was automatically generated!
 # CHANGING this configuration requires wiping and reinstalling the machine
@@ -32,6 +32,13 @@
                 format = "vfat";
                 mountpoint = "/boot";
                 mountOptions = [ "umask=0077" ];
+              };
+            };
+            swap = {
+              name = "swap";
+              size = "8G";
+              content = {
+                type = "swap";
               };
             };
             root = {

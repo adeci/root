@@ -16,6 +16,14 @@
     deploy.targetHost = "root@claudia";
   };
 
+  kasha = {
+    name = "kasha";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@kasha";
+  };
+
   leviathan = {
     name = "leviathan";
     tags = [

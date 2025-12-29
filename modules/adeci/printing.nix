@@ -1,9 +1,14 @@
 _: {
-  printing = {
+  services.printing = {
     enable = true;
     browsedConf = ''
       CreateIPPPrinterQueues Driverless
     '';
   };
-  avahi.enable = true;
+
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true; # resolve .local addresses
+    openFirewall = true;
+  };
 }
