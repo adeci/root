@@ -30,6 +30,7 @@ in
     ../../modules/adeci/social.nix
     ../../modules/adeci/gaming.nix
     ../../modules/adeci/shell.nix
+    ../../modules/adeci/creative.nix
   ];
 
   environment.systemPackages =
