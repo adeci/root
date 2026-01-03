@@ -77,7 +77,7 @@ in
   };
 
   #time.timeZone = "America/New_York";
-  time.timeZone = "Asia/Bangkok";
+  time.timeZone = "Asia/Almaty";
 
   # vm building
   virtualisation.libvirtd.enable = true;
