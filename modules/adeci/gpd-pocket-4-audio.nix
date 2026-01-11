@@ -1,0 +1,185 @@
+# GPD Pocket 4 PipeWire Audio DSP
+# Ported from https://github.com/Manawyrm/gpd-pocket-4-pipewire
+#
+# Provides speaker correction, bass enhancement, loudness compensation,
+# and dynamic compression for the GPD Pocket 4's internal speakers.
+{ pkgs, ... }:
+
+let
+  irLeft = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/Manawyrm/gpd-pocket-4-pipewire/main/pipewire.conf.d/gpd-pocket-4-mp-48k-l.wav";
+    hash = "sha256-jvMlA/WN0VSTayq9LS3juCZMtwT79F/4ckhel2Yi0dc=";
+  };
+
+  irRight = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/Manawyrm/gpd-pocket-4-pipewire/main/pipewire.conf.d/gpd-pocket-4-mp-48k-r.wav";
+    hash = "sha256-uoILGqNfjeBv9CiKaG6vdPsVCQKRCXez6tis86oYlJY=";
+  };
+
+  configPackage = pkgs.runCommand "gpd-pocket-4-pipewire" { } ''
+    mkdir -p $out/share/pipewire/pipewire.conf.d
+    cat > $out/share/pipewire/pipewire.conf.d/sink-gpd-pocket-4.conf << EOF
+    context.modules = [
+    {
+        name = libpipewire-module-filter-chain
+        args = {
+            node.description = "GPD Pocket 4 Speakers"
+            media.name = "GPD Pocket 4 Speakers"
+            filter.graph = {
+                nodes = [
+                    {
+                        type = lv2
+                        plugin = "https://chadmed.au/bankstown"
+                        name = bassex
+                        control = {
+                            bypass = 0
+                            amt = 1.45
+                            sat_second = 1.65
+                            sat_third = 2.20
+                            blend = 1.0
+                            ceil = 200.0
+                            floor = 20.0
+                            final_hp = 120.0
+                        }
+                    }
+                    {
+                        type = lv2
+                        plugin = "http://lsp-plug.in/plugins/lv2/loud_comp_mono"
+                        name = ell
+                        control = {
+                            enabled = 1
+                            input = 1.0
+                            fft = 2
+                        }
+                    }
+                    {
+                        type = lv2
+                        plugin = "http://lsp-plug.in/plugins/lv2/loud_comp_mono"
+                        name = elr
+                        control = {
+                            enabled = 1
+                            input = 1.0
+                            fft = 2
+                        }
+                    }
+                    {
+                        type = builtin
+                        label = convolver
+                        name = convL
+                        config = {
+                            filename = "${irLeft}"
+                            channel = 0
+                            gain = 1.0
+                        }
+                    }
+                    {
+                        type = builtin
+                        label = convolver
+                        name = convR
+                        config = {
+                            filename = "${irRight}"
+                            channel = 0
+                            gain = 1.0
+                        }
+                    }
+                    {
+                        type = lv2
+                        plugin = "http://lsp-plug.in/plugins/lv2/mb_compressor_stereo"
+                        name = woofer_bp
+                        control = {
+                            mode = 0
+                            ce_0 = 1
+                            sla_0 = 5.0
+                            cr_0 = 1.75
+                            al_0 = 0.725
+                            at_0 = 1.0
+                            rt_0 = 100
+                            kn_0 = 0.125
+                            cbe_1 = 1
+                            sf_1 = 380.0
+                            ce_1 = 0
+                            cbe_2 = 0
+                            ce_2 = 0
+                            cbe_3 = 0
+                            ce_3 = 0
+                            cbe_4 = 0
+                            ce_4 = 0
+                            cbe_5 = 0
+                            ce_5 = 0
+                            cbe_6 = 0
+                            ce_6 = 0
+                        }
+                    }
+                    {
+                        type = lv2
+                        plugin = "http://lsp-plug.in/plugins/lv2/compressor_stereo"
+                        name = woofer_lim
+                        control = {
+                            sla = 5.0
+                            al = 1.0
+                            at = 1.0
+                            rt = 100.0
+                            cr = 15.0
+                            kn = 0.5
+                        }
+                    }
+                ]
+                links = [
+                    { output = "bassex:out_l" input = "ell:in" }
+                    { output = "bassex:out_r" input = "elr:in" }
+                    { output = "ell:out" input = "convL:In" }
+                    { output = "elr:out" input = "convR:In" }
+                    { output = "convL:Out" input = "woofer_bp:in_l" }
+                    { output = "convR:Out" input = "woofer_bp:in_r" }
+                    { output = "woofer_bp:out_l" input = "woofer_lim:in_l" }
+                    { output = "woofer_bp:out_r" input = "woofer_lim:in_r" }
+                ]
+                inputs = [ "bassex:in_l" "bassex:in_r" ]
+                outputs = [ "woofer_lim:out_l" "woofer_lim:out_r" ]
+                capture.volumes = [
+                    {
+                        control = "ell:volume"
+                        min = -42.5
+                        max = 0.0
+                        scale = cubic
+                    }
+                    {
+                        control = "elr:volume"
+                        min = -42.5
+                        max = 0.0
+                        scale = cubic
+                    }
+                ]
+            }
+            capture.props = {
+                node.name = audio_effect.convolver
+                media.class = Audio/Sink
+                audio.channels = 2
+                audio.position = [ FL FR ]
+                device.api = dsp
+                audio.allowed-rates = [ 48000 44100 ]
+                node.virtual = false
+                priority.session = 850
+                state.default-volume = 0.343
+                device.icon-name = audio-speakers
+            }
+            playback.props = {
+                node.name = effect_output.convolver
+                node.passive = false
+            }
+        }
+    }
+    ]
+    EOF
+  '';
+in
+{
+  services.pipewire = {
+    enable = true;
+    configPackages = [ configPackage ];
+    extraLv2Packages = with pkgs; [
+      bankstown-lv2
+      lsp-plugins
+    ];
+  };
+}

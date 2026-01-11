@@ -76,8 +76,8 @@ in
     hostName = "modus";
   };
 
-  #time.timeZone = "America/New_York";
-  time.timeZone = "Asia/Almaty";
+  time.timeZone = "America/New_York";
+  #time.timeZone = "Asia/Almaty";
 
   # vm building
   virtualisation.libvirtd.enable = true;

@@ -21,6 +21,7 @@ in
 
     ../../modules/adeci/niri.nix
     ../../modules/adeci/laptop.nix
+    ../../modules/adeci/gpd-pocket-4-audio.nix
 
     ../../modules/adeci/social.nix
     ../../modules/adeci/gaming.nix
@@ -75,8 +76,8 @@ in
     wantedBy = [ "multi-user.target" ];
   };
 
-  #time.timeZone = "America/New_York";
-  time.timeZone = "Asia/Almaty";
+  time.timeZone = "America/New_York";
+  #time.timeZone = "Asia/Almaty";
 
   # vm building
   virtualisation.libvirtd.enable = true;
