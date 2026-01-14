@@ -8,7 +8,7 @@
       treefmt.programs.shellcheck.enable = true;
 
       treefmt.programs.nixfmt.enable = true;
-      treefmt.programs.nixfmt.package = pkgs.nixfmt-rfc-style;
+      treefmt.programs.nixfmt.package = pkgs.nixfmt;
       treefmt.programs.deadnix.enable = true;
       treefmt.settings.global.excludes = [
         "*.png"

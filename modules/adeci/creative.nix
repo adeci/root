@@ -5,6 +5,7 @@
     blender
     freecad
     audacity
+    prusa-slicer
     obs-studio
   ];
 
