@@ -27,6 +27,7 @@ let
       # Home-manager modules
       homeModules = [
         ../../modules/adeci/home-manager/git.nix
+        ../../modules/adeci/home-manager/fish.nix
       ];
     };
 
