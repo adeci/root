@@ -53,15 +53,18 @@
         bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
       '';
 
-      # Clan completions - register when clan becomes available via direnv
+      # Clan completions helper - called on PATH change and shell init
+      __try_register_clan_completions = ''
+        if command -q clan && not set -q __clan_completions_registered
+          ${pkgs.python3Packages.argcomplete}/bin/register-python-argcomplete --shell fish clan | source
+          set -g __clan_completions_registered 1
+        end
+      '';
+
+      # Trigger on PATH changes (when direnv loads)
       __register_clan_completions = {
         onVariable = "PATH";
-        body = ''
-          if command -q clan && not set -q __clan_completions_registered
-            ${pkgs.python3Packages.argcomplete}/bin/register-python-argcomplete --shell fish clan | source
-            set -g __clan_completions_registered 1
-          end
-        '';
+        body = "__try_register_clan_completions";
       };
     };
 
@@ -85,6 +88,14 @@
       if type -q starship
         starship init fish | source
       end
+
+      # Initialize direnv hook (direnv is enabled via NixOS, but hook needed for fish)
+      if type -q direnv
+        direnv hook fish | source
+      end
+
+      # Try to register clan completions on startup (in case already in a clan dir)
+      __try_register_clan_completions
 
       # Tokyo Night Theme
       set -g fish_color_autosuggestion 555

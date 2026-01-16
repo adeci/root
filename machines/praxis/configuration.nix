@@ -30,6 +30,8 @@ in
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 
+  home-manager.backupFileExtension = "backup";
+
   environment.systemPackages =
     with pkgs;
     [
