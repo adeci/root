@@ -182,8 +182,6 @@ in
       settings = {
         users = roster-users;
         machines = roster-machines;
-
-        # Enable home-manager integration
         homeManager.module = inputs.home-manager.nixosModules.home-manager;
       };
     };

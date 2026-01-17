@@ -33,8 +33,6 @@ in
     ../../modules/adeci/creative.nix
   ];
 
-  home-manager.backupFileExtension = "backup";
-
   environment.systemPackages =
     with pkgs;
     [

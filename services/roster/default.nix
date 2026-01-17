@@ -611,6 +611,7 @@ in
                 home-manager = {
                   useGlobalPkgs = settings.homeManager.useGlobalPkgs;
                   useUserPackages = settings.homeManager.useUserPackages;
+                  backupFileExtension = lib.mkDefault "backup";
                   extraSpecialArgs = settings.homeManager.extraSpecialArgs // {
                     # Inject roster context for home modules to use
                     rosterMachine = machine.name;
