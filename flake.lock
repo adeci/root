@@ -574,11 +574,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1768622269,
-        "narHash": "sha256-JePD2nVHBPBJhm/vbP+Syk+YDb9RW4JdU8HOiZ2H86M=",
+        "lastModified": 1768673124,
+        "narHash": "sha256-mpmJd8fhxlHsFJQn5WVG3jKtw8ZabM9xQs0idXrjKro=",
         "ref": "refs/heads/main",
-        "rev": "b724636c44776b37c89d300236d7c27400b07150",
-        "revCount": 10,
+        "rev": "2e8dff33c9fe97795fc659492cc4acc34c3d7823",
+        "revCount": 11,
         "type": "git",
         "url": "ssh://git@github.com/adeci/trader-rs"
       },
