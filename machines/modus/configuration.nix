@@ -43,6 +43,7 @@ in
       firefox
       calibre
       rustdesk
+      linux-wifi-hotspot
     ]
     ++ [
       modus-waybar

@@ -53,18 +53,16 @@
         bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
       '';
 
-      # Clan completions helper - called on PATH change and shell init
-      __try_register_clan_completions = ''
-        if command -q clan && not set -q __clan_completions_registered
-          ${pkgs.python3Packages.argcomplete}/bin/register-python-argcomplete --shell fish clan | source
-          set -g __clan_completions_registered 1
-        end
-      '';
-
-      # Trigger on PATH changes (when direnv loads)
-      __register_clan_completions = {
-        onVariable = "PATH";
-        body = "__try_register_clan_completions";
+      # Clan completions - register when clan becomes available
+      # Uses fish_prompt event since direnv's PATH changes don't trigger --on-variable
+      __try_register_clan_completions = {
+        onEvent = "fish_prompt";
+        body = ''
+          if command -q clan && not set -q __clan_completions_registered
+            ${pkgs.python3Packages.argcomplete}/bin/register-python-argcomplete --shell fish clan | source
+            set -g __clan_completions_registered 1
+          end
+        '';
       };
     };
 

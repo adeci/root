@@ -1,0 +1,43 @@
+{
+  "devblog" = {
+    module = {
+      name = "@onix/siteup";
+      input = "self";
+    };
+    roles.app = {
+      machines.praxis = {
+        settings = {
+          name = "devblog";
+          flakeRef = "devblog";
+          args = [
+            "--port"
+            "4444"
+          ];
+        };
+      };
+    };
+  };
+
+  "trader" = {
+    module = {
+      name = "@onix/siteup";
+      input = "self";
+    };
+    roles.app = {
+      machines.praxis = {
+        settings = {
+          name = "trader";
+          flakeRef = "trader-rs";
+          port = 5555;
+          secrets = [
+            "TRADIER_API_KEY"
+            "FINNHUB_API_KEY"
+            "FMP_API_KEY"
+            "ANTHROPIC_API_KEY"
+            "DISCORD_WEBHOOK_URL"
+          ];
+        };
+      };
+    };
+  };
+}
