@@ -1,4 +1,5 @@
 {
+
   "sequoia-vault" = {
     module = {
       name = "@onix/vaultwarden";
@@ -13,17 +14,4 @@
     };
   };
 
-  "praxis-vault" = {
-    module = {
-      name = "@onix/vaultwarden";
-      input = "self";
-    };
-    roles.server = {
-      machines.praxis = {
-        settings = {
-          DOMAIN = "https://vault2.decio.us";
-        };
-      };
-    };
-  };
 }

@@ -1,17 +1,17 @@
 {
 
-  "praxis-tunnels" = {
+  "sequoia-tunnels" = {
     module = {
       name = "@onix/cloudflare-tunnel";
       input = "self";
     };
     roles.default = {
-      machines.praxis = {
+      machines.sequoia = {
         settings = {
           tokenName = "adeci";
-          tunnelName = "praxis-services";
+          tunnelName = "sequoia-services";
           ingress = {
-            "vault2.decio.us" = "http://localhost:8222";
+            "vault.decio.us" = "http://localhost:8222";
             "adeci.dev" = "http://localhost:4444";
             "trader.decio.us" = "http://localhost:5555";
           };

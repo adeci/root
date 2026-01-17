@@ -5,7 +5,7 @@
       input = "self";
     };
     roles.app = {
-      machines.praxis = {
+      machines.sequoia = {
         settings = {
           name = "devblog";
           flakeRef = "devblog";
@@ -24,7 +24,7 @@
       input = "self";
     };
     roles.app = {
-      machines.praxis = {
+      machines.sequoia = {
         settings = {
           name = "trader";
           flakeRef = "trader-rs";
@@ -35,6 +35,7 @@
             "FMP_API_KEY"
             "ANTHROPIC_API_KEY"
             "DISCORD_WEBHOOK_URL"
+            "DASHBOARD_PASSWORD"
           ];
         };
       };

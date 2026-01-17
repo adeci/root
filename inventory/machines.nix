@@ -56,13 +56,13 @@
     deploy.targetHost = "root@praxis";
   };
 
-  # sequoia = {
-  #   name = "sequoia";
-  #   tags = [
-  #     "adeci-net"
-  #   ];
-  #   deploy.targetHost = "root@sequoia";
-  # };
+  sequoia = {
+    name = "sequoia";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@sequoia";
+  };
 
   spud = {
     name = "spud";

@@ -157,6 +157,12 @@ let
       };
     };
 
+    sequoia = {
+      users = {
+        alex = { };
+      };
+    };
+
     spud = {
       users = {
         alex = { };
