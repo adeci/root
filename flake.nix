@@ -9,7 +9,7 @@
     clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
 
-    roster.url = "path:///home/alex/git/roster";
+    roster.url = "github:adeci/roster";
     roster.inputs.nixpkgs.follows = "nixpkgs";
 
     home-manager.url = "github:nix-community/home-manager";
