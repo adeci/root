@@ -1,7 +1,10 @@
-_:
+{ inputs, ... }:
 let
   module_definitions = {
-    "@onix/roster" = import ./roster;
+    # External service modules
+    "@onix/roster" = inputs.roster.clanModules."@onix/roster";
+
+    # Local service modules
     "@onix/tailscale" = import ./tailscale;
     "@onix/vaultwarden" = import ./vaultwarden;
     "@onix/cloudflare-tunnel" = import ./cloudflare-tunnel;

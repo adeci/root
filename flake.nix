@@ -9,6 +9,9 @@
     clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
 
+    roster.url = "path:///home/alex/git/roster";
+    roster.inputs.nixpkgs.follows = "nixpkgs";
+
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -52,7 +55,7 @@
           lib = nixpkgs.lib;
           inherit inputs;
         };
-        modules = import ./services { inherit nixpkgs; };
+        modules = import ./services { inherit nixpkgs inputs; };
         specialArgs = { inherit inputs; };
       };
     in
@@ -67,13 +70,12 @@
       imports = [
         ./formatter.nix
         ./devshell.nix
-        ./services/roster/flake-module.nix # for .#checks for roster
       ];
 
       flake = {
         inherit (clan.config) nixosConfigurations nixosModules clanInternals;
         clan = clan.config;
-        clanModules = import ./services { inherit nixpkgs; };
+        clanModules = import ./services { inherit nixpkgs inputs; };
       };
     };
 }
