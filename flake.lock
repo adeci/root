@@ -9,14 +9,17 @@
         "wrappers": "wrappers"
       },
       "locked": {
-        "lastModified": 1768609865,
-        "narHash": "sha256-LYaSpP7kfC7E3qr73XAXB7Mox4zk+TFHSY1XxY/FImw=",
-        "path": "/home/alex/git/dotpkgs",
-        "type": "path"
+        "lastModified": 1768611241,
+        "narHash": "sha256-NYm2hktt0OqCLBT0Jtc/BO1ylVBPdBhMs9/l3hAP5Q4=",
+        "owner": "adeci",
+        "repo": "dotpkgs",
+        "rev": "f5b1d2b1a085e82b174637467d573abfe87e238f",
+        "type": "github"
       },
       "original": {
-        "path": "/home/alex/git/dotpkgs",
-        "type": "path"
+        "owner": "adeci",
+        "repo": "dotpkgs",
+        "type": "github"
       }
     },
     "adeci-nixvim": {
@@ -473,15 +476,15 @@
       "locked": {
         "lastModified": 1768778167,
         "narHash": "sha256-FzUvMltCsnVPYTg6U5NFx9XJEEmqkBWy8bmMrQDaNOU=",
-        "owner": "adeci",
-        "repo": "roster",
+        "ref": "refs/heads/main",
         "rev": "194f5b49c2bdbe6b3af96a5ee86cb4a76905f96b",
-        "type": "github"
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://git@github.com/adeci/roster"
       },
       "original": {
-        "owner": "adeci",
-        "repo": "roster",
-        "type": "github"
+        "type": "git",
+        "url": "ssh://git@github.com/adeci/roster"
       }
     },
     "rust-overlay": {
@@ -617,11 +620,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1768673124,
-        "narHash": "sha256-mpmJd8fhxlHsFJQn5WVG3jKtw8ZabM9xQs0idXrjKro=",
+        "lastModified": 1768938258,
+        "narHash": "sha256-esc4BnELFCbQ7VqeOrG59BnwT4hiHUh38EryEyV0qqo=",
         "ref": "refs/heads/main",
-        "rev": "2e8dff33c9fe97795fc659492cc4acc34c3d7823",
-        "revCount": 11,
+        "rev": "78c14ddb7bba1ec30c1ff81f9c749c744da8d5ff",
+        "revCount": 25,
         "type": "git",
         "url": "ssh://git@github.com/adeci/trader-rs"
       },

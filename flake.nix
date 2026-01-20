@@ -9,7 +9,7 @@
     clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
 
-    roster.url = "github:adeci/roster";
+    roster.url = "git+ssh://git@github.com/adeci/roster";
     roster.inputs.nixpkgs.follows = "nixpkgs";
 
     home-manager.url = "github:nix-community/home-manager";
@@ -27,7 +27,7 @@
     adeci-wrappers.url = "github:adeci/wrappers?ref=adeci-wrappers";
     adeci-wrappers.inputs.nixpkgs.follows = "nixpkgs";
 
-    adeci-dotpkgs.url = "path:///home/alex/git/dotpkgs";
+    adeci-dotpkgs.url = "github:adeci/dotpkgs";
     adeci-dotpkgs.inputs.nixpkgs.follows = "nixpkgs";
 
     # Sites
