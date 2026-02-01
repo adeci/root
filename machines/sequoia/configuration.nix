@@ -1,6 +1,7 @@
 _: {
   networking = {
     hostName = "sequoia";
+    networkmanager.enable = true;
   };
 
   time.timeZone = "America/New_York";

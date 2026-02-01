@@ -8,6 +8,14 @@
   #   deploy.targetHost = "root@bambrew";
   # };
 
+  aegis = {
+    name = "aegis";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@aegis";
+  };
+
   claudia = {
     name = "claudia";
     tags = [

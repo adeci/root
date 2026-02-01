@@ -1,4 +1,11 @@
 {
+
+  aegis = {
+    users = {
+      alex = { };
+    };
+  };
+
   claudia = {
     users = {
       alex = { };

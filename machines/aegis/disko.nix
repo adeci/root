@@ -1,15 +1,13 @@
-# ---
 # schema = "single-disk"
-# [placeholders]
-# mainDisk = "/dev/disk/by-id/ata-HITACHI_HTS543232A7A384_E2034233HAARAS" 
-# ---
-# This file was automatically generated!
-# CHANGING this configuration requires wiping and reinstalling the machine
+# mainDisk = "/dev/disk/by-id/ata-HITACHI_HTS543232A7A384_E2034233HAARAS"
 {
 
-  boot.loader.grub.efiSupport = true;
-  boot.loader.grub.efiInstallAsRemovable = true;
-  boot.loader.grub.enable = true;
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+    device = "nodev";
+  };
   disko.devices = {
     disk = {
       main = {
@@ -19,19 +17,21 @@
         content = {
           type = "gpt";
           partitions = {
-            "boot" = {
-              size = "1M";
-              type = "EF02"; # for grub MBR
-              priority = 1;
-            };
             ESP = {
               type = "EF00";
-              size = "500M";
+              size = "1G";
               content = {
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
                 mountOptions = [ "umask=0077" ];
+              };
+            };
+            swap = {
+              name = "swap";
+              size = "8G";
+              content = {
+                type = "swap";
               };
             };
             root = {

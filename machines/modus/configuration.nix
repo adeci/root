@@ -23,13 +23,13 @@ in
 
     ../../modules/adeci/all.nix
     ../../modules/adeci/dev.nix
+    ../../modules/adeci/shell.nix
 
     ../../modules/adeci/niri.nix
     ../../modules/adeci/laptop.nix
 
     ../../modules/adeci/social.nix
     ../../modules/adeci/gaming.nix
-    ../../modules/adeci/shell.nix
     ../../modules/adeci/creative.nix
   ];
 
@@ -40,7 +40,6 @@ in
       os-prober
       firefox
       calibre
-      rustdesk
       linux-wifi-hotspot
     ]
     ++ [
