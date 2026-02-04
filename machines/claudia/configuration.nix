@@ -59,6 +59,7 @@ _: {
     25565
     25566
     25568
+    28082
   ];
   networking.firewall.allowedUDPPorts = [
     24454

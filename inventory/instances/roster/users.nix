@@ -62,8 +62,14 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5iZ0/HBn1HPJw/nMuJB9smTmhBkXdy4FiNVTXMtDqo github-ssh-key"
     ];
     defaultPosition = "owner";
-    defaultShell = pkgs.bash;
-    packages = [ ];
+    defaultShell = pkgs.fish;
+    packages = [
+      dotpkgs.starship
+    ];
+    homeModules = [
+      ../../../modules/adeci/home-manager/git.nix
+      ../../../modules/adeci/home-manager/fish.nix
+    ];
   };
 
   fmzakari = {
