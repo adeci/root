@@ -59,14 +59,11 @@
       "kvm"
     ];
     sshAuthorizedKeys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP++JHcHDQfP5wcPxtb8o4liBWo+DFS13I4a9UgSTFec dima@nixos"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5iZ0/HBn1HPJw/nMuJB9smTmhBkXdy4FiNVTXMtDqo github-ssh-key"
     ];
     defaultPosition = "owner";
-    defaultShell = pkgs.fish;
-    packages = [
-      pkgs.git
-      pkgs.starship
-    ];
+    defaultShell = pkgs.bash;
+    packages = [ ];
   };
 
   fmzakari = {

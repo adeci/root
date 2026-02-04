@@ -2,6 +2,9 @@
 
 let
   dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  wrappers = inputs.adeci-wrappers;
+  modus-waybar = (import ../modus/modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
+  modus-swayosd = (import ../modus/modules/swayosd/module.nix { inherit pkgs wrappers; }).swayosd;
 in
 {
   networking = {
@@ -23,9 +26,15 @@ in
     ../../modules/adeci/laptop.nix
   ];
 
-  environment.systemPackages = with pkgs; [
-    firefox
-  ];
+  environment.systemPackages =
+    with pkgs;
+    [
+      firefox
+    ]
+    ++ [
+      modus-waybar
+      modus-swayosd
+    ];
 
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
   security.wrappers.btop = {

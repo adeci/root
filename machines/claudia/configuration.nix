@@ -46,6 +46,12 @@ _: {
         proxy_pass 100.99.42.67:24457;
       }
 
+      # dima rust
+      server {
+        listen 28082;
+        proxy_pass 100.99.42.67:28082;
+      }
+
     '';
   };
 

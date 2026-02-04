@@ -92,6 +92,18 @@
           security_groups = [ ];
           self = false;
         }
+        # dima rust
+        {
+          from_port = 28082;
+          to_port = 28082;
+          protocol = "tcp";
+          cidr_blocks = [ "0.0.0.0/0" ];
+          description = "dima rust";
+          ipv6_cidr_blocks = [ ];
+          prefix_list_ids = [ ];
+          security_groups = [ ];
+          self = false;
+        }
       ];
 
       egress = [
