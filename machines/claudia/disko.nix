@@ -1,7 +1,7 @@
 # ---
 # schema = "single-disk"
 # [placeholders]
-# mainDisk = "/dev/xvda"
+# mainDisk = "/dev/xvda" 
 # ---
 # This file was automatically generated!
 # CHANGING this configuration requires wiping and reinstalling the machine
@@ -13,7 +13,7 @@
   disko.devices = {
     disk = {
       main = {
-        name = "main-f46a9c799ce64b34a9a04b48b35ff945";
+        name = "main-0fd60df6c56a4dd493cd8a63d14f012f";
         device = "/dev/xvda";
         type = "disk";
         content = {
@@ -32,13 +32,6 @@
                 format = "vfat";
                 mountpoint = "/boot";
                 mountOptions = [ "umask=0077" ];
-              };
-            };
-            swap = {
-              name = "swap";
-              size = "4G";
-              content = {
-                type = "swap";
               };
             };
             root = {
