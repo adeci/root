@@ -25,7 +25,10 @@
       {
         "index": 5,
         "attached_to": 0,
-        "class_list": ["pci", "bridge"],
+        "class_list": [
+          "pci",
+          "bridge"
+        ],
         "bus_type": {
           "hex": "0004",
           "name": "PCI",
@@ -78,7 +81,10 @@
       {
         "index": 6,
         "attached_to": 0,
-        "class_list": ["pci", "bridge"],
+        "class_list": [
+          "pci",
+          "bridge"
+        ],
         "bus_type": {
           "hex": "0004",
           "name": "PCI",
@@ -135,7 +141,10 @@
       {
         "index": 7,
         "attached_to": 0,
-        "class_list": ["pci", "bridge"],
+        "class_list": [
+          "pci",
+          "bridge"
+        ],
         "bus_type": {
           "hex": "0004",
           "name": "PCI",
@@ -304,7 +313,10 @@
       {
         "index": 14,
         "attached_to": 12,
-        "class_list": ["disk", "block_device"],
+        "class_list": [
+          "disk",
+          "block_device"
+        ],
         "base_class": {
           "hex": "0106",
           "name": "Mass Storage Device",
@@ -326,7 +338,9 @@
           "minor": 0,
           "range": 16
         },
-        "unix_device_names": ["/dev/xvda"],
+        "unix_device_names": [
+          "/dev/xvda"
+        ],
         "rom_id": "0x80",
         "resources": [
           {
@@ -346,15 +360,22 @@
         ],
         "driver": "vbd",
         "driver_module": "xen_blkfront",
-        "drivers": ["vbd"],
-        "driver_modules": ["xen_blkfront"]
+        "drivers": [
+          "vbd"
+        ],
+        "driver_modules": [
+          "xen_blkfront"
+        ]
       }
     ],
     "graphics_card": [
       {
         "index": 10,
         "attached_to": 0,
-        "class_list": ["graphics_card", "pci"],
+        "class_list": [
+          "graphics_card",
+          "pci"
+        ],
         "bus_type": {
           "hex": "0004",
           "name": "PCI",
@@ -436,11 +457,18 @@
         },
         "driver": "cirrus-qemu",
         "driver_module": "cirrus_qemu",
-        "drivers": ["cirrus-qemu"],
-        "driver_modules": ["cirrus_qemu"],
+        "drivers": [
+          "cirrus-qemu"
+        ],
+        "driver_modules": [
+          "cirrus_qemu"
+        ],
         "driver_info": {
           "type": "x11",
-          "db_entry_0": ["4", "cirrus"],
+          "db_entry_0": [
+            "4",
+            "cirrus"
+          ],
           "server": "cirrus",
           "xf86_version": "4",
           "supports_3d": false,
@@ -462,7 +490,9 @@
       {
         "index": 4,
         "attached_to": 0,
-        "class_list": ["memory"],
+        "class_list": [
+          "memory"
+        ],
         "base_class": {
           "hex": "0101",
           "name": "Internally Used Class",
@@ -478,7 +508,7 @@
           {
             "type": "mem",
             "base": 0,
-            "range": 2061139968,
+            "range": 2061148160,
             "enabled": true,
             "access": "read_write",
             "prefetch": "unknown"
@@ -494,7 +524,9 @@
       {
         "index": 11,
         "attached_to": 0,
-        "class_list": ["network_controller"],
+        "class_list": [
+          "network_controller"
+        ],
         "base_class": {
           "hex": "0002",
           "name": "Network controller",
@@ -511,7 +543,9 @@
         "sysfs_id": "/devices/vif-0",
         "sysfs_bus_id": "vif-0",
         "unix_device_name": "enX0",
-        "unix_device_names": ["enX0"],
+        "unix_device_names": [
+          "enX0"
+        ],
         "rom_id": "device/vif/0",
         "resources": [
           {
@@ -525,34 +559,21 @@
         ],
         "driver": "vif",
         "driver_module": "xen_netfront",
-        "drivers": ["vif"],
-        "driver_modules": ["xen_netfront"]
+        "drivers": [
+          "vif"
+        ],
+        "driver_modules": [
+          "xen_netfront"
+        ]
       }
     ],
     "network_interface": [
       {
         "index": 15,
-        "attached_to": 0,
-        "class_list": ["network_interface"],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Loopback",
-          "value": 0
-        },
-        "model": "Loopback network interface",
-        "sysfs_id": "/class/net/lo",
-        "unix_device_name": "lo",
-        "unix_device_names": ["lo"]
-      },
-      {
-        "index": 16,
         "attached_to": 11,
-        "class_list": ["network_interface"],
+        "class_list": [
+          "network_interface"
+        ],
         "base_class": {
           "hex": "0107",
           "name": "Network Interface",
@@ -567,7 +588,9 @@
         "sysfs_id": "/class/net/enX0",
         "sysfs_device_link": "/devices/vif-0",
         "unix_device_name": "enX0",
-        "unix_device_names": ["enX0"],
+        "unix_device_names": [
+          "enX0"
+        ],
         "resources": [
           {
             "type": "hwaddr",
@@ -580,15 +603,45 @@
         ],
         "driver": "vif",
         "driver_module": "xen_netfront",
-        "drivers": ["vif"],
-        "driver_modules": ["xen_netfront"]
+        "drivers": [
+          "vif"
+        ],
+        "driver_modules": [
+          "xen_netfront"
+        ]
+      },
+      {
+        "index": 16,
+        "attached_to": 0,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Loopback",
+          "value": 0
+        },
+        "model": "Loopback network interface",
+        "sysfs_id": "/class/net/lo",
+        "unix_device_name": "lo",
+        "unix_device_names": [
+          "lo"
+        ]
       }
     ],
     "pci": [
       {
         "index": 8,
         "attached_to": 0,
-        "class_list": ["pci", "unknown"],
+        "class_list": [
+          "pci",
+          "unknown"
+        ],
         "bus_type": {
           "hex": "0004",
           "name": "PCI",
@@ -663,8 +716,12 @@
         },
         "driver": "xen-platform-pci",
         "driver_module": "platform_pci",
-        "drivers": ["xen-platform-pci"],
-        "driver_modules": ["platform_pci"],
+        "drivers": [
+          "xen-platform-pci"
+        ],
+        "driver_modules": [
+          "platform_pci"
+        ],
         "module_alias": "pci:v00005853d00000001sv00005853sd00000001bcFFsc80i00"
       }
     ],
@@ -672,7 +729,10 @@
       {
         "index": 9,
         "attached_to": 0,
-        "class_list": ["storage_controller", "pci"],
+        "class_list": [
+          "storage_controller",
+          "pci"
+        ],
         "bus_type": {
           "hex": "0004",
           "name": "PCI",
@@ -763,14 +823,20 @@
         },
         "driver": "ata_piix",
         "driver_module": "ata_piix",
-        "drivers": ["ata_piix"],
-        "driver_modules": ["ata_piix"],
+        "drivers": [
+          "ata_piix"
+        ],
+        "driver_modules": [
+          "ata_piix"
+        ],
         "module_alias": "pci:v00008086d00007010sv00005853sd00000001bc01sc01i80"
       },
       {
         "index": 12,
         "attached_to": 0,
-        "class_list": ["storage_controller"],
+        "class_list": [
+          "storage_controller"
+        ],
         "base_class": {
           "hex": "0001",
           "name": "Mass storage controller",
@@ -789,8 +855,12 @@
         "rom_id": "device/vbd/51712",
         "driver": "vbd",
         "driver_module": "xen_blkfront",
-        "drivers": ["vbd"],
-        "driver_modules": ["xen_blkfront"]
+        "drivers": [
+          "vbd"
+        ],
+        "driver_modules": [
+          "xen_blkfront"
+        ]
       }
     ],
     "system": {
@@ -800,7 +870,9 @@
       {
         "index": 13,
         "attached_to": 0,
-        "class_list": ["unknown"],
+        "class_list": [
+          "unknown"
+        ],
         "base_class": {
           "hex": "0007",
           "name": "Communication controller",
@@ -823,7 +895,9 @@
         },
         "model": "16550A",
         "unix_device_name": "/dev/ttyS0",
-        "unix_device_names": ["/dev/ttyS0"],
+        "unix_device_names": [
+          "/dev/ttyS0"
+        ],
         "resources": [
           {
             "type": "io",
@@ -848,7 +922,10 @@
       "vendor": "Xen",
       "version": "4.11.amazon",
       "date": "08/24/2006",
-      "features": ["PCI supported", "EDD spec supported"],
+      "features": [
+        "PCI supported",
+        "EDD spec supported"
+      ],
       "start_address": "0xe8000",
       "rom_size": 65536
     },
