@@ -34,6 +34,13 @@
                 mountOptions = [ "umask=0077" ];
               };
             };
+            swap = {
+              name = "swap";
+              size = "4G";
+              content = {
+                type = "swap";
+              };
+            };
             root = {
               size = "100%";
               content = {
