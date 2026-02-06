@@ -8,7 +8,7 @@
 
   environment.systemPackages = with pkgs; [
     awscli2
-    claude-code
+    claude-code-bin
     gh
     jujutsu
     nixpkgs-review
