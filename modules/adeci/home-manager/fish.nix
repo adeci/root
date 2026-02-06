@@ -50,7 +50,7 @@
       '';
 
       update-claude-code = ''
-        bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
+        bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"claude-code-bin\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
       '';
 
       # Clan completions - register when clan becomes available
