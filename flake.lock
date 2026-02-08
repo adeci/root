@@ -32,11 +32,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1770266468,
-        "narHash": "sha256-onclWUC3dB8HVmtzWLIIqs4Km6Ns+4O+YZJScOZrN9w=",
+        "lastModified": 1770407297,
+        "narHash": "sha256-zVC0SiLYxYl3R6JGuB1z6HFiX/phOZzw3eTWl6IHxWo=",
         "owner": "adeci",
         "repo": "nixvim-config",
-        "rev": "51d8d06913631d41b3054560f31dae784430c320",
+        "rev": "b5900b1ea3568f10981c55383807aec85dba956c",
         "type": "github"
       },
       "original": {
@@ -81,11 +81,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1770312651,
-        "narHash": "sha256-zTKBWCRzeFeO3SSgXXnD3e8Li6k+/ybDZvFAhtSVuy4=",
-        "rev": "33bf2786d8c1077187790166e2a23fa4e5553834",
+        "lastModified": 1770402478,
+        "narHash": "sha256-i7hlohrxSRobQ4N0wXwVzdQiP2ArcaMbmJd5Tlc0zvY=",
+        "rev": "e29b67a0e26b293aa93b0d0233357da16a0d3d30",
         "type": "tarball",
-        "url": "https://git.clan.lol/api/v1/repos/clan/clan-core/archive/33bf2786d8c1077187790166e2a23fa4e5553834.tar.gz"
+        "url": "https://git.clan.lol/api/v1/repos/clan/clan-core/archive/e29b67a0e26b293aa93b0d0233357da16a0d3d30.tar.gz"
       },
       "original": {
         "type": "tarball",
@@ -411,6 +411,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-master": {
+      "locked": {
+        "lastModified": 1770412563,
+        "narHash": "sha256-RPcno3ITCFT6PV9uRUpUE7zug1JN1bGvTCUxMZgHYQk=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "78471a3a0ae00d1b0f02e34fcdbbd7f501a2d6ff",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1770197578,
@@ -461,6 +477,7 @@
         "home-manager": "home-manager",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-master": "nixpkgs-master",
         "roster": "roster",
         "trader-rs": "trader-rs",
         "treefmt-nix": "treefmt-nix_5"
