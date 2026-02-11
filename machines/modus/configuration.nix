@@ -21,17 +21,17 @@ in
 
     inputs.grub2-themes.nixosModules.default
 
-    ../../modules/adeci/all.nix
-    ../../modules/adeci/dev.nix
-    ../../modules/adeci/shell.nix
+    ../../nix-modules/all.nix
+    ../../nix-modules/dev.nix
+    ../../nix-modules/shell.nix
 
-    ../../modules/adeci/niri.nix
-    ../../modules/adeci/laptop.nix
+    ../../nix-modules/niri.nix
+    ../../nix-modules/laptop.nix
 
-    ../../modules/adeci/printing.nix
-    ../../modules/adeci/social.nix
-    ../../modules/adeci/gaming.nix
-    ../../modules/adeci/creative.nix
+    ../../nix-modules/printing.nix
+    ../../nix-modules/social.nix
+    ../../nix-modules/gaming.nix
+    ../../nix-modules/creative.nix
   ];
 
   environment.systemPackages =

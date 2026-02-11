@@ -22,8 +22,8 @@
       dotpkgs.starship
     ];
     homeModules = [
-      ../../../modules/adeci/home-manager/git.nix
-      ../../../modules/adeci/home-manager/fish.nix
+      ../../../home-manager/git.nix
+      ../../../home-manager/fish.nix
     ];
   };
 
@@ -67,8 +67,8 @@
       dotpkgs.starship
     ];
     homeModules = [
-      ../../../modules/adeci/home-manager/git.nix
-      ../../../modules/adeci/home-manager/fish.nix
+      ../../../home-manager/git.nix
+      ../../../home-manager/fish.nix
     ];
   };
 

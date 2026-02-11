@@ -1,7 +1,10 @@
 { inputs, ... }:
 let
   pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  dotpkgs = import ../../../dotpkgs {
+    inherit pkgs;
+    wrappers = inputs.adeci-wrappers;
+  };
 
   users = import ./users.nix { inherit pkgs dotpkgs; };
   machines = import ./machines.nix;

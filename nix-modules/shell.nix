@@ -1,6 +1,9 @@
 { inputs, pkgs, ... }:
 let
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  dotpkgs = import ../dotpkgs {
+    inherit pkgs;
+    wrappers = inputs.adeci-wrappers;
+  };
 in
 {
 

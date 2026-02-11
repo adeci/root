@@ -5,7 +5,10 @@
   ...
 }:
 let
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  dotpkgs = import ../dotpkgs {
+    inherit pkgs;
+    wrappers = inputs.adeci-wrappers;
+  };
   backgroundImage = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/tokyo-night/tokyo-night_nix.png";
     sha256 = "sha256-W5GaKCOiV2S3NuORGrRaoOE2x9X6gUS+wYf7cQkw9CY=";

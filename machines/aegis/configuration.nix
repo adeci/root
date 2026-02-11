@@ -1,7 +1,10 @@
 { inputs, pkgs, ... }:
 
 let
-  dotpkgs = inputs.adeci-dotpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  dotpkgs = import ../../dotpkgs {
+    inherit pkgs;
+    wrappers = inputs.adeci-wrappers;
+  };
   wrappers = inputs.adeci-wrappers;
   modus-waybar = (import ../modus/modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
   modus-swayosd = (import ../modus/modules/swayosd/module.nix { inherit pkgs wrappers; }).swayosd;
@@ -18,12 +21,12 @@ in
 
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x220
 
-    ../../modules/adeci/all.nix
-    ../../modules/adeci/dev.nix
-    ../../modules/adeci/shell.nix
+    ../../nix-modules/all.nix
+    ../../nix-modules/dev.nix
+    ../../nix-modules/shell.nix
 
-    ../../modules/adeci/niri.nix
-    ../../modules/adeci/laptop.nix
+    ../../nix-modules/niri.nix
+    ../../nix-modules/laptop.nix
   ];
 
   environment.systemPackages =

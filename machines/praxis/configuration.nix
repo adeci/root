@@ -15,18 +15,18 @@ in
 
     ./modules/gpdp4-patches.nix
 
-    ../../modules/adeci/all.nix
-    ../../modules/adeci/dev.nix
-    ../../modules/adeci/shell.nix
+    ../../nix-modules/all.nix
+    ../../nix-modules/dev.nix
+    ../../nix-modules/shell.nix
 
-    ../../modules/adeci/niri.nix
-    ../../modules/adeci/laptop.nix
-    ../../modules/adeci/gpd-pocket-4-audio.nix
+    ../../nix-modules/niri.nix
+    ../../nix-modules/laptop.nix
+    ../../nix-modules/gpd-pocket-4-audio.nix
 
-    ../../modules/adeci/printing.nix
-    ../../modules/adeci/social.nix
-    ../../modules/adeci/gaming.nix
-    ../../modules/adeci/creative.nix
+    ../../nix-modules/printing.nix
+    ../../nix-modules/social.nix
+    ../../nix-modules/gaming.nix
+    ../../nix-modules/creative.nix
   ];
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;

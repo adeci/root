@@ -10,9 +10,6 @@
     clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
 
-    roster.url = "git+ssh://git@github.com/adeci/roster";
-    roster.inputs.nixpkgs.follows = "nixpkgs";
-
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -27,9 +24,6 @@
 
     adeci-wrappers.url = "github:adeci/wrappers?ref=adeci-wrappers";
     adeci-wrappers.inputs.nixpkgs.follows = "nixpkgs";
-
-    adeci-dotpkgs.url = "github:adeci/dotpkgs";
-    adeci-dotpkgs.inputs.nixpkgs.follows = "nixpkgs";
 
     # Sites
     devblog.url = "github:adeci/devblog";
@@ -56,7 +50,7 @@
           lib = nixpkgs.lib;
           inherit inputs;
         };
-        modules = import ./services { inherit nixpkgs inputs; };
+        modules = import ./clan-services { inherit nixpkgs inputs; };
         specialArgs = { inherit inputs; };
       };
     in
@@ -71,12 +65,35 @@
       imports = [
         ./formatter.nix
         ./devshell.nix
+        ./clan-services/roster/flake-module.nix
       ];
+
+      perSystem =
+        { pkgs, ... }:
+        {
+          packages = import ./dotpkgs {
+            inherit pkgs;
+            wrappers = inputs.adeci-wrappers;
+          };
+        };
 
       flake = {
         inherit (clan.config) nixosConfigurations nixosModules clanInternals;
         clan = clan.config;
-        clanModules = import ./services { inherit nixpkgs inputs; };
+        clanModules = import ./clan-services { inherit nixpkgs inputs; };
+
+        homeConfigurations.alex = inputs.home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          modules = [
+            ./home-manager/git.nix
+            ./home-manager/fish.nix
+            {
+              home.username = "alex";
+              home.homeDirectory = "/home/alex";
+              home.stateVersion = "24.11";
+            }
+          ];
+        };
       };
     };
 }

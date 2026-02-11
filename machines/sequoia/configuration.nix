@@ -7,8 +7,8 @@ _: {
   time.timeZone = "America/New_York";
 
   imports = [
-    ../../modules/adeci/all.nix
-    ../../modules/adeci/dev.nix
-    ../../modules/adeci/shell.nix
+    ../../nix-modules/all.nix
+    ../../nix-modules/dev.nix
+    ../../nix-modules/shell.nix
   ];
 }

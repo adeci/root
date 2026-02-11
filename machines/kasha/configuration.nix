@@ -8,10 +8,10 @@
   imports = [
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
 
-    ../../modules/adeci/all.nix
-    ../../modules/adeci/shell.nix
-    ../../modules/adeci/gnome.nix
-    ../../modules/adeci/printing.nix
+    ../../nix-modules/all.nix
+    ../../nix-modules/shell.nix
+    ../../nix-modules/gnome.nix
+    ../../nix-modules/printing.nix
   ];
 
   networking = {

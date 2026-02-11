@@ -1,30 +1,8 @@
 {
   "nodes": {
-    "adeci-dotpkgs": {
-      "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "wrappers": "wrappers"
-      },
-      "locked": {
-        "lastModified": 1769923258,
-        "narHash": "sha256-Y0zr3oK5lmIb39MGXPngbDaHBTAVqwnk3ks0KaXInwo=",
-        "owner": "adeci",
-        "repo": "dotpkgs",
-        "rev": "5865f1c80228ede41c0e40f78c5da4f331a1fcf8",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "repo": "dotpkgs",
-        "type": "github"
-      }
-    },
     "adeci-nixvim": {
       "inputs": {
-        "flake-utils": "flake-utils_2",
+        "flake-utils": "flake-utils",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -77,7 +55,7 @@
           "nixpkgs"
         ],
         "sops-nix": "sops-nix",
-        "systems": "systems_4",
+        "systems": "systems_3",
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
@@ -230,27 +208,6 @@
     "flake-parts_4": {
       "inputs": {
         "nixpkgs-lib": [
-          "roster",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1768135262,
-        "narHash": "sha256-PVvu7OqHBGWN16zSi6tEmPwwHQ4rLPU9Plvs8/1TUBY=",
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "rev": "80daad04eddbbf5a4d883996a73f3f542fa437ac",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "type": "github"
-      }
-    },
-    "flake-parts_5": {
-      "inputs": {
-        "nixpkgs-lib": [
           "trader-rs",
           "nixpkgs"
         ]
@@ -272,24 +229,6 @@
     "flake-utils": {
       "inputs": {
         "systems": "systems"
-      },
-      "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
-    "flake-utils_2": {
-      "inputs": {
-        "systems": "systems_2"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -450,7 +389,7 @@
           "adeci-nixvim",
           "nixpkgs"
         ],
-        "systems": "systems_3"
+        "systems": "systems_2"
       },
       "locked": {
         "lastModified": 1767906546,
@@ -468,7 +407,6 @@
     },
     "root": {
       "inputs": {
-        "adeci-dotpkgs": "adeci-dotpkgs",
         "adeci-nixvim": "adeci-nixvim",
         "adeci-wrappers": "adeci-wrappers",
         "clan-core": "clan-core",
@@ -478,30 +416,8 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-master": "nixpkgs-master",
-        "roster": "roster",
         "trader-rs": "trader-rs",
         "treefmt-nix": "treefmt-nix_5"
-      }
-    },
-    "roster": {
-      "inputs": {
-        "flake-parts": "flake-parts_4",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1768778167,
-        "narHash": "sha256-FzUvMltCsnVPYTg6U5NFx9XJEEmqkBWy8bmMrQDaNOU=",
-        "ref": "refs/heads/main",
-        "rev": "194f5b49c2bdbe6b3af96a5ee86cb4a76905f96b",
-        "revCount": 1,
-        "type": "git",
-        "url": "ssh://git@github.com/adeci/roster"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/adeci/roster"
       }
     },
     "rust-overlay": {
@@ -612,24 +528,9 @@
         "type": "github"
       }
     },
-    "systems_4": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    },
     "trader-rs": {
       "inputs": {
-        "flake-parts": "flake-parts_5",
+        "flake-parts": "flake-parts_4",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -748,28 +649,6 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "type": "github"
-      }
-    },
-    "wrappers": {
-      "inputs": {
-        "nixpkgs": [
-          "adeci-dotpkgs",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1764070467,
-        "narHash": "sha256-z4PVKbOae+L4rQv76hOmEFRXNVsWi3AMEI9/CwehOfc=",
-        "owner": "adeci",
-        "repo": "wrappers",
-        "rev": "4417c33df576d45c09e5a6484fbe4f14b33ede6e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "ref": "adeci-wrappers",
-        "repo": "wrappers",
         "type": "github"
       }
     }

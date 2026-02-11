@@ -1,8 +1,7 @@
-{ inputs, ... }:
+{ ... }:
 let
   module_definitions = {
-    # External service modules
-    "@onix/roster" = inputs.roster.clanModules."@onix/roster";
+    "@onix/roster" = import ./roster;
 
     # Local service modules
     "@onix/tailscale" = import ./tailscale;

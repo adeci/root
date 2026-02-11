@@ -1,0 +1,19 @@
+# Font
+font=CaskaydiaMono Nerd Font 11
+
+# Tokyo Night colors
+background-color=#1A1B26
+text-color=#787C99
+border-color=#444B6A
+progress-color=over #7AA2F7
+
+# Border
+border-size=2
+border-radius=4
+
+# Dimensions (stock-ish)
+width=300
+padding=10
+
+# Behavior
+default-timeout=5000
