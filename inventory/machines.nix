@@ -40,13 +40,20 @@
     deploy.targetHost = "root@leviathan";
   };
 
-  marine = {
-    name = "marine";
-    tags = [
-      "adeci-net"
-    ];
-    deploy.targetHost = "root@marine";
+  malum = {
+    name = "malum";
+    tags = [ ];
+    machineClass = "darwin";
+    deploy.targetHost = "root@localhost"; # local only for work
   };
+
+  # marine = {
+  #   name = "marine";
+  #   tags = [
+  #     "adeci-net"
+  #   ];
+  #   deploy.targetHost = "root@marine";
+  # };
 
   modus = {
     name = "modus";
