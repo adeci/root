@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   imports = [
     ./options.nix
@@ -16,6 +17,12 @@
     ./plugins/wilder.nix
     ./plugins/web-devicons.nix
     ./plugins/yanky.nix
+  ];
+
+  extraPackages = with pkgs; [
+    ripgrep # telescope live_grep
+    fd # telescope find_files
+    git # gitsigns, fugitive
   ];
 
   globals.mapleader = " ";
