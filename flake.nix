@@ -78,7 +78,12 @@
         };
 
       flake = {
-        inherit (clan.config) nixosConfigurations nixosModules clanInternals;
+        inherit (clan.config)
+          nixosConfigurations
+          darwinConfigurations
+          nixosModules
+          clanInternals
+          ;
         clan = clan.config;
         clanModules = import ./clan-services { inherit nixpkgs inputs; };
 
