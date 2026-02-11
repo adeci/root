@@ -23,6 +23,7 @@ in
     ../../modules/adeci/laptop.nix
     ../../modules/adeci/gpd-pocket-4-audio.nix
 
+    ../../modules/adeci/printing.nix
     ../../modules/adeci/social.nix
     ../../modules/adeci/gaming.nix
     ../../modules/adeci/creative.nix

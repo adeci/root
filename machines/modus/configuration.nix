@@ -28,6 +28,7 @@ in
     ../../modules/adeci/niri.nix
     ../../modules/adeci/laptop.nix
 
+    ../../modules/adeci/printing.nix
     ../../modules/adeci/social.nix
     ../../modules/adeci/gaming.nix
     ../../modules/adeci/creative.nix
