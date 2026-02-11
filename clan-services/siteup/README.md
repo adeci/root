@@ -41,7 +41,7 @@ inputs.devblog.url = "github:adeci/devblog";
 # inventory/instances/siteup.nix
 {
   "devblog" = {
-    module.name = "@onix/siteup";
+    module.name = "@adeci/siteup";
     roles.app.machines.myserver = {
       settings = {
         name = "devblog";
@@ -58,7 +58,7 @@ inputs.devblog.url = "github:adeci/devblog";
 ```nix
 {
   "devblog" = {
-    module.name = "@onix/siteup";
+    module.name = "@adeci/siteup";
     roles.app.machines.myserver = {
       settings = {
         name = "devblog";
@@ -79,7 +79,7 @@ inputs.trader-rs.url = "git+ssh://git@github.com/user/trader-rs";
 # inventory/instances/siteup.nix
 {
   "trader" = {
-    module.name = "@onix/siteup";
+    module.name = "@adeci/siteup";
     roles.app.machines.myserver = {
       settings = {
         name = "trader";
@@ -105,7 +105,7 @@ inputs.trader-rs.url = "git+ssh://git@github.com/user/trader-rs";
 # inventory/instances/cloudflare-tunnel.nix
 {
   "my-tunnels" = {
-    module.name = "@onix/cloudflare-tunnel";
+    module.name = "@adeci/cloudflare-tunnel";
     roles.default.machines.myserver = {
       settings = {
         tokenName = "myaccount";

@@ -28,7 +28,7 @@ in
 
   test_module_has_manifest = {
     expr = module.manifest.name;
-    expected = "@onix/roster";
+    expected = "@adeci/roster";
   };
 
   test_module_has_default_role = {

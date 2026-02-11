@@ -12,7 +12,7 @@ in
 {
   roster = {
     module = {
-      name = "@onix/roster";
+      name = "@adeci/roster";
       input = "self";
     };
     roles.default = {

@@ -1,7 +1,7 @@
 {
   "devblog" = {
     module = {
-      name = "@onix/siteup";
+      name = "@adeci/siteup";
       input = "self";
     };
     roles.app = {
@@ -20,7 +20,7 @@
 
   "trader" = {
     module = {
-      name = "@onix/siteup";
+      name = "@adeci/siteup";
       input = "self";
     };
     roles.app = {

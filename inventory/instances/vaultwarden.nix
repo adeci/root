@@ -2,7 +2,7 @@
 
   "sequoia-vault" = {
     module = {
-      name = "@onix/vaultwarden";
+      name = "@adeci/vaultwarden";
       input = "self";
     };
     roles.server = {

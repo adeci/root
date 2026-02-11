@@ -2,7 +2,7 @@ _: {
   _class = "clan.service";
 
   manifest = {
-    name = "@onix/tailscale";
+    name = "@adeci/tailscale";
     description = "Tailscale VPN - Zero-config mesh networking";
     categories = [ "Utility" ];
     readme = builtins.readFile ./README.md;

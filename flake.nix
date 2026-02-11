@@ -1,5 +1,5 @@
 {
-  description = "onix computer clan";
+  description = "adeci world config root flake";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -44,8 +44,8 @@
     let
       clan = clan-core.lib.clan {
         inherit self;
-        meta.name = "ONIX";
-        meta.domain = "onix";
+        meta.name = "adeci";
+        meta.domain = "adeci";
         inventory = import ./inventory {
           lib = nixpkgs.lib;
           inherit inputs;

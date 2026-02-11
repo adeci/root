@@ -49,7 +49,7 @@ Any Vaultwarden environment variable can be set within the settings attrset. Thi
   instances = {
     "my-vault" = {
       module = {
-        name = "@onix/vaultwarden";
+        name = "@adeci/vaultwarden";
         input = "self";
       };
       roles.server = {
@@ -74,7 +74,7 @@ For secure external access without exposing ports:
   instances = {
     "my-vault" = {
       module = {
-        name = "@onix/vaultwarden";
+        name = "@adeci/vaultwarden";
         input = "self";
       };
       roles.server.machines.my-server = {
@@ -92,7 +92,7 @@ For secure external access without exposing ports:
   instances = {
     "my-tunnel" = {
       module = {
-        name = "@onix/cloudflare-tunnel";
+        name = "@adeci/cloudflare-tunnel";
         input = "self";
       };
       roles.default.machines.my-server = {

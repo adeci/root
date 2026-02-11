@@ -6,7 +6,7 @@ in
 {
   _class = "clan.service";
   manifest = {
-    name = "@onix/vaultwarden";
+    name = "@adeci/vaultwarden";
     description = "Vaultwarden password manager server for secure credential storage";
     categories = [ "Security" ];
     readme = builtins.readFile ./README.md;

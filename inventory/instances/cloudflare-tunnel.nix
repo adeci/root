@@ -2,7 +2,7 @@
 
   "sequoia-tunnels" = {
     module = {
-      name = "@onix/cloudflare-tunnel";
+      name = "@adeci/cloudflare-tunnel";
       input = "self";
     };
     roles.default = {

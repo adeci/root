@@ -51,7 +51,7 @@ Use different `tokenName` values for different Cloudflare accounts:
 {
   "my-tunnels" = {
     module = {
-      name = "@onix/cloudflare-tunnel";
+      name = "@adeci/cloudflare-tunnel";
       input = "self";
     };
     roles.default = {
@@ -76,7 +76,7 @@ Use different `tokenName` values for different Cloudflare accounts:
 {
   "home-tunnels" = {
     module = {
-      name = "@onix/cloudflare-tunnel";
+      name = "@adeci/cloudflare-tunnel";
       input = "self";
     };
     roles.default = {

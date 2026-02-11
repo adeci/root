@@ -38,7 +38,7 @@ in
 {
   _class = "clan.service";
 
-  manifest.name = "@onix/roster";
+  manifest.name = "@adeci/roster";
   manifest.description = "Hierarchical user management with position-based access control";
   manifest.categories = [ "System" ];
   manifest.readme = builtins.readFile ./README.md;

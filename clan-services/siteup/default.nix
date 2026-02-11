@@ -15,7 +15,7 @@ in
 {
   _class = "clan.service";
   manifest = {
-    name = "@onix/siteup";
+    name = "@adeci/siteup";
     description = "Deploy flake-based web applications with secrets management";
     categories = [ "Web" ];
     readme = builtins.readFile ./README.md;

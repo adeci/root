@@ -35,7 +35,7 @@ Built-in permission levels that control user privileges:
 {
   roster = {
     module = {
-      name = "@onix/roster";
+      name = "@adeci/roster";
       input = "self";
     };
     roles.default = {

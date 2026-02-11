@@ -1,7 +1,7 @@
 {
   "adeci-net" = {
     module = {
-      name = "@onix/tailscale";
+      name = "@adeci/tailscale";
       input = "self";
     };
     roles.peer = {

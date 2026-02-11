@@ -14,7 +14,7 @@ in
 {
   _class = "clan.service";
   manifest = {
-    name = "@onix/cloudflare-tunnel";
+    name = "@adeci/cloudflare-tunnel";
     description = "Cloudflare tunnel service for secure internet exposure of local services";
     categories = [ "Networking" ];
     readme = builtins.readFile ./README.md;
