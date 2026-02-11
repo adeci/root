@@ -8,6 +8,7 @@ let
   dotpkgs = import ../dotpkgs {
     inherit pkgs;
     wrappers = inputs.adeci-wrappers;
+    nixvim = inputs.nixvim;
   };
   backgroundImage = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/tokyo-night/tokyo-night_nix.png";

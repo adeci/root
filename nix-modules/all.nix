@@ -3,6 +3,7 @@ let
   dotpkgs = import ../dotpkgs {
     inherit pkgs;
     wrappers = inputs.adeci-wrappers;
+    nixvim = inputs.nixvim;
   };
 in
 {
@@ -33,7 +34,7 @@ in
     ]
     ++ [
       dotpkgs.btop
-      inputs.adeci-nixvim.packages.${pkgs.stdenv.hostPlatform.system}.default
+      dotpkgs.nixvim
     ];
 
   i18n.defaultLocale = "en_US.UTF-8";

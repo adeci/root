@@ -4,6 +4,7 @@ let
   dotpkgs = import ../../dotpkgs {
     inherit pkgs;
     wrappers = inputs.adeci-wrappers;
+    nixvim = inputs.nixvim;
   };
   wrappers = inputs.adeci-wrappers;
   modus-waybar = (import ../modus/modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;

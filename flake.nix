@@ -19,8 +19,8 @@
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
-    adeci-nixvim.url = "github:adeci/nixvim-config";
-    adeci-nixvim.inputs.nixpkgs.follows = "nixpkgs";
+    nixvim.url = "github:nix-community/nixvim";
+    nixvim.inputs.nixpkgs.follows = "nixpkgs";
 
     adeci-wrappers.url = "github:adeci/wrappers?ref=adeci-wrappers";
     adeci-wrappers.inputs.nixpkgs.follows = "nixpkgs";
@@ -74,6 +74,7 @@
           packages = import ./dotpkgs {
             inherit pkgs;
             wrappers = inputs.adeci-wrappers;
+            nixvim = inputs.nixvim;
           };
         };
 

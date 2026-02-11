@@ -3,6 +3,7 @@ let
   dotpkgs = import ../dotpkgs {
     inherit pkgs;
     wrappers = inputs.adeci-wrappers;
+    nixvim = inputs.nixvim;
   };
 in
 {
