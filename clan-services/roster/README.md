@@ -61,10 +61,6 @@ Built-in permission levels that control user privileges:
             groups = ["networkmanager" "docker"];
             sshAuthorizedKeys = ["ssh-ed25519 AAAA..."];
             defaultShell = "fish";  # Resolved to pkgs.fish in the generated module
-            homeProfiles = [
-              "home-manager/profiles/base.nix"
-              "home-manager/profiles/shell.nix"
-            ];
           };
         };
 
@@ -82,9 +78,6 @@ Built-in permission levels that control user privileges:
                 position = "admin";  # Override position for this machine
                 extraGroups = ["libvirtd"];  # Add extra groups
                 shell = "bash";  # Override shell
-                extraHomeProfiles = [
-                  "home-manager/profiles/dev.nix"
-                ];
               };
             };
           };
@@ -101,14 +94,13 @@ Built-in permission levels that control user privileges:
 
 Roster generates both `nixosModule` and `darwinModule`, handling platform differences automatically:
 
-| Concern         | NixOS                         | Darwin                |
-| --------------- | ----------------------------- | --------------------- |
-| Home directory  | `/home/<user>`                | `/Users/<user>`       |
-| User type       | `isNormalUser`/`isSystemUser` | Not set               |
-| Password gen    | Enabled via `clan.core.vars`  | Skipped               |
-| `mutableUsers`  | `false`                       | Not set               |
-| Root SSH keys   | Collected from sudo users     | Skipped               |
-| HM stateVersion | `config.system.stateVersion`  | `"24.11"` (hardcoded) |
+| Concern        | NixOS                         | Darwin          |
+| -------------- | ----------------------------- | --------------- |
+| Home directory | `/home/<user>`                | `/Users/<user>` |
+| User type      | `isNormalUser`/`isSystemUser` | Not set         |
+| Password gen   | Enabled via `clan.core.vars`  | Skipped         |
+| `mutableUsers` | `false`                       | Not set         |
+| Root SSH keys  | Collected from sudo users     | Skipped         |
 
 ### Machine-Specific Overrides
 
@@ -121,23 +113,16 @@ Override any user property per machine:
 - `shell` - Different shell on this machine (string name)
 - `sshAuthorizedKeys` - Replace SSH keys
 - `extraSshAuthorizedKeys` - Add SSH keys to defaults
-- `homeProfiles` - Replace home-manager profiles entirely
-- `extraHomeProfiles` - Add home-manager profiles to defaults
 
 ### Shell Resolution
 
 Shells are specified as string names (e.g., `"fish"`, `"zsh"`, `"bash"`) and resolved to `pkgs.${name}` inside the generated NixOS/Darwin module. This keeps the interface JSON-serializable while supporting all standard shells.
-
-### Profile Resolution
-
-Home-manager profiles are specified as **full relative paths from the flake root** (e.g., `"home-manager/profiles/base.nix"`). They are resolved to `import (inputs.self + "/${path}")` inside the generated module.
 
 ### Automatic Features
 
 - **Password Generation**: Based on position's `generatePassword` flag (NixOS only)
 - **Root SSH Access**: Users with `sudoAccess = true` get SSH keys added to root (NixOS only)
 - **Immutable Users**: Sets `users.mutableUsers = false` for security (NixOS only)
-- **Home-Manager Integration**: Automatically imports HM module when users have profiles
 
 ### Configuration Precedence
 
@@ -145,66 +130,30 @@ Home-manager profiles are specified as **full relative paths from the flake root
 2. User defaults
 3. Position defaults
 
-### Home-Manager Integration
+### Optional Position Flag Overrides
 
-Roster provides optional, first-class home-manager support. Define profile paths per user with machine-specific overrides.
+Individual position flags can be overridden per-user or per-machine without changing positions:
 
-**Per-User Configuration**:
+**Per-User Override** (applies to all machines):
 
 ```nix
 users.alice = {
   uid = 1001;
-  defaultPosition = "owner";
-  homeProfiles = [
-    "home-manager/profiles/base.nix"
-    "home-manager/profiles/shell.nix"
-  ];
+  defaultPosition = "basic";
+  sudoAccess = true;  # Override: grant sudo despite "basic" position
 };
 ```
 
-**Machine-Specific Overrides**:
+**Per-Machine Override** (applies to specific machine):
 
 ```nix
-machines.desktop = {
+machines.prod-server = {
   users.alice = {
-    extraHomeProfiles = [
-      "home-manager/profiles/dev.nix"
-    ];
-  };
-};
-
-machines.server = {
-  users.alice = {
-    # Override entirely (replaces defaults)
-    homeProfiles = [
-      "home-manager/profiles/server.nix"
-    ];
+    generatePassword = false;  # Don't generate password on this machine
   };
 };
 ```
 
-**Global Home-Manager Settings**:
+**Priority**: machine flag > user flag > position default > fallback defaults
 
-```nix
-homeManager = {
-  useGlobalPkgs = true;      # Use system nixpkgs (recommended)
-  useUserPackages = true;    # Install packages to user profile
-};
-```
-
-**Context Available in Home Modules**:
-
-Home modules receive `inputs` and `rosterMachine` in their arguments:
-
-```nix
-{ inputs, rosterMachine, ... }:
-{
-  home.sessionVariables.MACHINE = rosterMachine;
-}
-```
-
-**Conditional Behavior**:
-
-- If no users have `homeProfiles`, home-manager is not imported
-- Only users with non-empty profiles get home-manager configuration
-- The HM module (`nixosModules.home-manager` or `darwinModules.home-manager`) is selected automatically based on platform
+**Fallback defaults** (when no position is set): `sudoAccess=false`, `generatePassword=false`, `homeDirectory=true`, `isSystemUser=false`

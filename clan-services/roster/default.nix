@@ -35,6 +35,15 @@ let
     };
   };
 
+  # Fallback defaults when no position is set
+  fallbackPositionConfig = {
+    sudoAccess = false;
+    generatePassword = false;
+    homeDirectory = true;
+    isSystemUser = false;
+    description = "Default (no position)";
+  };
+
   # Shared module generator parameterized by platform
   mkPlatformModule =
     { isDarwin }:
@@ -43,7 +52,6 @@ let
       config,
       lib,
       pkgs,
-      inputs,
       ...
     }:
     let
@@ -85,11 +93,46 @@ let
             else if userDef.defaultPosition or null != null then
               userDef.defaultPosition
             else
-              throw "No position defined for user '${username}' on machine '${machine.name}'.";
+              null;
 
           positionConfig =
-            allPositions.${effectivePosition}
-              or (throw "Unknown position '${effectivePosition}' for user '${username}' on machine '${machine.name}'.");
+            if effectivePosition != null then
+              allPositions.${effectivePosition}
+                or (throw "Unknown position '${effectivePosition}' for user '${username}' on machine '${machine.name}'.")
+            else
+              fallbackPositionConfig;
+
+          # Resolve each flag with priority: machine override > user override > position default
+          effectiveFlags = {
+            sudoAccess =
+              if machineUserConfig.sudoAccess != null then
+                machineUserConfig.sudoAccess
+              else if userDef.sudoAccess or null != null then
+                userDef.sudoAccess
+              else
+                positionConfig.sudoAccess;
+            generatePassword =
+              if machineUserConfig.generatePassword != null then
+                machineUserConfig.generatePassword
+              else if userDef.generatePassword or null != null then
+                userDef.generatePassword
+              else
+                positionConfig.generatePassword;
+            homeDirectory =
+              if machineUserConfig.homeDirectory != null then
+                machineUserConfig.homeDirectory
+              else if userDef.homeDirectory or null != null then
+                userDef.homeDirectory
+              else
+                positionConfig.homeDirectory;
+            isSystemUser =
+              if machineUserConfig.isSystemUser != null then
+                machineUserConfig.isSystemUser
+              else if userDef.isSystemUser or null != null then
+                userDef.isSystemUser
+              else
+                positionConfig.isSystemUser;
+          };
 
           effectiveUid = if machineUserConfig.uid != null then machineUserConfig.uid else userDef.uid;
 
@@ -115,16 +158,6 @@ let
             in
             base ++ machineUserConfig.extraSshAuthorizedKeys;
 
-          effectiveHomeProfiles =
-            let
-              base =
-                if machineUserConfig.homeProfiles != null then
-                  machineUserConfig.homeProfiles
-                else
-                  userDef.homeProfiles;
-            in
-            base ++ machineUserConfig.extraHomeProfiles;
-
           homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
         in
         {
@@ -132,11 +165,11 @@ let
             username
             userDef
             positionConfig
+            effectiveFlags
             effectiveUid
             effectiveGroups
             effectiveShell
             effectiveSshKeys
-            effectiveHomeProfiles
             effectivePosition
             homeDir
             ;
@@ -150,7 +183,7 @@ let
         if isDarwin then
           { }
         else
-          lib.filterAttrs (_: cfg: cfg.positionConfig.generatePassword) allUserConfigs;
+          lib.filterAttrs (_: cfg: cfg.effectiveFlags.generatePassword) allUserConfigs;
 
       # Collect SSH keys for root from users with sudo access (NixOS only)
       rootSshKeys =
@@ -159,30 +192,12 @@ let
         else
           lib.flatten (
             lib.mapAttrsToList (
-              _: cfg: if cfg.positionConfig.sudoAccess then cfg.effectiveSshKeys else [ ]
+              _: cfg: if cfg.effectiveFlags.sudoAccess then cfg.effectiveSshKeys else [ ]
             ) allUserConfigs
           );
 
-      # Collect users with home-manager profiles
-      usersWithHomeProfiles = lib.filterAttrs (_: cfg: cfg.effectiveHomeProfiles != [ ]) allUserConfigs;
-
-      anyUserHasHomeProfiles = usersWithHomeProfiles != { };
-
-      # Resolve profile path strings to actual imports
-      resolveProfiles = profiles: map (p: import (inputs.self + "/${p}")) profiles;
-
-      # HM module to import
-      hmModule =
-        if isDarwin then
-          inputs.home-manager.darwinModules.home-manager
-        else
-          inputs.home-manager.nixosModules.home-manager;
-
     in
     {
-      # Import home-manager module when any user has profiles
-      imports = lib.optionals anyUserHasHomeProfiles [ hmModule ];
-
       config = lib.mkMerge [
         # Configuration validation assertions
         {
@@ -217,12 +232,12 @@ let
                   {
                     uid = cfg.effectiveUid;
                     description = cfg.userDef.description;
-                    isSystemUser = cfg.positionConfig.isSystemUser;
-                    isNormalUser = !cfg.positionConfig.isSystemUser;
-                    createHome = cfg.positionConfig.homeDirectory;
-                    home = if cfg.positionConfig.homeDirectory then cfg.homeDir else "/var/empty";
-                    group = if cfg.positionConfig.isSystemUser then username else "users";
-                    extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.positionConfig.sudoAccess "wheel");
+                    isSystemUser = cfg.effectiveFlags.isSystemUser;
+                    isNormalUser = !cfg.effectiveFlags.isSystemUser;
+                    createHome = cfg.effectiveFlags.homeDirectory;
+                    home = if cfg.effectiveFlags.homeDirectory then cfg.homeDir else "/var/empty";
+                    group = if cfg.effectiveFlags.isSystemUser then username else "users";
+                    extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.effectiveFlags.sudoAccess "wheel");
                     openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
                   }
               )
@@ -243,7 +258,7 @@ let
         # NixOS-only: System user groups
         (lib.mkIf (!isDarwin) {
           users.groups = lib.mapAttrs' (username: _: lib.nameValuePair username { }) (
-            lib.filterAttrs (_: cfg: cfg.positionConfig.isSystemUser) allUserConfigs
+            lib.filterAttrs (_: cfg: cfg.effectiveFlags.isSystemUser) allUserConfigs
           );
         })
 
@@ -297,26 +312,6 @@ let
             hashedPasswordFile =
               config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
           }) usersNeedingPasswords;
-        })
-
-        # Home-manager configuration when users have profiles
-        (lib.mkIf anyUserHasHomeProfiles {
-          home-manager = {
-            useGlobalPkgs = settings.homeManager.useGlobalPkgs;
-            useUserPackages = settings.homeManager.useUserPackages;
-            backupFileExtension = lib.mkDefault "backup";
-            extraSpecialArgs = {
-              inherit inputs;
-              rosterMachine = machine.name;
-            };
-
-            users = lib.mapAttrs (username: cfg: {
-              imports = resolveProfiles cfg.effectiveHomeProfiles;
-              home.username = username;
-              home.homeDirectory = cfg.homeDir;
-              home.stateVersion = lib.mkDefault (if isDarwin then "24.11" else config.system.stateVersion);
-            }) usersWithHomeProfiles;
-          };
         })
       ];
     };
@@ -391,9 +386,10 @@ in
                     description = "User's UID (must be consistent across machines)";
                   };
                   defaultPosition = lib.mkOption {
-                    type = lib.types.str;
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
                     example = "owner";
-                    description = "Default position for this user (owner/admin/basic/service or custom)";
+                    description = "Default position for this user (owner/admin/basic/service or custom). Null means no position; flags use fallback defaults unless overridden.";
                   };
                   description = lib.mkOption {
                     type = lib.types.str;
@@ -423,14 +419,25 @@ in
                     example = "fish";
                     description = "Default shell name (e.g., \"fish\", \"zsh\", \"bash\") — resolved to pkgs.\${name} in the generated module";
                   };
-                  homeProfiles = lib.mkOption {
-                    type = lib.types.listOf lib.types.str;
-                    default = [ ];
-                    example = [
-                      "home-manager/profiles/base.nix"
-                      "home-manager/profiles/shell.nix"
-                    ];
-                    description = "Home-manager profile paths relative to flake root, imported for this user on all machines";
+                  sudoAccess = lib.mkOption {
+                    type = lib.types.nullOr lib.types.bool;
+                    default = null;
+                    description = "Override position's sudoAccess flag";
+                  };
+                  generatePassword = lib.mkOption {
+                    type = lib.types.nullOr lib.types.bool;
+                    default = null;
+                    description = "Override position's generatePassword flag";
+                  };
+                  homeDirectory = lib.mkOption {
+                    type = lib.types.nullOr lib.types.bool;
+                    default = null;
+                    description = "Override position's homeDirectory flag";
+                  };
+                  isSystemUser = lib.mkOption {
+                    type = lib.types.nullOr lib.types.bool;
+                    default = null;
+                    description = "Override position's isSystemUser flag";
                   };
                 };
               }
@@ -445,37 +452,10 @@ in
                   groups = [ "wheel" "video" ];
                   sshAuthorizedKeys = [ "ssh-ed25519 AAAAC3Nza..." ];
                   defaultShell = "fish";
-                  homeProfiles = [ "home-manager/profiles/base.nix" ];
                 };
               }
             '';
             description = "Global user definitions";
-          };
-
-          # Home-manager settings
-          homeManager = lib.mkOption {
-            type = lib.types.submodule {
-              options = {
-                useGlobalPkgs = lib.mkOption {
-                  type = lib.types.bool;
-                  default = true;
-                  description = "Whether to use the system's nixpkgs for home-manager packages";
-                };
-                useUserPackages = lib.mkOption {
-                  type = lib.types.bool;
-                  default = true;
-                  description = "Whether to install user packages via home-manager";
-                };
-              };
-            };
-            default = { };
-            example = lib.literalExpression ''
-              {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-              }
-            '';
-            description = "Home-manager configuration settings";
           };
 
           # Machine-specific user assignments
@@ -532,17 +512,25 @@ in
                             example = [ "ssh-ed25519 AAAAC3Nza... extra-key" ];
                             description = "Additional SSH keys for this user on this machine";
                           };
-                          homeProfiles = lib.mkOption {
-                            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+                          sudoAccess = lib.mkOption {
+                            type = lib.types.nullOr lib.types.bool;
                             default = null;
-                            example = [ "home-manager/profiles/base.nix" ];
-                            description = "Override home-manager profiles for this user on this machine (replaces defaults)";
+                            description = "Override sudoAccess for this user on this machine";
                           };
-                          extraHomeProfiles = lib.mkOption {
-                            type = lib.types.listOf lib.types.str;
-                            default = [ ];
-                            example = [ "home-manager/profiles/dev.nix" ];
-                            description = "Additional home-manager profiles for this user on this machine (adds to defaults)";
+                          generatePassword = lib.mkOption {
+                            type = lib.types.nullOr lib.types.bool;
+                            default = null;
+                            description = "Override generatePassword for this user on this machine";
+                          };
+                          homeDirectory = lib.mkOption {
+                            type = lib.types.nullOr lib.types.bool;
+                            default = null;
+                            description = "Override homeDirectory for this user on this machine";
+                          };
+                          isSystemUser = lib.mkOption {
+                            type = lib.types.nullOr lib.types.bool;
+                            default = null;
+                            description = "Override isSystemUser for this user on this machine";
                           };
                         };
                       }

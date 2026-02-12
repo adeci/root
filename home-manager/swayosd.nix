@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
-  services.swayosd = {
+  services.swayosd = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     stylePath = pkgs.writeText "swayosd-style.css" ''
       window {

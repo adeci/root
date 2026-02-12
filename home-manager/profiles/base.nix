@@ -10,8 +10,6 @@ in
 {
   imports = [
     ../git.nix
-  ]
-  ++ lib.optionals pkgs.stdenv.isLinux [
     ../swayosd.nix
   ];
 

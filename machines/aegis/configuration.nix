@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  config,
+  ...
+}:
 
 let
   dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
@@ -28,6 +33,7 @@ in
 
     ../../nix-modules/niri.nix
     ../../nix-modules/laptop.nix
+    ../../nix-modules/home-manager.nix
   ];
 
   environment.systemPackages =
@@ -78,6 +84,11 @@ in
       };
     };
 
+  };
+
+  home-manager.users.alex = {
+    imports = [ ./home.nix ];
+    home.stateVersion = config.system.stateVersion;
   };
 
   nix.settings = {

@@ -1,6 +1,7 @@
 {
   inputs,
   pkgs,
+  config,
   ...
 }:
 {
@@ -12,6 +13,7 @@
     ../../nix-modules/shell.nix
     ../../nix-modules/gnome.nix
     ../../nix-modules/printing.nix
+    ../../nix-modules/home-manager.nix
   ];
 
   networking = {
@@ -55,6 +57,11 @@
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="leds", KERNEL=="platform::micmute", ATTR{trigger}="none", ATTR{brightness}="0"
   '';
+
+  home-manager.users.alex = {
+    imports = [ ./home.nix ];
+    home.stateVersion = config.system.stateVersion;
+  };
 
   nix.settings = {
     http-connections = 64;

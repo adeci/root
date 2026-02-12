@@ -16,11 +16,6 @@
     ];
     defaultPosition = "owner";
     defaultShell = "fish";
-    homeProfiles = [
-      "home-manager/profiles/base.nix"
-      "home-manager/profiles/shell.nix"
-      "home-manager/profiles/dev.nix"
-    ];
   };
 
   brittonr = {

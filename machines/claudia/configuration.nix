@@ -1,9 +1,11 @@
-_: {
+{ config, ... }:
+{
 
   imports = [
     ../../nix-modules/all.nix
     ../../nix-modules/dev.nix
     ../../nix-modules/shell.nix
+    ../../nix-modules/home-manager.nix
   ];
 
   networking = {
@@ -66,5 +68,10 @@ _: {
     24455
     24457
   ];
+
+  home-manager.users.alex = {
+    imports = [ ./home.nix ];
+    home.stateVersion = config.system.stateVersion;
+  };
 
 }

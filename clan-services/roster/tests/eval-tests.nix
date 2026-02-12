@@ -12,7 +12,6 @@ let
   userOpts = interface.options.users.type.getSubOptions [ ];
   machineOpts = interface.options.machines.type.getSubOptions [ ];
   machineUserOpts = machineOpts.users.type.getSubOptions [ ];
-  hmOpts = interface.options.homeManager.type.getSubOptions [ ];
 
 in
 {
@@ -31,21 +30,6 @@ in
     expected = true;
   };
 
-  test_interface_has_no_attrs_type_in_homeManager = {
-    expr = !(hmOpts ? extraSpecialArgs);
-    expected = true;
-  };
-
-  test_interface_homeManager_has_no_module_option = {
-    expr = !(hmOpts ? module);
-    expected = true;
-  };
-
-  test_interface_homeManager_has_no_sharedModules = {
-    expr = !(hmOpts ? sharedModules);
-    expected = true;
-  };
-
   test_machine_user_has_no_packages = {
     expr = !(machineUserOpts ? packages);
     expected = true;
@@ -53,16 +37,6 @@ in
 
   test_machine_user_has_no_extraPackages = {
     expr = !(machineUserOpts ? extraPackages);
-    expected = true;
-  };
-
-  test_machine_user_has_no_homeModules = {
-    expr = !(machineUserOpts ? homeModules);
-    expected = true;
-  };
-
-  test_machine_user_has_no_extraHomeModules = {
-    expr = !(machineUserOpts ? extraHomeModules);
     expected = true;
   };
 
@@ -130,11 +104,6 @@ in
     expected = true;
   };
 
-  test_user_has_homeProfiles = {
-    expr = userOpts ? homeProfiles;
-    expected = true;
-  };
-
   test_user_has_description = {
     expr = userOpts ? description;
     expected = true;
@@ -176,24 +145,51 @@ in
     expected = true;
   };
 
-  test_machine_user_has_homeProfiles = {
-    expr = machineUserOpts ? homeProfiles;
+  # defaultPosition is now nullable
+  test_user_defaultPosition_is_nullable = {
+    expr = (userOpts.defaultPosition.type.name == "nullOr");
     expected = true;
   };
 
-  test_machine_user_has_extraHomeProfiles = {
-    expr = machineUserOpts ? extraHomeProfiles;
+  # User override flags
+  test_user_has_sudoAccess_flag = {
+    expr = userOpts ? sudoAccess;
     expected = true;
   };
 
-  # HomeManager options (only bool flags now)
-  test_homeManager_has_useGlobalPkgs = {
-    expr = hmOpts ? useGlobalPkgs;
+  test_user_has_generatePassword_flag = {
+    expr = userOpts ? generatePassword;
     expected = true;
   };
 
-  test_homeManager_has_useUserPackages = {
-    expr = hmOpts ? useUserPackages;
+  test_user_has_homeDirectory_flag = {
+    expr = userOpts ? homeDirectory;
+    expected = true;
+  };
+
+  test_user_has_isSystemUser_flag = {
+    expr = userOpts ? isSystemUser;
+    expected = true;
+  };
+
+  # Machine user override flags
+  test_machine_user_has_sudoAccess_flag = {
+    expr = machineUserOpts ? sudoAccess;
+    expected = true;
+  };
+
+  test_machine_user_has_generatePassword_flag = {
+    expr = machineUserOpts ? generatePassword;
+    expected = true;
+  };
+
+  test_machine_user_has_homeDirectory_flag = {
+    expr = machineUserOpts ? homeDirectory;
+    expected = true;
+  };
+
+  test_machine_user_has_isSystemUser_flag = {
+    expr = machineUserOpts ? isSystemUser;
     expected = true;
   };
 
@@ -207,65 +203,73 @@ in
   # 4. Resolution Logic Tests (pure functions)
   # ==========================================================================
 
-  # homeProfiles resolution: default + extra pattern
-  test_homeProfiles_resolution_uses_default = {
+  # Flag override priority: machine > user > position > fallback
+  test_flag_override_machine_wins = {
     expr =
       let
-        userDefault = [
-          "home-manager/profiles/base.nix"
-          "home-manager/profiles/shell.nix"
-        ];
-        machineOverride = null;
-        machineExtra = [ ];
-        base = if machineOverride != null then machineOverride else userDefault;
+        positionVal = false;
+        userVal = true;
+        machineVal = false;
+        effective =
+          if machineVal != null then
+            machineVal
+          else if userVal != null then
+            userVal
+          else
+            positionVal;
       in
-      base ++ machineExtra;
-    expected = [
-      "home-manager/profiles/base.nix"
-      "home-manager/profiles/shell.nix"
-    ];
+      effective;
+    expected = false;
   };
 
-  test_homeProfiles_resolution_override_replaces = {
+  test_flag_override_user_wins_over_position = {
     expr =
       let
-        userDefault = [
-          "home-manager/profiles/base.nix"
-          "home-manager/profiles/shell.nix"
-        ];
-        machineOverride = [ "home-manager/profiles/server.nix" ];
-        machineExtra = [ ];
-        base = if machineOverride != null then machineOverride else userDefault;
+        positionVal = false;
+        userVal = true;
+        machineVal = null;
+        effective =
+          if machineVal != null then
+            machineVal
+          else if userVal != null then
+            userVal
+          else
+            positionVal;
       in
-      base ++ machineExtra;
-    expected = [ "home-manager/profiles/server.nix" ];
+      effective;
+    expected = true;
   };
 
-  test_homeProfiles_resolution_extra_adds = {
+  test_flag_override_falls_back_to_position = {
     expr =
       let
-        userDefault = [ "home-manager/profiles/base.nix" ];
-        machineOverride = null;
-        machineExtra = [ "home-manager/profiles/dev.nix" ];
-        base = if machineOverride != null then machineOverride else userDefault;
+        positionVal = true;
+        userVal = null;
+        machineVal = null;
+        effective =
+          if machineVal != null then
+            machineVal
+          else if userVal != null then
+            userVal
+          else
+            positionVal;
       in
-      base ++ machineExtra;
-    expected = [
-      "home-manager/profiles/base.nix"
-      "home-manager/profiles/dev.nix"
-    ];
+      effective;
+    expected = true;
   };
 
-  test_homeProfiles_empty_when_no_config = {
+  test_fallback_defaults_when_no_position = {
     expr =
       let
-        userDefault = [ ];
-        machineOverride = null;
-        machineExtra = [ ];
-        base = if machineOverride != null then machineOverride else userDefault;
+        fallbackDefaults = {
+          sudoAccess = false;
+          generatePassword = false;
+          homeDirectory = true;
+          isSystemUser = false;
+        };
       in
-      base ++ machineExtra;
-    expected = [ ];
+      fallbackDefaults.homeDirectory;
+    expected = true;
   };
 
   # Shell resolution pattern (string -> resolved later by pkgs.\${name})
@@ -538,11 +542,6 @@ in
     expected = true;
   };
 
-  test_homeManager_has_example = {
-    expr = interface.options.homeManager ? example;
-    expected = true;
-  };
-
   test_user_uid_has_example = {
     expr = userOpts.uid ? example;
     expected = true;
@@ -558,11 +557,6 @@ in
     expected = true;
   };
 
-  test_user_homeProfiles_has_example = {
-    expr = userOpts.homeProfiles ? example;
-    expected = true;
-  };
-
   test_machine_user_position_has_example = {
     expr = machineUserOpts.position ? example;
     expected = true;
@@ -573,13 +567,4 @@ in
     expected = true;
   };
 
-  test_machine_user_homeProfiles_has_example = {
-    expr = machineUserOpts.homeProfiles ? example;
-    expected = true;
-  };
-
-  test_machine_user_extraHomeProfiles_has_example = {
-    expr = machineUserOpts.extraHomeProfiles ? example;
-    expected = true;
-  };
 }

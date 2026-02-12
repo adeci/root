@@ -2,6 +2,7 @@
   inputs,
   pkgs,
   lib,
+  config,
   ...
 }:
 
@@ -62,6 +63,7 @@ in
     ../../nix-modules/social.nix
     ../../nix-modules/gaming.nix
     ../../nix-modules/creative.nix
+    ../../nix-modules/home-manager.nix
   ];
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
@@ -149,6 +151,11 @@ in
         };
       };
     };
+  };
+
+  home-manager.users.alex = {
+    imports = [ ./home.nix ];
+    home.stateVersion = config.system.stateVersion;
   };
 
   nix.settings = {

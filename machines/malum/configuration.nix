@@ -1,5 +1,9 @@
-{ ... }:
+{ inputs, ... }:
 {
+  imports = [
+    inputs.home-manager.darwinModules.home-manager
+  ];
+
   nixpkgs.hostPlatform = "aarch64-darwin";
   # system.stateVersion = 6; clan-core importer does this
 
@@ -44,4 +48,17 @@
   #     "discord"
   #   ];
   # };
+
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    backupFileExtension = "backup";
+    extraSpecialArgs = { inherit inputs; };
+  };
+
+  home-manager.users.alex = {
+    imports = [ ./home.nix ];
+    home.homeDirectory = "/Users/alex";
+    home.stateVersion = "24.11";
+  };
 }
