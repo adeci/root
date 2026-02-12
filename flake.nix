@@ -31,7 +31,6 @@
 
     trader-rs.url = "git+ssh://git@github.com/adeci/trader-rs";
     trader-rs.inputs.nixpkgs.follows = "nixpkgs";
-
   };
 
   outputs =
@@ -45,11 +44,11 @@
       ];
 
       imports = [
-        ./clan.nix
-        ./packages.nix
-        ./home-configurations.nix
-        ./formatter.nix
-        ./devshell.nix
+        ./flake-outputs/clan.nix
+        ./flake-outputs/dotpkgs.nix
+        ./flake-outputs/home-configurations.nix
+        ./flake-outputs/formatter.nix
+        ./flake-outputs/devshell.nix
         ./clan-services/roster/flake-module.nix
       ];
     };

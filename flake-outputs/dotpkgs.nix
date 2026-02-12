@@ -4,7 +4,7 @@
     { pkgs, ... }:
     {
       packages = builtins.mapAttrs (_: v: if v ? wrapper then v.wrapper else v) (
-        import ./dotpkgs { inherit pkgs inputs; }
+        import ../dotpkgs { inherit pkgs inputs; }
       );
     };
 }

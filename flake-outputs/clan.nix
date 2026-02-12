@@ -4,11 +4,11 @@ let
     self = inputs.self;
     meta.name = "adeci";
     meta.domain = "adeci";
-    inventory = import ./clan-inventory {
+    inventory = import ../clan-inventory {
       lib = inputs.nixpkgs.lib;
       inherit inputs;
     };
-    modules = import ./clan-services { };
+    modules = import ../clan-services { };
     specialArgs = { inherit inputs; };
   };
 in
@@ -21,6 +21,6 @@ in
       clanInternals
       ;
     clan = clan.config;
-    clanModules = import ./clan-services { };
+    clanModules = import ../clan-services { };
   };
 }
