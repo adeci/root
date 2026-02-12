@@ -30,6 +30,12 @@
     };
   };
 
+  malum = {
+    users = {
+      alex = { };
+    };
+  };
+
   marine = {
     users = {
       alex = { };

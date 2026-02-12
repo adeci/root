@@ -8,17 +8,66 @@ let
   # Test Helpers
   # ==========================================================================
 
-  # Basic roster interface for inspection
   interface = module.roles.default.interface { inherit lib; };
   userOpts = interface.options.users.type.getSubOptions [ ];
   machineOpts = interface.options.machines.type.getSubOptions [ ];
   machineUserOpts = machineOpts.users.type.getSubOptions [ ];
+  hmOpts = interface.options.homeManager.type.getSubOptions [ ];
 
 in
 {
   # ==========================================================================
-  # Phase 1: Basic Module Validation
-  # These tests validate the existing roster functionality works
+  # 1. Interface Serializability — THE critical test
+  #    clan-core requires interface to be JSON-serializable
+  # ==========================================================================
+
+  test_interface_has_no_package_types = {
+    expr = !(userOpts ? packages);
+    expected = true;
+  };
+
+  test_interface_has_no_deferred_module_types = {
+    expr = !(userOpts ? homeModules);
+    expected = true;
+  };
+
+  test_interface_has_no_attrs_type_in_homeManager = {
+    expr = !(hmOpts ? extraSpecialArgs);
+    expected = true;
+  };
+
+  test_interface_homeManager_has_no_module_option = {
+    expr = !(hmOpts ? module);
+    expected = true;
+  };
+
+  test_interface_homeManager_has_no_sharedModules = {
+    expr = !(hmOpts ? sharedModules);
+    expected = true;
+  };
+
+  test_machine_user_has_no_packages = {
+    expr = !(machineUserOpts ? packages);
+    expected = true;
+  };
+
+  test_machine_user_has_no_extraPackages = {
+    expr = !(machineUserOpts ? extraPackages);
+    expected = true;
+  };
+
+  test_machine_user_has_no_homeModules = {
+    expr = !(machineUserOpts ? homeModules);
+    expected = true;
+  };
+
+  test_machine_user_has_no_extraHomeModules = {
+    expr = !(machineUserOpts ? extraHomeModules);
+    expected = true;
+  };
+
+  # ==========================================================================
+  # 2. Module Structure Validation
   # ==========================================================================
 
   test_module_has_class = {
@@ -36,7 +85,26 @@ in
     expected = true;
   };
 
-  # User interface options
+  test_module_has_perMachine = {
+    expr = module ? perMachine;
+    expected = true;
+  };
+
+  test_perMachine_has_nixosModule = {
+    expr = module.perMachine ? nixosModule;
+    expected = true;
+  };
+
+  test_perMachine_has_darwinModule = {
+    expr = module.perMachine ? darwinModule;
+    expected = true;
+  };
+
+  # ==========================================================================
+  # 3. New Interface Options — Verify the new JSON-safe schema
+  # ==========================================================================
+
+  # User options
   test_user_has_uid = {
     expr = userOpts ? uid;
     expected = true;
@@ -62,14 +130,29 @@ in
     expected = true;
   };
 
-  test_user_has_packages = {
-    expr = userOpts ? packages;
+  test_user_has_homeProfiles = {
+    expr = userOpts ? homeProfiles;
     expected = true;
   };
 
-  # Machine user interface options
+  test_user_has_description = {
+    expr = userOpts ? description;
+    expected = true;
+  };
+
+  # Machine user options
   test_machine_user_has_position = {
     expr = machineUserOpts ? position;
+    expected = true;
+  };
+
+  test_machine_user_has_uid = {
+    expr = machineUserOpts ? uid;
+    expected = true;
+  };
+
+  test_machine_user_has_groups = {
+    expr = machineUserOpts ? groups;
     expected = true;
   };
 
@@ -78,249 +161,151 @@ in
     expected = true;
   };
 
-  test_machine_user_has_extraPackages = {
-    expr = machineUserOpts ? extraPackages;
+  test_machine_user_has_shell = {
+    expr = machineUserOpts ? shell;
+    expected = true;
+  };
+
+  test_machine_user_has_sshAuthorizedKeys = {
+    expr = machineUserOpts ? sshAuthorizedKeys;
+    expected = true;
+  };
+
+  test_machine_user_has_extraSshAuthorizedKeys = {
+    expr = machineUserOpts ? extraSshAuthorizedKeys;
+    expected = true;
+  };
+
+  test_machine_user_has_homeProfiles = {
+    expr = machineUserOpts ? homeProfiles;
+    expected = true;
+  };
+
+  test_machine_user_has_extraHomeProfiles = {
+    expr = machineUserOpts ? extraHomeProfiles;
+    expected = true;
+  };
+
+  # HomeManager options (only bool flags now)
+  test_homeManager_has_useGlobalPkgs = {
+    expr = hmOpts ? useGlobalPkgs;
+    expected = true;
+  };
+
+  test_homeManager_has_useUserPackages = {
+    expr = hmOpts ? useUserPackages;
+    expected = true;
+  };
+
+  # Positions option
+  test_has_positions = {
+    expr = interface.options ? positions;
     expected = true;
   };
 
   # ==========================================================================
-  # Phase 2: Home-Manager Interface Options (TDD)
-  # These tests will FAIL until we implement the home-manager options
+  # 4. Resolution Logic Tests (pure functions)
   # ==========================================================================
 
-  test_user_has_homeModules = {
-    expr = userOpts ? homeModules;
-    expected = true;
-  };
-
-  test_machine_user_has_homeModules = {
-    expr = machineUserOpts ? homeModules;
-    expected = true;
-  };
-
-  test_machine_user_has_extraHomeModules = {
-    expr = machineUserOpts ? extraHomeModules;
-    expected = true;
-  };
-
-  test_has_homeManager_settings = {
-    expr = interface.options ? homeManager;
-    expected = true;
-  };
-
-  # Test that homeManager.module option exists (the explicit module input)
-  test_homeManager_has_module_option = {
-    expr =
-      let
-        hmOpts = interface.options.homeManager.type.getSubOptions [ ];
-      in
-      hmOpts ? module;
-    expected = true;
-  };
-
-  # ==========================================================================
-  # Phase 3: Home Modules Resolution Logic
-  # Test that home modules are correctly resolved (default + extra, override)
-  # ==========================================================================
-
-  # Test the resolution logic pattern directly
-  test_homeModules_resolution_uses_default = {
-    expr =
-      let
-        userDefault = [
-          "module1"
-          "module2"
-        ];
-        machineOverride = null;
-        machineExtra = [ ];
-        resolved = if machineOverride != null then machineOverride else userDefault ++ machineExtra;
-      in
-      resolved;
-    expected = [
-      "module1"
-      "module2"
-    ];
-  };
-
-  test_homeModules_resolution_override_replaces = {
+  # homeProfiles resolution: default + extra pattern
+  test_homeProfiles_resolution_uses_default = {
     expr =
       let
         userDefault = [
-          "module1"
-          "module2"
+          "home-manager/profiles/base.nix"
+          "home-manager/profiles/shell.nix"
         ];
-        machineOverride = [ "override" ];
-        machineExtra = [ ];
-        resolved = if machineOverride != null then machineOverride else userDefault ++ machineExtra;
-      in
-      resolved;
-    expected = [ "override" ];
-  };
-
-  test_homeModules_resolution_extra_adds = {
-    expr =
-      let
-        userDefault = [ "module1" ];
         machineOverride = null;
-        machineExtra = [
-          "extra1"
-          "extra2"
-        ];
-        resolved = if machineOverride != null then machineOverride else userDefault ++ machineExtra;
+        machineExtra = [ ];
+        base = if machineOverride != null then machineOverride else userDefault;
       in
-      resolved;
+      base ++ machineExtra;
     expected = [
-      "module1"
-      "extra1"
-      "extra2"
+      "home-manager/profiles/base.nix"
+      "home-manager/profiles/shell.nix"
     ];
   };
 
-  test_homeModules_empty_when_no_config = {
+  test_homeProfiles_resolution_override_replaces = {
+    expr =
+      let
+        userDefault = [
+          "home-manager/profiles/base.nix"
+          "home-manager/profiles/shell.nix"
+        ];
+        machineOverride = [ "home-manager/profiles/server.nix" ];
+        machineExtra = [ ];
+        base = if machineOverride != null then machineOverride else userDefault;
+      in
+      base ++ machineExtra;
+    expected = [ "home-manager/profiles/server.nix" ];
+  };
+
+  test_homeProfiles_resolution_extra_adds = {
+    expr =
+      let
+        userDefault = [ "home-manager/profiles/base.nix" ];
+        machineOverride = null;
+        machineExtra = [ "home-manager/profiles/dev.nix" ];
+        base = if machineOverride != null then machineOverride else userDefault;
+      in
+      base ++ machineExtra;
+    expected = [
+      "home-manager/profiles/base.nix"
+      "home-manager/profiles/dev.nix"
+    ];
+  };
+
+  test_homeProfiles_empty_when_no_config = {
     expr =
       let
         userDefault = [ ];
         machineOverride = null;
         machineExtra = [ ];
-        resolved = if machineOverride != null then machineOverride else userDefault ++ machineExtra;
+        base = if machineOverride != null then machineOverride else userDefault;
       in
-      resolved;
+      base ++ machineExtra;
     expected = [ ];
   };
 
-  # ==========================================================================
-  # Phase 4: Module Structure Tests
-  # These validate the clan service structure
-  # ==========================================================================
-
-  test_module_has_perMachine = {
-    expr = module ? perMachine;
-    expected = true;
-  };
-
-  test_perMachine_has_nixosModule = {
-    expr = module.perMachine ? nixosModule;
-    expected = true;
-  };
-
-  # ==========================================================================
-  # Phase 5: Option Example/Documentation Tests
-  # These verify that options have proper examples for documentation
-  # ==========================================================================
-
-  test_positions_has_example = {
-    expr = interface.options.positions ? example;
-    expected = true;
-  };
-
-  test_users_has_example = {
-    expr = interface.options.users ? example;
-    expected = true;
-  };
-
-  test_machines_has_example = {
-    expr = interface.options.machines ? example;
-    expected = true;
-  };
-
-  test_homeManager_has_example = {
-    expr = interface.options.homeManager ? example;
-    expected = true;
-  };
-
-  # User sub-options should have examples
-  test_user_uid_has_example = {
-    expr = userOpts.uid ? example;
-    expected = true;
-  };
-
-  test_user_defaultPosition_has_example = {
-    expr = userOpts.defaultPosition ? example;
-    expected = true;
-  };
-
-  test_user_groups_has_example = {
-    expr = userOpts.groups ? example;
-    expected = true;
-  };
-
-  # Machine user sub-options should have examples
-  test_machine_user_position_has_example = {
-    expr = machineUserOpts.position ? example;
-    expected = true;
-  };
-
-  test_machine_user_extraGroups_has_example = {
-    expr = machineUserOpts.extraGroups ? example;
-    expected = true;
-  };
-
-  # ==========================================================================
-  # Phase 6: Resolution Logic with base + extra pattern
-  # Tests the cleaner resolution using let base = ... in base ++ extra
-  # ==========================================================================
-
-  test_resolution_base_pattern_default = {
+  # Shell resolution pattern (string -> resolved later by pkgs.\${name})
+  test_shell_resolution_machine_overrides_user = {
     expr =
       let
-        machineValue = null;
-        userDefault = [
-          "a"
-          "b"
-        ];
-        machineExtra = [ ];
-        base = if machineValue != null then machineValue else userDefault;
+        machineShell = "zsh";
+        userShell = "fish";
+        effective = if machineShell != null then machineShell else userShell;
       in
-      base ++ machineExtra;
-    expected = [
-      "a"
-      "b"
-    ];
+      effective;
+    expected = "zsh";
   };
 
-  test_resolution_base_pattern_override = {
+  test_shell_resolution_falls_back_to_user_default = {
     expr =
       let
-        machineValue = [ "override" ];
-        userDefault = [
-          "a"
-          "b"
-        ];
-        machineExtra = [ "extra" ];
-        base = if machineValue != null then machineValue else userDefault;
+        machineShell = null;
+        userShell = "fish";
+        effective = if machineShell != null then machineShell else userShell;
       in
-      base ++ machineExtra;
-    expected = [
-      "override"
-      "extra"
-    ];
+      effective;
+    expected = "fish";
   };
 
-  test_resolution_base_pattern_additive = {
+  test_shell_resolution_null_when_both_null = {
     expr =
       let
-        machineValue = null;
-        userDefault = [ "a" ];
-        machineExtra = [
-          "b"
-          "c"
-        ];
-        base = if machineValue != null then machineValue else userDefault;
+        machineShell = null;
+        userShell = null;
+        effective = if machineShell != null then machineShell else userShell;
       in
-      base ++ machineExtra;
-    expected = [
-      "a"
-      "b"
-      "c"
-    ];
+      effective;
+    expected = null;
   };
 
   # ==========================================================================
-  # Phase 7: Validation Logic Tests
-  # These test the pre-validation logic used for assertions
+  # 5. Validation Logic Tests
   # ==========================================================================
 
-  # Test undefined user detection
   test_validation_detects_undefined_users = {
     expr =
       let
@@ -356,7 +341,6 @@ in
     expected = [ ];
   };
 
-  # Test invalid position detection
   test_validation_detects_invalid_positions = {
     expr =
       let
@@ -394,7 +378,6 @@ in
     expected = [ ];
   };
 
-  # Test position extraction from machine config (handles undefined users gracefully)
   test_validation_position_extraction_with_override = {
     expr =
       let
@@ -450,5 +433,153 @@ in
       in
       getPosition "unknown" machineUserCfg;
     expected = null;
+  };
+
+  # ==========================================================================
+  # 6. Platform difference tests (pure logic)
+  # ==========================================================================
+
+  test_home_dir_linux = {
+    expr =
+      let
+        isDarwin = false;
+        username = "alice";
+        homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
+      in
+      homeDir;
+    expected = "/home/alice";
+  };
+
+  test_home_dir_darwin = {
+    expr =
+      let
+        isDarwin = true;
+        username = "alice";
+        homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
+      in
+      homeDir;
+    expected = "/Users/alice";
+  };
+
+  test_password_gen_skipped_on_darwin = {
+    expr =
+      let
+        isDarwin = true;
+        allUserConfigs = {
+          alice = {
+            positionConfig.generatePassword = true;
+          };
+        };
+        usersNeedingPasswords =
+          if isDarwin then
+            { }
+          else
+            lib.filterAttrs (_: cfg: cfg.positionConfig.generatePassword) allUserConfigs;
+      in
+      usersNeedingPasswords;
+    expected = { };
+  };
+
+  test_password_gen_enabled_on_nixos = {
+    expr =
+      let
+        isDarwin = false;
+        allUserConfigs = {
+          alice = {
+            positionConfig.generatePassword = true;
+          };
+          bob = {
+            positionConfig.generatePassword = false;
+          };
+        };
+        usersNeedingPasswords =
+          if isDarwin then
+            { }
+          else
+            lib.filterAttrs (_: cfg: cfg.positionConfig.generatePassword) allUserConfigs;
+      in
+      builtins.attrNames usersNeedingPasswords;
+    expected = [ "alice" ];
+  };
+
+  test_root_ssh_keys_skipped_on_darwin = {
+    expr =
+      let
+        isDarwin = true;
+        rootSshKeys =
+          if isDarwin then
+            [ ]
+          else
+            [
+              "key1"
+              "key2"
+            ];
+      in
+      rootSshKeys;
+    expected = [ ];
+  };
+
+  # ==========================================================================
+  # 7. Option Example/Documentation Tests
+  # ==========================================================================
+
+  test_positions_has_example = {
+    expr = interface.options.positions ? example;
+    expected = true;
+  };
+
+  test_users_has_example = {
+    expr = interface.options.users ? example;
+    expected = true;
+  };
+
+  test_machines_has_example = {
+    expr = interface.options.machines ? example;
+    expected = true;
+  };
+
+  test_homeManager_has_example = {
+    expr = interface.options.homeManager ? example;
+    expected = true;
+  };
+
+  test_user_uid_has_example = {
+    expr = userOpts.uid ? example;
+    expected = true;
+  };
+
+  test_user_defaultPosition_has_example = {
+    expr = userOpts.defaultPosition ? example;
+    expected = true;
+  };
+
+  test_user_defaultShell_has_example = {
+    expr = userOpts.defaultShell ? example;
+    expected = true;
+  };
+
+  test_user_homeProfiles_has_example = {
+    expr = userOpts.homeProfiles ? example;
+    expected = true;
+  };
+
+  test_machine_user_position_has_example = {
+    expr = machineUserOpts.position ? example;
+    expected = true;
+  };
+
+  test_machine_user_shell_has_example = {
+    expr = machineUserOpts.shell ? example;
+    expected = true;
+  };
+
+  test_machine_user_homeProfiles_has_example = {
+    expr = machineUserOpts.homeProfiles ? example;
+    expected = true;
+  };
+
+  test_machine_user_extraHomeProfiles_has_example = {
+    expr = machineUserOpts.extraHomeProfiles ? example;
+    expected = true;
   };
 }

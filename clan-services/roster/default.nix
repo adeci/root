@@ -34,6 +34,292 @@ let
       description = "System service account";
     };
   };
+
+  # Shared module generator parameterized by platform
+  mkPlatformModule =
+    { isDarwin }:
+    settings: machine:
+    {
+      config,
+      lib,
+      pkgs,
+      inputs,
+      ...
+    }:
+    let
+      allPositions = defaultPositions // settings.positions;
+
+      machineConfig = settings.machines.${machine.name} or { users = { }; };
+
+      # =================================================================
+      # Pre-validation: collect all configuration errors for clear reporting
+      # =================================================================
+      machineUserNames = builtins.attrNames machineConfig.users;
+
+      # Find users referenced in machine but not defined globally
+      undefinedUsers = lib.filter (u: !(settings.users ? ${u})) machineUserNames;
+
+      # Find positions that don't exist
+      getPosition =
+        username: machineUserCfg:
+        if machineUserCfg.position != null then
+          machineUserCfg.position
+        else
+          (settings.users.${username} or { }).defaultPosition or null;
+
+      usedPositions = lib.unique (
+        lib.filter (p: p != null) (lib.mapAttrsToList getPosition machineConfig.users)
+      );
+      invalidPositions = lib.filter (p: !(allPositions ? ${p})) usedPositions;
+
+      getUserConfig =
+        username: machineUserConfig:
+        let
+          userDef =
+            settings.users.${username}
+              or (throw "User '${username}' referenced in machine '${machine.name}' but not defined in users");
+
+          effectivePosition =
+            if machineUserConfig.position != null then
+              machineUserConfig.position
+            else if userDef.defaultPosition or null != null then
+              userDef.defaultPosition
+            else
+              throw "No position defined for user '${username}' on machine '${machine.name}'.";
+
+          positionConfig =
+            allPositions.${effectivePosition}
+              or (throw "Unknown position '${effectivePosition}' for user '${username}' on machine '${machine.name}'.");
+
+          effectiveUid = if machineUserConfig.uid != null then machineUserConfig.uid else userDef.uid;
+
+          effectiveGroups =
+            let
+              base = if machineUserConfig.groups != null then machineUserConfig.groups else userDef.groups;
+            in
+            base ++ machineUserConfig.extraGroups;
+
+          effectiveShell =
+            let
+              raw = if machineUserConfig.shell != null then machineUserConfig.shell else userDef.defaultShell;
+            in
+            if raw != null then pkgs.${raw} else null;
+
+          effectiveSshKeys =
+            let
+              base =
+                if machineUserConfig.sshAuthorizedKeys != null then
+                  machineUserConfig.sshAuthorizedKeys
+                else
+                  userDef.sshAuthorizedKeys;
+            in
+            base ++ machineUserConfig.extraSshAuthorizedKeys;
+
+          effectiveHomeProfiles =
+            let
+              base =
+                if machineUserConfig.homeProfiles != null then
+                  machineUserConfig.homeProfiles
+                else
+                  userDef.homeProfiles;
+            in
+            base ++ machineUserConfig.extraHomeProfiles;
+
+          homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
+        in
+        {
+          inherit
+            username
+            userDef
+            positionConfig
+            effectiveUid
+            effectiveGroups
+            effectiveShell
+            effectiveSshKeys
+            effectiveHomeProfiles
+            effectivePosition
+            homeDir
+            ;
+        };
+
+      # Process all users for this machine
+      allUserConfigs = lib.mapAttrs getUserConfig machineConfig.users;
+
+      # Collect users who need passwords (NixOS only)
+      usersNeedingPasswords =
+        if isDarwin then
+          { }
+        else
+          lib.filterAttrs (_: cfg: cfg.positionConfig.generatePassword) allUserConfigs;
+
+      # Collect SSH keys for root from users with sudo access (NixOS only)
+      rootSshKeys =
+        if isDarwin then
+          [ ]
+        else
+          lib.flatten (
+            lib.mapAttrsToList (
+              _: cfg: if cfg.positionConfig.sudoAccess then cfg.effectiveSshKeys else [ ]
+            ) allUserConfigs
+          );
+
+      # Collect users with home-manager profiles
+      usersWithHomeProfiles = lib.filterAttrs (_: cfg: cfg.effectiveHomeProfiles != [ ]) allUserConfigs;
+
+      anyUserHasHomeProfiles = usersWithHomeProfiles != { };
+
+      # Resolve profile path strings to actual imports
+      resolveProfiles = profiles: map (p: import (inputs.self + "/${p}")) profiles;
+
+      # HM module to import
+      hmModule =
+        if isDarwin then
+          inputs.home-manager.darwinModules.home-manager
+        else
+          inputs.home-manager.nixosModules.home-manager;
+
+    in
+    {
+      # Import home-manager module when any user has profiles
+      imports = lib.optionals anyUserHasHomeProfiles [ hmModule ];
+
+      config = lib.mkMerge [
+        # Configuration validation assertions
+        {
+          assertions = [
+            {
+              assertion = undefinedUsers == [ ];
+              message = "Roster: Users referenced in machine '${machine.name}' but not defined: ${builtins.concatStringsSep ", " undefinedUsers}";
+            }
+            {
+              assertion = invalidPositions == [ ];
+              message = "Roster: Unknown positions used in machine '${machine.name}': ${builtins.concatStringsSep ", " invalidPositions}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}";
+            }
+          ];
+        }
+
+        # User accounts
+        {
+          users.users = lib.mapAttrs (
+            username: cfg:
+            lib.mkMerge [
+              # Base configuration (platform-aware)
+              (
+                if isDarwin then
+                  {
+                    name = username;
+                    uid = cfg.effectiveUid;
+                    home = cfg.homeDir;
+                    description = cfg.userDef.description;
+                    openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
+                  }
+                else
+                  {
+                    uid = cfg.effectiveUid;
+                    description = cfg.userDef.description;
+                    isSystemUser = cfg.positionConfig.isSystemUser;
+                    isNormalUser = !cfg.positionConfig.isSystemUser;
+                    createHome = cfg.positionConfig.homeDirectory;
+                    home = if cfg.positionConfig.homeDirectory then cfg.homeDir else "/var/empty";
+                    group = if cfg.positionConfig.isSystemUser then username else "users";
+                    extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.positionConfig.sudoAccess "wheel");
+                    openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
+                  }
+              )
+
+              # Shell configuration
+              (lib.mkIf (cfg.effectiveShell != null) {
+                shell = cfg.effectiveShell;
+              })
+            ]
+          ) allUserConfigs;
+        }
+
+        # NixOS-only: Root SSH access for admins
+        (lib.mkIf (!isDarwin) {
+          users.users.root.openssh.authorizedKeys.keys = rootSshKeys;
+        })
+
+        # NixOS-only: System user groups
+        (lib.mkIf (!isDarwin) {
+          users.groups = lib.mapAttrs' (username: _: lib.nameValuePair username { }) (
+            lib.filterAttrs (_: cfg: cfg.positionConfig.isSystemUser) allUserConfigs
+          );
+        })
+
+        # NixOS-only: Password generators
+        (lib.mkIf (!isDarwin) {
+          clan.core.vars.generators = lib.mapAttrs' (username: _: {
+            name = "user-password-${username}";
+            value = {
+              files.user-password-hash = {
+                neededFor = "users";
+                restartUnits = lib.optional config.services.userborn.enable "userborn.service";
+              };
+              files.user-password.deploy = false;
+
+              prompts.user-password = {
+                display = {
+                  group = username;
+                  label = "password";
+                  required = false;
+                  helperText = "Leave empty to auto-generate a secure password";
+                };
+                type = "hidden";
+                persist = true;
+                description = "Password for user ${username}";
+              };
+
+              share = true;
+
+              runtimeInputs = [
+                pkgs.coreutils
+                pkgs.xkcdpass
+                pkgs.mkpasswd
+              ];
+
+              script = ''
+                prompt_value=$(cat "$prompts"/user-password)
+                if [[ -n "''${prompt_value-}" ]]; then
+                  echo "$prompt_value" | tr -d "\n" > "$out"/user-password
+                else
+                  xkcdpass --numwords 4 --delimiter - --count 1 | tr -d "\n" > "$out"/user-password
+                fi
+                mkpasswd -s -m sha-512 < "$out"/user-password | tr -d "\n" > "$out"/user-password-hash
+              '';
+            };
+          }) usersNeedingPasswords;
+        })
+
+        # NixOS-only: hashed password files
+        (lib.mkIf (!isDarwin) {
+          users.users = lib.mapAttrs (username: _: {
+            hashedPasswordFile =
+              config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
+          }) usersNeedingPasswords;
+        })
+
+        # Home-manager configuration when users have profiles
+        (lib.mkIf anyUserHasHomeProfiles {
+          home-manager = {
+            useGlobalPkgs = settings.homeManager.useGlobalPkgs;
+            useUserPackages = settings.homeManager.useUserPackages;
+            backupFileExtension = lib.mkDefault "backup";
+            extraSpecialArgs = {
+              inherit inputs;
+              rosterMachine = machine.name;
+            };
+
+            users = lib.mapAttrs (username: cfg: {
+              imports = resolveProfiles cfg.effectiveHomeProfiles;
+              home.username = username;
+              home.homeDirectory = cfg.homeDir;
+              home.stateVersion = lib.mkDefault (if isDarwin then "24.11" else config.system.stateVersion);
+            }) usersWithHomeProfiles;
+          };
+        })
+      ];
+    };
 in
 {
   _class = "clan.service";
@@ -132,23 +418,19 @@ in
                     description = "SSH public keys for this user";
                   };
                   defaultShell = lib.mkOption {
-                    type = lib.types.nullOr lib.types.package;
+                    type = lib.types.nullOr lib.types.str;
                     default = null;
-                    example = lib.literalExpression "pkgs.fish";
-                    description = "Default shell package for this user (e.g., pkgs.bash, pkgs.fish, or a custom wrapped shell)";
+                    example = "fish";
+                    description = "Default shell name (e.g., \"fish\", \"zsh\", \"bash\") — resolved to pkgs.\${name} in the generated module";
                   };
-                  packages = lib.mkOption {
-                    type = lib.types.listOf lib.types.package;
+                  homeProfiles = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
                     default = [ ];
-                    example = lib.literalExpression "[ pkgs.git pkgs.vim ]";
-                    description = "Default packages to install for this user on all systems";
-                  };
-                  # Home-manager integration
-                  homeModules = lib.mkOption {
-                    type = lib.types.listOf lib.types.deferredModule;
-                    default = [ ];
-                    example = lib.literalExpression "[ ./home/git.nix ./home/shell.nix ]";
-                    description = "Home-manager modules applied to this user on all machines";
+                    example = [
+                      "home-manager/profiles/base.nix"
+                      "home-manager/profiles/shell.nix"
+                    ];
+                    description = "Home-manager profile paths relative to flake root, imported for this user on all machines";
                   };
                 };
               }
@@ -162,7 +444,8 @@ in
                   description = "Alice";
                   groups = [ "wheel" "video" ];
                   sshAuthorizedKeys = [ "ssh-ed25519 AAAAC3Nza..." ];
-                  defaultShell = pkgs.fish;
+                  defaultShell = "fish";
+                  homeProfiles = [ "home-manager/profiles/base.nix" ];
                 };
               }
             '';
@@ -173,17 +456,6 @@ in
           homeManager = lib.mkOption {
             type = lib.types.submodule {
               options = {
-                module = lib.mkOption {
-                  type = lib.types.nullOr lib.types.deferredModule;
-                  default = null;
-                  description = ''
-                    The home-manager NixOS module to import.
-                    Set this to enable home-manager integration.
-
-                    Example: `inputs.home-manager.nixosModules.home-manager`
-                  '';
-                  example = lib.literalExpression "inputs.home-manager.nixosModules.home-manager";
-                };
                 useGlobalPkgs = lib.mkOption {
                   type = lib.types.bool;
                   default = true;
@@ -194,26 +466,13 @@ in
                   default = true;
                   description = "Whether to install user packages via home-manager";
                 };
-                extraSpecialArgs = lib.mkOption {
-                  type = lib.types.attrs;
-                  default = { };
-                  example = lib.literalExpression "{ inherit inputs; }";
-                  description = "Extra arguments passed to all home-manager modules";
-                };
-                sharedModules = lib.mkOption {
-                  type = lib.types.listOf lib.types.deferredModule;
-                  default = [ ];
-                  example = lib.literalExpression "[ ./home/common.nix ]";
-                  description = "Home-manager modules applied to all users";
-                };
               };
             };
             default = { };
             example = lib.literalExpression ''
               {
-                module = inputs.home-manager.nixosModules.home-manager;
                 useGlobalPkgs = true;
-                sharedModules = [ ./home/common.nix ];
+                useUserPackages = true;
               }
             '';
             description = "Home-manager configuration settings";
@@ -256,10 +515,10 @@ in
                             description = "Additional groups for this user on this machine (adds to default groups)";
                           };
                           shell = lib.mkOption {
-                            type = lib.types.nullOr lib.types.package;
+                            type = lib.types.nullOr lib.types.str;
                             default = null;
-                            example = lib.literalExpression "pkgs.zsh";
-                            description = "Override shell package for this user on this machine";
+                            example = "zsh";
+                            description = "Override shell name for this user on this machine";
                           };
                           sshAuthorizedKeys = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.str);
@@ -273,30 +532,17 @@ in
                             example = [ "ssh-ed25519 AAAAC3Nza... extra-key" ];
                             description = "Additional SSH keys for this user on this machine";
                           };
-                          packages = lib.mkOption {
-                            type = lib.types.nullOr (lib.types.listOf lib.types.package);
+                          homeProfiles = lib.mkOption {
+                            type = lib.types.nullOr (lib.types.listOf lib.types.str);
                             default = null;
-                            example = lib.literalExpression "[ pkgs.docker-compose ]";
-                            description = "Override packages for this user on this machine (replaces default packages)";
+                            example = [ "home-manager/profiles/base.nix" ];
+                            description = "Override home-manager profiles for this user on this machine (replaces defaults)";
                           };
-                          extraPackages = lib.mkOption {
-                            type = lib.types.listOf lib.types.package;
+                          extraHomeProfiles = lib.mkOption {
+                            type = lib.types.listOf lib.types.str;
                             default = [ ];
-                            example = lib.literalExpression "[ pkgs.kubectl ]";
-                            description = "Additional packages for this user on this machine (adds to default packages)";
-                          };
-                          # Home-manager integration
-                          homeModules = lib.mkOption {
-                            type = lib.types.nullOr (lib.types.listOf lib.types.deferredModule);
-                            default = null;
-                            example = lib.literalExpression "[ ./home/server.nix ]";
-                            description = "Override home-manager modules for this user on this machine (replaces default homeModules)";
-                          };
-                          extraHomeModules = lib.mkOption {
-                            type = lib.types.listOf lib.types.deferredModule;
-                            default = [ ];
-                            example = lib.literalExpression "[ ./home/workstation.nix ]";
-                            description = "Additional home-manager modules for this user on this machine (adds to default homeModules)";
+                            example = [ "home-manager/profiles/dev.nix" ];
+                            description = "Additional home-manager profiles for this user on this machine (adds to defaults)";
                           };
                         };
                       }
@@ -311,9 +557,9 @@ in
             example = lib.literalExpression ''
               {
                 server1 = {
-                  users.alice = { };  # Use defaults from user definition
+                  users.alice = { };
                   users.bob = {
-                    position = "admin";  # Override position
+                    position = "admin";
                     extraGroups = [ "docker" ];
                   };
                 };
@@ -327,316 +573,16 @@ in
     perInstance =
       { settings, machine, ... }:
       {
-        nixosModule =
-          # We need to structure this carefully:
-          # 1. imports must be at module level, not inside config
-          # 2. We can't conditionally import based on runtime values
-          # So we build the module structure with imports at the top level
-          {
-            config,
-            lib,
-            pkgs,
-            ...
-          }:
-          let
-            allPositions = defaultPositions // settings.positions;
-
-            machineConfig = settings.machines.${machine.name} or { users = { }; };
-
-            # Home-manager is enabled when the module is provided
-            homeManagerEnabled = settings.homeManager.module != null;
-
-            # =================================================================
-            # Pre-validation: collect all configuration errors for clear reporting
-            # =================================================================
-            machineUserNames = builtins.attrNames machineConfig.users;
-
-            # Find users referenced in machine but not defined globally
-            undefinedUsers = lib.filter (u: !(settings.users ? ${u})) machineUserNames;
-
-            # Find positions that don't exist (from both user defaults and machine overrides)
-            # Note: handles undefined users gracefully (they're caught by separate assertion)
-            getPosition =
-              username: machineUserCfg:
-              if machineUserCfg.position != null then
-                machineUserCfg.position
-              else
-                (settings.users.${username} or { }).defaultPosition or null;
-
-            usedPositions = lib.unique (
-              lib.filter (p: p != null) (lib.mapAttrsToList getPosition machineConfig.users)
-            );
-            invalidPositions = lib.filter (p: !(allPositions ? ${p})) usedPositions;
-
-            getUserConfig =
-              username: machineUserConfig:
-              let
-                userDef =
-                  settings.users.${username}
-                    or (throw "User '${username}' referenced in machine '${machine.name}' but not defined in users");
-
-                # Determine effective position (machine override takes precedence)
-                effectivePosition =
-                  if machineUserConfig.position != null then
-                    machineUserConfig.position
-                  else if userDef.defaultPosition or null != null then
-                    userDef.defaultPosition
-                  else
-                    throw "No position defined for user '${username}' on machine '${machine.name}'. Either set defaultPosition in user definition or provide position in machine assignment.";
-
-                # Look up position config (will throw if position doesn't exist)
-                positionConfig =
-                  allPositions.${effectivePosition}
-                    or (throw "Unknown position '${effectivePosition}' for user '${username}' on machine '${machine.name}'. Available positions: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}");
-
-                # =================================================================
-                # Override Resolution Pattern:
-                # For list-type options (groups, sshKeys, packages, homeModules):
-                #   - If machine.<option> is set: use it (replaces user default entirely)
-                #   - Otherwise: use user default
-                #   - In both cases: append machine.extra<Option> to the result
-                #
-                # This allows:
-                #   - Full override: set groups = [...] on machine user
-                #   - Additive only: leave groups null, set extraGroups = [...]
-                # =================================================================
-
-                effectiveUid = if machineUserConfig.uid != null then machineUserConfig.uid else userDef.uid;
-
-                effectiveGroups =
-                  let
-                    base = if machineUserConfig.groups != null then machineUserConfig.groups else userDef.groups;
-                  in
-                  base ++ machineUserConfig.extraGroups;
-
-                effectiveShell =
-                  if machineUserConfig.shell != null then machineUserConfig.shell else userDef.defaultShell;
-
-                effectiveSshKeys =
-                  let
-                    base =
-                      if machineUserConfig.sshAuthorizedKeys != null then
-                        machineUserConfig.sshAuthorizedKeys
-                      else
-                        userDef.sshAuthorizedKeys;
-                  in
-                  base ++ machineUserConfig.extraSshAuthorizedKeys;
-
-                effectivePackages =
-                  let
-                    base =
-                      if machineUserConfig.packages != null then
-                        machineUserConfig.packages
-                      else
-                        (userDef.packages or [ ]);
-                  in
-                  base ++ machineUserConfig.extraPackages;
-
-                effectiveHomeModules =
-                  let
-                    base =
-                      if machineUserConfig.homeModules != null then
-                        machineUserConfig.homeModules
-                      else
-                        userDef.homeModules;
-                  in
-                  base ++ machineUserConfig.extraHomeModules;
-
-              in
-              {
-                inherit username userDef positionConfig;
-                inherit
-                  effectiveUid
-                  effectiveGroups
-                  effectiveShell
-                  effectiveSshKeys
-                  effectivePackages
-                  effectiveHomeModules
-                  ;
-                inherit effectivePosition;
-              };
-
-            # Process all users for this machine
-            allUserConfigs = lib.mapAttrs getUserConfig machineConfig.users;
-
-            # Collect users who need passwords
-            usersNeedingPasswords = lib.filterAttrs (
-              _: cfg: cfg.positionConfig.generatePassword
-            ) allUserConfigs;
-
-            # Collect SSH keys for root from users with sudo access
-            rootSshKeys = lib.flatten (
-              lib.mapAttrsToList (
-                _: cfg: if cfg.positionConfig.sudoAccess then cfg.effectiveSshKeys else [ ]
-              ) allUserConfigs
-            );
-
-            # Collect users with home-manager modules
-            usersWithHomeModules = lib.filterAttrs (_: cfg: cfg.effectiveHomeModules != [ ]) allUserConfigs;
-
-            anyUserHasHomeModules = usersWithHomeModules != { };
-
-            usersWithHomeModulesList = builtins.attrNames usersWithHomeModules;
-
-          in
-          {
-            # Import home-manager module when enabled
-            imports = lib.optionals homeManagerEnabled [ settings.homeManager.module ];
-
-            config = lib.mkMerge [
-              # Configuration validation assertions
-              {
-                assertions = [
-                  {
-                    assertion = undefinedUsers == [ ];
-                    message = "Roster: Users referenced in machine '${machine.name}' but not defined: ${builtins.concatStringsSep ", " undefinedUsers}";
-                  }
-                  {
-                    assertion = invalidPositions == [ ];
-                    message = "Roster: Unknown positions used in machine '${machine.name}': ${builtins.concatStringsSep ", " invalidPositions}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}";
-                  }
-                ];
-              }
-
-              # User accounts
-              {
-                users.users = lib.mapAttrs (
-                  username: cfg:
-                  lib.mkMerge [
-                    # Base configuration
-                    {
-                      uid = cfg.effectiveUid;
-                      description = cfg.userDef.description;
-                      isSystemUser = cfg.positionConfig.isSystemUser;
-                      isNormalUser = !cfg.positionConfig.isSystemUser;
-                      createHome = cfg.positionConfig.homeDirectory;
-                      home = if cfg.positionConfig.homeDirectory then "/home/${username}" else "/var/empty";
-                      group = if cfg.positionConfig.isSystemUser then username else "users";
-                      extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.positionConfig.sudoAccess "wheel");
-                      openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
-                    }
-
-                    # Shell configuration
-                    (lib.mkIf (cfg.effectiveShell != null) {
-                      shell = cfg.effectiveShell;
-                    })
-
-                    # Password configuration
-                    (lib.mkIf cfg.positionConfig.generatePassword {
-                      hashedPasswordFile =
-                        config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
-                    })
-
-                    # Packages configuration
-                    (lib.mkIf (cfg.effectivePackages != [ ]) {
-                      packages = cfg.effectivePackages;
-                    })
-                  ]
-                ) allUserConfigs;
-              }
-
-              # Root SSH access for admins
-              {
-                users.users.root.openssh.authorizedKeys.keys = rootSshKeys;
-              }
-
-              # System user groups (system users need their own group)
-              {
-                users.groups = lib.mapAttrs' (username: _: lib.nameValuePair username { }) (
-                  lib.filterAttrs (_: cfg: cfg.positionConfig.isSystemUser) allUserConfigs
-                );
-              }
-
-              # Password generators
-              {
-                clan.core.vars.generators = lib.mapAttrs' (username: _: {
-                  name = "user-password-${username}";
-                  value = {
-                    files.user-password-hash = {
-                      neededFor = "users";
-                      restartUnits = lib.optional config.services.userborn.enable "userborn.service";
-                    };
-                    files.user-password.deploy = false;
-
-                    prompts.user-password = {
-                      display = {
-                        group = username;
-                        label = "password";
-                        required = false;
-                        helperText = "Leave empty to auto-generate a secure password";
-                      };
-                      type = "hidden";
-                      persist = true;
-                      description = "Password for user ${username}";
-                    };
-
-                    share = true; # Same password across all machines
-
-                    runtimeInputs = [
-                      pkgs.coreutils
-                      pkgs.xkcdpass
-                      pkgs.mkpasswd
-                    ];
-
-                    script = ''
-                      prompt_value=$(cat "$prompts"/user-password)
-                      if [[ -n "''${prompt_value-}" ]]; then
-                        echo "$prompt_value" | tr -d "\n" > "$out"/user-password
-                      else
-                        xkcdpass --numwords 4 --delimiter - --count 1 | tr -d "\n" > "$out"/user-password
-                      fi
-                      mkpasswd -s -m sha-512 < "$out"/user-password | tr -d "\n" > "$out"/user-password-hash
-                    '';
-                  };
-                }) usersNeedingPasswords;
-              }
-
-              # Warning when home-manager modules are configured but module not provided
-              (lib.mkIf (anyUserHasHomeModules && !homeManagerEnabled) {
-                warnings = [
-                  ''
-                    Roster: Home-manager modules are configured for users [${builtins.concatStringsSep ", " usersWithHomeModulesList}]
-                    on machine '${machine.name}', but homeManager.module is not set.
-
-                    To enable home-manager support, add to your roster settings:
-                      homeManager.module = inputs.home-manager.nixosModules.home-manager;
-
-                    The homeModules configuration will be ignored until this is set.
-                  ''
-                ];
-              })
-
-              # Home-manager configuration when enabled and users have modules
-              (lib.mkIf (anyUserHasHomeModules && homeManagerEnabled) {
-                home-manager = {
-                  useGlobalPkgs = settings.homeManager.useGlobalPkgs;
-                  useUserPackages = settings.homeManager.useUserPackages;
-                  backupFileExtension = lib.mkDefault "backup";
-                  extraSpecialArgs = settings.homeManager.extraSpecialArgs // {
-                    # Inject roster context for home modules to use
-                    rosterMachine = machine.name;
-                  };
-                  sharedModules = settings.homeManager.sharedModules;
-
-                  users = lib.mapAttrs (username: cfg: {
-                    imports = cfg.effectiveHomeModules;
-                    home.username = username;
-                    home.homeDirectory = "/home/${username}";
-                    # Match NixOS stateVersion by default for consistency
-                    home.stateVersion = lib.mkDefault config.system.stateVersion;
-                  }) usersWithHomeModules;
-                };
-              })
-            ];
-          };
+        nixosModule = mkPlatformModule { isDarwin = false; } settings machine;
+        darwinModule = mkPlatformModule { isDarwin = true; } settings machine;
       };
   };
 
   # Applied to all machines regardless of instance
   perMachine = {
     nixosModule = {
-      # Immutable users to ensure roster has exclusive control over user management
       users.mutableUsers = false;
     };
+    darwinModule = { };
   };
 }

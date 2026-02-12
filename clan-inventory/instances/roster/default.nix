@@ -1,11 +1,4 @@
-{ inputs, ... }:
-let
-  pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
-  dotpkgs = import ../../../dotpkgs { inherit pkgs inputs; };
-
-  users = import ./users.nix { inherit pkgs dotpkgs; };
-  machines = import ./machines.nix;
-in
+{ ... }:
 {
   roster = {
     module = {
@@ -15,11 +8,8 @@ in
     roles.default = {
       tags.all = { };
       settings = {
-        inherit users machines;
-        homeManager.module = inputs.home-manager.nixosModules.home-manager;
-        homeManager.extraSpecialArgs = {
-          inherit inputs;
-        };
+        users = import ./users.nix;
+        machines = import ./machines.nix;
       };
     };
   };

@@ -1,6 +1,6 @@
 # Roster - Hierarchical User Management for Clan
 
-A Clan service module that provides centralized, position-based user management across your fleet.
+A Clan service module that provides centralized, position-based user management across your fleet, with first-class support for both NixOS and Darwin.
 
 ## Why Roster?
 
@@ -15,6 +15,7 @@ A Clan service module that provides centralized, position-based user management 
 | **Permission Model** | Groups only           | Admin only            | Position hierarchy                 |
 | **UID Management**   | Per-instance          | Per-instance          | Consistent across fleet            |
 | **Override Pattern** | Redefine entirely     | Redefine entirely     | Inherit + override specific fields |
+| **Platform Support** | NixOS only            | NixOS only            | NixOS + Darwin                     |
 
 ## Core Concepts
 
@@ -24,10 +25,10 @@ Built-in permission levels that control user privileges:
 
 | Position  | Sudo | Password Gen | Home Dir | Type   | Purpose                       |
 | --------- | ---- | ------------ | -------- | ------ | ----------------------------- |
-| `owner`   | ✅   | ✅           | ✅       | Normal | Primary machine administrator |
-| `admin`   | ✅   | ✅           | ✅       | Normal | Secondary administrators      |
-| `basic`   | ❌   | ✅           | ✅       | Normal | Regular users                 |
-| `service` | ❌   | ❌           | ❌       | System | Service accounts              |
+| `owner`   | Yes  | Yes          | Yes      | Normal | Primary machine administrator |
+| `admin`   | Yes  | Yes          | Yes      | Normal | Secondary administrators      |
+| `basic`   | No   | Yes          | Yes      | Normal | Regular users                 |
+| `service` | No   | No           | No       | System | Service accounts              |
 
 ### Configuration Structure
 
@@ -39,6 +40,7 @@ Built-in permission levels that control user privileges:
       input = "self";
     };
     roles.default = {
+      tags.all = { };
       settings = {
         # Optional: Define custom positions
         positions = {
@@ -50,7 +52,7 @@ Built-in permission levels that control user privileges:
           };
         };
 
-        # Step 1: Define users ONCE
+        # Step 1: Define users ONCE (all JSON-serializable)
         users = {
           alice = {
             uid = 1001;
@@ -58,9 +60,10 @@ Built-in permission levels that control user privileges:
             description = "Alice Smith";
             groups = ["networkmanager" "docker"];
             sshAuthorizedKeys = ["ssh-ed25519 AAAA..."];
-            defaultShell = pkgs.fish;  # Or your custom wrapped shell package
-            packages = with pkgs; [  # Default packages on all machines
-              git vim htop tmux
+            defaultShell = "fish";  # Resolved to pkgs.fish in the generated module
+            homeProfiles = [
+              "home-manager/profiles/base.nix"
+              "home-manager/profiles/shell.nix"
             ];
           };
         };
@@ -78,12 +81,10 @@ Built-in permission levels that control user privileges:
               alice = {
                 position = "admin";  # Override position for this machine
                 extraGroups = ["libvirtd"];  # Add extra groups
-                shell = pkgs.bash;  # Override shell with different package
-                extraPackages = with pkgs; [  # Add packages to defaults
-                  docker-compose kubectl
+                shell = "bash";  # Override shell
+                extraHomeProfiles = [
+                  "home-manager/profiles/dev.nix"
                 ];
-                # Or replace all packages entirely:
-                # packages = with pkgs; [ git neovim ];
               };
             };
           };
@@ -96,6 +97,19 @@ Built-in permission levels that control user privileges:
 
 ## Features
 
+### Dual Platform Support
+
+Roster generates both `nixosModule` and `darwinModule`, handling platform differences automatically:
+
+| Concern         | NixOS                         | Darwin                |
+| --------------- | ----------------------------- | --------------------- |
+| Home directory  | `/home/<user>`                | `/Users/<user>`       |
+| User type       | `isNormalUser`/`isSystemUser` | Not set               |
+| Password gen    | Enabled via `clan.core.vars`  | Skipped               |
+| `mutableUsers`  | `false`                       | Not set               |
+| Root SSH keys   | Collected from sudo users     | Skipped               |
+| HM stateVersion | `config.system.stateVersion`  | `"24.11"` (hardcoded) |
+
 ### Machine-Specific Overrides
 
 Override any user property per machine:
@@ -104,38 +118,26 @@ Override any user property per machine:
 - `uid` - Different UID (rare, but supported)
 - `groups` - Replace default groups entirely
 - `extraGroups` - Add groups to defaults
-- `shell` - Different shell on this machine
+- `shell` - Different shell on this machine (string name)
 - `sshAuthorizedKeys` - Replace SSH keys
 - `extraSshAuthorizedKeys` - Add SSH keys to defaults
-- `packages` - Replace default packages entirely
-- `extraPackages` - Add packages to defaults
-- `homeModules` - Replace home-manager modules entirely
-- `extraHomeModules` - Add home-manager modules to defaults
+- `homeProfiles` - Replace home-manager profiles entirely
+- `extraHomeProfiles` - Add home-manager profiles to defaults
 
-### Custom Shell Packages
+### Shell Resolution
 
-Since shells are defined as package references, you can easily use custom wrapped shells:
+Shells are specified as string names (e.g., `"fish"`, `"zsh"`, `"bash"`) and resolved to `pkgs.${name}` inside the generated NixOS/Darwin module. This keeps the interface JSON-serializable while supporting all standard shells.
 
-```nix
-users.alice = {
-  # Use a custom fish with plugins
-  defaultShell = pkgs.fish.overrideAttrs (old: {
-    # Your customizations
-  });
+### Profile Resolution
 
-  # Or reference a custom shell package defined elsewhere
-  defaultShell = myCustomZsh;
-
-  # The custom shell package will be used directly
-  # No need to include it in packages list
-};
-```
+Home-manager profiles are specified as **full relative paths from the flake root** (e.g., `"home-manager/profiles/base.nix"`). They are resolved to `import (inputs.self + "/${path}")` inside the generated module.
 
 ### Automatic Features
 
-- **Password Generation**: Based on position's `generatePassword` flag
-- **Root SSH Access**: Users with `sudoAccess = true` get SSH keys added to root
-- **Immutable Users**: Sets `users.mutableUsers = false` for security
+- **Password Generation**: Based on position's `generatePassword` flag (NixOS only)
+- **Root SSH Access**: Users with `sudoAccess = true` get SSH keys added to root (NixOS only)
+- **Immutable Users**: Sets `users.mutableUsers = false` for security (NixOS only)
+- **Home-Manager Integration**: Automatically imports HM module when users have profiles
 
 ### Configuration Precedence
 
@@ -145,14 +147,7 @@ users.alice = {
 
 ### Home-Manager Integration
 
-Roster provides optional, first-class home-manager support. Define home-manager modules per user with machine-specific overrides.
-
-**Requirements**: Add `home-manager` to your flake inputs:
-
-```nix
-inputs.home-manager.url = "github:nix-community/home-manager";
-inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
-```
+Roster provides optional, first-class home-manager support. Define profile paths per user with machine-specific overrides.
 
 **Per-User Configuration**:
 
@@ -160,14 +155,9 @@ inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 users.alice = {
   uid = 1001;
   defaultPosition = "owner";
-
-  # Home-manager modules applied on all machines
-  homeModules = [
-    ./users/alice/home.nix
-    ./users/alice/git.nix
-    ({ pkgs, ... }: {
-      home.packages = [ pkgs.ripgrep ];
-    })
+  homeProfiles = [
+    "home-manager/profiles/base.nix"
+    "home-manager/profiles/shell.nix"
   ];
 };
 ```
@@ -177,10 +167,8 @@ users.alice = {
 ```nix
 machines.desktop = {
   users.alice = {
-    # Add extra modules (merged with defaults)
-    extraHomeModules = [
-      ./users/alice/desktop.nix
-      ./users/alice/gui-apps.nix
+    extraHomeProfiles = [
+      "home-manager/profiles/dev.nix"
     ];
   };
 };
@@ -188,8 +176,8 @@ machines.desktop = {
 machines.server = {
   users.alice = {
     # Override entirely (replaces defaults)
-    homeModules = [
-      ./users/alice/server-minimal.nix
+    homeProfiles = [
+      "home-manager/profiles/server.nix"
     ];
   };
 };
@@ -201,17 +189,15 @@ machines.server = {
 homeManager = {
   useGlobalPkgs = true;      # Use system nixpkgs (recommended)
   useUserPackages = true;    # Install packages to user profile
-  extraSpecialArgs = { };    # Extra args for all home modules
-  sharedModules = [ ];       # Modules applied to ALL users
 };
 ```
 
 **Context Available in Home Modules**:
 
-Home modules receive `rosterMachine` in their arguments:
+Home modules receive `inputs` and `rosterMachine` in their arguments:
 
 ```nix
-{ rosterMachine, ... }:
+{ inputs, rosterMachine, ... }:
 {
   home.sessionVariables.MACHINE = rosterMachine;
 }
@@ -219,6 +205,6 @@ Home modules receive `rosterMachine` in their arguments:
 
 **Conditional Behavior**:
 
-- If no users have `homeModules`, home-manager is not imported
-- If `homeModules` exist but `home-manager` input is missing, a warning is shown
-- Only users with non-empty `effectiveHomeModules` get home-manager configuration
+- If no users have `homeProfiles`, home-manager is not imported
+- Only users with non-empty profiles get home-manager configuration
+- The HM module (`nixosModules.home-manager` or `darwinModules.home-manager`) is selected automatically based on platform
