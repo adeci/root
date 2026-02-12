@@ -35,25 +35,7 @@
   };
 
   outputs =
-    inputs@{
-      self,
-      clan-core,
-      nixpkgs,
-      ...
-    }:
-    let
-      clan = clan-core.lib.clan {
-        inherit self;
-        meta.name = "adeci";
-        meta.domain = "adeci";
-        inventory = import ./clan-inventory {
-          lib = nixpkgs.lib;
-          inherit inputs;
-        };
-        modules = import ./clan-services { inherit nixpkgs inputs; };
-        specialArgs = { inherit inputs; };
-      };
-    in
+    inputs@{ clan-core, ... }:
     clan-core.inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [
         "x86_64-linux"
@@ -63,48 +45,12 @@
       ];
 
       imports = [
+        ./clan.nix
+        ./packages.nix
+        ./home-configurations.nix
         ./formatter.nix
         ./devshell.nix
         ./clan-services/roster/flake-module.nix
       ];
-
-      perSystem =
-        { pkgs, ... }:
-        {
-          packages = builtins.mapAttrs (_: v: if v ? wrapper then v.wrapper else v) (
-            import ./dotpkgs { inherit pkgs inputs; }
-          );
-        };
-
-      flake = {
-        inherit (clan.config)
-          nixosConfigurations
-          darwinConfigurations
-          nixosModules
-          clanInternals
-          ;
-        clan = clan.config;
-        clanModules = import ./clan-services { inherit nixpkgs inputs; };
-
-        homeConfigurations.alex = inputs.home-manager.lib.homeManagerConfiguration {
-          pkgs = import nixpkgs {
-            system = "x86_64-linux";
-            config.allowUnfree = true;
-          };
-          extraSpecialArgs = {
-            inherit inputs;
-          };
-          modules = [
-            ./home-manager/profiles/base.nix
-            ./home-manager/profiles/shell.nix
-            ./home-manager/profiles/dev.nix
-            {
-              home.username = "alex";
-              home.homeDirectory = "/home/alex";
-              home.stateVersion = "24.11";
-            }
-          ];
-        };
-      };
     };
 }
