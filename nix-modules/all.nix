@@ -1,11 +1,4 @@
-{ inputs, pkgs, ... }:
-let
-  dotpkgs = import ../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
-in
+{ pkgs, ... }:
 {
   nixpkgs.config.allowUnfree = true;
 
@@ -17,25 +10,9 @@ in
     };
   };
 
-  environment.systemPackages =
-    with pkgs;
-    [
-      git
-      kitty.terminfo
-      ripgrep
-      fd
-      eza
-      bat
-      wget
-      unzip
-      unrar
-      fzf
-      tmux # TODO: wrap me!
-    ]
-    ++ [
-      dotpkgs.btop
-      dotpkgs.nixvim
-    ];
+  environment.systemPackages = [
+    pkgs.kitty.terminfo
+  ];
 
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {

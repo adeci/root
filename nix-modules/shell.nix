@@ -1,26 +1,4 @@
-{ inputs, pkgs, ... }:
-let
-  dotpkgs = import ../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
-in
-{
-
-  environment.systemPackages = [
-    pkgs.atuin
-    dotpkgs.starship
-
-    # clan autocompletions
-    pkgs.python3Packages.argcomplete
-  ];
-
-  # Fish shell enabled system-wide (configuration is in home-manager)
+_: {
+  # Fish shell enabled system-wide (registers as valid login shell)
   programs.fish.enable = true;
-
-  programs.zoxide = {
-    enable = true;
-    enableFishIntegration = true;
-  };
 }

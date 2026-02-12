@@ -89,13 +89,19 @@
         clanModules = import ./clan-services { inherit nixpkgs inputs; };
 
         homeConfigurations.alex = inputs.home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          pkgs = import nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
+          extraSpecialArgs = {
+            inherit inputs;
+          };
           modules = [
-            ./home-manager/git.nix
-            ./home-manager/fish.nix
+            ./home-manager/profiles/base.nix
+            ./home-manager/profiles/shell.nix
+            ./home-manager/profiles/dev.nix
+            ./home-manager/profiles/linux.nix
             {
-              home.username = "alex";
-              home.homeDirectory = "/home/alex";
               home.stateVersion = "24.11";
             }
           ];

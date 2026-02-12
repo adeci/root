@@ -21,6 +21,9 @@ in
       settings = {
         inherit users machines;
         homeManager.module = inputs.home-manager.nixosModules.home-manager;
+        homeManager.extraSpecialArgs = {
+          inherit inputs;
+        };
       };
     };
   };

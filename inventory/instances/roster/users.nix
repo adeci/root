@@ -17,13 +17,11 @@
     ];
     defaultPosition = "owner";
     defaultShell = pkgs.fish;
-    packages = [
-      # dotpkgs.git
-      dotpkgs.starship
-    ];
     homeModules = [
-      ../../../home-manager/git.nix
-      ../../../home-manager/fish.nix
+      ../../../home-manager/profiles/base.nix
+      ../../../home-manager/profiles/shell.nix
+      ../../../home-manager/profiles/dev.nix
+      ../../../home-manager/profiles/linux.nix
     ];
   };
 
