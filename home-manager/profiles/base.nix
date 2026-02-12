@@ -1,10 +1,6 @@
 { pkgs, inputs, ... }:
 let
-  dotpkgs = import ../../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
+  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
 in
 {
   imports = [
@@ -25,7 +21,7 @@ in
       git
     ]
     ++ [
-      dotpkgs.btop
+      dotpkgs.btop.wrapper
       dotpkgs.nixvim
     ];
 }

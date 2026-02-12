@@ -4,6 +4,10 @@
   ...
 }:
 {
+  imports = [
+    ../swayosd.nix
+  ];
+
   home.username = lib.mkDefault "alex";
   home.homeDirectory = lib.mkDefault "/home/alex";
 

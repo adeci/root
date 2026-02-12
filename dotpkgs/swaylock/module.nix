@@ -1,7 +1,7 @@
 { pkgs, wrappers, ... }:
 {
-  swaylock =
-    (wrappers.wrapperModules.swaylock.apply {
+  swaylock = (
+    wrappers.wrapperModules.swaylock.apply {
       inherit pkgs;
 
       settings = {
@@ -17,5 +17,6 @@
         text-color = "c0caf5";
       };
 
-    }).wrapper;
+    }
+  );
 }

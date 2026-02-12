@@ -1,10 +1,47 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
 
-  wrappers = inputs.adeci-wrappers;
-  praxis-waybar = (import ./modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
-  praxis-swayosd = (import ./modules/swayosd/module.nix { inherit pkgs wrappers; }).swayosd;
+  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
+
+  praxis-waybar =
+    (dotpkgs.waybar.apply {
+      settings = {
+        network.interface = "wlp195s0";
+        modules-right = lib.mkForce [
+          "network"
+          "network#wwan"
+          "bluetooth"
+          "custom/cpu"
+          "custom/gpu"
+          "memory"
+          "backlight"
+          "pulseaudio"
+          "custom/battery"
+          "clock"
+        ];
+        "network#wwan" = {
+          interface = "wwp197s0f4u1i4";
+          format = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
+          format-wifi = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
+          format-ethernet = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
+          format-linked = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
+          format-disconnected = "C ↓ ----/s ↑ ----/s";
+          format-disabled = "C ↓ ----/s ↑ ----/s";
+          tooltip = true;
+          tooltip-format = "{ifname} {ipaddr}";
+          tooltip-format-disconnected = "Disconnected";
+          tooltip-format-disabled = "Disabled";
+          on-click = "modem-manager-gui";
+          interval = 1;
+        };
+      };
+    }).wrapper;
 
 in
 {
@@ -12,8 +49,6 @@ in
   imports = [
 
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
-
-    ./modules/gpdp4-patches.nix
 
     ../../nix-modules/all.nix
     ../../nix-modules/dev.nix
@@ -41,7 +76,6 @@ in
     ]
     ++ [
       praxis-waybar
-      praxis-swayosd
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring
@@ -126,6 +160,34 @@ in
       "root"
       "alex"
     ];
+  };
+
+  # Fix gpd pocket 4 USB devices blocking suspend
+  # Keep keyboard always-on but disable wakeup
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="000c", ATTR{power/wakeup}="disabled", ATTR{power/control}="on"
+  '';
+
+  # Disable USB controller wakeup to prevent wakes from suspend
+  systemd.services.disable-usb-wakeup = {
+    description = "Disable XHC0 USB controller wakeup";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'echo XHC0 > /proc/acpi/wakeup'";
+      RemainAfterExit = true;
+    };
+  };
+
+  # Run to fix intermittent touchscreen breakage after suspension
+  systemd.services.fix-touchscreen = {
+    description = "Manually reload i2c_hid_acpi module to fix touchscreen";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStartPre = "${pkgs.kmod}/bin/modprobe -r i2c_hid_acpi";
+      ExecStart = "${pkgs.kmod}/bin/modprobe i2c_hid_acpi";
+    };
   };
 
 }

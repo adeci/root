@@ -1,14 +1,14 @@
 { inputs, pkgs, ... }:
 
 let
-  dotpkgs = import ../../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
-  wrappers = inputs.adeci-wrappers;
-  modus-waybar = (import ../modus/modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
-  modus-swayosd = (import ../modus/modules/swayosd/module.nix { inherit pkgs wrappers; }).swayosd;
+  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
+
+  aegis-waybar =
+    (dotpkgs.waybar.apply {
+      settings = {
+        network.interface = "wlan0";
+      };
+    }).wrapper;
 in
 {
   networking = {
@@ -36,8 +36,7 @@ in
       firefox
     ]
     ++ [
-      modus-waybar
-      modus-swayosd
+      aegis-waybar
     ];
 
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
@@ -45,7 +44,7 @@ in
     owner = "root";
     group = "root";
     capabilities = "cap_perfmon+ep";
-    source = "${dotpkgs.btop}/bin/btop";
+    source = "${dotpkgs.btop.wrapper}/bin/btop";
   };
 
   # Enable Intel graphics acceleration for Sandy Bridge

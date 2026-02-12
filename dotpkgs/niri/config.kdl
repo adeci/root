@@ -207,7 +207,7 @@ layout {
 
 spawn-at-startup "waybar"
 spawn-at-startup "mako"
-spawn-at-startup "swayosd-server"
+// swayosd-server is managed by home-manager systemd service
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"

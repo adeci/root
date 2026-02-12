@@ -1,9 +1,10 @@
 {
   pkgs,
-  wrappers,
-  nixvim,
+  inputs,
 }:
 let
+  wrappers = inputs.wrappers;
+  nixvim = inputs.nixvim;
   moduleDirs = builtins.attrNames (
     pkgs.lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./.)
   );

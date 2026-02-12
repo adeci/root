@@ -20,9 +20,10 @@ let
   '';
 in
 {
-  sway =
-    (wrappers.wrapperModules.sway.apply {
+  sway = (
+    wrappers.wrapperModules.sway.apply {
       inherit pkgs;
       configFile.path = swayConfig;
-    }).wrapper;
+    }
+  );
 }

@@ -1,26 +1,5 @@
 {
   "nodes": {
-    "adeci-wrappers": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1764070467,
-        "narHash": "sha256-z4PVKbOae+L4rQv76hOmEFRXNVsWi3AMEI9/CwehOfc=",
-        "owner": "adeci",
-        "repo": "wrappers",
-        "rev": "4417c33df576d45c09e5a6484fbe4f14b33ede6e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "ref": "adeci-wrappers",
-        "repo": "wrappers",
-        "type": "github"
-      }
-    },
     "clan-core": {
       "inputs": {
         "data-mesher": "data-mesher",
@@ -348,7 +327,6 @@
     },
     "root": {
       "inputs": {
-        "adeci-wrappers": "adeci-wrappers",
         "clan-core": "clan-core",
         "devblog": "devblog",
         "grub2-themes": "grub2-themes",
@@ -358,7 +336,8 @@
         "nixpkgs-master": "nixpkgs-master",
         "nixvim": "nixvim",
         "trader-rs": "trader-rs",
-        "treefmt-nix": "treefmt-nix_4"
+        "treefmt-nix": "treefmt-nix_4",
+        "wrappers": "wrappers"
       }
     },
     "rust-overlay": {
@@ -557,6 +536,26 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "wrappers": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1770311206,
+        "narHash": "sha256-gzTvuaJZaymgxQC4rOZ9HlMRRWHVF2moEEaTnCG556A=",
+        "owner": "adeci",
+        "repo": "wrappers",
+        "rev": "241f2f7dfcac0dbb2338105bdba7f03f412c5847",
+        "type": "github"
+      },
+      "original": {
+        "owner": "adeci",
+        "repo": "wrappers",
         "type": "github"
       }
     }

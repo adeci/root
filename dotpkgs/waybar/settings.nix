@@ -8,11 +8,11 @@
 
   modules-right = [
     "network"
-    "network#wwan"
     "bluetooth"
     "custom/cpu"
     "custom/gpu"
     "memory"
+    "disk"
     "backlight"
     "pulseaudio"
     "custom/battery"
@@ -24,7 +24,6 @@
   };
 
   network = {
-    interface = "wlp195s0";
     format = "W ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
     format-wifi = "W ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
     format-ethernet = "W ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
@@ -38,22 +37,6 @@
     tooltip-format-disconnected = "Disconnected";
     tooltip-format-disabled = "Disabled";
     on-click = "nmgui";
-    interval = 1;
-  };
-
-  "network#wwan" = {
-    interface = "wwp197s0f4u1i4";
-    format = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-    format-wifi = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-    format-ethernet = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-    format-linked = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-    format-disconnected = "C ↓ ----/s ↑ ----/s";
-    format-disabled = "C ↓ ----/s ↑ ----/s";
-    tooltip = true;
-    tooltip-format = "{ifname} {ipaddr}";
-    tooltip-format-disconnected = "Disconnected";
-    tooltip-format-disabled = "Disabled";
-    on-click = "modem-manager-gui";
     interval = 1;
   };
 

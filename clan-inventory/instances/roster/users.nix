@@ -62,7 +62,7 @@
     defaultPosition = "owner";
     defaultShell = pkgs.fish;
     packages = [
-      dotpkgs.starship
+      dotpkgs.starship.wrapper
     ];
     homeModules = [
       ../../../home-manager/git.nix

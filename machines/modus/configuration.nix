@@ -2,9 +2,14 @@
 
 let
 
-  wrappers = inputs.adeci-wrappers;
-  modus-waybar = (import ./modules/waybar/module.nix { inherit pkgs wrappers; }).waybar;
-  modus-swayosd = (import ./modules/swayosd/module.nix { inherit pkgs wrappers; }).swayosd;
+  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
+
+  modus-waybar =
+    (dotpkgs.waybar.apply {
+      settings = {
+        network.interface = "wlp1s0";
+      };
+    }).wrapper;
 
   grubWallpaper = pkgs.fetchurl {
     name = "nixos-grub-wallpaper.jpg";
@@ -45,7 +50,6 @@ in
     ]
     ++ [
       modus-waybar
-      modus-swayosd
     ];
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring

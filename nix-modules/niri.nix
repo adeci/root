@@ -5,11 +5,7 @@
   ...
 }:
 let
-  dotpkgs = import ../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
+  dotpkgs = import ../dotpkgs { inherit pkgs inputs; };
   backgroundImage = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/tokyo-night/tokyo-night_nix.png";
     sha256 = "sha256-W5GaKCOiV2S3NuORGrRaoOE2x9X6gUS+wYf7cQkw9CY=";
@@ -19,7 +15,7 @@ in
   environment.systemPackages = [
 
     # Terminal Emulator
-    dotpkgs.kitty
+    dotpkgs.kitty.wrapper
 
     # File Explorer
     pkgs.nautilus
@@ -32,7 +28,7 @@ in
 
     # Notifications
     pkgs.libnotify
-    dotpkgs.mako
+    dotpkgs.mako.wrapper
 
     # Media/audio
     pkgs.playerctl
@@ -45,8 +41,8 @@ in
     pkgs.wl-clip-persist
 
     # Launcher & lock
-    dotpkgs.fuzzel
-    dotpkgs.swaylock
+    dotpkgs.fuzzel.wrapper
+    dotpkgs.swaylock.wrapper
 
     # Brightness
     pkgs.brightnessctl
@@ -82,7 +78,7 @@ in
 
   programs.niri = {
     enable = true;
-    package = dotpkgs.niri;
+    package = dotpkgs.niri.wrapper;
   };
 
   # gnome-keyring is enabled by programs.niri module, but we need PAM integration

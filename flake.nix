@@ -22,8 +22,8 @@
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
 
-    adeci-wrappers.url = "github:adeci/wrappers?ref=adeci-wrappers";
-    adeci-wrappers.inputs.nixpkgs.follows = "nixpkgs";
+    wrappers.url = "github:adeci/wrappers";
+    wrappers.inputs.nixpkgs.follows = "nixpkgs";
 
     # Sites
     devblog.url = "github:adeci/devblog";
@@ -46,7 +46,7 @@
         inherit self;
         meta.name = "adeci";
         meta.domain = "adeci";
-        inventory = import ./inventory {
+        inventory = import ./clan-inventory {
           lib = nixpkgs.lib;
           inherit inputs;
         };
@@ -71,11 +71,9 @@
       perSystem =
         { pkgs, ... }:
         {
-          packages = import ./dotpkgs {
-            inherit pkgs;
-            wrappers = inputs.adeci-wrappers;
-            nixvim = inputs.nixvim;
-          };
+          packages = builtins.mapAttrs (_: v: if v ? wrapper then v.wrapper else v) (
+            import ./dotpkgs { inherit pkgs inputs; }
+          );
         };
 
       flake = {

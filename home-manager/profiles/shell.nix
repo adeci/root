@@ -1,10 +1,6 @@
 { pkgs, inputs, ... }:
 let
-  dotpkgs = import ../../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
+  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
 in
 {
   imports = [
@@ -12,7 +8,7 @@ in
   ];
 
   home.packages = [
-    dotpkgs.starship
+    dotpkgs.starship.wrapper
     pkgs.python3Packages.argcomplete
   ];
 

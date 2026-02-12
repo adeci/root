@@ -1,7 +1,7 @@
 { pkgs, wrappers, ... }:
 {
-  starship =
-    (wrappers.wrapperModules.starship.apply {
+  starship = (
+    wrappers.wrapperModules.starship.apply {
       inherit pkgs;
 
       settings = {
@@ -55,5 +55,6 @@
         };
       };
 
-    }).wrapper;
+    }
+  );
 }

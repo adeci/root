@@ -1,11 +1,7 @@
 { inputs, ... }:
 let
   pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
-  dotpkgs = import ../../../dotpkgs {
-    inherit pkgs;
-    wrappers = inputs.adeci-wrappers;
-    nixvim = inputs.nixvim;
-  };
+  dotpkgs = import ../../../dotpkgs { inherit pkgs inputs; };
 
   users = import ./users.nix { inherit pkgs dotpkgs; };
   machines = import ./machines.nix;
