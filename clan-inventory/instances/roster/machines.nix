@@ -39,18 +39,21 @@
   marine = {
     users = {
       alex = { };
+      dima = { };
     };
   };
 
   modus = {
     users = {
       alex = { };
+      dima = { };
     };
   };
 
   praxis = {
     users = {
       alex = { };
+      dima = { };
     };
   };
 

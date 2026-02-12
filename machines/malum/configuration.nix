@@ -1,7 +1,7 @@
 { ... }:
 {
   nixpkgs.hostPlatform = "aarch64-darwin";
-  system.stateVersion = 6;
+  # system.stateVersion = 6; clan-core importer does this
 
   nix.enable = true;
   nix.extraOptions = ''
@@ -35,13 +35,13 @@
   programs.direnv.enable = true;
 
   # Homebrew for GUI apps not in nixpkgs
-  homebrew = {
-    enable = true;
-    onActivation.cleanup = "zap";
-    casks = [
-      "1password"
-      "slack"
-      "discord"
-    ];
-  };
+  # homebrew = {
+  #   enable = true;
+  #   onActivation.cleanup = "zap";
+  #   casks = [
+  #     "1password"
+  #     "slack"
+  #     "discord"
+  #   ];
+  # };
 }
