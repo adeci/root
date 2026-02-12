@@ -18,7 +18,7 @@
   services.nginx = {
     enable = true;
     streamConfig = ''
-      # Minecraft usf dj2
+      # Minecraft rats rlc
       server {
         listen 25565;
         proxy_pass 100.99.42.67:25565;
@@ -48,11 +48,11 @@
         proxy_pass 100.99.42.67:24457;
       }
 
-      # dima rust
-      server {
-        listen 28082;
-        proxy_pass 100.99.42.67:28082;
-      }
+      # dima rust (inactive)
+      # server {
+      #   listen 28082;
+      #   proxy_pass 100.99.42.67:28082;
+      # }
 
     '';
   };
