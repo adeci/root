@@ -85,7 +85,7 @@ output "Seiko Epson Corporation 0x3047 Unknown" {
     transform "normal"
 }
 
-// fw13 upgraded dispkay
+// fw13 upgraded display
 output "BOE NE135A1M-NY1 Unknown" {
     // Run `niri msg outputs` while inside a niri instance to list all outputs and their modes.
     mode "2880x1920@120"
@@ -105,7 +105,8 @@ output "BOE NE135A1M-NY1 Unknown" {
     // If the position is unset or results in an overlap, the output is instead placed
     // automatically.
 
-    // position x=1280 y=0
+    // laptop below the MSI, centered (MSI is 2560 wide, laptop is 1440 wide: offset = (2560-1440)/2 = 560)
+    position x=560 y=1440
 }
 
 // gpd pocket 4 monitor
@@ -113,6 +114,24 @@ output "PNP(HSX) YHB03P24 0x00888888" {
     mode "1600x2560@143.999"
     scale 2
     transform "normal"
+}
+
+// MSI MAG321CQR 32" curved monitor
+output "Microstep MSI MAG321CQR KA3H071804955" {
+    mode "2560x1440@144"
+    scale 1
+    transform "normal"
+    position x=0 y=0
+
+    layout {
+        default-column-width { proportion 0.33333; }
+        preset-column-widths {
+            proportion 0.25
+            proportion 0.33333
+            proportion 0.5
+            proportion 0.66667
+        }
+    }
 }
 
 cursor {
