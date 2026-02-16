@@ -16,6 +16,9 @@
     wrappers.url = "github:lassulus/wrappers";
     wrappers.inputs.nixpkgs.follows = "nixpkgs";
 
+    noctalia-shell.url = "github:noctalia-dev/noctalia-shell";
+    noctalia-shell.inputs.nixpkgs.follows = "nixpkgs";
+
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
 

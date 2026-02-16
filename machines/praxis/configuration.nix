@@ -1,50 +1,10 @@
 {
   inputs,
   pkgs,
-  lib,
   config,
   ...
 }:
 
-let
-
-  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
-
-  praxis-waybar =
-    (dotpkgs.waybar.apply {
-      settings = {
-        network.interface = "wlp195s0";
-        modules-right = lib.mkForce [
-          "network"
-          "network#wwan"
-          "bluetooth"
-          "custom/cpu"
-          "custom/gpu"
-          "memory"
-          "backlight"
-          "pulseaudio"
-          "custom/battery"
-          "clock"
-        ];
-        "network#wwan" = {
-          interface = "wwp197s0f4u1i4";
-          format = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-          format-wifi = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-          format-ethernet = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-          format-linked = "C ↓{bandwidthDownBytes:>7} ↑{bandwidthUpBytes:>7}";
-          format-disconnected = "C ↓ ----/s ↑ ----/s";
-          format-disabled = "C ↓ ----/s ↑ ----/s";
-          tooltip = true;
-          tooltip-format = "{ifname} {ipaddr}";
-          tooltip-format-disconnected = "Disconnected";
-          tooltip-format-disabled = "Disabled";
-          on-click = "modem-manager-gui";
-          interval = 1;
-        };
-      };
-    }).wrapper;
-
-in
 {
 
   imports = [
@@ -68,17 +28,26 @@ in
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 
-  environment.systemPackages =
-    with pkgs;
-    [
-      firefox
-      calibre
-      modem-manager-gui
-      linux-wifi-hotspot
-    ]
-    ++ [
-      praxis-waybar
-    ];
+  environment.systemPackages = with pkgs; [
+    firefox
+    calibre
+    modem-manager-gui
+    linux-wifi-hotspot
+  ];
+
+  # Auto-login alex into niri via greetd
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
+      user = "alex";
+    };
+    settings.initial_session = {
+      command = "niri-session";
+      user = "alex";
+    };
+  };
+  security.pam.services.greetd.enableGnomeKeyring = true;
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring
   environment.sessionVariables.LD_LIBRARY_PATH = "${pkgs.rocmPackages.rocm-smi}/lib:${pkgs.libdrm}/lib";

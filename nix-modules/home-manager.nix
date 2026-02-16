@@ -6,5 +6,8 @@
     useUserPackages = true;
     backupFileExtension = "backup";
     extraSpecialArgs = { inherit inputs; };
+    sharedModules = [
+      inputs.noctalia-shell.homeModules.default
+    ];
   };
 }

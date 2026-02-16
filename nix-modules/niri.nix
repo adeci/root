@@ -6,10 +6,6 @@
 }:
 let
   dotpkgs = import ../dotpkgs { inherit pkgs inputs; };
-  backgroundImage = pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/adeci/wallpapers/main/tokyo-night/tokyo-night_nix.png";
-    sha256 = "sha256-W5GaKCOiV2S3NuORGrRaoOE2x9X6gUS+wYf7cQkw9CY=";
-  };
 in
 {
   environment.systemPackages = [
@@ -23,26 +19,17 @@ in
     # XWayland
     pkgs.xwayland-satellite
 
-    # Wallpaper
-    pkgs.swaybg
-
     # Notifications
     pkgs.libnotify
-    dotpkgs.mako.wrapper
 
     # Media/audio
     pkgs.playerctl
     pkgs.pulseaudio
     pkgs.pavucontrol
-    #dotpkgs.swayosd
 
     # Clipboard
     pkgs.wl-clipboard
     pkgs.wl-clip-persist
-
-    # Launcher & lock
-    dotpkgs.fuzzel.wrapper
-    dotpkgs.swaylock.wrapper
 
     # Brightness
     pkgs.brightnessctl
@@ -76,14 +63,10 @@ in
     pulse.enable = true;
   };
 
-  programs.niri = {
-    enable = true;
-    package = dotpkgs.niri.wrapper;
-  };
+  programs.niri.enable = true;
 
-  # gnome-keyring is enabled by programs.niri module, but we need PAM integration
+  # gnome-keyring service is enabled by programs.niri, but PAM unlock is separate
   security.pam.services.login.enableGnomeKeyring = true;
-  security.pam.services.swaylock.enableGnomeKeyring = true;
 
   environment.sessionVariables = {
     XCURSOR_THEME = "phinger-cursors-dark";
@@ -93,107 +76,36 @@ in
     SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/gcr/ssh"; # gcr from gnome-keyring
   };
 
-  programs.dconf = {
-    enable = true;
-    profiles.user.databases = [
-      {
-        settings = {
-          "org/gnome/desktop/interface" = {
-            gtk-theme = "Tokyonight-Dark";
-            color-scheme = "prefer-dark";
-            cursor-theme = "phinger-cursors-dark";
-            cursor-size = lib.gvariant.mkInt32 24;
-          };
-          "org/gnome/desktop/background" = {
-            color-shading-type = "solid";
-            picture-options = "zoom";
-            prefer-dark-theme = true;
-          };
+  # dconf.enable already set by programs.niri — just need custom values
+  programs.dconf.profiles.user.databases = [
+    {
+      settings = {
+        "org/gnome/desktop/interface" = {
+          gtk-theme = "Tokyonight-Dark";
+          color-scheme = "prefer-dark";
+          cursor-theme = "phinger-cursors-dark";
+          cursor-size = lib.gvariant.mkInt32 24;
         };
-      }
-    ];
-  };
-
-  xdg.portal = {
-    enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-  };
-
-  # Systemd user services for niri session
-  # Starting here rather than with Niri's spawn-at-startup
-  systemd.user.services = {
-
-    # Update environment and restart portals when niri starts
-    niri-session-env = {
-      description = "Update systemd environment for niri session";
-      after = [ "niri.service" ];
-      requisite = [ "niri.service" ];
-      partOf = [ "graphical-session.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "niri-session-env" ''
-          # Import environment variables into systemd user session
-          ${pkgs.systemd}/bin/systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP
-          ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP
-
-          # Restart portal services to pick up new environment
-          ${pkgs.systemd}/bin/systemctl --user restart xdg-desktop-portal.service xdg-desktop-portal-gtk.service || true
-        '';
+        "org/gnome/desktop/background" = {
+          color-shading-type = "solid";
+          picture-options = "zoom";
+          prefer-dark-theme = true;
+        };
       };
-      wantedBy = [ "niri.service" ];
-    };
+    }
+  ];
 
-    # mako = {
-    #   description = "Mako notification daemon";
-    #   partOf = [ "graphical-session.target" ];
-    #   after = [ "graphical-session.target" ];
-    #   requisite = [ "graphical-session.target" ];
-    #   serviceConfig = {
-    #     ExecStart = "${dotpkgs.mako}/bin/mako";
-    #     Restart = "on-failure";
-    #     RestartSec = 1;
-    #   };
-    #   wantedBy = [ "niri.service" ];
-    # };
-    #
-    # swayosd = {
-    #   description = "SwayOSD server";
-    #   partOf = [ "graphical-session.target" ];
-    #   after = [ "graphical-session.target" ];
-    #   requisite = [ "graphical-session.target" ];
-    #   serviceConfig = {
-    #     ExecStart = "${dotpkgs.swayosd}/bin/swayosd-server";
-    #     Restart = "on-failure";
-    #     RestartSec = 1;
-    #   };
-    #   wantedBy = [ "niri.service" ];
-    # };
-
-    swaybg = {
-      description = "Swaybg wallpaper";
-      partOf = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      requisite = [ "graphical-session.target" ];
-      serviceConfig = {
-        ExecStart = "${pkgs.swaybg}/bin/swaybg -i ${backgroundImage} -m fill";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
-      wantedBy = [ "niri.service" ];
+  # Polkit agent (programs.niri enables the backend, but not a GUI agent)
+  systemd.user.services.polkit-gnome = {
+    description = "Polkit GNOME authentication agent";
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    requisite = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+      Restart = "on-failure";
+      RestartSec = 1;
     };
-
-    polkit-gnome = {
-      description = "Polkit GNOME authentication agent";
-      partOf = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      requisite = [ "graphical-session.target" ];
-      serviceConfig = {
-        ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
-      wantedBy = [ "niri.service" ];
-    };
+    wantedBy = [ "niri.service" ];
   };
 }

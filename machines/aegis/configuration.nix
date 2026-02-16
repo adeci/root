@@ -7,13 +7,6 @@
 
 let
   dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
-
-  aegis-waybar =
-    (dotpkgs.waybar.apply {
-      settings = {
-        network.interface = "wlan0";
-      };
-    }).wrapper;
 in
 {
   networking = {
@@ -36,14 +29,23 @@ in
     ../../nix-modules/home-manager.nix
   ];
 
-  environment.systemPackages =
-    with pkgs;
-    [
-      firefox
-    ]
-    ++ [
-      aegis-waybar
-    ];
+  environment.systemPackages = with pkgs; [
+    firefox
+  ];
+
+  # Auto-login alex into niri via greetd
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
+      user = "alex";
+    };
+    settings.initial_session = {
+      command = "niri-session";
+      user = "alex";
+    };
+  };
+  security.pam.services.greetd.enableGnomeKeyring = true;
 
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
   security.wrappers.btop = {

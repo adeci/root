@@ -7,15 +7,6 @@
 
 let
 
-  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
-
-  modus-waybar =
-    (dotpkgs.waybar.apply {
-      settings = {
-        network.interface = "wlp1s0";
-      };
-    }).wrapper;
-
   grubWallpaper = pkgs.fetchurl {
     name = "nixos-grub-wallpaper.jpg";
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/nix-grub-2880x1920.jpg";
@@ -45,18 +36,27 @@ in
     ../../nix-modules/home-manager.nix
   ];
 
-  environment.systemPackages =
-    with pkgs;
-    [
-      imagemagick # required for grub2-theme
-      os-prober
-      firefox
-      calibre
-      linux-wifi-hotspot
-    ]
-    ++ [
-      modus-waybar
-    ];
+  environment.systemPackages = with pkgs; [
+    imagemagick
+    os-prober
+    firefox
+    calibre
+    linux-wifi-hotspot
+  ];
+
+  # Auto-login alex into niri via greetd
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
+      user = "alex";
+    };
+    settings.initial_session = {
+      command = "niri-session";
+      user = "alex";
+    };
+  };
+  security.pam.services.greetd.enableGnomeKeyring = true;
 
   # btop needs rocm-smi and libdrm in ld path for gpu monitoring
   environment.sessionVariables.LD_LIBRARY_PATH = "${pkgs.rocmPackages.rocm-smi}/lib:${pkgs.libdrm}/lib";

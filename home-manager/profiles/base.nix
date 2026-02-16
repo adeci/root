@@ -10,7 +10,6 @@ in
 {
   imports = [
     ../git.nix
-    ../swayosd.nix
   ];
 
   home.packages =

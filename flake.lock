@@ -325,6 +325,26 @@
         "type": "github"
       }
     },
+    "noctalia-shell": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1771170780,
+        "narHash": "sha256-TzBAQwiGetyyLrRWPu783W6PHpI3glG4odt9HoGRIm4=",
+        "owner": "noctalia-dev",
+        "repo": "noctalia-shell",
+        "rev": "070c3b523c070d867a1715e8fbdcdbee0929a8cc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noctalia-dev",
+        "repo": "noctalia-shell",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "clan-core": "clan-core",
@@ -335,6 +355,7 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-master": "nixpkgs-master",
         "nixvim": "nixvim",
+        "noctalia-shell": "noctalia-shell",
         "trader-rs": "trader-rs",
         "treefmt-nix": "treefmt-nix_4",
         "wrappers": "wrappers"
