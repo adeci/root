@@ -2,11 +2,11 @@
   inputs,
   pkgs,
   config,
+  self,
   ...
 }:
-
 let
-  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
+  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   networking = {
@@ -55,7 +55,7 @@ in
     owner = "root";
     group = "root";
     capabilities = "cap_perfmon+ep";
-    source = "${dotpkgs.btop.wrapper}/bin/btop";
+    source = "${packages.btop}/bin/btop";
   };
 
   # Enable Intel graphics acceleration for Sandy Bridge

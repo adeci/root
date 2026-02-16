@@ -9,7 +9,10 @@ let
       inherit inputs;
     };
     modules = import ../clan-services { };
-    specialArgs = { inherit inputs; };
+    specialArgs = {
+      self = inputs.self;
+      inherit inputs;
+    };
   };
 in
 {

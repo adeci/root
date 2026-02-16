@@ -1,15 +1,14 @@
-{ inputs, ... }:
+{ inputs, self, ... }:
 let
   pkgs = import inputs.nixpkgs {
     system = "x86_64-linux";
     config.allowUnfree = true;
   };
-  dotpkgs = import ../dotpkgs { inherit pkgs inputs; };
 in
 {
   flake.homeConfigurations.alex = inputs.home-manager.lib.homeManagerConfiguration {
     inherit pkgs;
-    extraSpecialArgs = { inherit inputs dotpkgs; };
+    extraSpecialArgs = { inherit inputs self; };
     modules = [
       ../modules/home-manager
       {

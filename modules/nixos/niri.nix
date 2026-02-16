@@ -2,18 +2,18 @@
   config,
   lib,
   pkgs,
-  inputs,
+  self,
   ...
 }:
 let
   cfg = config.adeci.niri;
-  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
+  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   options.adeci.niri.enable = lib.mkEnableOption "Niri compositor";
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [
-      dotpkgs.kitty.wrapper
+      packages.kitty
       pkgs.nautilus
       pkgs.xwayland-satellite
       pkgs.libnotify

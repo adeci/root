@@ -2,11 +2,12 @@
   config,
   lib,
   pkgs,
-  dotpkgs,
+  self,
   ...
 }:
 let
   cfg = config.adeci.base-tools;
+  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   options.adeci.base-tools.enable = lib.mkEnableOption "base CLI tools";
@@ -25,8 +26,8 @@ in
         git
       ]
       ++ [
-        dotpkgs.btop.wrapper
-        dotpkgs.nixvim
+        packages.btop
+        packages.nixvim
       ]
       ++ lib.optionals pkgs.stdenv.isLinux (
         with pkgs;

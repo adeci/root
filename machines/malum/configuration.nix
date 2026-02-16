@@ -1,7 +1,4 @@
-{ inputs, pkgs, ... }:
-let
-  dotpkgs = import ../../dotpkgs { inherit pkgs inputs; };
-in
+{ inputs, self, ... }:
 {
   imports = [
     inputs.home-manager.darwinModules.home-manager
@@ -56,7 +53,7 @@ in
     useGlobalPkgs = true;
     useUserPackages = true;
     backupFileExtension = "backup";
-    extraSpecialArgs = { inherit inputs dotpkgs; };
+    extraSpecialArgs = { inherit inputs self; };
     sharedModules = [
       inputs.noctalia-shell.homeModules.default
       ../../modules/home-manager

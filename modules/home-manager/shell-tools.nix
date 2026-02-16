@@ -2,17 +2,18 @@
   config,
   lib,
   pkgs,
-  dotpkgs,
+  self,
   ...
 }:
 let
   cfg = config.adeci.shell-tools;
+  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   options.adeci.shell-tools.enable = lib.mkEnableOption "shell tools (starship, atuin, zoxide, direnv)";
   config = lib.mkIf cfg.enable {
     home.packages = [
-      dotpkgs.starship.wrapper
+      packages.starship
       pkgs.python3Packages.argcomplete
     ];
     programs.atuin.enable = true;

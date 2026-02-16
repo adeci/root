@@ -2,10 +2,12 @@
   config,
   lib,
   pkgs,
+  self,
   ...
 }:
 let
   cfg = config.adeci.social;
+  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   options.adeci.social.enable = lib.mkEnableOption "social apps (Element, Signal, Vesktop)";
@@ -23,17 +25,7 @@ in
             --add-flags "--password-store=gnome-libsecret"
         '';
       }))
-      (vesktop.overrideAttrs (oldAttrs: {
-        nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ imagemagick ];
-        postPatch = (oldAttrs.postPatch or "") + ''
-          convert -coalesce ${
-            pkgs.fetchurl {
-              url = "https://raw.githubusercontent.com/adeci/wallpapers/refs/heads/main/nixos.gif";
-              hash = "sha256-XGpc+QhVqBUvNxIarc50y8qvPAHwziR8pLI2TyBWXsQ=";
-            }
-          } static/splash.webp
-        '';
-      }))
+      packages.vesktop
     ];
   };
 }
