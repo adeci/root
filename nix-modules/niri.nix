@@ -34,8 +34,9 @@ in
     # Brightness
     pkgs.brightnessctl
 
-    # Cursors & themes
+    # Cursors, icons & themes
     pkgs.phinger-cursors
+    pkgs.adwaita-icon-theme
     pkgs.tokyonight-gtk-theme
     pkgs.glib
 
@@ -72,8 +73,7 @@ in
     XCURSOR_THEME = "phinger-cursors-dark";
     XCURSOR_SIZE = "24";
     GTK_THEME = "Tokyonight-Dark";
-    QT_QPA_PLATFORMTHEME = "gtk2";
-    SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/gcr/ssh"; # gcr from gnome-keyring
+    QT_QPA_PLATFORMTHEME = "gtk3";
   };
 
   # dconf.enable already set by programs.niri — just need custom values
