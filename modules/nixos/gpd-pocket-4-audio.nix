@@ -3,9 +3,15 @@
 #
 # Provides speaker correction, bass enhancement, loudness compensation,
 # and dynamic compression for the GPD Pocket 4's internal speakers.
-{ pkgs, ... }:
-
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
+  cfg = config.adeci.gpd-pocket-4-audio;
+
   irLeft = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/Manawyrm/gpd-pocket-4-pipewire/main/pipewire.conf.d/gpd-pocket-4-mp-48k-l.wav";
     hash = "sha256-jvMlA/WN0VSTayq9LS3juCZMtwT79F/4ckhel2Yi0dc=";
@@ -174,12 +180,15 @@ let
   '';
 in
 {
-  services.pipewire = {
-    enable = true;
-    configPackages = [ configPackage ];
-    extraLv2Packages = with pkgs; [
-      bankstown-lv2
-      lsp-plugins
-    ];
+  options.adeci.gpd-pocket-4-audio.enable = lib.mkEnableOption "GPD Pocket 4 audio DSP";
+  config = lib.mkIf cfg.enable {
+    services.pipewire = {
+      enable = true;
+      configPackages = [ configPackage ];
+      extraLv2Packages = with pkgs; [
+        bankstown-lv2
+        lsp-plugins
+      ];
+    };
   };
 }

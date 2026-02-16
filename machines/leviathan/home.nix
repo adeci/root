@@ -1,7 +1,9 @@
 {
-  imports = [
-    ../../home-manager/profiles/base.nix
-    ../../home-manager/profiles/shell.nix
-    ../../home-manager/profiles/dev.nix
-  ];
+  adeci = {
+    base-tools.enable = true;
+    shell-tools.enable = true;
+    dev-tools.enable = true;
+    fish.enable = true;
+    git.enable = true;
+  };
 }

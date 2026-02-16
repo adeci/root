@@ -22,19 +22,21 @@ in
 
     inputs.grub2-themes.nixosModules.default
 
-    ../../nix-modules/all.nix
-    ../../nix-modules/dev.nix
-    ../../nix-modules/shell.nix
-
-    ../../nix-modules/niri.nix
-    ../../nix-modules/laptop.nix
-
-    ../../nix-modules/printing.nix
-    ../../nix-modules/social.nix
-    ../../nix-modules/gaming.nix
-    ../../nix-modules/creative.nix
-    ../../nix-modules/home-manager.nix
+    ../../modules/nixos
   ];
+
+  adeci = {
+    base.enable = true;
+    dev.enable = true;
+    shell.enable = true;
+    niri.enable = true;
+    laptop.enable = true;
+    printing.enable = true;
+    social.enable = true;
+    gaming.enable = true;
+    creative.enable = true;
+    home-manager.enable = true;
+  };
 
   environment.systemPackages = with pkgs; [
     imagemagick

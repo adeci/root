@@ -11,20 +11,22 @@
 
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
 
-    ../../nix-modules/all.nix
-    ../../nix-modules/dev.nix
-    ../../nix-modules/shell.nix
-
-    ../../nix-modules/niri.nix
-    ../../nix-modules/laptop.nix
-    ../../nix-modules/gpd-pocket-4-audio.nix
-
-    ../../nix-modules/printing.nix
-    ../../nix-modules/social.nix
-    ../../nix-modules/gaming.nix
-    ../../nix-modules/creative.nix
-    ../../nix-modules/home-manager.nix
+    ../../modules/nixos
   ];
+
+  adeci = {
+    base.enable = true;
+    dev.enable = true;
+    shell.enable = true;
+    niri.enable = true;
+    laptop.enable = true;
+    gpd-pocket-4-audio.enable = true;
+    printing.enable = true;
+    social.enable = true;
+    gaming.enable = true;
+    creative.enable = true;
+    home-manager.enable = true;
+  };
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 

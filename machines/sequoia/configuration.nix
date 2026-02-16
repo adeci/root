@@ -8,11 +8,15 @@
   time.timeZone = "America/New_York";
 
   imports = [
-    ../../nix-modules/all.nix
-    ../../nix-modules/dev.nix
-    ../../nix-modules/shell.nix
-    ../../nix-modules/home-manager.nix
+    ../../modules/nixos
   ];
+
+  adeci = {
+    base.enable = true;
+    dev.enable = true;
+    shell.enable = true;
+    home-manager.enable = true;
+  };
 
   home-manager.users.alex = {
     imports = [ ./home.nix ];
