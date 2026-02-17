@@ -16,6 +16,7 @@ in
         "FelixKratz/formulae/borders"
       ];
       casks = [
+        "raycast"
         "slack"
         "karabiner-elements"
         "nikitabobko/tap/aerospace"

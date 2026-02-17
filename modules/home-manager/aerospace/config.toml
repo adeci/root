@@ -31,6 +31,9 @@ outer.right = 6
 alt-enter = "exec-and-forget bash -l -c @KITTY_HOME@"
 alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
 
+# Launcher
+alt-d = "exec-and-forget open -a Raycast"
+
 # Close window
 alt-q = "close --quit-if-last-window"
 
