@@ -12,7 +12,7 @@ in
         "FelixKratz/formulae"
       ];
       brews = [
-        "borders"
+        "FelixKratz/formulae/borders"
       ];
       casks = [
         "slack"
