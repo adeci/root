@@ -36,13 +36,13 @@ in
         cursor_trail_decay = "0.1 0.4";
 
         # Shell
-        shell = "${pkgs.fish}/bin/fish";
+        shell = "${pkgs.fish}/bin/fish --login";
 
         # Behavior
         enable_audio_bell = false;
         copy_on_select = "yes";
         confirm_os_window_close = 0;
-        hide_window_decorations = true;
+        hide_window_decorations = "titlebar-only";
         filter_notification = "all";
         paste_actions = "no-op";
         clipboard_control = "write-clipboard write-primary read-clipboard read-primary";

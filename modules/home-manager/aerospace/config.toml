@@ -4,7 +4,7 @@
 start-at-login = true
 after-login-command = []
 after-startup-command = [
-  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=4.0 style=square",
+  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=4.0 style=round",
 ]
 
 # Normalizations
