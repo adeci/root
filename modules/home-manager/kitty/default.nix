@@ -36,7 +36,7 @@ in
         cursor_trail_decay = "0.1 0.4";
 
         # Shell
-        shell = "${pkgs.fish}/bin/fish --login";
+        shell = "${pkgs.fish}/bin/fish --login -C 'cd ~'";
 
         # Behavior
         enable_audio_bell = false;

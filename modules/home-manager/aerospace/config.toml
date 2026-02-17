@@ -29,7 +29,7 @@ outer.right = 6
 [mode.main.binding]
 # Spawn terminal (bash -l to pick up nix PATH)
 alt-enter = "exec-and-forget bash -l -c kitty"
-alt-shift-enter = '''exec-and-forget bash -l -c 'APP_PID=$(osascript -e '"'"'tell application "System Events" to unix id of first process whose frontmost is true'"'"') && SHELL_PID=$(pgrep -oP "$APP_PID" 2>/dev/null) && CWD=$(lsof -p "$SHELL_PID" 2>/dev/null | awk '"'"'/cwd/{print $NF}'"'"') && [ -d "$CWD" ] && kitty -d "$CWD" || kitty' '''
+alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
 
 # Close window
 alt-q = "close --quit-if-last-window"
