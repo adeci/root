@@ -28,7 +28,7 @@ outer.right = 6
 
 [mode.main.binding]
 # Spawn terminal (bash -l to pick up nix PATH)
-alt-enter = "exec-and-forget bash -l -c kitty"
+alt-enter = "exec-and-forget bash -l -c @KITTY_HOME@"
 alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
 
 # Close window
