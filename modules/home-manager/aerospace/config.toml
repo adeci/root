@@ -25,9 +25,9 @@ outer.right = 0
 # Option (Alt) as the WM modifier — matching Super key on Linux
 
 [mode.main.binding]
-# Spawn terminal
-alt-enter = "exec-and-forget kitty"
-alt-shift-enter = '''exec-and-forget APP_PID=$(osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true') && SHELL_PID=$(pgrep -oP "$APP_PID" 2>/dev/null) && CWD=$(lsof -p "$SHELL_PID" 2>/dev/null | awk '/cwd/{print $NF}') && [ -d "$CWD" ] && kitty -d "$CWD" || kitty'''
+# Spawn terminal (bash -l to pick up nix PATH)
+alt-enter = "exec-and-forget bash -l -c kitty"
+alt-shift-enter = '''exec-and-forget bash -l -c 'APP_PID=$(osascript -e '"'"'tell application "System Events" to unix id of first process whose frontmost is true'"'"') && SHELL_PID=$(pgrep -oP "$APP_PID" 2>/dev/null) && CWD=$(lsof -p "$SHELL_PID" 2>/dev/null | awk '"'"'/cwd/{print $NF}'"'"') && [ -d "$CWD" ] && kitty -d "$CWD" || kitty' '''
 
 # Close window
 alt-q = "close --quit-if-last-window"
@@ -36,6 +36,8 @@ alt-q = "close --quit-if-last-window"
 alt-slash = "layout tiles horizontal vertical"
 alt-comma = "layout accordion horizontal vertical"
 alt-f = "fullscreen"
+alt-v = "layout tiles vertical"
+alt-b = "layout tiles horizontal"
 
 # Focus
 alt-h = "focus left"
