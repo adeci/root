@@ -4,12 +4,16 @@
 start-at-login = true
 after-login-command = []
 after-startup-command = [
-  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=4.0 style=round",
+  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=4.0 style=square",
 ]
 
 # Normalizations
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
+
+# Don't jump to another workspace when last window closes
+on-focused-monitor-changed = ["move-mouse monitor-lazy-center"]
+automatically-unhide-macos-hidden-apps = false
 
 # Layout
 default-root-container-layout = "tiles"

@@ -35,6 +35,9 @@ in
         cursor_trail = 3;
         cursor_trail_decay = "0.1 0.4";
 
+        # Shell
+        shell = "${pkgs.fish}/bin/fish";
+
         # Behavior
         enable_audio_bell = false;
         copy_on_select = "yes";
