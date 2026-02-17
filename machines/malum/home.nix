@@ -5,5 +5,7 @@
     dev-tools.enable = true;
     fish.enable = true;
     git.enable = true;
+    karabiner.enable = true;
+    aerospace.enable = true;
   };
 }

@@ -9,9 +9,9 @@ in
       enable = true;
       onActivation.cleanup = "zap";
       casks = [
-        "1password"
         "slack"
-        "discord"
+        "karabiner-elements"
+        "nikitabobko/tap/aerospace"
       ];
     };
   };

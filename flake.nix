@@ -48,7 +48,7 @@
 
       imports = [
         ./flake-outputs/clan.nix
-        ./flake-outputs/dotpkgs.nix
+        ./flake-outputs/dotpkgs.nix # wrappers
         ./flake-outputs/home-configurations.nix
         ./flake-outputs/formatter.nix
         ./flake-outputs/devshell.nix
