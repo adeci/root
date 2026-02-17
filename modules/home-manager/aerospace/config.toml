@@ -11,10 +11,6 @@ after-startup-command = [
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
 
-# Don't jump to another workspace when last window closes
-on-focused-monitor-changed = ["move-mouse monitor-lazy-center"]
-automatically-unhide-macos-hidden-apps = false
-
 # Layout
 default-root-container-layout = "tiles"
 default-root-container-orientation = "auto"
