@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, lib, ... }:
 {
   imports = [ ../../modules/darwin ];
 
@@ -15,6 +15,9 @@
   nix.extraOptions = ''
     !include nix.conf.d/shopify.conf
   '';
+
+  # Default shell (roster also sets this, mkForce to ensure it takes effect)
+  users.users.alex.shell = lib.mkForce pkgs.fish;
 
   home-manager.users.alex = {
     imports = [ ./home.nix ];

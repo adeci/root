@@ -8,6 +8,12 @@ in
     homebrew = {
       enable = true;
       onActivation.cleanup = "zap";
+      taps = [
+        "FelixKratz/formulae"
+      ];
+      brews = [
+        "borders"
+      ];
       casks = [
         "slack"
         "karabiner-elements"
