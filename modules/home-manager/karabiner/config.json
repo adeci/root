@@ -6,7 +6,7 @@
       "complex_modifications": {
         "rules": [
           {
-            "description": "Caps Lock → Escape (tap) / Meh (Ctrl+Opt+Cmd) (hold)",
+            "description": "Caps Lock → Escape (tap) / Control (hold)",
             "manipulators": [
               {
                 "type": "basic",
@@ -16,8 +16,7 @@
                 },
                 "to": [
                   {
-                    "key_code": "left_control",
-                    "modifiers": ["left_option", "left_command"]
+                    "key_code": "left_control"
                   }
                 ],
                 "to_if_alone": [
