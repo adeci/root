@@ -4,7 +4,7 @@
 start-at-login = true
 after-login-command = []
 after-startup-command = [
-  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=2.0 style=round",
+  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=4.0 style=round",
 ]
 
 # Normalizations
@@ -17,12 +17,12 @@ default-root-container-orientation = "auto"
 
 # Gaps
 [gaps]
-inner.horizontal = 0
-inner.vertical = 0
-outer.left = 0
-outer.bottom = 0
-outer.top = 0
-outer.right = 0
+inner.horizontal = 6
+inner.vertical = 6
+outer.left = 6
+outer.bottom = 6
+outer.top = 6
+outer.right = 6
 
 # Option (Alt) as the WM modifier — matching Super key on Linux
 
