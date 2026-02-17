@@ -6,12 +6,12 @@
 APP_PID=$(osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true' 2>/dev/null)
 
 if [ -n "$APP_PID" ]; then
-  # Find the child shell process (oldest child = the shell)
-  SHELL_PID=$(pgrep -oP "$APP_PID" 2>/dev/null)
+  # Find the child shell process (fish/bash/zsh), skipping intermediates like kitten
+  SHELL_PID=$(ps -eo pid=,ppid=,comm= | awk -v ppid="$APP_PID" '$2==ppid && /fish$|bash$|zsh$/ {print $1; exit}')
 
   if [ -n "$SHELL_PID" ]; then
     # Get the shell's current working directory
-    CWD=$(lsof -p "$SHELL_PID" 2>/dev/null | awk '/cwd/{print $NF}')
+    CWD=$(lsof -a -p "$SHELL_PID" -d cwd -Fn 2>/dev/null | awk '/^n\//{print substr($0,2)}')
 
     if [ -n "$CWD" ] && [ -d "$CWD" ]; then
       exec kitty -d "$CWD"
