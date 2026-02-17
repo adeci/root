@@ -27,6 +27,7 @@ in
       ]
       ++ [
         packages.btop
+        packages.kitty
         packages.nixvim
       ]
       ++ lib.optionals pkgs.stdenv.isLinux (
