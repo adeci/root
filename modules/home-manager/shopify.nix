@@ -11,5 +11,9 @@ in
         $HOME/.local/state/tec/profiles/base/current/global/init fish | source
       end
     '';
+    programs.fish.shellAliases = {
+      claude = "devx claude";
+      pi = "devx pi";
+    };
   };
 }
