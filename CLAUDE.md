@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Root is a personal infrastructure configuration using the **Clan** framework (built on NixOS and Nix flakes). It manages 10 machines (8 active NixOS + 1 Darwin; bambrew and marine commented out), services, users, and secrets through declarative, reproducible infrastructure-as-code.
+Root is a personal infrastructure configuration using the **Clan** framework (built on NixOS and Nix flakes). It manages 9 machines (7 active NixOS + 1 Darwin; bambrew and marine commented out), services, users, and secrets through declarative, reproducible infrastructure-as-code.
 
 ## Common Commands
 
@@ -66,12 +66,12 @@ All services: `@adeci/roster`, `@adeci/tailscale`, `@adeci/vaultwarden`, `@adeci
 
 ### Dotpkgs (`dotpkgs/`)
 
-Wrapped tool packages (btop, fuzzel, kitty, nixvim, starship, sway). Each tool is a directory with a `module.nix`. The `default.nix` dynamically discovers all subdirectories. Depends on the `wrappers` flake input (from `lassulus/wrappers`).
+Wrapped tool packages (btop, fuzzel, kitty, nixvim, starship). Each tool is a directory with a `module.nix`. The `default.nix` dynamically discovers all subdirectories. Depends on the `wrappers` flake input (from `lassulus/wrappers`).
 
 ### Custom Packages (`pkgs/`)
 
 Custom package derivations auto-discovered via `callPackage`:
-- `claude-code` — wrapped from nixpkgs-master
+- `claude-code` — re-exported from nixpkgs-master
 - `vesktop` — custom splash override
 
 ### Inventory System (`clan-inventory/`)
@@ -95,7 +95,7 @@ Each machine directory typically contains:
 All modules use the `adeci.*` option namespace and are auto-discovered via `default.nix`.
 
 **`modules/nixos/`** — NixOS system modules:
-`base`, `dev`, `shell`, `niri`, `sway`, `laptop`, `gaming`, `creative`, `gnome`, `social`, `printing`, `home-manager`, `gpd-pocket-4-audio`
+`base`, `dev`, `shell`, `desktop-base`, `niri`, `keyd`, `amd-gpu`, `ssh`, `workstation`, `laptop`, `gaming`, `creative`, `gnome`, `social`, `printing`, `home-manager`, `gpd-pocket-4-audio`
 
 **`modules/darwin/`** — Darwin system modules:
 `base`, `homebrew`, `home-manager`

@@ -29,13 +29,6 @@
 
   # Nix build server configuration for 256 logical core EPYC system
   nix.settings = {
-
-    # How many derivations can we download from bincaches at the same time
-    # https://bmcgee.ie/posts/2023/12/til-how-to-optimise-substitutions-in-nix/
-    http-connections = 64;
-    max-substitution-jobs = 64;
-    download-buffer-size = 268435456; # 256MB
-
     max-jobs = 7; # Max parallel derivations locally
     # Prevent auto (256) which would cause massive overselling
     cores = 32; # Cores per derivation

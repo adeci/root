@@ -9,12 +9,4 @@ let
     config.allowUnfree = true;
   };
 in
-pkgs.symlinkJoin {
-  name = "claude-code-wrapped";
-  paths = [ pkgs-master.claude-code-bin ];
-  nativeBuildInputs = [ pkgs.makeWrapper ];
-  postBuild = ''
-    wrapProgram $out/bin/claude \
-
-  '';
-}
+pkgs-master.claude-code-bin

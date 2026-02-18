@@ -16,6 +16,7 @@
     base.enable = true;
     shell.enable = true;
     gnome.enable = true;
+    amd-gpu.enable = true;
     printing.enable = true;
     home-manager.enable = true;
   };
@@ -49,9 +50,6 @@
     experimental-features=['scale-monitor-framebuffer']
   '';
 
-  # btop needs rocm-smi and libdrm in ld path for gpu monitoring
-  environment.sessionVariables.LD_LIBRARY_PATH = "${pkgs.rocmPackages.rocm-smi}/lib:${pkgs.libdrm}/lib";
-
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
@@ -67,15 +65,10 @@
     home.stateVersion = config.system.stateVersion;
   };
 
-  nix.settings = {
-    http-connections = 64;
-    max-substitution-jobs = 64;
-    download-buffer-size = 268435456; # 256MB
-    trusted-users = [
-      "root"
-      "@wheel"
-      "alex"
-    ];
-  };
+  nix.settings.trusted-users = [
+    "root"
+    "@wheel"
+    "alex"
+  ];
 
 }

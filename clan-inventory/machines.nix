@@ -79,12 +79,4 @@
     deploy.targetHost = "root@sequoia";
   };
 
-  spud = {
-    name = "spud";
-    tags = [
-      "adeci-net"
-    ];
-    deploy.targetHost = "root@spud";
-  };
-
 }

@@ -28,6 +28,7 @@ in
     dev.enable = true;
     shell.enable = true;
     niri.enable = true;
+    keyd.enable = true;
     laptop.enable = true;
     home-manager.enable = true;
   };
@@ -35,20 +36,6 @@ in
   environment.systemPackages = with pkgs; [
     firefox
   ];
-
-  # Auto-login alex into niri via greetd
-  services.greetd = {
-    enable = true;
-    settings.default_session = {
-      command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
-      user = "alex";
-    };
-    settings.initial_session = {
-      command = "niri-session";
-      user = "alex";
-    };
-  };
-  security.pam.services.greetd.enableGnomeKeyring = true;
 
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
   security.wrappers.btop = {
@@ -72,39 +59,14 @@ in
     LIBVA_DRIVER_NAME = "i965";
   };
 
-  services = {
-
-    # Keyd for dual-function keys (Caps Lock = Esc on tap, Ctrl on hold)
-    keyd = {
-      enable = true;
-      keyboards = {
-        default = {
-          ids = [ "*" ];
-          settings = {
-            main = {
-              capslock = "overload(control, esc)";
-            };
-          };
-        };
-      };
-    };
-
-  };
-
   home-manager.users.alex = {
     imports = [ ./home.nix ];
     home.stateVersion = config.system.stateVersion;
   };
 
-  nix.settings = {
-    http-connections = 64;
-    max-substitution-jobs = 64;
-    download-buffer-size = 268435456; # 256MB
-
-    trusted-users = [
-      "root"
-      "alex"
-    ];
-  };
+  nix.settings.trusted-users = [
+    "root"
+    "alex"
+  ];
 
 }
