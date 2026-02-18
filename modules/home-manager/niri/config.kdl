@@ -256,17 +256,40 @@ animations {
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Window-Rules
 
+// Firefox: 1/3 width on the MSI monitor
+window-rule {
+    match app-id="firefox" on-output="Microstep MSI MAG321CQR KA3H071804955"
+    default-column-width { proportion 0.33333; }
+}
+
+// Firefox: open maximized on the laptop display
+window-rule {
+    match app-id="firefox"
+    exclude on-output="Microstep MSI MAG321CQR KA3H071804955"
+    open-maximized true
+}
+
 window-rule {
     match app-id="firefox"
     clip-to-geometry true
 }
 
-// Communication apps: open maximized
+// Communication apps: 50% width on the MSI 32"
+window-rule {
+    match app-id=r#"^discord$"# on-output="Microstep MSI MAG321CQR KA3H071804955"
+    match app-id=r#"^vesktop$"# on-output="Microstep MSI MAG321CQR KA3H071804955"
+    match app-id=r#"^Element"# on-output="Microstep MSI MAG321CQR KA3H071804955"
+    match app-id=r#"^signal$"# on-output="Microstep MSI MAG321CQR KA3H071804955"
+    default-column-width { proportion 0.5; }
+}
+
+// Communication apps: open maximized on all other displays
 window-rule {
     match app-id=r#"^discord$"#
     match app-id=r#"^vesktop$"#
     match app-id=r#"^Element"#
     match app-id=r#"^signal$"#
+    exclude on-output="Microstep MSI MAG321CQR KA3H071804955"
     open-maximized true
 }
 

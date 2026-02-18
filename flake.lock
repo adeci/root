@@ -221,6 +221,28 @@
         "type": "github"
       }
     },
+    "niri": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay_2"
+      },
+      "locked": {
+        "lastModified": 1771361678,
+        "narHash": "sha256-xSSdWXOFqkJzJIPXFqd5ORm4CJTGHP0JVbjWPC3QvCM=",
+        "ref": "window-rule-on-output",
+        "rev": "a8f3848dfcdf638f3e3220f6fbe653ade862ea4f",
+        "revCount": 2685,
+        "type": "git",
+        "url": "file:///home/alex/git/niri"
+      },
+      "original": {
+        "ref": "window-rule-on-output",
+        "type": "git",
+        "url": "file:///home/alex/git/niri"
+      }
+    },
     "nix-darwin": {
       "inputs": {
         "nixpkgs": [
@@ -351,6 +373,7 @@
         "devblog": "devblog",
         "grub2-themes": "grub2-themes",
         "home-manager": "home-manager",
+        "niri": "niri",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
         "nixpkgs-master": "nixpkgs-master",
@@ -383,6 +406,27 @@
       }
     },
     "rust-overlay_2": {
+      "inputs": {
+        "nixpkgs": [
+          "niri",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1757989933,
+        "narHash": "sha256-9cpKYWWPCFhgwQTww8S94rTXgg8Q8ydFv9fXM6I8xQM=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "8249aa3442fb9b45e615a35f39eca2fe5510d7c3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_3": {
       "inputs": {
         "nixpkgs": [
           "trader-rs",
@@ -460,7 +504,7 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rust-overlay": "rust-overlay_2",
+        "rust-overlay": "rust-overlay_3",
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {

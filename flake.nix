@@ -34,6 +34,9 @@
 
     trader-rs.url = "git+ssh://git@github.com/adeci/trader-rs";
     trader-rs.inputs.nixpkgs.follows = "nixpkgs";
+
+    niri.url = "git+file:///home/alex/git/niri?ref=window-rule-on-output";
+    niri.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
