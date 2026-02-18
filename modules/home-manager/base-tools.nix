@@ -29,9 +29,6 @@ in
         packages.btop
         packages.nixvim
       ]
-      ++ lib.optionals pkgs.stdenv.isLinux [
-        packages.kitty
-      ]
       ++ lib.optionals pkgs.stdenv.isLinux (
         with pkgs;
         [

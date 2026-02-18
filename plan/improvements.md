@@ -86,6 +86,7 @@ flake.homeConfigurations = builtins.listToAttrs (
 ```
 
 Usage becomes:
+
 ```bash
 home-manager switch --flake .#alex-x86_64-linux    # Linux
 home-manager switch --flake .#alex-aarch64-darwin   # macOS

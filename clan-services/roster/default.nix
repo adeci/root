@@ -1,6 +1,5 @@
 _:
 let
-  # Default position definitions
   defaultPositions = {
     owner = {
       sudoAccess = true;
@@ -35,7 +34,6 @@ let
     };
   };
 
-  # Fallback defaults when no position is set
   fallbackPositionConfig = {
     sudoAccess = false;
     generatePassword = false;
@@ -44,7 +42,9 @@ let
     description = "Default (no position)";
   };
 
-  # Shared module generator parameterized by platform
+  resolve = import ./lib/resolve.nix;
+  generate = import ./lib/generate.nix;
+
   mkPlatformModule =
     { isDarwin }:
     settings: machine:
@@ -56,334 +56,31 @@ let
       ...
     }:
     let
-      allPositions = defaultPositions // settings.positions;
-
-      machineConfig = settings.machines.${machine.name} or { users = { }; };
-
-      # =================================================================
-      # Pre-validation: collect all configuration errors for clear reporting
-      # =================================================================
-      machineUserNames = builtins.attrNames machineConfig.users;
-
-      # Find users referenced in machine but not defined globally
-      undefinedUsers = lib.filter (u: !(settings.users ? ${u})) machineUserNames;
-
-      # Find positions that don't exist
-      getPosition =
-        username: machineUserCfg:
-        if machineUserCfg.position != null then
-          machineUserCfg.position
-        else
-          (settings.users.${username} or { }).defaultPosition or null;
-
-      usedPositions = lib.unique (
-        lib.filter (p: p != null) (lib.mapAttrsToList getPosition machineConfig.users)
-      );
-      invalidPositions = lib.filter (p: !(allPositions ? ${p})) usedPositions;
-
-      getUserConfig =
-        username: machineUserConfig:
-        let
-          userDef =
-            settings.users.${username}
-              or (throw "User '${username}' referenced in machine '${machine.name}' but not defined in users");
-
-          effectivePosition =
-            if machineUserConfig.position != null then
-              machineUserConfig.position
-            else if userDef.defaultPosition or null != null then
-              userDef.defaultPosition
-            else
-              null;
-
-          positionConfig =
-            if effectivePosition != null then
-              allPositions.${effectivePosition}
-                or (throw "Unknown position '${effectivePosition}' for user '${username}' on machine '${machine.name}'.")
-            else
-              fallbackPositionConfig;
-
-          # Resolve each flag with priority: machine override > user override > position default
-          effectiveFlags = {
-            sudoAccess =
-              if machineUserConfig.sudoAccess != null then
-                machineUserConfig.sudoAccess
-              else if userDef.sudoAccess or null != null then
-                userDef.sudoAccess
-              else
-                positionConfig.sudoAccess;
-            generatePassword =
-              if machineUserConfig.generatePassword != null then
-                machineUserConfig.generatePassword
-              else if userDef.generatePassword or null != null then
-                userDef.generatePassword
-              else
-                positionConfig.generatePassword;
-            homeDirectory =
-              if machineUserConfig.homeDirectory != null then
-                machineUserConfig.homeDirectory
-              else if userDef.homeDirectory or null != null then
-                userDef.homeDirectory
-              else
-                positionConfig.homeDirectory;
-            isSystemUser =
-              if machineUserConfig.isSystemUser != null then
-                machineUserConfig.isSystemUser
-              else if userDef.isSystemUser or null != null then
-                userDef.isSystemUser
-              else
-                positionConfig.isSystemUser;
-          };
-
-          effectiveUid = if machineUserConfig.uid != null then machineUserConfig.uid else userDef.uid;
-
-          effectiveGroups =
-            let
-              base = if machineUserConfig.groups != null then machineUserConfig.groups else userDef.groups;
-            in
-            base ++ machineUserConfig.extraGroups;
-
-          effectiveShell =
-            let
-              raw = if machineUserConfig.shell != null then machineUserConfig.shell else userDef.defaultShell;
-            in
-            if raw != null then pkgs.${raw} else null;
-
-          effectiveSshKeys =
-            let
-              base =
-                if machineUserConfig.sshAuthorizedKeys != null then
-                  machineUserConfig.sshAuthorizedKeys
-                else
-                  userDef.sshAuthorizedKeys;
-            in
-            base ++ machineUserConfig.extraSshAuthorizedKeys;
-
-          homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
-
-          # HM profiles: machine override > user default, plus extras
-          effectiveHmProfiles =
-            let
-              baseProfiles =
-                if machineUserConfig.homeManagerProfiles != null then
-                  machineUserConfig.homeManagerProfiles
-                else
-                  userDef.homeManagerProfiles;
-            in
-            baseProfiles ++ machineUserConfig.extraHomeManagerProfiles;
-        in
-        {
-          inherit
-            username
-            userDef
-            positionConfig
-            effectiveFlags
-            effectiveUid
-            effectiveGroups
-            effectiveShell
-            effectiveSshKeys
-            effectivePosition
-            effectiveHmProfiles
-            homeDir
-            ;
-        };
-
-      # Process all users for this machine
-      allUserConfigs = lib.mapAttrs getUserConfig machineConfig.users;
-
-      # Collect users who need passwords (NixOS only)
-      usersNeedingPasswords =
-        if isDarwin then
-          { }
-        else
-          lib.filterAttrs (_: cfg: cfg.effectiveFlags.generatePassword) allUserConfigs;
-
-      # Collect SSH keys for root from users with sudo access (NixOS only)
-      rootSshKeys =
-        if isDarwin then
-          [ ]
-        else
-          lib.flatten (
-            lib.mapAttrsToList (
-              _: cfg: if cfg.effectiveFlags.sudoAccess then cfg.effectiveSshKeys else [ ]
-            ) allUserConfigs
-          );
-
-      # =================================================================
-      # Home-manager profile resolution
-      # =================================================================
-
-      # Validate all referenced profile names exist
-      allUsedProfileNames = lib.unique (
-        lib.concatMap (cfg: cfg.effectiveHmProfiles) (builtins.attrValues allUserConfigs)
-      );
-      unknownProfiles = lib.filter (p: !(settings.homeManagerProfiles ? ${p})) allUsedProfileNames;
-
-      # Non-system users with HM profiles
-      hmUsers = lib.filterAttrs (
-        _: cfg: !cfg.effectiveFlags.isSystemUser && cfg.effectiveHmProfiles != [ ]
-      ) allUserConfigs;
-
-      hasHmUsers = hmUsers != { };
-
-      # Find the owner user for primaryUser
-      ownerUser = lib.findFirst (
-        username:
-        let
-          cfg = allUserConfigs.${username};
-        in
-        cfg.effectivePosition == "owner"
-      ) null (builtins.attrNames allUserConfigs);
-
+      resolved = resolve {
+        inherit
+          lib
+          pkgs
+          settings
+          machine
+          isDarwin
+          defaultPositions
+          fallbackPositionConfig
+          ;
+      };
     in
     {
-      config = lib.mkMerge [
-        # Configuration validation assertions
-        {
-          assertions = [
-            {
-              assertion = undefinedUsers == [ ];
-              message = "Roster: Users referenced in machine '${machine.name}' but not defined: ${builtins.concatStringsSep ", " undefinedUsers}";
-            }
-            {
-              assertion = invalidPositions == [ ];
-              message = "Roster: Unknown positions used in machine '${machine.name}': ${builtins.concatStringsSep ", " invalidPositions}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}";
-            }
-            {
-              assertion = unknownProfiles == [ ];
-              message = "Roster: Unknown HM profiles on machine '${machine.name}': ${builtins.concatStringsSep ", " unknownProfiles}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames settings.homeManagerProfiles)}";
-            }
-          ];
-        }
-
-        # User accounts
-        {
-          users.users = lib.mapAttrs (
-            username: cfg:
-            lib.mkMerge [
-              # Base configuration (platform-aware)
-              (
-                if isDarwin then
-                  {
-                    name = username;
-                    uid = cfg.effectiveUid;
-                    home = cfg.homeDir;
-                    inherit (cfg.userDef) description;
-                    openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
-                  }
-                else
-                  {
-                    uid = cfg.effectiveUid;
-                    inherit (cfg.userDef) description;
-                    inherit (cfg.effectiveFlags) isSystemUser;
-                    isNormalUser = !cfg.effectiveFlags.isSystemUser;
-                    createHome = cfg.effectiveFlags.homeDirectory;
-                    home = if cfg.effectiveFlags.homeDirectory then cfg.homeDir else "/var/empty";
-                    group = if cfg.effectiveFlags.isSystemUser then username else "users";
-                    extraGroups = cfg.effectiveGroups ++ (lib.optional cfg.effectiveFlags.sudoAccess "wheel");
-                    openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
-                  }
-              )
-
-              # Shell configuration
-              (lib.mkIf (cfg.effectiveShell != null) {
-                shell = cfg.effectiveShell;
-              })
-            ]
-          ) allUserConfigs;
-        }
-
-        # NixOS-only: Root SSH access for admins
-        (lib.mkIf (!isDarwin) {
-          users.users.root.openssh.authorizedKeys.keys = rootSshKeys;
-        })
-
-        # NixOS-only: System user groups
-        (lib.mkIf (!isDarwin) {
-          users.groups = lib.mapAttrs' (username: _: lib.nameValuePair username { }) (
-            lib.filterAttrs (_: cfg: cfg.effectiveFlags.isSystemUser) allUserConfigs
-          );
-        })
-
-        # NixOS-only: Password generators
-        (lib.mkIf (!isDarwin) {
-          clan.core.vars.generators = lib.mapAttrs' (username: _: {
-            name = "user-password-${username}";
-            value = {
-              files.user-password-hash = {
-                neededFor = "users";
-                restartUnits = lib.optional config.services.userborn.enable "userborn.service";
-              };
-              files.user-password.deploy = false;
-
-              prompts.user-password = {
-                display = {
-                  group = username;
-                  label = "password";
-                  required = false;
-                  helperText = "Leave empty to auto-generate a secure password";
-                };
-                type = "hidden";
-                persist = true;
-                description = "Password for user ${username}";
-              };
-
-              share = true;
-
-              runtimeInputs = [
-                pkgs.coreutils
-                pkgs.xkcdpass
-                pkgs.mkpasswd
-              ];
-
-              script = ''
-                prompt_value=$(cat "$prompts"/user-password)
-                if [[ -n "''${prompt_value-}" ]]; then
-                  echo "$prompt_value" | tr -d "\n" > "$out"/user-password
-                else
-                  xkcdpass --numwords 4 --delimiter - --count 1 | tr -d "\n" > "$out"/user-password
-                fi
-                mkpasswd -s -m sha-512 < "$out"/user-password | tr -d "\n" > "$out"/user-password-hash
-              '';
-            };
-          }) usersNeedingPasswords;
-        })
-
-        # NixOS-only: hashed password files
-        (lib.mkIf (!isDarwin) {
-          users.users = lib.mapAttrs (username: _: {
-            hashedPasswordFile =
-              config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
-          }) usersNeedingPasswords;
-        })
-
-        # Set primaryUser from roster owner
-        (lib.mkIf (ownerUser != null) {
-          adeci.primaryUser = lib.mkDefault ownerUser;
-        })
-
-        # Auto-enable home-manager infrastructure when any user has HM profiles
-        (lib.mkIf hasHmUsers {
-          adeci.home-manager.enable = true;
-        })
-
-        # Generate home-manager user configs from HM profiles
-        (lib.mkIf hasHmUsers {
-          home-manager.users = lib.mapAttrs (
-            _username: cfg:
-            let
-              profilePaths = map (name: settings.homeManagerProfiles.${name}) cfg.effectiveHmProfiles;
-            in
-            {
-              imports = map (path: inputs.self + "/${path}") profilePaths;
-              home.stateVersion = if isDarwin then settings.homeStateVersion else config.system.stateVersion;
-            }
-            // lib.optionalAttrs isDarwin {
-              home.homeDirectory = cfg.homeDir;
-            }
-          ) hmUsers;
-        })
-      ];
+      config = lib.mkMerge (generate {
+        inherit
+          lib
+          pkgs
+          config
+          inputs
+          settings
+          machine
+          isDarwin
+          resolved
+          ;
+      });
     };
 in
 {
@@ -401,7 +98,7 @@ in
       { lib, ... }:
       {
         options = {
-          # Home-manager profile definitions (named groups of adeci.* HM module names)
+          # Home-manager profile definitions (named groups of HM module names)
           homeManagerProfiles = lib.mkOption {
             type = lib.types.attrsOf lib.types.str;
             default = { };
@@ -414,11 +111,11 @@ in
             description = "Named HM profiles mapping to file paths (relative to flake root)";
           };
 
-          # Default HM stateVersion for Darwin (NixOS uses system.stateVersion)
-          homeStateVersion = lib.mkOption {
+          # Darwin home.stateVersion (NixOS derives it from system.stateVersion)
+          darwinHomeStateVersion = lib.mkOption {
             type = lib.types.str;
-            default = "24.11";
-            description = "Default home.stateVersion for Darwin machines";
+            default = "25.11";
+            description = "home.stateVersion for Darwin machines";
           };
 
           # Custom position definitions (extends/overrides defaults)

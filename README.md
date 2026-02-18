@@ -49,7 +49,7 @@ modules/                    # composable feature modules
   home-manager/             #   user config (tools, shell, desktop, fish, git, ...)
 
 machines/                   # per-machine configurations
-dotpkgs/                    # wrapped tool packages (btop, kitty, nixvim, ...)
+dotpkgs/                    # wrapped tool packages via lassulus/wrappers (btop, kitty, nixvim, ...)
 pkgs/                       # custom package derivations (claude-code, vesktop)
 cloud/                      # AWS/OpenTofu terranix cloud machine provisoning
 vars/ + sops/               # secrets (age-encrypted) managed fully thru clan
@@ -130,6 +130,14 @@ Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" 
 3. Add the machine with user assignments in `clan-inventory/instances/roster/machines.nix`
 4. `git add` the new files, then `nix build` to verify
 
+**Add a Darwin machine:**
+
+1. Create `machines/<name>/configuration.nix` importing `../../modules/darwin`
+2. Set `nixpkgs.hostPlatform` and `system.stateVersion`
+3. Add to `clan-inventory/machines.nix` with `machineClass = "darwin"` and empty tags
+4. Add roster user assignments in `clan-inventory/instances/roster/machines.nix`
+5. `git add` the new files, then `nix build .#darwinConfigurations.<name>.system` to verify
+
 **Add a user:**
 
 1. Add user config to `clan-inventory/instances/roster/users.nix` (uid, description, groups, SSH keys, defaultPosition, defaultShell, homeManagerProfiles)
@@ -170,7 +178,8 @@ All `.age` files are excluded from formatting and linting.
 For non-NixOS, non-Darwin machines (e.g. a plain Linux box or WSL), a standalone home-manager configuration is available:
 
 ```bash
-home-manager switch --flake .#alex
+home-manager switch --flake .#alex-x86_64-linux    # Linux
+home-manager switch --flake .#alex-aarch64-darwin   # macOS
 ```
 
 This provides base tools, shell tools, dev tools, fish, and git -- without requiring NixOS or nix-darwin.

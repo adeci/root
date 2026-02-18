@@ -45,8 +45,8 @@ in
     expected = true;
   };
 
-  test_interface_homeStateVersion_is_serializable = {
-    expr = interface.options ? homeStateVersion;
+  test_interface_darwinHomeStateVersion_is_serializable = {
+    expr = interface.options ? darwinHomeStateVersion;
     expected = true;
   };
 

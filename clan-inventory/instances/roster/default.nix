@@ -1,5 +1,4 @@
-_:
-{
+_: {
   roster = {
     module = {
       name = "@adeci/roster";
@@ -13,6 +12,7 @@ _:
           desktop = "home-manager/profiles/desktop.nix";
           darwin-desktop = "home-manager/profiles/darwin-desktop.nix";
         };
+        darwinHomeStateVersion = "25.11";
         users = import ./users.nix;
         machines = import ./machines.nix;
       };

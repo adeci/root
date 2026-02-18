@@ -49,22 +49,12 @@ in
     linux-wifi-hotspot
   ];
 
-  hardware.amdgpu.opencl.enable = true;
-
-  services.xserver.videoDrivers = [ "amdgpu" ];
-
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-
   networking = {
     networkmanager.enable = true;
     hostName = "modus";
   };
 
   time.timeZone = "America/New_York";
-  #time.timeZone = "Asia/Almaty";
 
   # vm building
   virtualisation.libvirtd.enable = true;

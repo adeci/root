@@ -8,8 +8,14 @@ let
   cfg = config.adeci.amd-gpu;
 in
 {
-  options.adeci.amd-gpu.enable = lib.mkEnableOption "AMD GPU monitoring support";
+  options.adeci.amd-gpu.enable = lib.mkEnableOption "AMD GPU support";
   config = lib.mkIf cfg.enable {
+    hardware.amdgpu.opencl.enable = true;
+    services.xserver.videoDrivers = [ "amdgpu" ];
+    hardware.graphics = {
+      enable = true;
+      enable32Bit = true;
+    };
     # btop needs rocm-smi and libdrm in ld path for gpu monitoring
     environment.sessionVariables.LD_LIBRARY_PATH = "${pkgs.rocmPackages.rocm-smi}/lib:${pkgs.libdrm}/lib";
   };
