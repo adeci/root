@@ -136,11 +136,12 @@
       in
       {
         imports = map (path: inputs.self + "/${path}") profilePaths;
-        home.stateVersion =
-          if isDarwin then settings.darwinHomeStateVersion else config.system.stateVersion;
-      }
-      // lib.optionalAttrs isDarwin {
-        home.homeDirectory = cfg.homeDir;
+        home = {
+          stateVersion = if isDarwin then settings.darwinHomeStateVersion else config.system.stateVersion;
+        }
+        // lib.optionalAttrs isDarwin {
+          homeDirectory = cfg.homeDir;
+        };
       }
     ) resolved.hmUsers;
   })
