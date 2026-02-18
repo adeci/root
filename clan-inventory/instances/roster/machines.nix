@@ -2,7 +2,9 @@
 
   aegis = {
     users = {
-      alex = { };
+      alex = {
+        extraHomeManagerProfiles = [ "desktop" ];
+      };
     };
   };
 
@@ -32,27 +34,26 @@
 
   malum = {
     users = {
-      alex = { };
-    };
-  };
-
-  marine = {
-    users = {
-      alex = { };
-      dima = { };
+      alex = {
+        extraHomeManagerProfiles = [ "darwin-desktop" ];
+      };
     };
   };
 
   modus = {
     users = {
-      alex = { };
+      alex = {
+        extraHomeManagerProfiles = [ "desktop" ];
+      };
       dima = { };
     };
   };
 
   praxis = {
     users = {
-      alex = { };
+      alex = {
+        extraHomeManagerProfiles = [ "desktop" ];
+      };
       dima = { };
     };
   };

@@ -159,6 +159,17 @@ let
             base ++ machineUserConfig.extraSshAuthorizedKeys;
 
           homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
+
+          # HM profiles: machine override > user default, plus extras
+          effectiveHmProfiles =
+            let
+              baseProfiles =
+                if machineUserConfig.homeManagerProfiles != null then
+                  machineUserConfig.homeManagerProfiles
+                else
+                  userDef.homeManagerProfiles;
+            in
+            baseProfiles ++ machineUserConfig.extraHomeManagerProfiles;
         in
         {
           inherit
@@ -171,6 +182,7 @@ let
             effectiveShell
             effectiveSshKeys
             effectivePosition
+            effectiveHmProfiles
             homeDir
             ;
         };
@@ -196,6 +208,35 @@ let
             ) allUserConfigs
           );
 
+      # =================================================================
+      # Home-manager profile resolution
+      # =================================================================
+
+      # Validate all referenced profile names exist
+      allUsedProfileNames = lib.unique (
+        lib.concatMap (cfg: cfg.effectiveHmProfiles) (builtins.attrValues allUserConfigs)
+      );
+      unknownProfiles = lib.filter (p: !(settings.homeManagerProfiles ? ${p})) allUsedProfileNames;
+
+      # Expand profile name to list of module names
+      expandHmProfile = profileName: settings.homeManagerProfiles.${profileName};
+
+      # Non-system users with HM profiles
+      hmUsers = lib.filterAttrs (
+        _: cfg: !cfg.effectiveFlags.isSystemUser && cfg.effectiveHmProfiles != [ ]
+      ) allUserConfigs;
+
+      hasHmUsers = hmUsers != { };
+
+      # Find the owner user for primaryUser
+      ownerUser = lib.findFirst (
+        username:
+        let
+          cfg = allUserConfigs.${username};
+        in
+        cfg.effectivePosition == "owner"
+      ) null (builtins.attrNames allUserConfigs);
+
     in
     {
       config = lib.mkMerge [
@@ -209,6 +250,10 @@ let
             {
               assertion = invalidPositions == [ ];
               message = "Roster: Unknown positions used in machine '${machine.name}': ${builtins.concatStringsSep ", " invalidPositions}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames allPositions)}";
+            }
+            {
+              assertion = unknownProfiles == [ ];
+              message = "Roster: Unknown HM profiles on machine '${machine.name}': ${builtins.concatStringsSep ", " unknownProfiles}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames settings.homeManagerProfiles)}";
             }
           ];
         }
@@ -313,6 +358,38 @@ let
               config.clan.core.vars.generators."user-password-${username}".files.user-password-hash.path;
           }) usersNeedingPasswords;
         })
+
+        # Set primaryUser from roster owner
+        (lib.mkIf (ownerUser != null) {
+          adeci.primaryUser = lib.mkDefault ownerUser;
+        })
+
+        # Auto-enable home-manager infrastructure when any user has HM profiles
+        (lib.mkIf hasHmUsers {
+          adeci.home-manager.enable = true;
+        })
+
+        # Generate home-manager user configs from HM profiles
+        (lib.mkIf hasHmUsers {
+          home-manager.users = lib.mapAttrs (
+            _username: cfg:
+            let
+              moduleNames = lib.unique (lib.concatMap expandHmProfile cfg.effectiveHmProfiles);
+            in
+            {
+              home.stateVersion = if isDarwin then settings.homeStateVersion else config.system.stateVersion;
+              adeci = lib.listToAttrs (
+                map (name: {
+                  inherit name;
+                  value.enable = true;
+                }) moduleNames
+              );
+            }
+            // lib.optionalAttrs isDarwin {
+              home.homeDirectory = cfg.homeDir;
+            }
+          ) hmUsers;
+        })
       ];
     };
 in
@@ -331,6 +408,26 @@ in
       { lib, ... }:
       {
         options = {
+          # Home-manager profile definitions (named groups of adeci.* HM module names)
+          homeManagerProfiles = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+            default = { };
+            example = lib.literalExpression ''
+              {
+                base = [ "base-tools" "shell-tools" "dev-tools" "fish" "git" ];
+                desktop = [ "desktop" ];
+              }
+            '';
+            description = "Named HM profiles mapping to lists of adeci.* module names to enable";
+          };
+
+          # Default HM stateVersion for Darwin (NixOS uses system.stateVersion)
+          homeStateVersion = lib.mkOption {
+            type = lib.types.str;
+            default = "24.11";
+            description = "Default home.stateVersion for Darwin machines";
+          };
+
           # Custom position definitions (extends/overrides defaults)
           positions = lib.mkOption {
             type = lib.types.attrsOf (
@@ -419,6 +516,15 @@ in
                     example = "fish";
                     description = "Default shell name (e.g., \"fish\", \"zsh\", \"bash\") — resolved to pkgs.\${name} in the generated module";
                   };
+                  homeManagerProfiles = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
+                    default = [ ];
+                    example = [
+                      "base"
+                      "desktop"
+                    ];
+                    description = "Default HM profile names for this user";
+                  };
                   sudoAccess = lib.mkOption {
                     type = lib.types.nullOr lib.types.bool;
                     default = null;
@@ -452,6 +558,7 @@ in
                   groups = [ "wheel" "video" ];
                   sshAuthorizedKeys = [ "ssh-ed25519 AAAAC3Nza..." ];
                   defaultShell = "fish";
+                  homeManagerProfiles = [ "base" ];
                 };
               }
             '';
@@ -512,6 +619,18 @@ in
                             example = [ "ssh-ed25519 AAAAC3Nza... extra-key" ];
                             description = "Additional SSH keys for this user on this machine";
                           };
+                          homeManagerProfiles = lib.mkOption {
+                            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+                            default = null;
+                            example = [ "base" ];
+                            description = "Override HM profiles for this user on this machine";
+                          };
+                          extraHomeManagerProfiles = lib.mkOption {
+                            type = lib.types.listOf lib.types.str;
+                            default = [ ];
+                            example = [ "desktop" ];
+                            description = "Additional HM profiles on top of the user's defaults";
+                          };
                           sudoAccess = lib.mkOption {
                             type = lib.types.nullOr lib.types.bool;
                             default = null;
@@ -549,6 +668,7 @@ in
                   users.bob = {
                     position = "admin";
                     extraGroups = [ "docker" ];
+                    extraHomeManagerProfiles = [ "desktop" ];
                   };
                 };
               }
@@ -568,9 +688,24 @@ in
 
   # Applied to all machines regardless of instance
   perMachine = {
-    nixosModule = {
-      users.mutableUsers = false;
-    };
-    darwinModule = { };
+    nixosModule =
+      { lib, ... }:
+      {
+        options.adeci.primaryUser = lib.mkOption {
+          type = lib.types.str;
+          default = "alex";
+          description = "Primary user (owner) of this machine, derived from roster";
+        };
+        config.users.mutableUsers = false;
+      };
+    darwinModule =
+      { lib, ... }:
+      {
+        options.adeci.primaryUser = lib.mkOption {
+          type = lib.types.str;
+          default = "alex";
+          description = "Primary user (owner) of this machine, derived from roster";
+        };
+      };
   };
 }

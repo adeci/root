@@ -9,7 +9,6 @@
     base.enable = true;
     dev.enable = true;
     shell.enable = true;
-    home-manager.enable = true;
   };
 
   networking = {
@@ -37,7 +36,7 @@
     trusted-users = [
       "root"
       "@wheel"
-      "alex"
+      config.adeci.primaryUser
       "brittonr"
       "dima"
       "fmzakari"
@@ -62,11 +61,6 @@
       ];
     };
 
-  };
-
-  home-manager.users.alex = {
-    imports = [ ./home.nix ];
-    home.stateVersion = config.system.stateVersion;
   };
 
 }

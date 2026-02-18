@@ -29,7 +29,6 @@
     social.enable = true;
     gaming.enable = true;
     creative.enable = true;
-    home-manager.enable = true;
   };
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
@@ -66,14 +65,9 @@
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
-  home-manager.users.alex = {
-    imports = [ ./home.nix ];
-    home.stateVersion = config.system.stateVersion;
-  };
-
   nix.settings.trusted-users = [
     "root"
-    "alex"
+    config.adeci.primaryUser
   ];
 
   # Fix gpd pocket 4 USB devices blocking suspend

@@ -15,7 +15,7 @@ in
 
       Host leviathan
         HostName leviathan.cymric-daggertooth.ts.net
-        User alex
+        User ${config.adeci.primaryUser}
         ForwardAgent yes
     '';
   };

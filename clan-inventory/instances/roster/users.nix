@@ -16,6 +16,7 @@
     ];
     defaultPosition = "owner";
     defaultShell = "fish";
+    homeManagerProfiles = [ "base" ];
   };
 
   brittonr = {

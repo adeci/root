@@ -18,7 +18,6 @@
     gnome.enable = true;
     amd-gpu.enable = true;
     printing.enable = true;
-    home-manager.enable = true;
   };
 
   networking = {
@@ -60,15 +59,10 @@
     ACTION=="add", SUBSYSTEM=="leds", KERNEL=="platform::micmute", ATTR{trigger}="none", ATTR{brightness}="0"
   '';
 
-  home-manager.users.alex = {
-    imports = [ ./home.nix ];
-    home.stateVersion = config.system.stateVersion;
-  };
-
   nix.settings.trusted-users = [
     "root"
     "@wheel"
-    "alex"
+    config.adeci.primaryUser
   ];
 
 }

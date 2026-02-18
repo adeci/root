@@ -30,7 +30,6 @@ in
     niri.enable = true;
     keyd.enable = true;
     laptop.enable = true;
-    home-manager.enable = true;
   };
 
   environment.systemPackages = with pkgs; [
@@ -59,14 +58,9 @@ in
     LIBVA_DRIVER_NAME = "i965";
   };
 
-  home-manager.users.alex = {
-    imports = [ ./home.nix ];
-    home.stateVersion = config.system.stateVersion;
-  };
-
   nix.settings.trusted-users = [
     "root"
-    "alex"
+    config.adeci.primaryUser
   ];
 
 }

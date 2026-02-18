@@ -10,7 +10,14 @@ let
   packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
-  options.adeci.niri.enable = lib.mkEnableOption "Niri compositor";
+  options.adeci.niri = {
+    enable = lib.mkEnableOption "Niri compositor";
+    user = lib.mkOption {
+      type = lib.types.str;
+      default = config.adeci.primaryUser;
+      description = "User for greetd auto-login";
+    };
+  };
   config = lib.mkIf cfg.enable {
     adeci.desktop-base.enable = lib.mkDefault true;
     environment.systemPackages = [
@@ -20,16 +27,16 @@ in
     ];
     programs.niri.enable = true;
 
-    # Auto-login alex into niri via greetd
+    # Auto-login into niri via greetd
     services.greetd = {
       enable = true;
       settings.default_session = {
         command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
-        user = "alex";
+        user = cfg.user;
       };
       settings.initial_session = {
         command = "niri-session";
-        user = "alex";
+        user = cfg.user;
       };
     };
     security.pam.services.greetd.enableGnomeKeyring = true;

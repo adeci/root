@@ -40,6 +40,16 @@ in
     expected = true;
   };
 
+  test_interface_homeManagerProfiles_is_serializable = {
+    expr = interface.options ? homeManagerProfiles;
+    expected = true;
+  };
+
+  test_interface_homeStateVersion_is_serializable = {
+    expr = interface.options ? homeStateVersion;
+    expected = true;
+  };
+
   # ==========================================================================
   # 2. Module Structure Validation
   # ==========================================================================
@@ -109,6 +119,11 @@ in
     expected = true;
   };
 
+  test_user_has_homeManagerProfiles = {
+    expr = userOpts ? homeManagerProfiles;
+    expected = true;
+  };
+
   # Machine user options
   test_machine_user_has_position = {
     expr = machineUserOpts ? position;
@@ -142,6 +157,16 @@ in
 
   test_machine_user_has_extraSshAuthorizedKeys = {
     expr = machineUserOpts ? extraSshAuthorizedKeys;
+    expected = true;
+  };
+
+  test_machine_user_has_homeManagerProfiles = {
+    expr = machineUserOpts ? homeManagerProfiles;
+    expected = true;
+  };
+
+  test_machine_user_has_extraHomeManagerProfiles = {
+    expr = machineUserOpts ? extraHomeManagerProfiles;
     expected = true;
   };
 
@@ -564,6 +589,150 @@ in
 
   test_machine_user_shell_has_example = {
     expr = machineUserOpts.shell ? example;
+    expected = true;
+  };
+
+  # ==========================================================================
+  # 8. Home-Manager Profile Resolution Tests
+  # ==========================================================================
+
+  # HM profile override: machine overrides user default
+  test_hm_profile_machine_overrides_user = {
+    expr =
+      let
+        userProfiles = [
+          "base"
+          "desktop"
+        ];
+        machineProfiles = [ "base" ];
+        machineExtra = [ ];
+        effective = if machineProfiles != null then machineProfiles else userProfiles;
+      in
+      effective ++ machineExtra;
+    expected = [ "base" ];
+  };
+
+  # HM profile: user default when machine is null
+  test_hm_profile_falls_back_to_user = {
+    expr =
+      let
+        userProfiles = [
+          "base"
+          "desktop"
+        ];
+        machineProfiles = null;
+        machineExtra = [ ];
+        effective = if machineProfiles != null then machineProfiles else userProfiles;
+      in
+      effective ++ machineExtra;
+    expected = [
+      "base"
+      "desktop"
+    ];
+  };
+
+  # HM profile: extras extend base profiles
+  test_hm_profile_extras_extend_base = {
+    expr =
+      let
+        userProfiles = [ "base" ];
+        machineProfiles = null;
+        machineExtra = [ "desktop" ];
+        effective = if machineProfiles != null then machineProfiles else userProfiles;
+      in
+      effective ++ machineExtra;
+    expected = [
+      "base"
+      "desktop"
+    ];
+  };
+
+  # HM profile: empty when user has no profiles and no extras
+  test_hm_profile_empty_when_none = {
+    expr =
+      let
+        userProfiles = [ ];
+        machineProfiles = null;
+        machineExtra = [ ];
+        effective = if machineProfiles != null then machineProfiles else userProfiles;
+      in
+      effective ++ machineExtra;
+    expected = [ ];
+  };
+
+  # HM profile expansion: profile name resolves to module names
+  test_hm_profile_expansion = {
+    expr =
+      let
+        profiles = {
+          base = [
+            "base-tools"
+            "shell-tools"
+            "dev-tools"
+            "fish"
+            "git"
+          ];
+          desktop = [ "desktop" ];
+        };
+        expandProfile = name: profiles.${name};
+        profileNames = [
+          "base"
+          "desktop"
+        ];
+      in
+      lib.concatMap expandProfile profileNames;
+    expected = [
+      "base-tools"
+      "shell-tools"
+      "dev-tools"
+      "fish"
+      "git"
+      "desktop"
+    ];
+  };
+
+  # HM profile validation: detects unknown profile names
+  test_hm_profile_unknown_detection = {
+    expr =
+      let
+        definedProfiles = {
+          base = [ "base-tools" ];
+          desktop = [ "desktop" ];
+        };
+        usedProfiles = [
+          "base"
+          "nonexistent"
+          "desktop"
+        ];
+        unknownProfiles = lib.filter (p: !(definedProfiles ? ${p})) usedProfiles;
+      in
+      unknownProfiles;
+    expected = [ "nonexistent" ];
+  };
+
+  # HM profile: system users should be skipped (pure logic)
+  test_hm_profile_system_user_skipped = {
+    expr =
+      let
+        users = {
+          alice = {
+            isSystemUser = false;
+            hmProfiles = [ "base" ];
+          };
+          svc = {
+            isSystemUser = true;
+            hmProfiles = [ "base" ];
+          };
+        };
+        hmUsers = lib.filterAttrs (_: u: !u.isSystemUser && u.hmProfiles != [ ]) users;
+      in
+      builtins.attrNames hmUsers;
+    expected = [ "alice" ];
+  };
+
+  # HM profile: machine user homeManagerProfiles is nullable
+  test_machine_user_homeManagerProfiles_is_nullable = {
+    expr = machineUserOpts.homeManagerProfiles.type.name == "nullOr";
     expected = true;
   };
 

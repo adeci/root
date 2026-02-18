@@ -1,3 +1,6 @@
+# Standalone home-manager configuration for non-NixOS/non-Darwin machines.
+# Use `home-manager switch --flake .#alex` on any Linux box without NixOS.
+# For Clan-managed machines, HM is configured via roster profiles instead.
 { inputs, self, ... }:
 let
   pkgs = import inputs.nixpkgs {

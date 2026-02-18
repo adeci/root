@@ -54,7 +54,7 @@ in
     };
 
     # Primary user
-    system.primaryUser = "alex";
+    system.primaryUser = config.adeci.primaryUser;
 
     # Fish shell (registers as valid login shell on Darwin)
     programs.fish.enable = true;

@@ -4,6 +4,9 @@
   pkgs,
   ...
 }:
+# Desktop environment module for niri compositor.
+# Intentionally coupled to noctalia-shell — this IS the desktop UX,
+# combining shell bar/widgets, wallpaper, and niri window manager config.
 let
   cfg = config.adeci.desktop;
   wallpaperDir = "${config.home.homeDirectory}/wallpapers";

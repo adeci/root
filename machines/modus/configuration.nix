@@ -41,7 +41,6 @@ in
     social.enable = true;
     gaming.enable = true;
     creative.enable = true;
-    home-manager.enable = true;
   };
 
   environment.systemPackages = with pkgs; [
@@ -88,14 +87,9 @@ in
     };
   };
 
-  home-manager.users.alex = {
-    imports = [ ./home.nix ];
-    home.stateVersion = config.system.stateVersion;
-  };
-
   nix.settings.trusted-users = [
     "root"
-    "alex"
+    config.adeci.primaryUser
   ];
 
 }

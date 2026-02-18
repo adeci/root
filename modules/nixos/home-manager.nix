@@ -9,7 +9,7 @@ let
   cfg = config.adeci.home-manager;
 in
 {
-  options.adeci.home-manager.enable = lib.mkEnableOption "home-manager for user alex";
+  options.adeci.home-manager.enable = lib.mkEnableOption "home-manager infrastructure";
   imports = [ inputs.home-manager.nixosModules.home-manager ];
   config = lib.mkIf cfg.enable {
     home-manager = {

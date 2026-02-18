@@ -47,14 +47,6 @@
     deploy.targetHost = "root@localhost"; # local only for work
   };
 
-  # marine = {
-  #   name = "marine";
-  #   tags = [
-  #     "adeci-net"
-  #   ];
-  #   deploy.targetHost = "root@marine";
-  # };
-
   modus = {
     name = "modus";
     tags = [
