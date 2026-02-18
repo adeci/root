@@ -6,3 +6,7 @@ cloud/.terraform/
 cloud/*.tfstate
 cloud/*.tfstate.*
 cloud/config.tf.json
+
+.claude/
+CLAUDE.md
+.pi/
