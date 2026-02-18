@@ -8,17 +8,17 @@ Assessment of the Root infrastructure monorepo after the sway/spud cleanup and d
 
 ## Ratings
 
-| Category | Score | Notes |
-|----------|-------|-------|
-| Architecture | 8/10 | Clean layering, consistent patterns, good use of Clan |
-| Code quality | 7/10 | Well-formatted, consistent style, no hacks — but hardcoded user and thin wrappers |
-| Deduplication | 8/10 | Machine configs are lean, shared patterns extracted to modules |
-| Roster service | 9/10 | Best part of the repo. Novel, well-engineered, dual-platform |
-| Documentation | 5/10 | CLAUDE.md is great internally, README is thin, no inline docs, gitignore contradiction |
-| Testability | 3/10 | Builds pass, that's it. No VM tests, no CI, no assertions tested |
-| Reference quality | 5/10 | Too much implicit knowledge, hardcoded user, no explanation of "why" |
-| Module design | 6/10 | All-or-nothing enables, no configurable options pattern demonstrated |
-| Secrets management | 6/10 | sops + clan vars exists but integration isn't documented or visible |
+| Category           | Score | Notes                                                                                  |
+| ------------------ | ----- | -------------------------------------------------------------------------------------- |
+| Architecture       | 8/10  | Clean layering, consistent patterns, good use of Clan                                  |
+| Code quality       | 7/10  | Well-formatted, consistent style, no hacks — but hardcoded user and thin wrappers      |
+| Deduplication      | 8/10  | Machine configs are lean, shared patterns extracted to modules                         |
+| Roster service     | 9/10  | Best part of the repo. Novel, well-engineered, dual-platform                           |
+| Documentation      | 5/10  | CLAUDE.md is great internally, README is thin, no inline docs, gitignore contradiction |
+| Testability        | 3/10  | Builds pass, that's it. No VM tests, no CI, no assertions tested                       |
+| Reference quality  | 5/10  | Too much implicit knowledge, hardcoded user, no explanation of "why"                   |
+| Module design      | 6/10  | All-or-nothing enables, no configurable options pattern demonstrated                   |
+| Secrets management | 6/10  | sops + clan vars exists but integration isn't documented or visible                    |
 
 ---
 
