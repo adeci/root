@@ -1,0 +1,3 @@
+{
+  adeci.shopify.enable = true;
+}

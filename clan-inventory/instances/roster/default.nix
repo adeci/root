@@ -11,6 +11,7 @@ _: {
           base = "home-manager/profiles/base.nix";
           desktop = "home-manager/profiles/desktop.nix";
           darwin-desktop = "home-manager/profiles/darwin-desktop.nix";
+          shopify = "home-manager/profiles/shopify.nix";
         };
         darwinHomeStateVersion = "25.11";
         users = import ./users.nix;

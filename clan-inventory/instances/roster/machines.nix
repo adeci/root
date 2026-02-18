@@ -35,7 +35,10 @@
   malum = {
     users = {
       alex = {
-        extraHomeManagerProfiles = [ "darwin-desktop" ];
+        extraHomeManagerProfiles = [
+          "darwin-desktop"
+          "shopify"
+        ];
       };
     };
   };

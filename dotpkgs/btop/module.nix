@@ -1,9 +1,9 @@
 { pkgs, wrappers, ... }:
 {
   btop = wrappers.wrapperModules.btop.apply {
-      inherit pkgs;
+    inherit pkgs;
 
-      "btop.conf".path = ./btop.conf;
+    "btop.conf".path = ./btop.conf;
 
-    };
+  };
 }

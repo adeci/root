@@ -20,6 +20,7 @@ in
       sharedModules = [
         inputs.noctalia-shell.homeModules.default
         ../../modules/home-manager
+        { targets.darwin.copyApps.enableChecks = false; }
       ];
     };
   };
