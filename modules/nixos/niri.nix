@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   self,
@@ -19,6 +20,7 @@ in
     };
   };
   config = lib.mkIf cfg.enable {
+    nixpkgs.overlays = [ inputs.niri.overlays.default ];
     adeci.desktop-base.enable = lib.mkDefault true;
     environment.systemPackages = [
       packages.kitty

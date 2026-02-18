@@ -28,15 +28,16 @@
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
+    # temp niri fork for per monitor window rules
+    niri.url = "github:adeci/niri?ref=window-rule-on-output";
+    niri.inputs.nixpkgs.follows = "nixpkgs";
+
     # Sites
     devblog.url = "github:adeci/devblog";
     devblog.inputs.nixpkgs.follows = "nixpkgs";
 
     trader-rs.url = "git+ssh://git@github.com/adeci/trader-rs";
     trader-rs.inputs.nixpkgs.follows = "nixpkgs";
-
-    niri.url = "git+file:///home/alex/git/niri?ref=window-rule-on-output";
-    niri.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =

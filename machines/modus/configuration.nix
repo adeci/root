@@ -25,8 +25,6 @@ in
     ../../modules/nixos
   ];
 
-  nixpkgs.overlays = [ inputs.niri.overlays.default ];
-
   adeci = {
     base.enable = true;
     dev.enable = true;
