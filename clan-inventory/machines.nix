@@ -1,13 +1,5 @@
 {
 
-  # bambrew = {
-  #   name = "bambrew";
-  #   tags = [
-  #     "adeci-net"
-  #   ];
-  #   deploy.targetHost = "root@bambrew";
-  # };
-
   aegis = {
     name = "aegis";
     tags = [
