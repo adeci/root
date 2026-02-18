@@ -29,6 +29,7 @@
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
     # temp niri fork for per monitor window rules
+    # https://github.com/niri-wm/niri/pull/3474
     niri.url = "github:adeci/niri?ref=window-rule-on-output";
     niri.inputs.nixpkgs.follows = "nixpkgs";
 
