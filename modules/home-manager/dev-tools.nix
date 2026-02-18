@@ -7,17 +7,16 @@
 }:
 let
   cfg = config.adeci.dev-tools;
-  pkgs-master = import inputs.nixpkgs-master {
-    inherit (pkgs.stdenv.hostPlatform) system;
-    config.allowUnfree = true;
-  };
+  llm-agents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
-  options.adeci.dev-tools.enable = lib.mkEnableOption "development tools (claude-code, gh, jujutsu)";
+  options.adeci.dev-tools.enable = lib.mkEnableOption "development tools (claude-code, pi, gh, jujutsu)";
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       awscli2
-      pkgs-master.claude-code-bin
+      llm-agents.claude-code
+      llm-agents.pi
+      llm-agents.ccusage
       gh
       jujutsu
       nixpkgs-review

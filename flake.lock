@@ -1,5 +1,27 @@
 {
   "nodes": {
+    "blueprint": {
+      "inputs": {
+        "nixpkgs": [
+          "llm-agents",
+          "nixpkgs"
+        ],
+        "systems": "systems_2"
+      },
+      "locked": {
+        "lastModified": 1769353768,
+        "narHash": "sha256-zI+7cbMI4wMIR57jMjDSEsVb3grapTnURDxxJPYFIW0=",
+        "owner": "numtide",
+        "repo": "blueprint",
+        "rev": "c7da5c70ad1c9b60b6f5d4f674fbe205d48d8f6c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "blueprint",
+        "type": "github"
+      }
+    },
     "clan-core": {
       "inputs": {
         "data-mesher": "data-mesher",
@@ -221,6 +243,30 @@
         "type": "github"
       }
     },
+    "llm-agents": {
+      "inputs": {
+        "blueprint": "blueprint",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1771386860,
+        "narHash": "sha256-xIUQg1MhOEmz8zmq2B3ywDtaPvUj5ad9SoLUJ5PJUL4=",
+        "owner": "numtide",
+        "repo": "llm-agents.nix",
+        "rev": "8b797c5c8a02c3f65b14a85b3d7673d421d06bca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "llm-agents.nix",
+        "type": "github"
+      }
+    },
     "niri": {
       "inputs": {
         "nixpkgs": [
@@ -309,29 +355,13 @@
         "type": "github"
       }
     },
-    "nixpkgs-master": {
-      "locked": {
-        "lastModified": 1771119812,
-        "narHash": "sha256-Nqo9LfbAz6QPEGeEcoA09u89PIbSAxrkXtLVSUq8BHY=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "cd2664195c274d53ba5430006533f3d15ebe1f1f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "ref": "master",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixvim": {
       "inputs": {
         "flake-parts": "flake-parts_3",
         "nixpkgs": [
           "nixpkgs"
         ],
-        "systems": "systems_2"
+        "systems": "systems_3"
       },
       "locked": {
         "lastModified": 1771023756,
@@ -373,10 +403,10 @@
         "devblog": "devblog",
         "grub2-themes": "grub2-themes",
         "home-manager": "home-manager",
+        "llm-agents": "llm-agents",
         "niri": "niri",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-master": "nixpkgs-master",
         "nixvim": "nixvim",
         "noctalia-shell": "noctalia-shell",
         "trader-rs": "trader-rs",
@@ -484,6 +514,21 @@
       }
     },
     "systems_2": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_3": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",

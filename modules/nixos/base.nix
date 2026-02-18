@@ -10,6 +10,7 @@ in
 {
   options.adeci.base.enable = lib.mkEnableOption "base system configuration";
   config = lib.mkIf cfg.enable {
+    adeci.numtide-cache.enable = lib.mkDefault true;
     nixpkgs.config.allowUnfree = true;
     services.openssh = {
       enable = true;
