@@ -12,11 +12,6 @@ in
     programs.ssh.extraConfig = ''
       Host *
         AddKeysToAgent yes
-
-      Host leviathan
-        HostName leviathan.cymric-daggertooth.ts.net
-        User ${config.adeci.primaryUser}
-        ForwardAgent yes
     '';
   };
 }

@@ -5,6 +5,6 @@ let
 in
 {
   # Expose instances and machines for clan-core
-  instances = instancesModule.instances;
+  inherit (instancesModule) instances;
   machines = import ./machines.nix;
 }

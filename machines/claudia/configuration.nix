@@ -51,12 +51,6 @@
         proxy_pass 100.99.42.67:24457;
       }
 
-      # dima rust (inactive)
-      # server {
-      #   listen 28082;
-      #   proxy_pass 100.99.42.67:28082;
-      # }
-
     '';
   };
 
@@ -64,7 +58,6 @@
     25565
     25566
     25568
-    28082
   ];
   networking.firewall.allowedUDPPorts = [
     24454

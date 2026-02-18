@@ -1,7 +1,6 @@
 { pkgs, wrappers, ... }:
 {
-  fuzzel = (
-    wrappers.wrapperModules.fuzzel.apply {
+  fuzzel = wrappers.wrapperModules.fuzzel.apply {
       inherit pkgs;
       settings = {
         main.font = "CaskaydiaMono Nerd Font:size=14";
@@ -17,6 +16,5 @@
           border = "444B6Aff";
         };
       };
-    }
-  );
+    };
 }

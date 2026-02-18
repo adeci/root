@@ -13,15 +13,10 @@ in
     inherit pkgs;
     extraSpecialArgs = { inherit inputs self; };
     modules = [
+      inputs.noctalia-shell.homeModules.default
       ../modules/home-manager
+      (import ../home-manager/profiles/base.nix)
       {
-        adeci = {
-          base-tools.enable = true;
-          shell-tools.enable = true;
-          dev-tools.enable = true;
-          fish.enable = true;
-          git.enable = true;
-        };
         home.username = "alex";
         home.homeDirectory = "/home/alex";
         home.stateVersion = "24.11";

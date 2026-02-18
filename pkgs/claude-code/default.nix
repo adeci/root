@@ -5,7 +5,7 @@
 }:
 let
   pkgs-master = import inputs.nixpkgs-master {
-    system = pkgs.stdenv.hostPlatform.system;
+    inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfree = true;
   };
 in

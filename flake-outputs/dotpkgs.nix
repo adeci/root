@@ -7,6 +7,6 @@
       customPkgs = import ../pkgs { inherit pkgs inputs; };
     in
     {
-      packages = builtins.mapAttrs (_: v: if v ? wrapper then v.wrapper else v) dotpkgs // customPkgs;
+      packages = builtins.mapAttrs (_: v: v.wrapper or v) dotpkgs // customPkgs;
     };
 }

@@ -10,6 +10,7 @@
       treefmt.programs.nixfmt.enable = true;
       treefmt.programs.nixfmt.package = pkgs.nixfmt;
       treefmt.programs.deadnix.enable = true;
+      treefmt.programs.statix.enable = true;
       treefmt.settings.global.excludes = [
         "*.png"
         "*.jpeg"

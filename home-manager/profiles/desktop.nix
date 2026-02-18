@@ -1,0 +1,3 @@
+{
+  adeci.desktop.enable = true;
+}

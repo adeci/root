@@ -1,16 +1,16 @@
 { inputs, ... }:
 let
   clan = inputs.clan-core.lib.clan {
-    self = inputs.self;
+    inherit (inputs) self;
     meta.name = "adeci";
     meta.domain = "adeci";
     inventory = import ../clan-inventory {
-      lib = inputs.nixpkgs.lib;
+      inherit (inputs.nixpkgs) lib;
       inherit inputs;
     };
     modules = import ../clan-services { };
     specialArgs = {
-      self = inputs.self;
+      inherit (inputs) self;
       inherit inputs;
     };
   };

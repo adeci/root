@@ -34,11 +34,11 @@ in
       enable = true;
       settings.default_session = {
         command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
-        user = cfg.user;
+        inherit (cfg) user;
       };
       settings.initial_session = {
         command = "niri-session";
-        user = cfg.user;
+        inherit (cfg) user;
       };
     };
     security.pam.services.greetd.enableGnomeKeyring = true;

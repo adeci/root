@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   roster = {
     module = {
@@ -9,19 +9,9 @@
       tags.all = { };
       settings = {
         homeManagerProfiles = {
-          base = [
-            "base-tools"
-            "shell-tools"
-            "dev-tools"
-            "fish"
-            "git"
-          ];
-          desktop = [ "desktop" ];
-          darwin-desktop = [
-            "kitty"
-            "karabiner"
-            "aerospace"
-          ];
+          base = "home-manager/profiles/base.nix";
+          desktop = "home-manager/profiles/desktop.nix";
+          darwin-desktop = "home-manager/profiles/darwin-desktop.nix";
         };
         users = import ./users.nix;
         machines = import ./machines.nix;

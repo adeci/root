@@ -1,4 +1,4 @@
-{ ... }:
+_:
 let
   # Default position definitions
   defaultPositions = {
@@ -52,6 +52,7 @@ let
       config,
       lib,
       pkgs,
+      inputs,
       ...
     }:
     let
@@ -218,9 +219,6 @@ let
       );
       unknownProfiles = lib.filter (p: !(settings.homeManagerProfiles ? ${p})) allUsedProfileNames;
 
-      # Expand profile name to list of module names
-      expandHmProfile = profileName: settings.homeManagerProfiles.${profileName};
-
       # Non-system users with HM profiles
       hmUsers = lib.filterAttrs (
         _: cfg: !cfg.effectiveFlags.isSystemUser && cfg.effectiveHmProfiles != [ ]
@@ -270,14 +268,14 @@ let
                     name = username;
                     uid = cfg.effectiveUid;
                     home = cfg.homeDir;
-                    description = cfg.userDef.description;
+                    inherit (cfg.userDef) description;
                     openssh.authorizedKeys.keys = cfg.effectiveSshKeys;
                   }
                 else
                   {
                     uid = cfg.effectiveUid;
-                    description = cfg.userDef.description;
-                    isSystemUser = cfg.effectiveFlags.isSystemUser;
+                    inherit (cfg.userDef) description;
+                    inherit (cfg.effectiveFlags) isSystemUser;
                     isNormalUser = !cfg.effectiveFlags.isSystemUser;
                     createHome = cfg.effectiveFlags.homeDirectory;
                     home = if cfg.effectiveFlags.homeDirectory then cfg.homeDir else "/var/empty";
@@ -374,16 +372,11 @@ let
           home-manager.users = lib.mapAttrs (
             _username: cfg:
             let
-              moduleNames = lib.unique (lib.concatMap expandHmProfile cfg.effectiveHmProfiles);
+              profilePaths = map (name: settings.homeManagerProfiles.${name}) cfg.effectiveHmProfiles;
             in
             {
+              imports = map (path: inputs.self + "/${path}") profilePaths;
               home.stateVersion = if isDarwin then settings.homeStateVersion else config.system.stateVersion;
-              adeci = lib.listToAttrs (
-                map (name: {
-                  inherit name;
-                  value.enable = true;
-                }) moduleNames
-              );
             }
             // lib.optionalAttrs isDarwin {
               home.homeDirectory = cfg.homeDir;
@@ -410,15 +403,15 @@ in
         options = {
           # Home-manager profile definitions (named groups of adeci.* HM module names)
           homeManagerProfiles = lib.mkOption {
-            type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+            type = lib.types.attrsOf lib.types.str;
             default = { };
             example = lib.literalExpression ''
               {
-                base = [ "base-tools" "shell-tools" "dev-tools" "fish" "git" ];
-                desktop = [ "desktop" ];
+                base = "home-manager/profiles/base.nix";
+                desktop = "home-manager/profiles/desktop.nix";
               }
             '';
-            description = "Named HM profiles mapping to lists of adeci.* module names to enable";
+            description = "Named HM profiles mapping to file paths (relative to flake root)";
           };
 
           # Default HM stateVersion for Darwin (NixOS uses system.stateVersion)

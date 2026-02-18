@@ -172,7 +172,7 @@ in
 
   # defaultPosition is now nullable
   test_user_defaultPosition_is_nullable = {
-    expr = (userOpts.defaultPosition.type.name == "nullOr");
+    expr = userOpts.defaultPosition.type.name == "nullOr";
     expected = true;
   };
 
@@ -660,34 +660,23 @@ in
     expected = [ ];
   };
 
-  # HM profile expansion: profile name resolves to module names
+  # HM profile expansion: profile name resolves to file path
   test_hm_profile_expansion = {
     expr =
       let
         profiles = {
-          base = [
-            "base-tools"
-            "shell-tools"
-            "dev-tools"
-            "fish"
-            "git"
-          ];
-          desktop = [ "desktop" ];
+          base = "home-manager/profiles/base.nix";
+          desktop = "home-manager/profiles/desktop.nix";
         };
-        expandProfile = name: profiles.${name};
         profileNames = [
           "base"
           "desktop"
         ];
       in
-      lib.concatMap expandProfile profileNames;
+      map (name: profiles.${name}) profileNames;
     expected = [
-      "base-tools"
-      "shell-tools"
-      "dev-tools"
-      "fish"
-      "git"
-      "desktop"
+      "home-manager/profiles/base.nix"
+      "home-manager/profiles/desktop.nix"
     ];
   };
 
@@ -696,8 +685,8 @@ in
     expr =
       let
         definedProfiles = {
-          base = [ "base-tools" ];
-          desktop = [ "desktop" ];
+          base = "home-manager/profiles/base.nix";
+          desktop = "home-manager/profiles/desktop.nix";
         };
         usedProfiles = [
           "base"

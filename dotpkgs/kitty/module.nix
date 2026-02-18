@@ -1,7 +1,6 @@
 { pkgs, wrappers, ... }:
 {
-  kitty = (
-    wrappers.wrapperModules.kitty.apply {
+  kitty = wrappers.wrapperModules.kitty.apply {
       inherit pkgs;
       settings = {
         # Font
@@ -62,6 +61,5 @@
         color16 = "#ff9e64";
         color17 = "#db4b4b";
       };
-    }
-  );
+    };
 }

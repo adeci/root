@@ -42,6 +42,7 @@ clan-services/              # service definitions (@adeci/*)
   cloudflare-tunnel/        #   tunnel ingress
   siteup/                   #   web app deployment
 
+home-manager/profiles/      # HM profile files (base, desktop, darwin-desktop)
 modules/                    # composable feature modules
   nixos/                    #   NixOS system (base, dev, niri, laptop, ...)
   darwin/                   #   Darwin system (base, homebrew)
@@ -110,15 +111,15 @@ Each position inherits the flags of the positions below it. Positions control su
 
 **Home-manager profile system:**
 
-Profiles are named sets of `adeci.*` home-manager module names, defined in the roster instance config:
+Profiles are files in `home-manager/profiles/` that declare which `adeci.*` modules to enable. The roster maps profile names to file paths:
 
 ```
-base     = [ base-tools, shell-tools, dev-tools, fish, git ]
-desktop  = [ desktop ]
-darwin-desktop = [ kitty, karabiner, aerospace ]
+base           = "home-manager/profiles/base.nix"      (base-tools, shell-tools, dev-tools, fish, git)
+desktop        = "home-manager/profiles/desktop.nix"   (desktop)
+darwin-desktop = "home-manager/profiles/darwin-desktop.nix" (kitty, karabiner, aerospace)
 ```
 
-Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" ]`), and each machine assignment can add extras via `extraHomeManagerProfiles` (e.g. desktop machines add `"desktop"`, Darwin adds `"darwin-desktop"`).
+Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" ]`), and each machine assignment can add extras via `extraHomeManagerProfiles` (e.g. desktop machines add `"desktop"`, Darwin adds `"darwin-desktop"`). The roster imports these profile files directly, making profiles namespace-agnostic and capable of containing any HM configuration.
 
 ## Workflows
 
@@ -137,8 +138,10 @@ Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" 
 
 **Add an HM profile:**
 
-1. Add the profile definition to `clan-inventory/instances/roster/default.nix` under `homeManagerProfiles` (map a name to a list of `adeci.*` module names)
-2. Assign the profile to users in `users.nix` or to specific machines in `machines.nix` via `extraHomeManagerProfiles`
+1. Create a profile file in `home-manager/profiles/<name>.nix` (a plain attrset enabling `adeci.*` modules or any HM config)
+2. Register it in `clan-inventory/instances/roster/default.nix` under `homeManagerProfiles` (map a name to the file path)
+3. Assign the profile to users in `users.nix` or to specific machines in `machines.nix` via `extraHomeManagerProfiles`
+4. `git add` the new profile file before building
 
 **Add a service:**
 
