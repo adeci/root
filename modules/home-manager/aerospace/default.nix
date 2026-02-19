@@ -17,5 +17,9 @@ in
         [ "@KITTY_HOME@" "@KITTY_HERE@" ]
         [ (toString kitty-home) (toString kitty-here) ]
         (builtins.readFile ./config.toml);
+
+    home.activation.reloadAerospace = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ${pkgs.procps}/bin/pgrep -x AeroSpace && /opt/homebrew/bin/aerospace reload-config || true
+    '';
   };
 }

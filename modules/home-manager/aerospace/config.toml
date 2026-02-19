@@ -34,6 +34,9 @@ alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
 # Launcher
 alt-d = "exec-and-forget open -a Raycast"
 
+# Browser (new window)
+alt-w = 'exec-and-forget open -na "Google Chrome" --args --new-window'
+
 # Close window
 alt-q = "close --quit-if-last-window"
 
@@ -41,8 +44,8 @@ alt-q = "close --quit-if-last-window"
 alt-slash = "layout tiles horizontal vertical"
 alt-comma = "layout accordion horizontal vertical"
 alt-f = "fullscreen"
-alt-v = "layout tiles vertical"
-alt-b = "layout tiles horizontal"
+alt-v = "join-with down"
+alt-b = "join-with right"
 
 # Focus
 alt-h = "focus left"
