@@ -157,3 +157,99 @@ machines.prod-server = {
 **Priority**: machine flag > user flag > position default > fallback defaults
 
 **Fallback defaults** (when no position is set): `sudoAccess=false`, `generatePassword=false`, `homeDirectory=true`, `isSystemUser=false`
+
+### Home-Manager Profile Distribution
+
+Roster can distribute home-manager profiles to users across your fleet. Profiles are plain Nix files that enable modules or set HM config — roster maps them by name to file paths and imports them into each user's home-manager configuration.
+
+#### Prerequisites
+
+Roster sets `home-manager.users.<name>.imports` for each user that has profiles. For this to work, **you must have the home-manager NixOS/Darwin module loaded on your machines** with appropriate configuration:
+
+```nix
+# Example: a NixOS module that sets up home-manager infrastructure
+{
+  imports = [ inputs.home-manager.nixosModules.home-manager ];
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    sharedModules = [
+      # Your home-manager modules go here — these make the options
+      # referenced in your profiles available to all users
+      ../modules/home-manager
+    ];
+    extraSpecialArgs = { inherit inputs self; };
+  };
+}
+```
+
+Roster does **not** configure this plumbing itself — it's intentionally separate so you control what modules and flake inputs are available to home-manager. Roster's job is purely the user-to-profile mapping.
+
+#### Defining Profiles
+
+Profiles are registered in the roster settings as a name-to-path mapping. Paths are relative to the flake root:
+
+```nix
+settings = {
+  homeManagerProfiles = {
+    base = "profiles/home-manager/base.nix";
+    desktop = "profiles/home-manager/desktop.nix";
+  };
+
+  users = { ... };
+  machines = { ... };
+};
+```
+
+A profile file is a plain attrset (or module) that enables whatever you want:
+
+```nix
+# profiles/home-manager/base.nix
+{
+  my-namespace.shell.enable = true;
+  my-namespace.git.enable = true;
+}
+```
+
+#### Assigning Profiles to Users
+
+Each user gets a default list of profiles. These apply on every machine the user is assigned to:
+
+```nix
+users.alice = {
+  uid = 1001;
+  defaultPosition = "owner";
+  homeManagerProfiles = [ "base" ];  # applied everywhere
+};
+```
+
+#### Per-Machine Profile Overrides
+
+Add extra profiles for specific machines (e.g., desktop machines get a desktop profile):
+
+```nix
+machines.workstation = {
+  users.alice = {
+    extraHomeManagerProfiles = [ "desktop" ];  # added on top of user defaults
+  };
+};
+```
+
+You can also fully replace a user's profiles on a specific machine:
+
+```nix
+machines.server = {
+  users.alice = {
+    homeManagerProfiles = [ "base" ];  # replaces defaults entirely on this machine
+  };
+};
+```
+
+#### Profile Resolution
+
+The final list of profiles for a user on a machine is:
+
+1. Machine-specific `homeManagerProfiles` override (if set) — **replaces** defaults
+2. Otherwise: user's `homeManagerProfiles` defaults + machine-specific `extraHomeManagerProfiles`
+
+Roster validates that all referenced profile names exist in the `homeManagerProfiles` map and will fail with an assertion error if an unknown profile is used.
