@@ -665,8 +665,8 @@ in
     expr =
       let
         profiles = {
-          base = "home-manager/profiles/base.nix";
-          desktop = "home-manager/profiles/desktop.nix";
+          base = "profiles/home-manager/base.nix";
+          desktop = "profiles/home-manager/desktop.nix";
         };
         profileNames = [
           "base"
@@ -675,8 +675,8 @@ in
       in
       map (name: profiles.${name}) profileNames;
     expected = [
-      "home-manager/profiles/base.nix"
-      "home-manager/profiles/desktop.nix"
+      "profiles/home-manager/base.nix"
+      "profiles/home-manager/desktop.nix"
     ];
   };
 
@@ -685,8 +685,8 @@ in
     expr =
       let
         definedProfiles = {
-          base = "home-manager/profiles/base.nix";
-          desktop = "home-manager/profiles/desktop.nix";
+          base = "profiles/home-manager/base.nix";
+          desktop = "profiles/home-manager/desktop.nix";
         };
         usedProfiles = [
           "base"

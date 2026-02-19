@@ -104,8 +104,8 @@ in
             default = { };
             example = lib.literalExpression ''
               {
-                base = "home-manager/profiles/base.nix";
-                desktop = "home-manager/profiles/desktop.nix";
+                base = "profiles/home-manager/base.nix";
+                desktop = "profiles/home-manager/desktop.nix";
               }
             '';
             description = "Named HM profiles mapping to file paths (relative to flake root)";

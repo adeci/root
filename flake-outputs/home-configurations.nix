@@ -20,7 +20,7 @@
             modules = [
               inputs.noctalia-shell.homeModules.default
               ../modules/home-manager
-              (import ../home-manager/profiles/base.nix)
+              (import ../profiles/home-manager/base.nix)
               {
                 home.username = "alex";
                 home.homeDirectory = if pkgs.stdenv.isDarwin then "/Users/alex" else "/home/alex";
