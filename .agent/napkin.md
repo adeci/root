@@ -2,28 +2,20 @@
 
 ## Corrections
 
-| Date       | Source | What Went Wrong                                         | What To Do Instead                                                                                                      |
-| ---------- | ------ | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 2026-02-20 | self   | Copied extensions directly to ~/.pi/agent/ as raw files | Everything in ~/.pi/agent/ is symlinked from home-manager. Put files in modules/home-manager/pi/ and update default.nix |
-| 2026-02-20 | user   | Didn't read root-repo skill before placing files        | ALWAYS read root-repo SKILL.md when touching anything in the repo — it tells you exactly where things go                |
+| Date       | Source | What Went Wrong                               | What To Do Instead                                                                                        |
+| ---------- | ------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 2026-02-20 | self   | Copied files directly to ~/.pi/agent/         | ~/.pi/agent/ is symlinked from home-manager. Put files in modules/home-manager/pi/ and update default.nix |
+| 2026-02-20 | self   | Placed a plan file in .github/ without asking | Plans/proposals go in plans/. Ask where files should go before creating them.                             |
 
-## User Preferences
+## Repo-Specific Rules
 
-- Likes to review things before committing — show diffs, describe changes
 - ALWAYS read the `root-repo` skill before touching ANY file in this repo
-- ALWAYS read the `napkin` skill and this file before doing anything else
-- When the task involves pi skills/extensions/prompts/agents, read root-repo FIRST — it tells you exactly where files go
-
-## Patterns That Work
-
-- Yoinked extensions from pi-mono examples — copy files directly, keep enhanced local versions
-- summarize.ts has hardcoded model (gpt-5.2) — user may want to change
-
-## Patterns That Don't Work
-
-- (accumulate here)
+- When the task involves pi agent config, also read `manage-pi` skill
+- New top-level files in modules/home-manager/pi/ need explicit entries in default.nix — auto-discovery only handles subdirectories
+- Conditional fish functions via `lib.mkIf config.adeci.<module>.enable`
 
 ## Domain Notes
 
-- Root repo is NixOS infra, but pi agent config lives in `~/.pi/agent/`
-- Extensions are standalone .ts files or directories with index.ts
+- pi agent config source of truth: modules/home-manager/pi/
+- Extensions from pi-mono examples can be copied and adapted locally
+- summarize.ts extension has hardcoded model (gpt-5.2) — may want to change

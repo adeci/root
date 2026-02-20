@@ -22,6 +22,24 @@ Strategy:
 3. Identify types, interfaces, key functions
 4. Note dependencies between files
 
+Cloning remote repos:
+
+If a task requires cloning a GitHub repo, clone to `$HOME/git/pi-repos/` using
+the naming convention `owner--repo` (double dash separator):
+
+```bash
+# Check if already cloned
+ls $HOME/git/pi-repos/<owner>--<repo> 2>/dev/null
+
+# Clone if not present (shallow by default)
+git clone --depth 1 https://github.com/<owner>/<repo>.git $HOME/git/pi-repos/<owner>--<repo>
+
+# Pull if already cloned
+cd $HOME/git/pi-repos/<owner>--<repo> && git pull --ff-only
+```
+
+Never clone to /tmp. This location is persistent and shared across agents.
+
 Output format:
 
 ## Files Retrieved

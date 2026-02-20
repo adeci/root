@@ -100,6 +100,8 @@ in
   config = lib.mkIf cfg.enable {
     home.file = {
       ".pi/agent/settings.json".text = builtins.toJSON settings;
+      ".pi/agent/AGENTS.md".source = ./AGENTS.md;
+      ".pi/agent/APPEND_SYSTEM.md".source = ./APPEND_SYSTEM.md;
     }
     // lib.mapAttrs' (
       name: _:
