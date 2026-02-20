@@ -12,7 +12,8 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    wrappers.url = "github:lassulus/wrappers";
+    #wrappers.url = "github:lassulus/wrappers";
+    wrappers.url = "github:adeci/wrappers?ref=btop";
     wrappers.inputs.nixpkgs.follows = "nixpkgs";
 
     noctalia-shell.url = "github:noctalia-dev/noctalia-shell";

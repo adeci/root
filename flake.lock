@@ -656,15 +656,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1771451129,
-        "narHash": "sha256-THH/4ykNzg5DRzKFMX1PI+OG4SIvo/roMRKeo+Gq+FU=",
-        "owner": "lassulus",
+        "lastModified": 1771610173,
+        "narHash": "sha256-uYlgLMnDXV4MmZ2uqDneg9emWYHWrYStaor70i/4NuU=",
+        "owner": "adeci",
         "repo": "wrappers",
-        "rev": "3c61ecaa13e5b25be07d55730b64ad41f2ef763f",
+        "rev": "641b4fa5491bb6cfbf7b11c7c2b0f2d63cca1d87",
         "type": "github"
       },
       "original": {
-        "owner": "lassulus",
+        "owner": "adeci",
+        "ref": "btop",
         "repo": "wrappers",
         "type": "github"
       }
