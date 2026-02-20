@@ -18,10 +18,46 @@ let
   extensionFiles = lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) (
     builtins.readDir extensionDir
   );
+  extensionSubdirs = lib.filterAttrs (_n: t: t == "directory") (builtins.readDir extensionDir);
+
+  # Collect all files within an extension subdirectory recursively
+  collectExtensionFiles =
+    extName:
+    let
+      base = "${extensionDir}/${extName}";
+      walkDir =
+        prefix: dir:
+        lib.concatMapAttrs (
+          name: type:
+          let
+            relPath = if prefix == "" then name else "${prefix}/${name}";
+          in
+          if type == "regular" then
+            { ${relPath} = "${dir}/${name}"; }
+          else if type == "directory" then
+            walkDir relPath "${dir}/${name}"
+          else
+            { }
+        ) (builtins.readDir dir);
+    in
+    walkDir "" base;
+
+  extensionDirEntries = lib.concatMapAttrs (
+    extName: _:
+    lib.mapAttrs' (
+      relPath: srcPath:
+      lib.nameValuePair ".pi/agent/extensions/${extName}/${relPath}" { source = srcPath; }
+    ) (collectExtensionFiles extName)
+  ) extensionSubdirs;
 
   promptDir = ./prompts;
   promptFiles = lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) (
     builtins.readDir promptDir
+  );
+
+  agentsDir = ./agents;
+  agentFiles = lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) (
+    builtins.readDir agentsDir
   );
 
   skillsDir = ./skills;
@@ -76,6 +112,13 @@ in
         source = "${promptDir}/${name}";
       }
     ) promptFiles
+    // lib.mapAttrs' (
+      name: _:
+      lib.nameValuePair ".pi/agent/agents/${name}" {
+        source = "${agentsDir}/${name}";
+      }
+    ) agentFiles
+    // extensionDirEntries
     // skillFileEntries;
   };
 }

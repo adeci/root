@@ -1,6 +1,6 @@
 ---
 name: root-repo
-description: How to work in the root infrastructure repo at $HOME/git/root. Use when making changes to NixOS configs, home-manager modules, clan services, pi skills/extensions, or anything in the repo. Covers verification workflow, where to put things, and common pitfalls.
+description: How to work in the root infrastructure repo at $HOME/git/root. Use when making changes to NixOS configs, home-manager modules, clan services, or anything in the repo. Covers verification workflow, where to put things, and common pitfalls. For pi agent config (skills, extensions, prompts, agents), use the manage-pi skill instead.
 ---
 
 # Root Repo
@@ -42,38 +42,9 @@ nix eval .#nixosConfigurations.$(hostname).config.home-manager.users.alex.home.f
 
 ## Where to Put Things
 
-### Pi Skills, Extensions, Prompts
+### Pi Agent Config (skills, extensions, prompts, agents)
 
-All managed in `modules/home-manager/pi/`. Auto-discovered by `default.nix`.
-
-| Type      | Location                 | Format                                                         |
-| --------- | ------------------------ | -------------------------------------------------------------- |
-| Skill     | `skills/<name>/SKILL.md` | Directory with `SKILL.md` (can include `references/`, scripts) |
-| Extension | `extensions/<name>.ts`   | Single TypeScript file                                         |
-| Prompt    | `prompts/<name>.md`      | Markdown with `description` frontmatter                        |
-
-Skill naming rules: lowercase, hyphens, 1-64 chars, no leading/trailing/consecutive hyphens. Directory name must match `name` in frontmatter.
-
-Skill frontmatter template:
-
-```markdown
----
-name: my-skill
-description: Specific description of what it does and when to use it.
----
-```
-
-Extension boilerplate:
-
-```typescript
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-
-export default function (pi: ExtensionAPI) {
-  // Subscribe to events, register tools/commands, etc.
-}
-```
-
-Test extensions before committing: `pi -e ./modules/home-manager/pi/extensions/my-extension.ts`
+Use the `manage-pi` skill — it has full details and templates.
 
 ### NixOS Modules
 
