@@ -1,7 +1,7 @@
 ---
 name: ai-sniffer
 description: Judge whether a piece of text was written by AI or a human. Returns a verdict with specific reasoning.
-tools: []
+tools:
 model: claude-sonnet-4-5-20250514
 ---
 
