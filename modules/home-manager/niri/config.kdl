@@ -78,14 +78,14 @@ input {
 // https://yalter.github.io/niri/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
 
-// Lenovo ThinkPad X220 display
+// aegis - lenovo x220 display
 output "Seiko Epson Corporation 0x3047 Unknown" {
     mode "1366x768@60.002"
     scale 1
     transform "normal"
 }
 
-// fw13 upgraded display
+// modus - framework 13 display
 output "BOE NE135A1M-NY1 Unknown" {
     // Run `niri msg outputs` while inside a niri instance to list all outputs and their modes.
     mode "2880x1920@120"
@@ -109,14 +109,17 @@ output "BOE NE135A1M-NY1 Unknown" {
     position x=560 y=1440
 }
 
-// gpd pocket 4 monitor
+// praxis - gpd pocket 4 display
 output "PNP(HSX) YHB03P24 0x00888888" {
     mode "1600x2560@143.999"
     scale 2
     transform "normal"
+
+    // laptop below the MSI, centered (MSI is 2560 logical wide, GPD after 270° rotation is 1280 logical wide: offset = (2560-1280)/2 = 640)
+    position x=640 y=1440
 }
 
-// MSI MAG321CQR 32" curved monitor
+// shared - MSI MAG321CQR 32" curved monitor
 output "Microstep MSI MAG321CQR KA3H071804955" {
     mode "2560x1440@144"
     scale 1
