@@ -10,7 +10,8 @@ let
     lastChangelogVersion = "99.99.99";
     defaultProvider = "anthropic";
     defaultModel = "claude-opus-4-6";
-    defaultThinkingLevel = "off";
+    defaultThinkingLevel = "minimal";
+    quietStartup = true;
     compaction.enabled = true;
   };
 
