@@ -3,7 +3,7 @@
   btop = wrappers.wrapperModules.btop.apply {
     inherit pkgs;
 
-    "btop.conf".path = ./btop.conf;
+    "btop.conf".content = builtins.readFile ./btop.conf;
 
   };
 }
