@@ -49,7 +49,7 @@ in
         update-claude-code = ''
           bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"claude-code-bin\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
         '';
-        cheat = lib.mkIf config.adeci.pi.enable ''
+        cheat = lib.mkIf config.adeci.llm-tools.enable ''
           if test (count $argv) -eq 0
             echo "Usage: cheat <question>"
             echo "Example: cheat scp a folder to remote host"

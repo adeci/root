@@ -50,6 +50,7 @@
   };
 
   time.timeZone = "America/New_York";
+  # time.timeZone = "Atlantic/Reykjavik";
 
   # vm building
   virtualisation.libvirtd.enable = true;
