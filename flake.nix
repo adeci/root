@@ -29,6 +29,10 @@
     llm-agents.inputs.nixpkgs.follows = "nixpkgs";
     llm-agents.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    mics-skills.url = "github:Mic92/mics-skills";
+    mics-skills.inputs.nixpkgs.follows = "nixpkgs";
+    mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
+
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
