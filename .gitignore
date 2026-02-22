@@ -1,12 +1,13 @@
 result
+
 .direnv/
 .envrc
 
-cloud/.terraform/
-cloud/*.tfstate
-cloud/*.tfstate.*
-cloud/config.tf.json
+*.terraform/
+*.tfstate
+*.tfstate.*
+config.tf.json
 
-.claude/
-CLAUDE.md
 .pi/
+.claude/
+AGENTS.md
