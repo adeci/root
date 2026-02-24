@@ -3,7 +3,7 @@ merge_strategy: rebase
 panes:
   - command: <agent>
     focus: true
-  - split: horizontal
+  - split: vertical
     size: 15
 
 layouts:
