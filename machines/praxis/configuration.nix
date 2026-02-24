@@ -25,6 +25,7 @@
     workstation.enable = true;
     laptop.enable = true;
     gpd-pocket-4-audio.enable = true;
+    touch-scroll.enable = true;
     printing.enable = true;
     social.enable = true;
     gaming.enable = true;
