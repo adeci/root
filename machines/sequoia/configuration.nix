@@ -15,5 +15,6 @@
     base.enable = true;
     dev.enable = true;
     shell.enable = true;
+    auto-timezone.enable = false;
   };
 }

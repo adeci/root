@@ -14,8 +14,6 @@ in
     networkmanager.enable = true;
   };
 
-  time.timeZone = "America/New_York";
-
   imports = [
 
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x220

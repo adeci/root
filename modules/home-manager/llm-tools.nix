@@ -26,5 +26,10 @@ in
       mics-skills.pexpect-cli
       mics-skills.screenshot-cli
     ];
+
+    xdg.configFile."workmux/config.yaml".text = ''
+      agent: pi
+      nerdfont: true
+    '';
   };
 }

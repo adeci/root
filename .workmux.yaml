@@ -1,0 +1,26 @@
+merge_strategy: rebase
+
+panes:
+  - command: <agent>
+    focus: true
+  - split: horizontal
+    size: 15
+
+layouts:
+  minimal:
+    panes:
+      - command: <agent>
+        focus: true
+
+files:
+  copy:
+    - .envrc
+  symlink:
+    - .pi
+
+post_create:
+  - direnv allow
+
+pre_merge:
+  - nix fmt
+  - nix build .#nixosConfigurations.praxis.config.system.build.toplevel

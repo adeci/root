@@ -55,7 +55,7 @@ in
             echo "Example: cheat scp a folder to remote host"
             return 1
           end
-          pi --model haiku --tools read,bash --no-extensions --no-skills -t cheat -p "$argv"
+          pi --model claude-haiku-4-5 --tools read,bash --no-extensions --no-skills -t cheat -p "$argv"
         '';
         __try_register_clan_completions = {
           onEvent = "fish_prompt";

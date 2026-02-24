@@ -25,8 +25,6 @@
     hostName = "kasha";
   };
 
-  time.timeZone = "Asia/Almaty";
-
   boot.loader = {
     timeout = 0;
     grub = {

@@ -85,6 +85,10 @@ in
         bind k select-pane -U
         bind l select-pane -R
 
+        # Window navigation — shift vim keys
+        bind H previous-window
+        bind L next-window
+
         # Intuitive splits (preserve working directory)
         bind - split-window -c "#{pane_current_path}"
         bind | split-window -h -c "#{pane_current_path}"
@@ -92,6 +96,9 @@ in
         bind '"' split-window -c "#{pane_current_path}"
         bind % split-window -h -c "#{pane_current_path}"
         bind c new-window -c "#{pane_current_path}"
+
+        # View scrollback (copy mode)
+        bind v copy-mode
 
         # Confirm before kill
         bind-key K confirm kill-window
