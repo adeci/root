@@ -29,6 +29,7 @@
     social.enable = true;
     gaming.enable = true;
     creative.enable = true;
+    llm-secrets.enable = true;
   };
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;

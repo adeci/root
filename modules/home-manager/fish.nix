@@ -49,14 +49,6 @@ in
         update-claude-code = ''
           bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"claude-code-bin\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
         '';
-        cheat = lib.mkIf config.adeci.llm-tools.enable ''
-          if test (count $argv) -eq 0
-            echo "Usage: cheat <question>"
-            echo "Example: cheat scp a folder to remote host"
-            return 1
-          end
-          pi --model claude-haiku-4-5 --no-tools --no-extensions --no-skills --no-prompt-templates --no-themes --no-session --system-prompt "Reply with only the command. No explanation, no markdown, no code fences. If you need to show multiple steps, put them on separate lines. Be correct and complete." -p "$argv"
-        '';
         __try_register_clan_completions = {
           onEvent = "fish_prompt";
           body = ''
