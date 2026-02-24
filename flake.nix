@@ -22,6 +22,11 @@
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
 
+    buildbot-nix.url = "github:nix-community/buildbot-nix";
+
+    harmonia.url = "github:nix-community/harmonia";
+    harmonia.inputs.nixpkgs.follows = "nixpkgs";
+
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
 
