@@ -4,4 +4,5 @@
   adeci.dev-tools.enable = true;
   adeci.fish.enable = true;
   adeci.git.enable = true;
+  adeci.tmux.enable = true;
 }

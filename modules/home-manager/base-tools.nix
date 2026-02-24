@@ -22,7 +22,6 @@ in
         wget
         unzip
         fzf
-        tmux
         git
       ]
       ++ [

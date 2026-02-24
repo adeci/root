@@ -66,8 +66,28 @@ in
             end
           '';
         };
+        term-notify = lib.mkIf config.adeci.tmux.enable {
+          argumentNames = [
+            "title"
+            "message"
+          ];
+          description = "Send desktop notification (works inside tmux)";
+          body = ''
+            if test -n "$TMUX"
+                printf "\x1bPtmux;\x1b\x1b]777;notify;%s;%s\a\x1b\\" $title $message
+            else
+                printf "\x1b]777;notify;%s;%s\a" $title $message
+            end
+          '';
+        };
       };
       interactiveShellInit = ''
+        ${lib.optionalString config.adeci.tmux.enable ''
+          # Auto-attach to tmux on terminal open
+          if type -q tmux; and test -z "$TMUX"
+              tmux attach-session; or tmux
+          end
+        ''}
         set -gx EDITOR nvim
         set -gx VISUAL nvim
         fish_vi_key_bindings
@@ -123,6 +143,14 @@ in
         set -g fish_pager_color_selected_completion
         set -g fish_pager_color_selected_description
         set -g fish_pager_color_selected_prefix
+        ${lib.optionalString config.adeci.tmux.enable ''
+          # Downgrade TERM inside tmux for SSH compatibility
+          if test -n "$TMUX"; and type -q tput
+              if TERM=tmux-256color tput longname >/dev/null 2>&1
+                  set -x TERM tmux-256color
+              end
+          end
+        ''}
       '';
     };
   };
