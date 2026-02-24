@@ -3,6 +3,7 @@
 ### Requirement: Flake inputs
 
 The flake SHALL declare:
+
 - `buildbot-nix` input pointing to `github:nix-community/buildbot-nix` — SHALL
   NOT follow the repo's nixpkgs (it pins its own for buildbot compatibility)
 - `harmonia` input pointing to `github:nix-community/harmonia` — SHALL follow

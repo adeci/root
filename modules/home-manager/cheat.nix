@@ -16,13 +16,7 @@ let
 in
 {
   options.adeci.cheat.enable = lib.mkEnableOption "cheat command (quick CLI answers via Haiku)";
-  config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = anthropicKeyPath != null;
-        message = "adeci.cheat requires adeci.llm-secrets.enable = true on the NixOS side";
-      }
-    ];
+  config = lib.mkIf (cfg.enable && anthropicKeyPath != null) {
     programs.fish.functions.cheat = ''
       if test (count $argv) -eq 0
         echo "Usage: cheat <question>"
