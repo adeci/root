@@ -55,7 +55,7 @@ in
             echo "Example: cheat scp a folder to remote host"
             return 1
           end
-          pi --model claude-haiku-4-5 --tools read,bash --no-extensions --no-skills -t cheat -p "$argv"
+          pi --model claude-haiku-4-5 --no-tools --no-extensions --no-skills --no-prompt-templates --no-themes --no-session --system-prompt "Reply with only the command. No explanation, no markdown, no code fences. If you need to show multiple steps, put them on separate lines. Be correct and complete." -p "$argv"
         '';
         __try_register_clan_completions = {
           onEvent = "fish_prompt";

@@ -26,6 +26,7 @@ The GPD Pocket 4 (praxis) has a touchscreen but no layer in the stack — niri, 
 **Choice**: Python script using the `evdev` package for reading touch events and `uinput` for emitting scroll events.
 
 **Alternatives considered**:
+
 - **C/Rust binary**: More performant but overkill — touch events are low-frequency, and Python `evdev` is well-tested on NixOS.
 - **libinput quirks**: Can't remap touchscreen drag → scroll; quirks are for device identification, not event transformation.
 - **Input-remapper**: Heavy GUI tool, hard to configure declaratively in NixOS.
