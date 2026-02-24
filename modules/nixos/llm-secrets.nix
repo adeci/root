@@ -11,7 +11,9 @@ in
   config = lib.mkIf cfg.enable {
     clan.core.vars.generators.anthropic-api-key = {
       share = true;
-      files.api-key = { };
+      files.api-key = {
+        owner = config.adeci.primaryUser;
+      };
       prompts.api-key = {
         description = "Anthropic API key";
         type = "hidden";

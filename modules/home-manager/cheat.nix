@@ -38,7 +38,7 @@ in
       set -l payload (jq -nc \
         --arg q "$query" \
         '{
-          model: "claude-haiku-4-5-20241022",
+          model: "claude-haiku-4-5",
           max_tokens: 256,
           system: "Reply with only the command. Nothing else. No markdown, no code fences, no explanation.",
           messages: [{role: "user", content: $q}]
