@@ -19,6 +19,10 @@ in
       socat
       lsof
       lazygit
+      screen
+      tio
+      pueue
+      dmidecode
     ];
   };
 }

@@ -39,6 +39,7 @@
     calibre
     modem-manager-gui
     linux-wifi-hotspot
+    inputs.sdwire-cli.packages.${pkgs.system}.default
   ];
 
   networking = {
@@ -63,6 +64,14 @@
   # Keep keyboard always-on but disable wakeup
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="000c", ATTR{power/wakeup}="disabled", ATTR{power/control}="on"
+
+    # SDWire USB SD card mux (usb device + block device for dd without sudo)
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0316", MODE="0666"
+    SUBSYSTEM=="block", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0316", MODE="0666"
+
+    # RP2350/RP2040 BOOTSEL mode
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666"
+    SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", MODE="0666"
   '';
 
   # Disable USB controller wakeup to prevent wakes from suspend

@@ -19,12 +19,11 @@ in
     dev.enable = true;
     shell.enable = true;
     auto-timezone.enable = false;
-
-    buildbot-worker = {
-      enable = true;
-      workers = 128; # must match cores in buildbot-workers generator's workers.json
-    };
-    harmonia.enable = true;
+    # buildbot-worker = {
+    #   enable = true;
+    #   workers = 128; # must match cores in buildbot-workers generator's workers.json
+    # };
+    # harmonia.enable = true;
   };
 
   networking = {

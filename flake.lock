@@ -299,6 +299,24 @@
         "type": "github"
       }
     },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems_4"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "grub2-themes": {
       "inputs": {
         "nixpkgs": [
@@ -629,6 +647,7 @@
         "nixpkgs": "nixpkgs_2",
         "nixvim": "nixvim",
         "noctalia-shell": "noctalia-shell",
+        "sdwire-cli": "sdwire-cli",
         "trader-rs": "trader-rs",
         "treefmt-nix": "treefmt-nix_6",
         "wrappers": "wrappers"
@@ -697,6 +716,28 @@
         "type": "github"
       }
     },
+    "sdwire-cli": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1771971099,
+        "narHash": "sha256-28Zz7+y/N2vBUMWyzh4AtDmu7eEqExD3bl4VAqNSvtE=",
+        "owner": "adeci",
+        "repo": "sdwire-cli",
+        "rev": "11cb08780770c61da1d378ca485a02a58c5f8aed",
+        "type": "github"
+      },
+      "original": {
+        "owner": "adeci",
+        "ref": "fix-nix-packaging",
+        "repo": "sdwire-cli",
+        "type": "github"
+      }
+    },
     "sops-nix": {
       "inputs": {
         "nixpkgs": [
@@ -749,6 +790,21 @@
       }
     },
     "systems_3": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_4": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",

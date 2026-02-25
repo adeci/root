@@ -9,6 +9,7 @@
       "audio"
       "input"
       "kvm"
+      "dialout"
     ];
     sshAuthorizedKeys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeeoL1jwVSachA9GdJxm/5TgCRBULfSDGLyP/nfmkMq alex@DESKTOP-SVRV9Q8"

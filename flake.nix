@@ -52,6 +52,9 @@
 
     trader-rs.url = "git+ssh://git@github.com/adeci/trader-rs";
     trader-rs.inputs.nixpkgs.follows = "nixpkgs";
+
+    sdwire-cli.url = "github:adeci/sdwire-cli?ref=fix-nix-packaging";
+    sdwire-cli.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
