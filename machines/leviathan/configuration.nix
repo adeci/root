@@ -23,7 +23,7 @@ in
     #   enable = true;
     #   workers = 128; # must match cores in buildbot-workers generator's workers.json
     # };
-    # harmonia.enable = true;
+    harmonia.enable = true;
   };
 
   networking = {

@@ -14,7 +14,7 @@ in
       enable = true;
 
       # Ergonomics
-      prefix = "C-b";
+      prefix = "C-Space";
       baseIndex = 1;
       escapeTime = 0;
       historyLimit = 50000;
@@ -99,6 +99,10 @@ in
 
         # View scrollback (copy mode)
         bind v copy-mode
+
+        # Session management
+        bind S command-prompt -p "New session:" "new-session -s '%%'"
+        bind Tab switch-client -l
 
         # Confirm before kill
         bind-key K confirm kill-window

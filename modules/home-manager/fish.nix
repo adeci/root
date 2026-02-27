@@ -75,9 +75,30 @@ in
       };
       interactiveShellInit = ''
         ${lib.optionalString config.adeci.tmux.enable ''
-          # Auto-attach to tmux on terminal open
-          if type -q tmux; and test -z "$TMUX"
-              tmux attach-session; or tmux
+          # tms — tmux session manager
+          # No args: interactive session picker (or starts tmux if none exist)
+          # With arg: attach to session by name (creates it if it doesn't exist)
+          function tms --description "tmux session manager"
+              if test -z "$argv[1]"
+                  if test -n "$TMUX"
+                      # Already in tmux — show session picker
+                      tmux choose-tree -s
+                  else if tmux list-sessions &>/dev/null
+                      # Sessions exist — pick one
+                      tmux attach-session
+                  else
+                      # No sessions — start fresh
+                      tmux new-session
+                  end
+              else
+                  if test -n "$TMUX"
+                      # Inside tmux — switch to session (create if needed)
+                      tmux new-session -d -s $argv[1] &>/dev/null
+                      tmux switch-client -t $argv[1]
+                  else
+                      tmux new-session -A -s $argv[1]
+                  end
+              end
           end
         ''}
         set -gx EDITOR nvim
