@@ -125,6 +125,9 @@ in
                 "send-keys -M" \
                 "send-keys Down Down Down"
 
+        # --- Disable pane border drag (prevents accidental resize while selecting text) ---
+        unbind -n MouseDrag1Border
+
         # --- Tokyo Night status bar ---
         set -g status-style bg=default
         set -g status-left-length 90

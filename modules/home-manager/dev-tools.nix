@@ -23,6 +23,9 @@ in
       tio
       pueue
       dmidecode
+      xxd
+      radare2
+      python3
     ];
   };
 }
