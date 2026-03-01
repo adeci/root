@@ -7,6 +7,7 @@
 
   adeci = {
     darwin-base.enable = true;
+    darwin-librewolf.enable = true;
     darwin-shopify.enable = true;
     homebrew.enable = true;
   };

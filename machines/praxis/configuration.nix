@@ -35,7 +35,6 @@
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 
   environment.systemPackages = with pkgs; [
-    firefox
     calibre
     modem-manager-gui
     linux-wifi-hotspot

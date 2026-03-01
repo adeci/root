@@ -30,10 +30,6 @@ in
     laptop.enable = true;
   };
 
-  environment.systemPackages = with pkgs; [
-    firefox
-  ];
-
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
   security.wrappers.btop = {
     owner = "root";

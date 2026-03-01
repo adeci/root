@@ -44,7 +44,6 @@ in
   environment.systemPackages = with pkgs; [
     imagemagick
     os-prober
-    firefox
     calibre
     linux-wifi-hotspot
   ];

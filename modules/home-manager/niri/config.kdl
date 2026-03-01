@@ -259,21 +259,24 @@ animations {
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Window-Rules
 
-// Firefox: 1/3 width on the MSI monitor
+// Firefox/LibreWolf: 1/3 width on the MSI monitor
 window-rule {
     match app-id="firefox" on-output="Microstep MSI MAG321CQR KA3H071804955"
+    match app-id="librewolf" on-output="Microstep MSI MAG321CQR KA3H071804955"
     default-column-width { proportion 0.33333; }
 }
 
-// Firefox: open maximized on the laptop display
+// Firefox/LibreWolf: open maximized on the laptop display
 window-rule {
     match app-id="firefox"
+    match app-id="librewolf"
     exclude on-output="Microstep MSI MAG321CQR KA3H071804955"
     open-maximized true
 }
 
 window-rule {
     match app-id="firefox"
+    match app-id="librewolf"
     clip-to-geometry true
 }
 
