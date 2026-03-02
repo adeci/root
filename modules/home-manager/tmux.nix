@@ -104,6 +104,9 @@ in
         bind S command-prompt -p "New session:" "new-session -s '%%'"
         bind Tab switch-client -l
 
+        # Reload config
+        bind r source-file ~/.config/tmux/tmux.conf \; display "Config reloaded"
+
         # Confirm before kill
         bind-key K confirm kill-window
 
@@ -129,8 +132,9 @@ in
                 "send-keys -M" \
                 "send-keys Down Down Down"
 
-        # --- Disable pane border drag (prevents accidental resize while selecting text) ---
+        # --- Pane resize requires Ctrl+drag (prevents accidental resize while selecting text) ---
         unbind -n MouseDrag1Border
+        bind -n C-MouseDrag1Border resize-pane -M
 
         # --- Tokyo Night status bar ---
         set -g status-style bg=default

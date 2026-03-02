@@ -30,15 +30,16 @@
     gaming.enable = true;
     creative.enable = true;
     llm-secrets.enable = true;
+    remote-builder.enable = true;
   };
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 
   environment.systemPackages = with pkgs; [
-    calibre
+    # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
     modem-manager-gui
     linux-wifi-hotspot
-    inputs.sdwire-cli.packages.${pkgs.system}.default
+    inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   networking = {

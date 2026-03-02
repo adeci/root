@@ -7,6 +7,8 @@
 }:
 let
   cfg = config.adeci.remote-builder;
+  harmoniaKeyPath = self + "/vars/shared/harmonia-signing-key/signing-key.pub/value";
+  hasHarmonia = builtins.pathExists harmoniaKeyPath;
 in
 {
   options.adeci.remote-builder = {
@@ -14,11 +16,11 @@ in
 
     automatic = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = ''
         When true, nix.distributedBuilds is enabled and builds transparently offload.
         When false, buildMachines is configured but the user must opt in per build
-        via --builders or --max-jobs 0.
+        via --max-jobs 0.
       '';
     };
   };
@@ -57,13 +59,11 @@ in
         }
       ];
 
-      # Harmonia substituter — fetch cached builds from leviathan
-      settings = {
+      # Harmonia substituter — fetch cached builds from leviathan (only when harmonia is deployed)
+      settings = lib.mkIf hasHarmonia {
         extra-substituters = [ "http://leviathan:5000" ];
         extra-trusted-public-keys = [
-          (lib.strings.trim (
-            builtins.readFile (self + "/vars/shared/harmonia-signing-key/signing-key.pub/value")
-          ))
+          (lib.strings.trim (builtins.readFile harmoniaKeyPath))
         ];
       };
     };

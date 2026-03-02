@@ -44,7 +44,7 @@ in
   environment.systemPackages = with pkgs; [
     imagemagick
     os-prober
-    calibre
+    # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
     linux-wifi-hotspot
   ];
 

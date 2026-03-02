@@ -38,6 +38,9 @@
     mics-skills.inputs.nixpkgs.follows = "nixpkgs";
     mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
+    sdwire-cli.inputs.nixpkgs.follows = "nixpkgs";
+
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -52,9 +55,6 @@
 
     trader-rs.url = "git+ssh://git@github.com/adeci/trader-rs";
     trader-rs.inputs.nixpkgs.follows = "nixpkgs";
-
-    sdwire-cli.url = "github:adeci/sdwire-cli?ref=fix-nix-packaging";
-    sdwire-cli.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =

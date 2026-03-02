@@ -44,6 +44,8 @@ in
       // etc. to prevent tracking. Disabling it fixes video conferencing apps
       // (Meet, Zoom) not being able to enumerate audio devices.
       // defaultPref("privacy.resistFingerprinting", false);
+      // Exempt specific sites from RFP so they stop killing sessions
+      defaultPref("privacy.resistFingerprinting.exemptedDomains", "*.youtube.com,*.google.com,*.amazon.com,*.reddit.com,*.monkeytype.com");
     '';
 
     # Set LibreWolf as default browser
