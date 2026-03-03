@@ -1,7 +1,8 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   programs.ghostty = {
     enable = true;
+    package = lib.hiPrio pkgs.ghostty;
     enableFishIntegration = true;
     settings = {
       # Font

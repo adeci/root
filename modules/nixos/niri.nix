@@ -17,7 +17,7 @@
   config = {
     nixpkgs.overlays = [ inputs.niri.overlays.default ];
     environment.systemPackages = [
-      pkgs.ghostty
+      (lib.hiPrio pkgs.ghostty)
       pkgs.nautilus
       pkgs.xwayland-satellite
     ];

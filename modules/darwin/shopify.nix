@@ -1,5 +1,4 @@
-_:
-{
+_: {
   nix.extraOptions = ''
     !include nix.conf.d/shopify.conf
   '';
