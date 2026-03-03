@@ -22,7 +22,6 @@ in
     ../../modules/nixos/base.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/dev.nix
-    ../../modules/nixos/shell.nix
     ../../modules/nixos/niri.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/laptop.nix

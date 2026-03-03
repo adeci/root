@@ -14,7 +14,6 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
-    ../../modules/nixos/shell.nix
   ];
 
 }

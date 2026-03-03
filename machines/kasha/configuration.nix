@@ -13,7 +13,6 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/shell.nix
     ../../modules/nixos/gnome.nix
     ../../modules/nixos/amd-gpu.nix
     ../../modules/nixos/printing.nix

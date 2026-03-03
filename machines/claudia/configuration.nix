@@ -6,7 +6,6 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
-    ../../modules/nixos/shell.nix
   ];
 
   home-manager.users.alex = import ./home.nix;

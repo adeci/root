@@ -278,27 +278,6 @@
         "type": "github"
       }
     },
-    "flake-parts_7": {
-      "inputs": {
-        "nixpkgs-lib": [
-          "trader-rs",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1768135262,
-        "narHash": "sha256-PVvu7OqHBGWN16zSi6tEmPwwHQ4rLPU9Plvs8/1TUBY=",
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "rev": "80daad04eddbbf5a4d883996a73f3f542fa437ac",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems_4"
@@ -670,8 +649,7 @@
         "nixvim": "nixvim",
         "noctalia-shell": "noctalia-shell",
         "sdwire-cli": "sdwire-cli",
-        "trader-rs": "trader-rs",
-        "treefmt-nix": "treefmt-nix_6",
+        "treefmt-nix": "treefmt-nix_5",
         "wrappers": "wrappers"
       }
     },
@@ -709,27 +687,6 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "rev": "8249aa3442fb9b45e615a35f39eca2fe5510d7c3",
-        "type": "github"
-      },
-      "original": {
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "rust-overlay_3": {
-      "inputs": {
-        "nixpkgs": [
-          "trader-rs",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1768445213,
-        "narHash": "sha256-y0BglISgDr61vvdb35m0O4npuqh1pojlBNDILo9j8AI=",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "1cd63408e71cc0e6a89ff2cb7c4107214e2523cc",
         "type": "github"
       },
       "original": {
@@ -840,29 +797,6 @@
         "type": "github"
       }
     },
-    "trader-rs": {
-      "inputs": {
-        "flake-parts": "flake-parts_7",
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rust-overlay": "rust-overlay_3",
-        "treefmt-nix": "treefmt-nix_5"
-      },
-      "locked": {
-        "lastModified": 1768938258,
-        "narHash": "sha256-esc4BnELFCbQ7VqeOrG59BnwT4hiHUh38EryEyV0qqo=",
-        "ref": "refs/heads/main",
-        "rev": "78c14ddb7bba1ec30c1ff81f9c749c744da8d5ff",
-        "revCount": 25,
-        "type": "git",
-        "url": "ssh://git@github.com/adeci/trader-rs"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/adeci/trader-rs"
-      }
-    },
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
@@ -948,27 +882,6 @@
       }
     },
     "treefmt-nix_5": {
-      "inputs": {
-        "nixpkgs": [
-          "trader-rs",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1768158989,
-        "narHash": "sha256-67vyT1+xClLldnumAzCTBvU0jLZ1YBcf4vANRWP3+Ak=",
-        "owner": "numtide",
-        "repo": "treefmt-nix",
-        "rev": "e96d59dff5c0d7fddb9d113ba108f03c3ef99eca",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "treefmt-nix",
-        "type": "github"
-      }
-    },
-    "treefmt-nix_6": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"

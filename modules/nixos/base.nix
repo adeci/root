@@ -20,6 +20,7 @@
     max-substitution-jobs = 64;
     download-buffer-size = 268435456; # 256MB
   };
+  programs.fish.enable = true;
   environment.systemPackages = [ pkgs.kitty.terminfo ];
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
