@@ -1,35 +1,37 @@
-{ lib, pkgs, ... }:
 {
-  programs.ghostty = {
-    enable = true;
-    package = lib.hiPrio pkgs.ghostty;
-    enableFishIntegration = true;
-    settings = {
-      # Font
-      font-family = "CaskaydiaCove Nerd Font Mono";
-      font-size = if pkgs.stdenv.isDarwin then 14 else 10;
+  lib,
+  pkgs,
+  ...
+}:
+{
+  home.packages = [ (lib.hiPrio pkgs.ghostty) ];
 
-      # Theme
-      theme = "Tokyo Night";
-      background = "000000";
+  xdg.configFile."ghostty/config".text = ''
+    # Font
+    font-family = CaskaydiaCove Nerd Font Mono
+    font-size = ${if pkgs.stdenv.isDarwin then "14" else "10"}
 
-      # Cursor
-      cursor-style = "block";
-      cursor-style-blink = true;
-      custom-shader = "cursor-trail.glsl";
-      custom-shader-animation = "always";
+    # Theme
+    theme = Tokyo Night
+    background = 000000
 
-      # Shell
-      command = "${pkgs.fish}/bin/fish --login";
+    # Cursor
+    cursor-style = block
+    cursor-style-blink = true
+    custom-shader = cursor-trail.glsl
+    custom-shader-animation = always
 
-      # Behavior
-      copy-on-select = "clipboard";
-      confirm-close-surface = false;
-      window-decoration = false;
-      clipboard-read = "allow";
-      clipboard-write = "allow";
-    };
-  };
+    # Shell
+    command = ${pkgs.fish}/bin/fish --login
+
+    # Behavior
+    copy-on-select = clipboard
+    confirm-close-surface = false
+    window-decoration = false
+    clipboard-read = allow
+    clipboard-write = allow
+    shell-integration = fish
+  '';
 
   xdg.configFile."ghostty/cursor-trail.glsl".source = ./cursor-trail.glsl;
 }
