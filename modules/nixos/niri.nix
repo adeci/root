@@ -3,12 +3,8 @@
   inputs,
   lib,
   pkgs,
-  self,
   ...
 }:
-let
-  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
-in
 {
   imports = [ ./desktop-base.nix ];
 
@@ -21,7 +17,7 @@ in
   config = {
     nixpkgs.overlays = [ inputs.niri.overlays.default ];
     environment.systemPackages = [
-      packages.kitty
+      pkgs.ghostty
       pkgs.nautilus
       pkgs.xwayland-satellite
     ];

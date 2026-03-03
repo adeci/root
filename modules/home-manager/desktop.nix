@@ -19,7 +19,7 @@ in
     enable = true;
     settings = {
       general = {
-        terminal = "kitty";
+        terminal = "ghostty";
         clockFormat = "h:mm\\nAP";
       };
       colorSchemes = {
@@ -27,7 +27,7 @@ in
         darkMode = true;
       };
       appLauncher = {
-        terminalCommand = "kitty -e";
+        terminalCommand = "ghostty -e";
       };
       bar = {
         barType = "simple";
