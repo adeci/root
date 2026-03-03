@@ -5,7 +5,7 @@
 }:
 let
   ghostty-home = pkgs.writeShellScript "ghostty-home" ''exec ghostty --working-directory="$HOME"'';
-  ghostty-here = pkgs.writeShellScript "ghostty-here" (builtins.readFile ./kitty-here.sh);
+  ghostty-here = pkgs.writeShellScript "ghostty-here" (builtins.readFile ./ghostty-here.sh);
 in
 {
   home.file.".config/aerospace/aerospace.toml".text =
