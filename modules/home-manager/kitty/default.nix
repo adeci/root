@@ -5,7 +5,7 @@
 
     # Font
     font = {
-      name = "CaskaydiaCove Nerd Font Mono";
+      name = "CaskaydiaMono Nerd Font Mono";
       size = if pkgs.stdenv.isDarwin then 14.0 else 10.0;
     };
 

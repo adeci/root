@@ -1,7 +1,7 @@
 { ... }:
 {
   imports = [
-    ../ghostty
+    ../kitty
     ../desktop.nix
     ../librewolf.nix
   ];

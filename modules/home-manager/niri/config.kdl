@@ -333,9 +333,9 @@ binds {
     // shows a list of important hotkeys.
     Mod+Shift+Slash { show-hotkey-overlay; }
 
-    Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
+    Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Mod+Shift+Return hotkey-overlay-title="Open Terminal Here" {
-        spawn-sh r#"set -- $(niri msg -j focused-window 2>/dev/null | jq -r '.app_id, .pid') && [ "$1" = ghostty ] && child=$(ps -o pid=,tty= --ppid "$2" | grep -v '?' | head -1 | awk '{print $1}') && [ -n "$child" ] && exec ghostty --working-directory= "$(readlink -f /proc/$child/cwd)" || exec ghostty"#
+        spawn-sh r#"set -- $(niri msg -j focused-window 2>/dev/null | jq -r '.app_id, .pid') && [ "$1" = kitty ] && child=$(ps -o pid=,tty= --ppid "$2" | grep -v '?' | head -1 | awk '{print $1}') && [ -n "$child" ] && exec kitty -d "$(readlink -f /proc/$child/cwd)" || exec kitty"#
     }
     Mod+D hotkey-overlay-title="Run an Application" { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
