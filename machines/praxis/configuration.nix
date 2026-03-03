@@ -22,7 +22,7 @@
     ../../modules/nixos/ssh.nix
     ../../modules/nixos/workstation.nix
     ../../modules/nixos/laptop.nix
-    ../../modules/nixos/gpd-pocket-4-audio.nix
+    ../../modules/nixos/gpd-pocket-4
     ../../modules/nixos/printing.nix
     ../../modules/nixos/social.nix
     ../../modules/nixos/gaming.nix
@@ -60,11 +60,7 @@
     config.adeci.primaryUser
   ];
 
-  # Fix gpd pocket 4 USB devices blocking suspend
-  # Keep keyboard always-on but disable wakeup
   services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="000c", ATTR{power/wakeup}="disabled", ATTR{power/control}="on"
-
     # SDWire USB SD card mux (usb device + block device for dd without sudo)
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0316", MODE="0666"
     SUBSYSTEM=="block", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0316", MODE="0666"
@@ -73,27 +69,5 @@
     SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666"
     SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", MODE="0666"
   '';
-
-  # Disable USB controller wakeup to prevent wakes from suspend
-  systemd.services.disable-usb-wakeup = {
-    description = "Disable XHC0 USB controller wakeup";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'echo XHC0 > /proc/acpi/wakeup'";
-      RemainAfterExit = true;
-    };
-  };
-
-  # Run to fix intermittent touchscreen breakage after suspension
-  systemd.services.fix-touchscreen = {
-    description = "Manually reload i2c_hid_acpi module to fix touchscreen";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStartPre = "${pkgs.kmod}/bin/modprobe -r i2c_hid_acpi";
-      ExecStart = "${pkgs.kmod}/bin/modprobe i2c_hid_acpi";
-    };
-  };
 
 }

@@ -1,9 +1,9 @@
 { ... }:
 {
   imports = [
-    ../../profiles/home-manager/base.nix
-    ../../profiles/home-manager/darwin-desktop.nix
-    ../../profiles/home-manager/shopify.nix
+    ../../modules/home-manager/profiles/base.nix
+    ../../modules/home-manager/profiles/darwin-desktop.nix
+    ../../modules/home-manager/profiles/shopify.nix
   ];
 
   home.stateVersion = "25.11";

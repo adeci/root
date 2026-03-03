@@ -42,11 +42,11 @@ clan-services/              # service definitions (@adeci/*)
   cloudflare-tunnel/        #   tunnel ingress
   siteup/                   #   web app deployment
 
-profiles/home-manager/      # HM profile compositions (base, desktop, darwin-desktop)
 modules/                    # composable feature modules
   nixos/                    #   NixOS system (base, dev, niri, laptop, ...)
   darwin/                   #   Darwin system (base, homebrew)
   home-manager/             #   user config (tools, shell, desktop, fish, git, ...)
+    profiles/               #   HM profile groupings (base, desktop, darwin-desktop)
 
 machines/                   # per-machine configurations
 dotpkgs/                    # wrapped tool packages via lassulus/wrappers (btop, kitty, nixvim, ...)
@@ -69,8 +69,8 @@ clan-services/          service modules generate NixOS/Darwin config
   ...
        |
        v
-machines/               per-machine configuration.nix
-  aegis/                imports modules/, enables adeci.* options
+machines/               per-machine configuration.nix + home.nix
+  aegis/                imports modules explicitly
   claudia/
   ...
        |
@@ -84,42 +84,28 @@ Inventory declares _what_ runs _where_. Services define _how_. Machine configs a
 
 - `flake.nix` imports `flake-outputs/` -- `clan.nix` builds the full config from inventory + services + machines
 - The inventory maps service instances to machines via tags (e.g. all `adeci-net` machines get tailscale)
-- Each machine imports `modules/` and enables features via `adeci.*` options
+- Each machine explicitly imports the modules it needs
 - See [Clan docs](https://docs.clan.lol) for the full service/inventory model
 
 ## Services
 
-| Service                    | Description                                                    |
-| -------------------------- | -------------------------------------------------------------- |
-| `@adeci/roster`            | User management, groups, shells, home-manager (NixOS + Darwin) |
-| `@adeci/tailscale`         | Mesh VPN across all machines                                   |
-| `@adeci/vaultwarden`       | Self-hosted password manager                                   |
-| `@adeci/cloudflare-tunnel` | Tunnel ingress for exposed services                            |
-| `@adeci/siteup`            | Web app deployment (devblog)                                   |
+| Service                    | Description                                                |
+| -------------------------- | ---------------------------------------------------------- |
+| `@adeci/roster`            | User management, groups, shells, SSH keys (NixOS + Darwin) |
+| `@adeci/tailscale`         | Mesh VPN across all machines                               |
+| `@adeci/vaultwarden`       | Self-hosted password manager                               |
+| `@adeci/cloudflare-tunnel` | Tunnel ingress for exposed services                        |
+| `@adeci/siteup`            | Web app deployment (devblog)                               |
 
 ### Roster Service
 
-The roster service (`@adeci/roster`) manages users, groups, SSH keys, shells, and home-manager profiles across all machines. It runs on every machine via the `tags.all` computed tag.
+The roster service (`@adeci/roster`) manages users, groups, SSH keys, shells, and passwords across all machines. It runs on every machine via the `tags.all` computed tag.
 
-**Position hierarchy:**
+**Position hierarchy:** `owner > admin > basic > service`
 
-```
-owner > admin > basic > service
-```
+Positions control sudo access, password generation, home directories, and system user flags. Users have a `defaultPosition` that can be overridden per-machine.
 
-Each position inherits the flags of the positions below it. Positions control sudo access, SSH login permissions, and other privilege levels. Users have a `defaultPosition` but can be overridden per-machine.
-
-**Home-manager profile system:**
-
-Profiles are files in `profiles/home-manager/` that declare which `adeci.*` modules to enable. The roster maps profile names to file paths:
-
-```
-base           = "profiles/home-manager/base.nix"      (base-tools, shell-tools, dev-tools, fish, git)
-desktop        = "profiles/home-manager/desktop.nix"   (desktop)
-darwin-desktop = "profiles/home-manager/darwin-desktop.nix" (kitty, karabiner, aerospace)
-```
-
-Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" ]`), and each machine assignment can add extras via `extraHomeManagerProfiles` (e.g. desktop machines add `"desktop"`, Darwin adds `"darwin-desktop"`). The roster imports these profile files directly, making profiles namespace-agnostic and capable of containing any HM configuration.
+Home-manager is handled separately via per-machine `home.nix` files that import profiles from `modules/home-manager/profiles/`.
 
 ## Workflows
 
@@ -132,7 +118,7 @@ Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" 
 
 **Add a Darwin machine:**
 
-1. Create `machines/<name>/configuration.nix` importing `../../modules/darwin`
+1. Create `machines/<name>/configuration.nix` importing Darwin modules explicitly
 2. Set `nixpkgs.hostPlatform` and `system.stateVersion`
 3. Add to `clan-inventory/machines.nix` with `machineClass = "darwin"` and empty tags
 4. Add roster user assignments in `clan-inventory/instances/roster/machines.nix`
@@ -140,16 +126,14 @@ Each user gets a default list of profiles (e.g. `homeManagerProfiles = [ "base" 
 
 **Add a user:**
 
-1. Add user config to `clan-inventory/instances/roster/users.nix` (uid, description, groups, SSH keys, defaultPosition, defaultShell, homeManagerProfiles)
+1. Add user config to `clan-inventory/instances/roster/users.nix` (uid, description, groups, SSH keys, defaultPosition, defaultShell)
 2. Add user to machines in `clan-inventory/instances/roster/machines.nix`
-3. Optionally add `extraHomeManagerProfiles` per machine for desktop or platform-specific profiles
 
 **Add an HM profile:**
 
-1. Create a profile file in `profiles/home-manager/<name>.nix` (a plain attrset enabling `adeci.*` modules or any HM config)
-2. Register it in `clan-inventory/instances/roster/default.nix` under `homeManagerProfiles` (map a name to the file path)
-3. Assign the profile to users in `users.nix` or to specific machines in `machines.nix` via `extraHomeManagerProfiles`
-4. `git add` the new profile file before building
+1. Create `modules/home-manager/profiles/<name>.nix` importing the HM modules you want
+2. Import it in the relevant `machines/<name>/home.nix`
+3. `git add` the new file before building
 
 **Add a service:**
 
@@ -184,7 +168,7 @@ home-manager switch --flake .#alex-aarch64-darwin   # macOS
 
 This provides base tools, shell tools, dev tools, fish, and git -- without requiring NixOS or nix-darwin.
 
-For Clan-managed machines, home-manager is configured via roster profiles instead. The standalone config exists for machines outside the Clan fleet.
+For Clan-managed machines, home-manager is configured via per-machine `home.nix` files instead. The standalone config exists for machines outside the Clan fleet.
 
 ## Commands
 

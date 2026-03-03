@@ -19,7 +19,7 @@
             extraSpecialArgs = { inherit inputs self; };
             modules = [
               inputs.noctalia-shell.homeModules.default
-              (import ../profiles/home-manager/base.nix)
+              (import ../modules/home-manager/profiles/base.nix)
               {
                 home.username = "alex";
                 home.homeDirectory = if pkgs.stdenv.isDarwin then "/Users/alex" else "/home/alex";
