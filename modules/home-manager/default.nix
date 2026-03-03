@@ -1,11 +1,5 @@
-{ lib, ... }:
-let
-  dir = builtins.readDir ./.;
-  nixFiles = lib.filterAttrs (
-    n: t: t == "regular" && lib.hasSuffix ".nix" n && n != "default.nix"
-  ) dir;
-  dirs = lib.filterAttrs (n: t: t == "directory" && builtins.pathExists (./${n}/default.nix)) dir;
-in
+# Home-manager modules — import individually from profiles or per-machine home.nix.
+# This file exists only as a directory marker; it imports nothing.
+_:
 {
-  imports = lib.mapAttrsToList (n: _: ./${n}) nixFiles ++ lib.mapAttrsToList (n: _: ./${n}) dirs;
 }

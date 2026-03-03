@@ -1,10 +1,5 @@
-{ lib, ... }:
-let
-  dir = builtins.readDir ./.;
-  modules = lib.filterAttrs (
-    n: t: t == "regular" && lib.hasSuffix ".nix" n && n != "default.nix"
-  ) dir;
-in
+# Darwin modules — import individually from machine configs.
+# This file exists only as a directory marker; it imports nothing.
+_:
 {
-  imports = lib.mapAttrsToList (n: _: ./${n}) modules;
 }

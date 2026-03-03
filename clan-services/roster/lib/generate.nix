@@ -2,8 +2,6 @@
   lib,
   pkgs,
   config,
-  inputs,
-  settings,
   machine,
   isDarwin,
   resolved,
@@ -18,10 +16,6 @@
       {
         assertion = resolved.invalidPositions == [ ];
         message = "Roster: Unknown positions used in machine '${machine.name}': ${builtins.concatStringsSep ", " resolved.invalidPositions}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames resolved.allPositions)}";
-      }
-      {
-        assertion = resolved.unknownProfiles == [ ];
-        message = "Roster: Unknown HM profiles on machine '${machine.name}': ${builtins.concatStringsSep ", " resolved.unknownProfiles}. Available: ${builtins.concatStringsSep ", " (builtins.attrNames settings.homeManagerProfiles)}";
       }
     ];
   }
@@ -122,27 +116,5 @@
 
   (lib.mkIf (resolved.ownerUser != null) {
     adeci.primaryUser = lib.mkDefault resolved.ownerUser;
-  })
-
-  (lib.mkIf resolved.hasHmUsers {
-    adeci.home-manager.enable = true;
-  })
-
-  (lib.mkIf resolved.hasHmUsers {
-    home-manager.users = lib.mapAttrs (
-      _username: cfg:
-      let
-        profilePaths = map (name: settings.homeManagerProfiles.${name}) cfg.effectiveHmProfiles;
-      in
-      {
-        imports = map (path: inputs.self + "/${path}") profilePaths;
-        home = {
-          stateVersion = if isDarwin then settings.darwinHomeStateVersion else config.system.stateVersion;
-        }
-        // lib.optionalAttrs isDarwin {
-          homeDirectory = cfg.homeDir;
-        };
-      }
-    ) resolved.hmUsers;
   })
 ]

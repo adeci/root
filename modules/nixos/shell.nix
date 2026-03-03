@@ -1,10 +1,4 @@
-{ config, lib, ... }:
-let
-  cfg = config.adeci.shell;
-in
+_:
 {
-  options.adeci.shell.enable = lib.mkEnableOption "Fish shell (system-wide login shell)";
-  config = lib.mkIf cfg.enable {
-    programs.fish.enable = true;
-  };
+  programs.fish.enable = true;
 }

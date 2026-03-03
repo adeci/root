@@ -7,21 +7,19 @@
   ...
 }:
 let
-  cfg = config.adeci.niri;
   packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
-  options.adeci.niri = {
-    enable = lib.mkEnableOption "Niri compositor";
-    user = lib.mkOption {
-      type = lib.types.str;
-      default = config.adeci.primaryUser;
-      description = "User for greetd auto-login";
-    };
+  imports = [ ./desktop-base.nix ];
+
+  options.adeci.niri.user = lib.mkOption {
+    type = lib.types.str;
+    default = config.adeci.primaryUser;
+    description = "User for greetd auto-login";
   };
-  config = lib.mkIf cfg.enable {
+
+  config = {
     nixpkgs.overlays = [ inputs.niri.overlays.default ];
-    adeci.desktop-base.enable = lib.mkDefault true;
     environment.systemPackages = [
       packages.kitty
       pkgs.nautilus
@@ -34,11 +32,11 @@ in
       enable = true;
       settings.default_session = {
         command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
-        inherit (cfg) user;
+        inherit (config.adeci.niri) user;
       };
       settings.initial_session = {
         command = "niri-session";
-        inherit (cfg) user;
+        inherit (config.adeci.niri) user;
       };
     };
     security.pam.services.greetd.enableGnomeKeyring = true;

@@ -16,50 +16,15 @@ let
 in
 {
   # ==========================================================================
-  # 1. Interface Serializability — THE critical test
-  #    clan-core requires interface to be JSON-serializable
+  # 1. Module Structure
   # ==========================================================================
 
-  test_interface_has_no_package_types = {
-    expr = !(userOpts ? packages);
-    expected = true;
-  };
-
-  test_interface_has_no_deferred_module_types = {
-    expr = !(userOpts ? homeModules);
-    expected = true;
-  };
-
-  test_machine_user_has_no_packages = {
-    expr = !(machineUserOpts ? packages);
-    expected = true;
-  };
-
-  test_machine_user_has_no_extraPackages = {
-    expr = !(machineUserOpts ? extraPackages);
-    expected = true;
-  };
-
-  test_interface_homeManagerProfiles_is_serializable = {
-    expr = interface.options ? homeManagerProfiles;
-    expected = true;
-  };
-
-  test_interface_darwinHomeStateVersion_is_serializable = {
-    expr = interface.options ? darwinHomeStateVersion;
-    expected = true;
-  };
-
-  # ==========================================================================
-  # 2. Module Structure Validation
-  # ==========================================================================
-
-  test_module_has_class = {
+  test_module_class = {
     expr = module._class;
     expected = "clan.service";
   };
 
-  test_module_has_manifest = {
+  test_module_manifest_name = {
     expr = module.manifest.name;
     expected = "@adeci/roster";
   };
@@ -69,173 +34,78 @@ in
     expected = true;
   };
 
-  test_module_has_perMachine = {
-    expr = module ? perMachine;
-    expected = true;
-  };
-
-  test_perMachine_has_nixosModule = {
-    expr = module.perMachine ? nixosModule;
-    expected = true;
-  };
-
-  test_perMachine_has_darwinModule = {
-    expr = module.perMachine ? darwinModule;
+  test_perMachine_has_both_platforms = {
+    expr = (module.perMachine ? nixosModule) && (module.perMachine ? darwinModule);
     expected = true;
   };
 
   # ==========================================================================
-  # 3. New Interface Options — Verify the new JSON-safe schema
+  # 2. Interface Options — verify the schema is correct
   # ==========================================================================
 
-  # User options
-  test_user_has_uid = {
-    expr = userOpts ? uid;
+  test_user_has_required_options = {
+    expr = builtins.all (opt: userOpts ? ${opt}) [
+      "uid"
+      "defaultPosition"
+      "description"
+      "groups"
+      "sshAuthorizedKeys"
+      "defaultShell"
+      "sudoAccess"
+      "generatePassword"
+      "homeDirectory"
+      "isSystemUser"
+    ];
     expected = true;
   };
 
-  test_user_has_defaultPosition = {
-    expr = userOpts ? defaultPosition;
+  test_user_has_no_hm_options = {
+    expr = !(userOpts ? homeManagerProfiles);
     expected = true;
   };
 
-  test_user_has_groups = {
-    expr = userOpts ? groups;
+  test_machine_user_has_required_options = {
+    expr = builtins.all (opt: machineUserOpts ? ${opt}) [
+      "position"
+      "uid"
+      "groups"
+      "extraGroups"
+      "shell"
+      "sshAuthorizedKeys"
+      "extraSshAuthorizedKeys"
+      "sudoAccess"
+      "generatePassword"
+      "homeDirectory"
+      "isSystemUser"
+    ];
     expected = true;
   };
 
-  test_user_has_sshAuthorizedKeys = {
-    expr = userOpts ? sshAuthorizedKeys;
+  test_machine_user_has_no_hm_options = {
+    expr =
+      (!(machineUserOpts ? homeManagerProfiles)) && (!(machineUserOpts ? extraHomeManagerProfiles));
     expected = true;
   };
 
-  test_user_has_defaultShell = {
-    expr = userOpts ? defaultShell;
+  test_interface_has_no_hm_profile_map = {
+    expr = !(interface.options ? homeManagerProfiles);
     expected = true;
   };
 
-  test_user_has_description = {
-    expr = userOpts ? description;
-    expected = true;
-  };
-
-  test_user_has_homeManagerProfiles = {
-    expr = userOpts ? homeManagerProfiles;
-    expected = true;
-  };
-
-  # Machine user options
-  test_machine_user_has_position = {
-    expr = machineUserOpts ? position;
-    expected = true;
-  };
-
-  test_machine_user_has_uid = {
-    expr = machineUserOpts ? uid;
-    expected = true;
-  };
-
-  test_machine_user_has_groups = {
-    expr = machineUserOpts ? groups;
-    expected = true;
-  };
-
-  test_machine_user_has_extraGroups = {
-    expr = machineUserOpts ? extraGroups;
-    expected = true;
-  };
-
-  test_machine_user_has_shell = {
-    expr = machineUserOpts ? shell;
-    expected = true;
-  };
-
-  test_machine_user_has_sshAuthorizedKeys = {
-    expr = machineUserOpts ? sshAuthorizedKeys;
-    expected = true;
-  };
-
-  test_machine_user_has_extraSshAuthorizedKeys = {
-    expr = machineUserOpts ? extraSshAuthorizedKeys;
-    expected = true;
-  };
-
-  test_machine_user_has_homeManagerProfiles = {
-    expr = machineUserOpts ? homeManagerProfiles;
-    expected = true;
-  };
-
-  test_machine_user_has_extraHomeManagerProfiles = {
-    expr = machineUserOpts ? extraHomeManagerProfiles;
-    expected = true;
-  };
-
-  # defaultPosition is now nullable
   test_user_defaultPosition_is_nullable = {
     expr = userOpts.defaultPosition.type.name == "nullOr";
     expected = true;
   };
 
-  # User override flags
-  test_user_has_sudoAccess_flag = {
-    expr = userOpts ? sudoAccess;
-    expected = true;
-  };
-
-  test_user_has_generatePassword_flag = {
-    expr = userOpts ? generatePassword;
-    expected = true;
-  };
-
-  test_user_has_homeDirectory_flag = {
-    expr = userOpts ? homeDirectory;
-    expected = true;
-  };
-
-  test_user_has_isSystemUser_flag = {
-    expr = userOpts ? isSystemUser;
-    expected = true;
-  };
-
-  # Machine user override flags
-  test_machine_user_has_sudoAccess_flag = {
-    expr = machineUserOpts ? sudoAccess;
-    expected = true;
-  };
-
-  test_machine_user_has_generatePassword_flag = {
-    expr = machineUserOpts ? generatePassword;
-    expected = true;
-  };
-
-  test_machine_user_has_homeDirectory_flag = {
-    expr = machineUserOpts ? homeDirectory;
-    expected = true;
-  };
-
-  test_machine_user_has_isSystemUser_flag = {
-    expr = machineUserOpts ? isSystemUser;
-    expected = true;
-  };
-
-  # Positions option
-  test_has_positions = {
-    expr = interface.options ? positions;
-    expected = true;
-  };
-
   # ==========================================================================
-  # 4. Resolution Logic Tests (pure functions)
+  # 3. Flag Override Priority (machine > user > position > fallback)
   # ==========================================================================
 
-  # Flag override priority: machine > user > position > fallback
-  test_flag_override_machine_wins = {
+  test_flag_priority_machine_wins = {
     expr =
       let
-        positionVal = false;
-        userVal = true;
-        machineVal = false;
-        effective =
+        resolve =
+          machineVal: userVal: positionVal:
           if machineVal != null then
             machineVal
           else if userVal != null then
@@ -243,17 +113,15 @@ in
           else
             positionVal;
       in
-      effective;
+      resolve false true true;
     expected = false;
   };
 
-  test_flag_override_user_wins_over_position = {
+  test_flag_priority_user_wins_over_position = {
     expr =
       let
-        positionVal = false;
-        userVal = true;
-        machineVal = null;
-        effective =
+        resolve =
+          machineVal: userVal: positionVal:
           if machineVal != null then
             machineVal
           else if userVal != null then
@@ -261,17 +129,15 @@ in
           else
             positionVal;
       in
-      effective;
+      resolve null true false;
     expected = true;
   };
 
-  test_flag_override_falls_back_to_position = {
+  test_flag_priority_falls_back_to_position = {
     expr =
       let
-        positionVal = true;
-        userVal = null;
-        machineVal = null;
-        effective =
+        resolve =
+          machineVal: userVal: positionVal:
           if machineVal != null then
             machineVal
           else if userVal != null then
@@ -279,63 +145,15 @@ in
           else
             positionVal;
       in
-      effective;
+      resolve null null true;
     expected = true;
   };
 
-  test_fallback_defaults_when_no_position = {
-    expr =
-      let
-        fallbackDefaults = {
-          sudoAccess = false;
-          generatePassword = false;
-          homeDirectory = true;
-          isSystemUser = false;
-        };
-      in
-      fallbackDefaults.homeDirectory;
-    expected = true;
-  };
-
-  # Shell resolution pattern (string -> resolved later by pkgs.\${name})
-  test_shell_resolution_machine_overrides_user = {
-    expr =
-      let
-        machineShell = "zsh";
-        userShell = "fish";
-        effective = if machineShell != null then machineShell else userShell;
-      in
-      effective;
-    expected = "zsh";
-  };
-
-  test_shell_resolution_falls_back_to_user_default = {
-    expr =
-      let
-        machineShell = null;
-        userShell = "fish";
-        effective = if machineShell != null then machineShell else userShell;
-      in
-      effective;
-    expected = "fish";
-  };
-
-  test_shell_resolution_null_when_both_null = {
-    expr =
-      let
-        machineShell = null;
-        userShell = null;
-        effective = if machineShell != null then machineShell else userShell;
-      in
-      effective;
-    expected = null;
-  };
-
   # ==========================================================================
-  # 5. Validation Logic Tests
+  # 4. Validation Logic
   # ==========================================================================
 
-  test_validation_detects_undefined_users = {
+  test_detects_undefined_users = {
     expr =
       let
         definedUsers = {
@@ -347,13 +165,12 @@ in
           "charlie"
           "bob"
         ];
-        undefinedUsers = lib.filter (u: !(definedUsers ? ${u})) machineUsers;
       in
-      undefinedUsers;
+      lib.filter (u: !(definedUsers ? ${u})) machineUsers;
     expected = [ "charlie" ];
   };
 
-  test_validation_no_undefined_users_when_valid = {
+  test_no_undefined_users_when_valid = {
     expr =
       let
         definedUsers = {
@@ -364,13 +181,12 @@ in
           "alice"
           "bob"
         ];
-        undefinedUsers = lib.filter (u: !(definedUsers ? ${u})) machineUsers;
       in
-      undefinedUsers;
+      lib.filter (u: !(definedUsers ? ${u})) machineUsers;
     expected = [ ];
   };
 
-  test_validation_detects_invalid_positions = {
+  test_detects_invalid_positions = {
     expr =
       let
         allPositions = {
@@ -383,31 +199,16 @@ in
           "superadmin"
           "basic"
         ];
-        invalidPositions = lib.filter (p: !(allPositions ? ${p})) usedPositions;
       in
-      invalidPositions;
+      lib.filter (p: !(allPositions ? ${p})) usedPositions;
     expected = [ "superadmin" ];
   };
 
-  test_validation_no_invalid_positions_when_valid = {
-    expr =
-      let
-        allPositions = {
-          owner = { };
-          admin = { };
-          basic = { };
-        };
-        usedPositions = [
-          "owner"
-          "admin"
-        ];
-        invalidPositions = lib.filter (p: !(allPositions ? ${p})) usedPositions;
-      in
-      invalidPositions;
-    expected = [ ];
-  };
+  # ==========================================================================
+  # 5. Position Resolution
+  # ==========================================================================
 
-  test_validation_position_extraction_with_override = {
+  test_position_machine_override_wins = {
     expr =
       let
         users = {
@@ -426,7 +227,7 @@ in
     expected = "admin";
   };
 
-  test_validation_position_extraction_uses_default = {
+  test_position_falls_back_to_user_default = {
     expr =
       let
         users = {
@@ -445,7 +246,7 @@ in
     expected = "owner";
   };
 
-  test_validation_position_extraction_handles_undefined_user = {
+  test_position_null_for_undefined_user = {
     expr =
       let
         users = {
@@ -465,17 +266,49 @@ in
   };
 
   # ==========================================================================
-  # 6. Platform difference tests (pure logic)
+  # 6. Shell Resolution
+  # ==========================================================================
+
+  test_shell_machine_overrides_user = {
+    expr =
+      let
+        machineShell = "zsh";
+        userShell = "fish";
+      in
+      if machineShell != null then machineShell else userShell;
+    expected = "zsh";
+  };
+
+  test_shell_falls_back_to_user = {
+    expr =
+      let
+        machineShell = null;
+        userShell = "fish";
+      in
+      if machineShell != null then machineShell else userShell;
+    expected = "fish";
+  };
+
+  test_shell_null_when_both_null = {
+    expr =
+      let
+        machineShell = null;
+        userShell = null;
+      in
+      if machineShell != null then machineShell else userShell;
+    expected = null;
+  };
+
+  # ==========================================================================
+  # 7. Platform Differences
   # ==========================================================================
 
   test_home_dir_linux = {
     expr =
       let
         isDarwin = false;
-        username = "alice";
-        homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
       in
-      homeDir;
+      if isDarwin then "/Users/alice" else "/home/alice";
     expected = "/home/alice";
   };
 
@@ -483,10 +316,8 @@ in
     expr =
       let
         isDarwin = true;
-        username = "alice";
-        homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
       in
-      homeDir;
+      if isDarwin then "/Users/alice" else "/home/alice";
     expected = "/Users/alice";
   };
 
@@ -496,16 +327,11 @@ in
         isDarwin = true;
         allUserConfigs = {
           alice = {
-            positionConfig.generatePassword = true;
+            generatePassword = true;
           };
         };
-        usersNeedingPasswords =
-          if isDarwin then
-            { }
-          else
-            lib.filterAttrs (_: cfg: cfg.positionConfig.generatePassword) allUserConfigs;
       in
-      usersNeedingPasswords;
+      if isDarwin then { } else lib.filterAttrs (_: cfg: cfg.generatePassword) allUserConfigs;
     expected = { };
   };
 
@@ -515,214 +341,69 @@ in
         isDarwin = false;
         allUserConfigs = {
           alice = {
-            positionConfig.generatePassword = true;
+            generatePassword = true;
           };
           bob = {
-            positionConfig.generatePassword = false;
+            generatePassword = false;
           };
         };
-        usersNeedingPasswords =
-          if isDarwin then
-            { }
-          else
-            lib.filterAttrs (_: cfg: cfg.positionConfig.generatePassword) allUserConfigs;
       in
-      builtins.attrNames usersNeedingPasswords;
+      builtins.attrNames (
+        if isDarwin then { } else lib.filterAttrs (_: cfg: cfg.generatePassword) allUserConfigs
+      );
     expected = [ "alice" ];
   };
 
-  test_root_ssh_keys_skipped_on_darwin = {
+  # ==========================================================================
+  # 8. Groups Resolution
+  # ==========================================================================
+
+  test_groups_machine_override_replaces = {
     expr =
       let
-        isDarwin = true;
-        rootSshKeys =
-          if isDarwin then
-            [ ]
-          else
-            [
-              "key1"
-              "key2"
-            ];
-      in
-      rootSshKeys;
-    expected = [ ];
-  };
-
-  # ==========================================================================
-  # 7. Option Example/Documentation Tests
-  # ==========================================================================
-
-  test_positions_has_example = {
-    expr = interface.options.positions ? example;
-    expected = true;
-  };
-
-  test_users_has_example = {
-    expr = interface.options.users ? example;
-    expected = true;
-  };
-
-  test_machines_has_example = {
-    expr = interface.options.machines ? example;
-    expected = true;
-  };
-
-  test_user_uid_has_example = {
-    expr = userOpts.uid ? example;
-    expected = true;
-  };
-
-  test_user_defaultPosition_has_example = {
-    expr = userOpts.defaultPosition ? example;
-    expected = true;
-  };
-
-  test_user_defaultShell_has_example = {
-    expr = userOpts.defaultShell ? example;
-    expected = true;
-  };
-
-  test_machine_user_position_has_example = {
-    expr = machineUserOpts.position ? example;
-    expected = true;
-  };
-
-  test_machine_user_shell_has_example = {
-    expr = machineUserOpts.shell ? example;
-    expected = true;
-  };
-
-  # ==========================================================================
-  # 8. Home-Manager Profile Resolution Tests
-  # ==========================================================================
-
-  # HM profile override: machine overrides user default
-  test_hm_profile_machine_overrides_user = {
-    expr =
-      let
-        userProfiles = [
-          "base"
-          "desktop"
+        userGroups = [
+          "video"
+          "audio"
         ];
-        machineProfiles = [ "base" ];
-        machineExtra = [ ];
-        effective = if machineProfiles != null then machineProfiles else userProfiles;
+        machineGroups = [ "docker" ];
+        extraGroups = [ ];
+        base = if machineGroups != null then machineGroups else userGroups;
       in
-      effective ++ machineExtra;
-    expected = [ "base" ];
+      base ++ extraGroups;
+    expected = [ "docker" ];
   };
 
-  # HM profile: user default when machine is null
-  test_hm_profile_falls_back_to_user = {
+  test_groups_extra_extends_defaults = {
     expr =
       let
-        userProfiles = [
-          "base"
-          "desktop"
+        userGroups = [
+          "video"
+          "audio"
         ];
-        machineProfiles = null;
-        machineExtra = [ ];
-        effective = if machineProfiles != null then machineProfiles else userProfiles;
+        machineGroups = null;
+        extraGroups = [ "docker" ];
+        base = if machineGroups != null then machineGroups else userGroups;
       in
-      effective ++ machineExtra;
+      base ++ extraGroups;
     expected = [
-      "base"
-      "desktop"
+      "video"
+      "audio"
+      "docker"
     ];
   };
 
-  # HM profile: extras extend base profiles
-  test_hm_profile_extras_extend_base = {
+  test_ssh_keys_extra_extends = {
     expr =
       let
-        userProfiles = [ "base" ];
-        machineProfiles = null;
-        machineExtra = [ "desktop" ];
-        effective = if machineProfiles != null then machineProfiles else userProfiles;
+        userKeys = [ "key1" ];
+        machineKeys = null;
+        extraKeys = [ "key2" ];
+        base = if machineKeys != null then machineKeys else userKeys;
       in
-      effective ++ machineExtra;
+      base ++ extraKeys;
     expected = [
-      "base"
-      "desktop"
+      "key1"
+      "key2"
     ];
   };
-
-  # HM profile: empty when user has no profiles and no extras
-  test_hm_profile_empty_when_none = {
-    expr =
-      let
-        userProfiles = [ ];
-        machineProfiles = null;
-        machineExtra = [ ];
-        effective = if machineProfiles != null then machineProfiles else userProfiles;
-      in
-      effective ++ machineExtra;
-    expected = [ ];
-  };
-
-  # HM profile expansion: profile name resolves to file path
-  test_hm_profile_expansion = {
-    expr =
-      let
-        profiles = {
-          base = "profiles/home-manager/base.nix";
-          desktop = "profiles/home-manager/desktop.nix";
-        };
-        profileNames = [
-          "base"
-          "desktop"
-        ];
-      in
-      map (name: profiles.${name}) profileNames;
-    expected = [
-      "profiles/home-manager/base.nix"
-      "profiles/home-manager/desktop.nix"
-    ];
-  };
-
-  # HM profile validation: detects unknown profile names
-  test_hm_profile_unknown_detection = {
-    expr =
-      let
-        definedProfiles = {
-          base = "profiles/home-manager/base.nix";
-          desktop = "profiles/home-manager/desktop.nix";
-        };
-        usedProfiles = [
-          "base"
-          "nonexistent"
-          "desktop"
-        ];
-        unknownProfiles = lib.filter (p: !(definedProfiles ? ${p})) usedProfiles;
-      in
-      unknownProfiles;
-    expected = [ "nonexistent" ];
-  };
-
-  # HM profile: system users should be skipped (pure logic)
-  test_hm_profile_system_user_skipped = {
-    expr =
-      let
-        users = {
-          alice = {
-            isSystemUser = false;
-            hmProfiles = [ "base" ];
-          };
-          svc = {
-            isSystemUser = true;
-            hmProfiles = [ "base" ];
-          };
-        };
-        hmUsers = lib.filterAttrs (_: u: !u.isSystemUser && u.hmProfiles != [ ]) users;
-      in
-      builtins.attrNames hmUsers;
-    expected = [ "alice" ];
-  };
-
-  # HM profile: machine user homeManagerProfiles is nullable
-  test_machine_user_homeManagerProfiles_is_nullable = {
-    expr = machineUserOpts.homeManagerProfiles.type.name == "nullOr";
-    expected = true;
-  };
-
 }

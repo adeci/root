@@ -2,9 +2,7 @@
 
   aegis = {
     users = {
-      alex = {
-        extraHomeManagerProfiles = [ "desktop" ];
-      };
+      alex = { };
     };
   };
 
@@ -34,30 +32,20 @@
 
   malum = {
     users = {
-      alex = {
-        homeManagerProfiles = [ "base" ];
-        extraHomeManagerProfiles = [
-          "darwin-desktop"
-          "shopify"
-        ];
-      };
+      alex = { };
     };
   };
 
   modus = {
     users = {
-      alex = {
-        extraHomeManagerProfiles = [ "desktop" ];
-      };
+      alex = { };
       dima = { };
     };
   };
 
   praxis = {
     users = {
-      alex = {
-        extraHomeManagerProfiles = [ "desktop" ];
-      };
+      alex = { };
       dima = { };
     };
   };

@@ -1,8 +1,11 @@
+{ ... }:
 {
-  adeci.base-tools.enable = true;
-  adeci.shell-tools.enable = true;
-  adeci.dev-tools.enable = true;
-  adeci.fish.enable = true;
-  adeci.git.enable = true;
-  adeci.tmux.enable = true;
+  imports = [
+    ../../modules/home-manager/base-tools.nix
+    ../../modules/home-manager/shell-tools.nix
+    ../../modules/home-manager/dev-tools.nix
+    ../../modules/home-manager/fish.nix
+    ../../modules/home-manager/git.nix
+    ../../modules/home-manager/tmux.nix
+  ];
 }

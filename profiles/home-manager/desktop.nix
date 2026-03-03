@@ -1,4 +1,7 @@
+{ ... }:
 {
-  adeci.desktop.enable = true;
-  adeci.librewolf.enable = true;
+  imports = [
+    ../../modules/home-manager/desktop.nix
+    ../../modules/home-manager/librewolf.nix
+  ];
 }

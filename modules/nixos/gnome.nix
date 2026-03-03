@@ -1,11 +1,5 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 let
-  cfg = config.adeci.gnome;
   wallpaper = pkgs.fetchurl {
     name = "osaka-jade-bg-3.jpg";
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/osaka-jade-bg-3.jpg";
@@ -13,24 +7,21 @@ let
   };
 in
 {
-  options.adeci.gnome.enable = lib.mkEnableOption "GNOME desktop environment";
-  config = lib.mkIf cfg.enable {
-    services.displayManager.gdm.enable = true;
-    services.desktopManager.gnome.enable = true;
-    environment.systemPackages = with pkgs; [ gnome-tweaks ];
-    programs.dconf = {
-      enable = true;
-      profiles.user.databases = [
-        {
-          settings = {
-            "org/gnome/desktop/background" = {
-              picture-uri = "file://${wallpaper}";
-              picture-uri-dark = "file://${wallpaper}";
-              picture-options = "zoom";
-            };
+  services.displayManager.gdm.enable = true;
+  services.desktopManager.gnome.enable = true;
+  environment.systemPackages = with pkgs; [ gnome-tweaks ];
+  programs.dconf = {
+    enable = true;
+    profiles.user.databases = [
+      {
+        settings = {
+          "org/gnome/desktop/background" = {
+            picture-uri = "file://${wallpaper}";
+            picture-uri-dark = "file://${wallpaper}";
+            picture-options = "zoom";
           };
-        }
-      ];
-    };
+        };
+      }
+    ];
   };
 }

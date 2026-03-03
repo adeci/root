@@ -9,16 +9,17 @@
   imports = [
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
 
-    ../../modules/nixos
+    ../../modules/nixos/home-manager.nix
+
+    ../../modules/nixos/base.nix
+    ../../modules/nixos/auto-timezone.nix
+    ../../modules/nixos/shell.nix
+    ../../modules/nixos/gnome.nix
+    ../../modules/nixos/amd-gpu.nix
+    ../../modules/nixos/printing.nix
   ];
 
-  adeci = {
-    base.enable = true;
-    shell.enable = true;
-    gnome.enable = true;
-    amd-gpu.enable = true;
-    printing.enable = true;
-  };
+  home-manager.users.alex = import ./home.nix;
 
   networking = {
     networkmanager.enable = true;

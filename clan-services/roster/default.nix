@@ -52,7 +52,6 @@ let
       config,
       lib,
       pkgs,
-      inputs,
       ...
     }:
     let
@@ -74,8 +73,6 @@ let
           lib
           pkgs
           config
-          inputs
-          settings
           machine
           isDarwin
           resolved
@@ -92,33 +89,12 @@ in
   manifest.readme = builtins.readFile ./README.md;
 
   roles.default = {
-    description = "Roster user management";
+    description = "User management";
 
     interface =
       { lib, ... }:
       {
         options = {
-          # Home-manager profile definitions (named groups of HM module names)
-          homeManagerProfiles = lib.mkOption {
-            type = lib.types.attrsOf lib.types.str;
-            default = { };
-            example = lib.literalExpression ''
-              {
-                base = "profiles/home-manager/base.nix";
-                desktop = "profiles/home-manager/desktop.nix";
-              }
-            '';
-            description = "Named HM profiles mapping to file paths (relative to flake root)";
-          };
-
-          # Darwin home.stateVersion (NixOS derives it from system.stateVersion)
-          darwinHomeStateVersion = lib.mkOption {
-            type = lib.types.str;
-            default = "25.11";
-            description = "home.stateVersion for Darwin machines";
-          };
-
-          # Custom position definitions (extends/overrides defaults)
           positions = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule {
@@ -162,7 +138,6 @@ in
             description = "Custom position definitions that extend or override the defaults";
           };
 
-          # Global user definitions
           users = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule {
@@ -176,7 +151,7 @@ in
                     type = lib.types.nullOr lib.types.str;
                     default = null;
                     example = "owner";
-                    description = "Default position for this user (owner/admin/basic/service or custom). Null means no position; flags use fallback defaults unless overridden.";
+                    description = "Default position for this user. Null means no position; flags use fallback defaults unless overridden.";
                   };
                   description = lib.mkOption {
                     type = lib.types.str;
@@ -204,16 +179,7 @@ in
                     type = lib.types.nullOr lib.types.str;
                     default = null;
                     example = "fish";
-                    description = "Default shell name (e.g., \"fish\", \"zsh\", \"bash\") — resolved to pkgs.\${name} in the generated module";
-                  };
-                  homeManagerProfiles = lib.mkOption {
-                    type = lib.types.listOf lib.types.str;
-                    default = [ ];
-                    example = [
-                      "base"
-                      "desktop"
-                    ];
-                    description = "Default HM profile names for this user";
+                    description = "Default shell name (resolved to pkgs.\${name} in the generated module)";
                   };
                   sudoAccess = lib.mkOption {
                     type = lib.types.nullOr lib.types.bool;
@@ -239,23 +205,9 @@ in
               }
             );
             default = { };
-            example = lib.literalExpression ''
-              {
-                alice = {
-                  uid = 1000;
-                  defaultPosition = "owner";
-                  description = "Alice";
-                  groups = [ "wheel" "video" ];
-                  sshAuthorizedKeys = [ "ssh-ed25519 AAAAC3Nza..." ];
-                  defaultShell = "fish";
-                  homeManagerProfiles = [ "base" ];
-                };
-              }
-            '';
             description = "Global user definitions";
           };
 
-          # Machine-specific user assignments
           machines = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule {
@@ -273,53 +225,32 @@ in
                           uid = lib.mkOption {
                             type = lib.types.nullOr lib.types.int;
                             default = null;
-                            example = 1001;
                             description = "Override UID for this user on this machine";
                           };
                           groups = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.str);
                             default = null;
-                            example = [
-                              "docker"
-                              "libvirt"
-                            ];
                             description = "Override groups for this user on this machine";
                           };
                           extraGroups = lib.mkOption {
                             type = lib.types.listOf lib.types.str;
                             default = [ ];
-                            example = [ "docker" ];
-                            description = "Additional groups for this user on this machine (adds to default groups)";
+                            description = "Additional groups for this user on this machine";
                           };
                           shell = lib.mkOption {
                             type = lib.types.nullOr lib.types.str;
                             default = null;
-                            example = "zsh";
                             description = "Override shell name for this user on this machine";
                           };
                           sshAuthorizedKeys = lib.mkOption {
                             type = lib.types.nullOr (lib.types.listOf lib.types.str);
                             default = null;
-                            example = [ "ssh-ed25519 AAAAC3Nza... workstation" ];
                             description = "Override SSH keys for this user on this machine";
                           };
                           extraSshAuthorizedKeys = lib.mkOption {
                             type = lib.types.listOf lib.types.str;
                             default = [ ];
-                            example = [ "ssh-ed25519 AAAAC3Nza... extra-key" ];
                             description = "Additional SSH keys for this user on this machine";
-                          };
-                          homeManagerProfiles = lib.mkOption {
-                            type = lib.types.nullOr (lib.types.listOf lib.types.str);
-                            default = null;
-                            example = [ "base" ];
-                            description = "Override HM profiles for this user on this machine";
-                          };
-                          extraHomeManagerProfiles = lib.mkOption {
-                            type = lib.types.listOf lib.types.str;
-                            default = [ ];
-                            example = [ "desktop" ];
-                            description = "Additional HM profiles on top of the user's defaults";
                           };
                           sudoAccess = lib.mkOption {
                             type = lib.types.nullOr lib.types.bool;
@@ -351,18 +282,6 @@ in
               }
             );
             default = { };
-            example = lib.literalExpression ''
-              {
-                server1 = {
-                  users.alice = { };
-                  users.bob = {
-                    position = "admin";
-                    extraGroups = [ "docker" ];
-                    extraHomeManagerProfiles = [ "desktop" ];
-                  };
-                };
-              }
-            '';
             description = "Machine-specific user assignments and overrides";
           };
         };
@@ -376,7 +295,6 @@ in
       };
   };
 
-  # Applied to all machines regardless of instance
   perMachine = {
     nixosModule =
       { lib, ... }:

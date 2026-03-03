@@ -17,10 +17,6 @@
     ];
     defaultPosition = "owner";
     defaultShell = "fish";
-    homeManagerProfiles = [
-      "base"
-      "llm-tools"
-    ];
   };
 
   brittonr = {

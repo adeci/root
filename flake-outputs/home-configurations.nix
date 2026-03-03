@@ -1,5 +1,5 @@
 # Standalone home-manager configurations for non-NixOS/non-Darwin machines.
-# For Clan-managed machines, HM is configured via roster profiles instead.
+# For Clan-managed machines, HM is configured via per-machine home.nix instead.
 { inputs, self, ... }:
 {
   flake.homeConfigurations = builtins.listToAttrs (
@@ -19,7 +19,6 @@
             extraSpecialArgs = { inherit inputs self; };
             modules = [
               inputs.noctalia-shell.homeModules.default
-              ../modules/home-manager
               (import ../profiles/home-manager/base.nix)
               {
                 home.username = "alex";

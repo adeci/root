@@ -1,3 +1,6 @@
+{ ... }:
 {
-  adeci.shopify.enable = true;
+  imports = [
+    ../../modules/home-manager/shopify.nix
+  ];
 }

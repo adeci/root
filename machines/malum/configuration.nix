@@ -1,14 +1,15 @@
 { ... }:
 {
-  imports = [ ../../modules/darwin ];
+  imports = [
+    ../../modules/darwin/base.nix
+    ../../modules/darwin/home-manager.nix
+    ../../modules/darwin/librewolf.nix
+    ../../modules/darwin/shopify.nix
+    ../../modules/darwin/homebrew.nix
+  ];
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 6;
 
-  adeci = {
-    darwin-base.enable = true;
-    darwin-librewolf.enable = true;
-    darwin-shopify.enable = true;
-    homebrew.enable = true;
-  };
+  home-manager.users.alex = import ./home.nix;
 }

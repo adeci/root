@@ -2,15 +2,14 @@
 {
 
   imports = [
-    ../../modules/nixos
+    ../../modules/nixos/home-manager.nix
+
+    ../../modules/nixos/base.nix
+    ../../modules/nixos/dev.nix
+    ../../modules/nixos/shell.nix
   ];
 
-  adeci = {
-    base.enable = true;
-    dev.enable = true;
-    shell.enable = true;
-    auto-timezone.enable = false;
-  };
+  home-manager.users.alex = import ./home.nix;
 
   networking = {
     networkmanager.enable = true;

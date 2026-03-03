@@ -1,14 +1,5 @@
-{ lib, ... }:
-let
-  dir = builtins.readDir ./.;
-  excluded = [
-    "buildbot-master.nix"
-    "buildbot-worker.nix"
-  ];
-  modules = lib.filterAttrs (
-    n: t: t == "regular" && lib.hasSuffix ".nix" n && n != "default.nix" && !builtins.elem n excluded
-  ) dir;
-in
+# NixOS modules — import individually from machine configs.
+# This file exists only as a directory marker; it imports nothing.
+_:
 {
-  imports = lib.mapAttrsToList (n: _: ./${n}) modules;
 }

@@ -6,26 +6,21 @@
   ...
 }:
 let
-  cfg = config.adeci.remote-builder;
   harmoniaKeyPath = self + "/vars/shared/harmonia-signing-key/signing-key.pub/value";
   hasHarmonia = builtins.pathExists harmoniaKeyPath;
 in
 {
-  options.adeci.remote-builder = {
-    enable = lib.mkEnableOption "remote builder (offload nix builds to leviathan)";
-
-    automatic = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = ''
-        When true, nix.distributedBuilds is enabled and builds transparently offload.
-        When false, buildMachines is configured but the user must opt in per build
-        via --max-jobs 0.
-      '';
-    };
+  options.adeci.remote-builder.automatic = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
+    description = ''
+      When true, nix.distributedBuilds is enabled and builds transparently offload.
+      When false, buildMachines is configured but the user must opt in per build
+      via --max-jobs 0.
+    '';
   };
 
-  config = lib.mkIf cfg.enable {
+  config = {
     # Vars generator: SSH key pair for remote builder connections (auto-generated)
     clan.core.vars.generators.remote-builder-ssh-key = {
       share = true;
@@ -40,7 +35,7 @@ in
     };
 
     nix = {
-      distributedBuilds = cfg.automatic;
+      distributedBuilds = config.adeci.remote-builder.automatic;
 
       buildMachines = [
         {

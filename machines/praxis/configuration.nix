@@ -8,30 +8,30 @@
 {
 
   imports = [
-
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
 
-    ../../modules/nixos
+    ../../modules/nixos/home-manager.nix
+
+    ../../modules/nixos/base.nix
+    ../../modules/nixos/auto-timezone.nix
+    ../../modules/nixos/dev.nix
+    ../../modules/nixos/shell.nix
+    ../../modules/nixos/niri.nix
+    ../../modules/nixos/keyd.nix
+    ../../modules/nixos/amd-gpu.nix
+    ../../modules/nixos/ssh.nix
+    ../../modules/nixos/workstation.nix
+    ../../modules/nixos/laptop.nix
+    ../../modules/nixos/gpd-pocket-4-audio.nix
+    ../../modules/nixos/printing.nix
+    ../../modules/nixos/social.nix
+    ../../modules/nixos/gaming.nix
+    ../../modules/nixos/creative.nix
+    ../../modules/nixos/llm-secrets.nix
+    ../../modules/nixos/remote-builder.nix
   ];
 
-  adeci = {
-    base.enable = true;
-    dev.enable = true;
-    shell.enable = true;
-    niri.enable = true;
-    keyd.enable = true;
-    amd-gpu.enable = true;
-    ssh.enable = true;
-    workstation.enable = true;
-    laptop.enable = true;
-    gpd-pocket-4-audio.enable = true;
-    printing.enable = true;
-    social.enable = true;
-    gaming.enable = true;
-    creative.enable = true;
-    llm-secrets.enable = true;
-    remote-builder.enable = true;
-  };
+  home-manager.users.alex = import ./home.nix;
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 

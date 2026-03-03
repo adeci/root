@@ -106,16 +106,6 @@ let
         base ++ machineUserConfig.extraSshAuthorizedKeys;
 
       homeDir = if isDarwin then "/Users/${username}" else "/home/${username}";
-
-      effectiveHmProfiles =
-        let
-          baseProfiles =
-            if machineUserConfig.homeManagerProfiles != null then
-              machineUserConfig.homeManagerProfiles
-            else
-              userDef.homeManagerProfiles;
-        in
-        baseProfiles ++ machineUserConfig.extraHomeManagerProfiles;
     in
     {
       inherit
@@ -128,7 +118,6 @@ let
         effectiveShell
         effectiveSshKeys
         effectivePosition
-        effectiveHmProfiles
         homeDir
         ;
     };
@@ -151,17 +140,6 @@ let
         ) allUserConfigs
       );
 
-  allUsedProfileNames = lib.unique (
-    lib.concatMap (cfg: cfg.effectiveHmProfiles) (builtins.attrValues allUserConfigs)
-  );
-  unknownProfiles = lib.filter (p: !(settings.homeManagerProfiles ? ${p})) allUsedProfileNames;
-
-  hmUsers = lib.filterAttrs (
-    _: cfg: !cfg.effectiveFlags.isSystemUser && cfg.effectiveHmProfiles != [ ]
-  ) allUserConfigs;
-
-  hasHmUsers = hmUsers != { };
-
   ownerUser = lib.findFirst (
     username:
     let
@@ -179,10 +157,6 @@ in
     allUserConfigs
     usersNeedingPasswords
     rootSshKeys
-    allUsedProfileNames
-    unknownProfiles
-    hmUsers
-    hasHmUsers
     ownerUser
     ;
 }
