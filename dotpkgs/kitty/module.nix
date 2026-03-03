@@ -8,7 +8,7 @@
       bold_font = "auto";
       italic_font = "auto";
       bold_italic_font = "auto";
-      font_size = "10.0";
+      font_size = "12.0";
       # Cursor
       cursor_shape = "block";
       cursor_blink_interval = "0.5";
