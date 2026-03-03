@@ -28,8 +28,8 @@ outer.right = 6
 
 [mode.main.binding]
 # Spawn terminal (bash -l to pick up nix PATH)
-alt-enter = "exec-and-forget bash -l -c @KITTY_HOME@"
-alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
+alt-enter = "exec-and-forget bash -l -c @GHOSTTY_HOME@"
+alt-shift-enter = "exec-and-forget bash -l -c @GHOSTTY_HERE@"
 
 # Launcher
 alt-d = "exec-and-forget open -a Raycast"

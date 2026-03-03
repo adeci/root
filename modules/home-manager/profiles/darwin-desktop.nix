@@ -1,7 +1,7 @@
 { ... }:
 {
   imports = [
-    ../kitty
+    ../ghostty
     ../karabiner
     ../aerospace
     ../librewolf.nix
