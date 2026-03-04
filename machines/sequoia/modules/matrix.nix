@@ -139,6 +139,13 @@ in
 
   services.nginx = {
     enable = true;
+    recommendedProxySettings = true;
+
+    # Suppress default nginx welcome page
+    virtualHosts."_default" = {
+      default = true;
+      locations."/".return = "404";
+    };
 
     # Reverse proxy for Synapse — only expose /_matrix, block /_synapse admin API
     virtualHosts."matrix" = {
@@ -177,6 +184,7 @@ in
         add_header Access-Control-Allow-Origin *;
         return 200 '{"m.homeserver": {"base_url": "https://${matrixDomain}"}}';
       '';
+      locations."/".return = "404";
     };
   };
 
