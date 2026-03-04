@@ -73,6 +73,7 @@
         ./flake-outputs/home-configurations.nix
         ./flake-outputs/formatter.nix
         ./flake-outputs/devshell.nix
+        ./flake-outputs/checks.nix
         ./clan-services/roster/flake-module.nix
       ];
     };
