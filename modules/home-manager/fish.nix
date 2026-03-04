@@ -42,6 +42,16 @@
         mkdir -p $argv[1]
         and cd $argv[1]
       '';
+      yy = ''
+        if test (uname) = Darwin
+            cat $argv[1] | pbcopy
+        else
+            cat $argv[1] | wl-copy
+        end
+      '';
+      levtop = ''
+        ssh leviathan -t htop
+      '';
       update-claude-code = ''
         bash -c "nix-shell maintainers/scripts/update.nix --argstr commit true --arg predicate '(path: pkg: builtins.elem path [[\"claude-code\"] [\"claude-code-bin\"] [\"vscode-extensions\" \"anthropic\" \"claude-code\"]])'"
       '';
