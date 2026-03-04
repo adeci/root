@@ -36,6 +36,13 @@ in
     "w /sys/kernel/mm/transparent_hugepage/khugepaged/defrag - - - - 1"
   ];
 
+  # Daily GC — keep 2 weeks of builds for harmonia to serve
+  nix.gc = {
+    automatic = true;
+    dates = "daily";
+    options = "--delete-older-than 14d";
+  };
+
   nix.settings = {
     max-jobs = 16;
     trusted-users = [
