@@ -26,6 +26,8 @@ let
     cpu_count_from_one=0
     show_cpu_usage=1
     show_cpu_frequency=1
+    show_cpu_temperature=0
+    degree_fahrenheit=0
     show_cached_memory=1
     update_process_names=0
     account_guest_in_cpu_meter=0
@@ -34,10 +36,10 @@ let
     delay=15
     hide_function_bar=0
     header_layout=two_50_50
-    column_meters_0=AllCPUs8 Memory Swap
-    column_meter_modes_0=1 1 1
-    column_meters_1=Systemd Tasks LoadAverage Uptime
-    column_meter_modes_1=2 2 2 2
+    column_meters_0=AllCPUs8
+    column_meter_modes_0=1
+    column_meters_1=Hostname Uptime DateTime LoadAverage Systemd Tasks CPU Memory Swap DiskIO NetworkIO
+    column_meter_modes_1=2 2 2 2 2 2 1 1 1 2 2
     tree_view=0
     sort_key=46
     tree_sort_key=0
@@ -58,10 +60,14 @@ in
 {
   home.packages = [ pkgs.htop ];
 
-  # Copy rather than symlink — htop needs a writable config file
-  home.activation.htoprc = ''
-    mkdir -p ~/.config/htop
-    cp -f ${htoprc} ~/.config/htop/htoprc
-    chmod 644 ~/.config/htop/htoprc
-  '';
+  # Copy rather than symlink so htop can save F2 changes
+  home.activation.htoprc = {
+    after = [ "writeBoundary" ];
+    before = [ ];
+    data = ''
+      $DRY_RUN_CMD mkdir -p ~/.config/htop
+      $DRY_RUN_CMD cp -f ${htoprc} ~/.config/htop/htoprc
+      $DRY_RUN_CMD chmod 644 ~/.config/htop/htoprc
+    '';
+  };
 }
