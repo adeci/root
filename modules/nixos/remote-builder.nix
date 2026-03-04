@@ -42,7 +42,7 @@ in
           hostName = "leviathan";
           system = "x86_64-linux";
           protocol = "ssh-ng";
-          maxJobs = 128;
+          maxJobs = 16;
           speedFactor = 10;
           supportedFeatures = [
             "nixos-test"

@@ -33,6 +33,7 @@
       rm = "rm -i";
       cp = "cp -i";
       mv = "mv -i";
+      nrb = "nix build --max-jobs 0 --builders @/etc/nix/machines";
     };
     functions = {
       fish_greeting = "";
@@ -111,7 +112,7 @@
       if type -q direnv
         direnv hook fish | source
       end
-      
+
       __try_register_clan_completions
       # Tokyo Night Theme
       set -g fish_color_autosuggestion 555

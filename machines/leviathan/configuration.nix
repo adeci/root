@@ -35,13 +35,7 @@ in
     "w /sys/kernel/mm/transparent_hugepage/khugepaged/defrag - - - - 1"
   ];
 
-  # Nix build server configuration for 256 logical core EPYC system
   nix.settings = {
-    max-jobs = 8;
-    cores = 32;
-    # 32 cores × 8 jobs = 256 cores utilized
-    # Some headroom left since not all jobs saturate all cores
-
     trusted-users = [
       "root"
       "@wheel"
