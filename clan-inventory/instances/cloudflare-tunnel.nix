@@ -14,6 +14,23 @@
             "vault.decio.us" = "http://localhost:8222";
             "adeci.dev" = "http://localhost:4444";
             "trader.decio.us" = "http://localhost:5555";
+          };
+        };
+      };
+    };
+  };
+
+  "leviathan-tunnels" = {
+    module = {
+      name = "@adeci/cloudflare-tunnel";
+      input = "self";
+    };
+    roles.default = {
+      machines.leviathan = {
+        settings = {
+          tokenName = "adeci";
+          tunnelName = "leviathan-services";
+          ingress = {
             "buildbot.decio.us" = "http://localhost:80";
           };
         };

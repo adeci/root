@@ -15,7 +15,8 @@ in
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
-    ../../modules/nixos/harmonia.nix
+    ./modules/harmonia.nix
+    ./modules/buildbot.nix
   ];
 
   home-manager.users.alex = import ./home.nix;
@@ -36,6 +37,7 @@ in
   ];
 
   nix.settings = {
+    max-jobs = 16;
     trusted-users = [
       "root"
       "@wheel"

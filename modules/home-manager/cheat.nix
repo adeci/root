@@ -1,3 +1,7 @@
+# `cheat` — ask Claude for a command, get just the command back.
+#
+# Requires the NixOS machine to have the anthropic-api-key vars generator.
+# Import llm-secrets.nix on the NixOS side to provide the key.
 {
   lib,
   osConfig ? null,

@@ -1,7 +1,6 @@
 {
   config,
   inputs,
-  lib,
   pkgs,
   self,
   ...
@@ -12,33 +11,25 @@ in
 {
   imports = [ ./desktop-base.nix ];
 
-  options.adeci.niri.user = lib.mkOption {
-    type = lib.types.str;
-    default = config.adeci.primaryUser;
-    description = "User for greetd auto-login";
-  };
+  nixpkgs.overlays = [ inputs.niri.overlays.default ];
+  environment.systemPackages = [
+    packages.kitty
+    pkgs.nautilus
+    pkgs.xwayland-satellite
+  ];
+  programs.niri.enable = true;
 
-  config = {
-    nixpkgs.overlays = [ inputs.niri.overlays.default ];
-    environment.systemPackages = [
-      packages.kitty
-      pkgs.nautilus
-      pkgs.xwayland-satellite
-    ];
-    programs.niri.enable = true;
-
-    # Auto-login into niri via greetd
-    services.greetd = {
-      enable = true;
-      settings.default_session = {
-        command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
-        inherit (config.adeci.niri) user;
-      };
-      settings.initial_session = {
-        command = "niri-session";
-        inherit (config.adeci.niri) user;
-      };
+  # Auto-login into niri via greetd
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.greetd}/bin/agreety --cmd niri-session";
+      user = config.adeci.primaryUser;
     };
-    security.pam.services.greetd.enableGnomeKeyring = true;
+    settings.initial_session = {
+      command = "niri-session";
+      user = config.adeci.primaryUser;
+    };
   };
+  security.pam.services.greetd.enableGnomeKeyring = true;
 }

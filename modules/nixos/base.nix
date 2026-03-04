@@ -5,6 +5,7 @@
 {
   imports = [
     ./numtide-cache.nix
+    ./leviathan-cache.nix
   ];
 
   nixpkgs.config.allowUnfree = true;
