@@ -14,6 +14,8 @@
             "vault.decio.us" = "http://localhost:8222";
             "adeci.dev" = "http://localhost:4444";
             "trader.decio.us" = "http://localhost:5555";
+            "matrix.decio.us" = "http://localhost:8448";
+            "decio.us" = "http://localhost:8748";
           };
         };
       };
