@@ -111,6 +111,7 @@
       if type -q direnv
         direnv hook fish | source
       end
+      
       __try_register_clan_completions
       # Tokyo Night Theme
       set -g fish_color_autosuggestion 555
