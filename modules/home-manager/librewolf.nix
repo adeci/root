@@ -37,10 +37,9 @@ in
     // defaultPref("network.trr.bootstrapAddress", "9.9.9.9");
     // Resist Fingerprinting — LibreWolf spoofs screen size, timezone, fonts
     // etc. to prevent tracking. Disabling it fixes video conferencing apps
-    // (Meet, Zoom) not being able to enumerate audio devices.
-    // defaultPref("privacy.resistFingerprinting", false);
-    // Exempt specific sites from RFP so they stop killing sessions
-    defaultPref("privacy.resistFingerprinting.exemptedDomains", "*.youtube.com,*.google.com,*.amazon.com,*.reddit.com,*.monkeytype.com,*.github.com");
+    // (Meet, Zoom) not being able to enumerate audio devices, and exempted
+    // domains don't work reliably enough to maintain.
+    defaultPref("privacy.resistFingerprinting", false);
   '';
 
   # Set LibreWolf as default browser
