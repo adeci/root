@@ -1,0 +1,11 @@
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -166,7 +166,7 @@
+ 	if (result && !IS_ENABLED(CONFIG_ACPI_CPU_FREQ_PSS))
+ 		dev_dbg(&device->dev, "CPPC data invalid or not present\n");
+ 
+-	if (cpuidle_get_driver() == &acpi_idle_driver)
++	if (!cpuidle_get_driver() || cpuidle_get_driver() == &acpi_idle_driver)
+ 		acpi_processor_power_init(pr);
+ 
+ 	acpi_pss_perf_init(pr);

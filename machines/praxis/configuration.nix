@@ -34,11 +34,25 @@
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
 
+  # Revert broken ACPI processor cpuidle check (introduced in 6.18.14,
+  # fixed in 6.18.16). Without this, AMD systems fail to reach S0i3
+  # during s2idle — display turns off but CPU/fans stay active.
+  # Remove once on kernel >= 6.18.16.
+  # https://github.com/gregkh/linux/commit/b0bc1aaf938d
+  boot.kernelPatches = [
+    {
+      name = "revert-acpi-processor-cpuidle-regression";
+      patch = ./revert-acpi-processor-cpuidle.patch;
+    }
+  ];
+
   environment.systemPackages = with pkgs; [
     # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
-    modem-manager-gui
+    # modem-manager-gui
     linux-wifi-hotspot
     inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
+    amd-debug-tools
+    ethtool
   ];
 
   networking = {
@@ -46,9 +60,9 @@
     hostName = "praxis";
   };
 
-  systemd.services.ModemManager = {
-    wantedBy = [ "multi-user.target" ];
-  };
+  # systemd.services.ModemManager = {
+  #   wantedBy = [ "multi-user.target" ];
+  # };
 
   # vm building
   virtualisation.libvirtd.enable = true;
