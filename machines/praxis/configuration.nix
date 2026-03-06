@@ -32,19 +32,20 @@
 
   home-manager.users.alex = import ./home.nix;
 
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
-
-  # Revert broken ACPI processor cpuidle check (introduced in 6.18.14,
-  # fixed in 6.18.16). Without this, AMD systems fail to reach S0i3
-  # during s2idle — display turns off but CPU/fans stay active.
-  # Remove once on kernel >= 6.18.16.
-  # https://github.com/gregkh/linux/commit/b0bc1aaf938d
-  boot.kernelPatches = [
-    {
-      name = "revert-acpi-processor-cpuidle-regression";
-      patch = ./revert-acpi-processor-cpuidle.patch;
+  # Pin to 6.18.12 — s2idle regression between 6.18.13–6.18.15 breaks
+  # hardware sleep on this machine. Remove once the regression is identified.
+  boot.kernelPackages = pkgs.linuxPackagesFor (
+    pkgs.linux_6_18.override {
+      argsOverride = rec {
+        version = "6.18.12";
+        modDirVersion = version;
+        src = pkgs.fetchurl {
+          url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
+          hash = "sha256-4AMpStTCwqxbt3+7gllRETT1HZh7MhJRaDLcSwyD8eo=";
+        };
+      };
     }
-  ];
+  );
 
   environment.systemPackages = with pkgs; [
     # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
