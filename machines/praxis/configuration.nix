@@ -32,20 +32,21 @@
 
   home-manager.users.alex = import ./home.nix;
 
-  # Pin to 6.18.12 — s2idle regression between 6.18.13–6.18.15 breaks
-  # hardware sleep on this machine. Remove once the regression is identified.
+  # Pin kernel to 6.18.10 — s2idle broken in 6.18.11+
+  # (friend's identical GPD Pocket 4 works on 6.18.10)
   boot.kernelPackages = pkgs.linuxPackagesFor (
     pkgs.linux_6_18.override {
       argsOverride = rec {
-        version = "6.18.12";
-        modDirVersion = version;
+        version = "6.18.10";
+        modDirVersion = "6.18.10";
         src = pkgs.fetchurl {
           url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
-          hash = "sha256-4AMpStTCwqxbt3+7gllRETT1HZh7MhJRaDLcSwyD8eo=";
+          hash = "sha256-1tN3FhdBraL6so7taRQyd2NKKuteOIPlDAMViO3kjt4=";
         };
       };
     }
   );
+  boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
   environment.systemPackages = with pkgs; [
     # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
