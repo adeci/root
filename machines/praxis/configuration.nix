@@ -32,16 +32,14 @@
 
   home-manager.users.alex = import ./home.nix;
 
-  # Pin kernel to 6.18.10 — s2idle broken in 6.18.11+
-  # (friend's identical GPD Pocket 4 works on 6.18.10)
   boot.kernelPackages = pkgs.linuxPackagesFor (
-    pkgs.linux_6_18.override {
+    pkgs.linux_6_19.override {
       argsOverride = rec {
-        version = "6.18.10";
-        modDirVersion = "6.18.10";
+        version = "6.19.6";
+        modDirVersion = "6.19.6";
         src = pkgs.fetchurl {
           url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
-          hash = "sha256-1tN3FhdBraL6so7taRQyd2NKKuteOIPlDAMViO3kjt4=";
+          hash = "sha256-TZ8/9zIU9owBlO8C25ykt7pxMlOsEEVEHU6fNSvCLhQ=";
         };
       };
     }
@@ -49,8 +47,8 @@
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
   environment.systemPackages = with pkgs; [
-    # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
-    # modem-manager-gui
+    # calibre
+    modem-manager-gui
     linux-wifi-hotspot
     inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     amd-debug-tools
@@ -59,12 +57,9 @@
 
   networking = {
     networkmanager.enable = true;
+    modemmanager.enable = true;
     hostName = "praxis";
   };
-
-  # systemd.services.ModemManager = {
-  #   wantedBy = [ "multi-user.target" ];
-  # };
 
   # vm building
   virtualisation.libvirtd.enable = true;

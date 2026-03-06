@@ -24,5 +24,7 @@
     ]
     ++ lib.optionals stdenv.isLinux [
       dmidecode
+      pciutils
+      usbutils
     ];
 }
