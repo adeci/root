@@ -11,6 +11,11 @@ let
     inherit (micsSkills) browser-cli-extension;
     chrome-tab-gc-extension = chromeTabGc;
   };
+  librewolfPath =
+    if pkgs.stdenv.isDarwin then
+      "/Applications/Nix Apps/LibreWolf.app/Contents/MacOS/librewolf"
+    else
+      "${pkgs.librewolf}/bin/librewolf";
 in
 {
   # Install LibreWolf on Linux (Darwin uses the darwin module)
@@ -42,18 +47,10 @@ in
     defaultPref("privacy.resistFingerprinting", false);
   '';
 
-  # Set LibreWolf as default browser
-  xdg.mimeApps = {
-    enable = true;
-    defaultApplications = {
-      "text/html" = "librewolf.desktop";
-      "x-scheme-handler/http" = "librewolf.desktop";
-      "x-scheme-handler/https" = "librewolf.desktop";
-      "x-scheme-handler/about" = "librewolf.desktop";
-      "x-scheme-handler/unknown" = "librewolf.desktop";
-      "application/xhtml+xml" = "librewolf.desktop";
-    };
-  };
+  # Tell browser-cli where LibreWolf is so browsh can find it
+  xdg.configFile."browser-cli/config.toml".text = ''
+    firefox_path = "${librewolfPath}"
+  '';
 
   # Register native messaging host for browser-cli
   home.activation.installBrowserCliHost = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
