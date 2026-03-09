@@ -50,7 +50,8 @@
   # Primary user
   system.primaryUser = config.adeci.primaryUser;
 
-  # Fish shell (registers as valid login shell on Darwin)
+  # Fish shell
   programs.fish.enable = true;
+  environment.shells = [ pkgs.fish ];
   programs.direnv.enable = true;
 }
