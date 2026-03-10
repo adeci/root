@@ -1,5 +1,17 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
+  # SSH via 1Password agent (no private key on disk, Touch ID to approve)
+  programs.ssh = {
+    enable = true;
+    enableDefaultConfig = false;
+    matchBlocks."*" = {
+      addKeysToAgent = "yes";
+      extraOptions = {
+        "IdentityAgent" =
+          ''"${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"'';
+      };
+    };
+  };
   programs.fish.interactiveShellInit = lib.mkOrder 1100 ''
     # Shopify tec (includes shadowenv, dev tools, wish, and shell hooks)
     if test -x $HOME/.local/state/tec/profiles/base/current/global/init

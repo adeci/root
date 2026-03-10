@@ -21,6 +21,7 @@
       xxd
       radare2
       python3
+      uv
     ]
     ++ lib.optionals stdenv.isLinux [
       dmidecode

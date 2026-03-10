@@ -11,7 +11,6 @@ _: {
     ];
     casks = [
       "raycast"
-      "slack"
       "karabiner-elements"
       "nikitabobko/tap/aerospace"
     ];

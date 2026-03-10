@@ -6,8 +6,9 @@
 {
   nix.enable = true;
 
-  # Touch ID for sudo
+  # Touch ID for sudo (including inside tmux/screen)
   security.pam.services.sudo_local.touchIdAuth = true;
+  security.pam.services.sudo_local.reattach = true;
 
   # Fonts
   fonts.packages = [
