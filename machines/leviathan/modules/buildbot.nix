@@ -70,6 +70,28 @@
     };
   };
 
+  # Buildbot is served exclusively through the Cloudflare tunnel.
+  # Bind nginx to localhost so it's unreachable from the network,
+  # and redirect plain HTTP requests (detected via X-Forwarded-Proto)
+  # to HTTPS so browsers never stay on an unencrypted connection.
+  services.nginx.virtualHosts."buildbot.decio.us" = {
+    listen = [
+      {
+        addr = "127.0.0.1";
+        port = 80;
+      }
+      {
+        addr = "[::1]";
+        port = 80;
+      }
+    ];
+    extraConfig = ''
+      if ($http_x_forwarded_proto = "http") {
+        return 301 https://$host$request_uri;
+      }
+    '';
+  };
+
   services.buildbot-nix.master = {
     enable = true;
     domain = "buildbot.decio.us";
