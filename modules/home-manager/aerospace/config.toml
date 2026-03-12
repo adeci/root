@@ -85,6 +85,18 @@ alt-shift-7 = "move-node-to-workspace 7"
 alt-shift-8 = "move-node-to-workspace 8"
 alt-shift-9 = "move-node-to-workspace 9"
 
+# Focus monitor (matches niri Mod+Ctrl+H/J/K/L)
+alt-ctrl-h = "focus-monitor left"
+alt-ctrl-j = "focus-monitor down"
+alt-ctrl-k = "focus-monitor up"
+alt-ctrl-l = "focus-monitor right"
+
+# Move window to monitor (matches niri Mod+Shift+Ctrl+H/J/K/L)
+alt-shift-ctrl-h = "move-node-to-monitor --focus-follows-window left"
+alt-shift-ctrl-j = "move-node-to-monitor --focus-follows-window down"
+alt-shift-ctrl-k = "move-node-to-monitor --focus-follows-window up"
+alt-shift-ctrl-l = "move-node-to-monitor --focus-follows-window right"
+
 # Floating
 alt-t = "layout floating tiling"
 

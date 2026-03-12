@@ -13,6 +13,7 @@ _: {
       "raycast"
       "karabiner-elements"
       "nikitabobko/tap/aerospace"
+      "scroll-reverser"
     ];
   };
 }
