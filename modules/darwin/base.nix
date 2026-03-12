@@ -25,6 +25,9 @@
     finder = {
       AppleShowAllExtensions = true;
     };
+    WindowManager = {
+      EnableStandardClickToShowDesktop = false;
+    };
     NSGlobalDomain = {
       AppleShowAllExtensions = true;
       InitialKeyRepeat = 15;
