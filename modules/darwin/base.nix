@@ -40,6 +40,9 @@
       NSAutomaticQuoteSubstitutionEnabled = false;
       NSAutomaticSpellingCorrectionEnabled = false;
     };
+    controlcenter = {
+      BatteryShowPercentage = true;
+    };
     screencapture = {
       disable-shadow = true;
       type = "png";
