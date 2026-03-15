@@ -52,6 +52,7 @@
       set -ga terminal-features "*:hyperlinks"
       set -ga terminal-features "*:osc133"
       set -g extended-keys on
+      set -g extended-keys-format csi-u
       set -g allow-passthrough on
       set -g set-clipboard on
       set -g set-titles on

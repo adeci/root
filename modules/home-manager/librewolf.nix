@@ -45,6 +45,12 @@ in
     // (Meet, Zoom) not being able to enumerate audio devices, and exempted
     // domains don't work reliably enough to maintain.
     defaultPref("privacy.resistFingerprinting", false);
+    // WebGL — LibreWolf disables it by default as a fingerprinting vector.
+    // Needed for image editors, maps, and anything GPU-accelerated in-browser.
+    defaultPref("webgl.disabled", false);
+    // Hardware acceleration — force-enable VA-API video decode and GPU compositing.
+    defaultPref("media.ffmpeg.vaapi.enabled", true);
+    defaultPref("gfx.webrender.all", true);
   '';
 
   # Tell browser-cli where LibreWolf is so browsh can find it

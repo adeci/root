@@ -22,14 +22,61 @@
     };
   };
 
-  # Manually reload i2c_hid_acpi module to fix intermittent touchscreen
-  # breakage after suspension. Run with: systemctl start fix-touchscreen
-  systemd.services.fix-touchscreen = {
-    description = "Reload i2c_hid_acpi module to fix touchscreen";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStartPre = "${pkgs.kmod}/bin/modprobe -r i2c_hid_acpi";
-      ExecStart = "${pkgs.kmod}/bin/modprobe i2c_hid_acpi";
+  # Alt+= hotkey to fix touchscreen (keyd runs as root, no sudo needed)
+  services.keyd.keyboards.default.settings.main."A-equal" =
+    "command(systemctl start fix-touchscreen)";
+
+  # Reload i2c_hid_acpi module to fix intermittent touchscreen breakage
+  # after suspension. Runs automatically on resume; can also be triggered
+  # manually with: systemctl start fix-touchscreen
+  systemd.services.fix-touchscreen =
+    let
+      fix-touchscreen = pkgs.writeShellScript "fix-touchscreen" ''
+        export PATH=${
+          pkgs.lib.makeBinPath [
+            pkgs.kmod
+            pkgs.systemd
+            pkgs.coreutils
+            pkgs.findutils
+            pkgs.gnugrep
+          ]
+        }
+
+        for attempt in 1 2 3; do
+          modprobe -r i2c_hid_acpi 2>/dev/null || true
+          udevadm settle --timeout=5
+          sleep 1
+          modprobe i2c_hid_acpi
+          udevadm settle --timeout=5
+
+          # Check if a touchscreen input device appeared under the driver
+          if find /sys/bus/i2c/drivers/i2c_hid_acpi/ -path '*/input/input*/name' 2>/dev/null \
+               | xargs -r grep -qi touch; then
+            echo "Touchscreen restored on attempt $attempt"
+            exit 0
+          fi
+
+          echo "Attempt $attempt: touchscreen not detected, retrying..."
+          sleep 1
+        done
+
+        echo "Warning: touchscreen not detected after 3 attempts"
+        exit 1
+      '';
+    in
+    {
+      description = "Reload i2c_hid_acpi module to fix touchscreen";
+      after = [
+        "systemd-suspend.service"
+        "systemd-hibernate.service"
+      ];
+      wantedBy = [
+        "suspend.target"
+        "hibernate.target"
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = fix-touchscreen;
+      };
     };
-  };
 }
