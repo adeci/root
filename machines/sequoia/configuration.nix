@@ -15,6 +15,7 @@
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
     ./modules/matrix.nix
+    ./modules/vaultwarden.nix
     # ./modules/buildbot.nix  # moved to leviathan (master + worker)
   ];
 }

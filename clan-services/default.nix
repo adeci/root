@@ -5,7 +5,6 @@ let
 
     # Local service modules
     "@adeci/tailscale" = import ./tailscale;
-    "@adeci/vaultwarden" = import ./vaultwarden;
     "@adeci/cloudflare-tunnel" = import ./cloudflare-tunnel;
     "@adeci/siteup" = import ./siteup;
   };
