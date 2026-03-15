@@ -38,6 +38,10 @@
     mics-skills.inputs.nixpkgs.follows = "nixpkgs";
     mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    opencrow.url = "github:pinpox/opencrow";
+    opencrow.inputs.nixpkgs.follows = "nixpkgs";
+    opencrow.inputs.treefmt-nix.follows = "treefmt-nix";
+
     sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
     sdwire-cli.inputs.nixpkgs.follows = "nixpkgs";
 

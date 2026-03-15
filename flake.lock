@@ -709,6 +709,29 @@
         "type": "github"
       }
     },
+    "opencrow": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1773527385,
+        "narHash": "sha256-m1f17+0rW+8HBARG2cg698PT3so+dviZcYc/Bwoz05w=",
+        "owner": "pinpox",
+        "repo": "opencrow",
+        "rev": "0b3d555b3a6e914aeb10316c24613a2a8ea184df",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pinpox",
+        "repo": "opencrow",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "buildbot-nix": "buildbot-nix",
@@ -724,6 +747,7 @@
         "nixpkgs": "nixpkgs_2",
         "nixvim": "nixvim",
         "noctalia-shell": "noctalia-shell",
+        "opencrow": "opencrow",
         "sdwire-cli": "sdwire-cli",
         "treefmt-nix": "treefmt-nix_5",
         "wrappers": "wrappers"
