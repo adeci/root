@@ -26,6 +26,13 @@
   services.keyd.keyboards.default.settings.main."A-equal" =
     "command(systemctl start fix-touchscreen)";
 
+  # Media controls — mirrors Fn+volume key positions with Alt instead
+  services.keyd.keyboards.default.settings.main = {
+    "A-[" = "previoussong";
+    "A-]" = "playpause";
+    "A-\\" = "nextsong";
+  };
+
   # Reload i2c_hid_acpi module to fix intermittent touchscreen breakage
   # after suspension. Runs automatically on resume; can also be triggered
   # manually with: systemctl start fix-touchscreen

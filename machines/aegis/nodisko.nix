@@ -1,33 +1,25 @@
-# ---
-# schema = "ext4-single-disk"
-# [placeholders]
-# mainDisk = "/dev/disk/by-id/ata-TEAM_T2531TB_TPBF2503250060305898"
-# ---
-# This file was automatically generated!
-# CHANGING this configuration requires wiping and reinstalling the machine
+# schema = "single-disk"
+# mainDisk = "/dev/disk/by-id/ata-HITACHI_HTS543232A7A384_E2034233HAARAS"
 {
-  boot.loader.grub = {
-    efiInstallAsRemovable = true;
-    efiSupport = true;
-  };
 
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+    device = "nodev";
+  };
   disko.devices = {
     disk = {
       main = {
-        name = "main-36978c68ef5c4d95a13359fc9b48c597";
-        device = "/dev/disk/by-id/ata-TEAM_T2531TB_TPBF2503250060305898";
+        name = "main-a6cf875494b64d81ab66f38c06532c69";
+        device = "/dev/disk/by-id/ata-HITACHI_HTS543232A7A384_E2034233HAARAS";
         type = "disk";
         content = {
           type = "gpt";
           partitions = {
-            "boot" = {
-              size = "1M";
-              type = "EF02"; # for grub MBR
-              priority = 1;
-            };
             ESP = {
               type = "EF00";
-              size = "500M";
+              size = "1G";
               content = {
                 type = "filesystem";
                 format = "vfat";
@@ -37,7 +29,7 @@
             };
             swap = {
               name = "swap";
-              size = "32G";
+              size = "8G";
               content = {
                 type = "swap";
               };
