@@ -1,6 +1,9 @@
 { pkgs, lib, ... }:
 {
-  home.packages = [ pkgs.rbw ];
+  home.packages = [
+    pkgs.rbw
+    pkgs.pinentry-curses
+  ];
 
   systemd.user.services = lib.mkIf pkgs.stdenv.isLinux {
     lock-rbw-on-suspend = {

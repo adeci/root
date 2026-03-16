@@ -24,6 +24,7 @@
     http-connections = 64;
     max-substitution-jobs = 64;
     download-buffer-size = 268435456; # 256MB
+    fallback = true;
   };
   programs.fish.enable = true;
   environment.systemPackages = [ pkgs.kitty.terminfo ];
