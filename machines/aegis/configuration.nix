@@ -24,7 +24,12 @@ in
     ../../modules/nixos/dev.nix
     ../../modules/nixos/niri.nix
     ../../modules/nixos/keyd.nix
+    ../../modules/nixos/zram.nix
     ../../modules/nixos/laptop.nix
+    ../../modules/nixos/printing.nix
+    ../../modules/nixos/social.nix
+    ../../modules/nixos/llm-secrets.nix
+    ../../modules/nixos/remote-builder.nix
   ];
 
   home-manager.users.alex = import ./home.nix;

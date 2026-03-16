@@ -16,6 +16,10 @@
       KbdInteractiveAuthentication = false;
     };
   };
+  programs.ssh.extraConfig = ''
+    Host *
+      AddKeysToAgent yes
+  '';
   nix.settings = {
     http-connections = 64;
     max-substitution-jobs = 64;

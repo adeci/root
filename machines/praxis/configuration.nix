@@ -18,7 +18,6 @@
     ../../modules/nixos/niri.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/amd-gpu.nix
-    ../../modules/nixos/ssh.nix
     ../../modules/nixos/zram.nix
     ../../modules/nixos/laptop.nix
     ../../modules/nixos/gpd-pocket-4-hacks
