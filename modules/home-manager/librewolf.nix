@@ -27,30 +27,30 @@ in
 
   # Enable Firefox Account sync, unsigned extensions, vertical tabs, DoH
   home.file.".librewolf/librewolf.overrides.cfg".text = ''
-    defaultPref("identity.fxaccounts.enabled", true);
-    defaultPref("xpinstall.signatures.required", false);
+    pref("identity.fxaccounts.enabled", true);
+    pref("xpinstall.signatures.required", false);
     // Enable user scope for sideloaded extensions (1=profile, 2=user, 4=app)
-    defaultPref("extensions.enabledScopes", 7);
+    pref("extensions.enabledScopes", 7);
     // Enable vertical tabs
-    defaultPref("sidebar.revamp", true);
-    defaultPref("sidebar.verticalTabs", true);
+    pref("sidebar.revamp", true);
+    pref("sidebar.verticalTabs", true);
     // DNS over HTTPS via Quad9 — encrypts DNS lookups so your ISP can't see
     // them, and Quad9 blocks known malware domains. Mode 2 = try DoH first,
     // fall back to system DNS if it fails.
-    // defaultPref("network.trr.mode", 2);
-    // defaultPref("network.trr.uri", "https://dns.quad9.net/dns-query");
-    // defaultPref("network.trr.bootstrapAddress", "9.9.9.9");
+    // pref("network.trr.mode", 2);
+    // pref("network.trr.uri", "https://dns.quad9.net/dns-query");
+    // pref("network.trr.bootstrapAddress", "9.9.9.9");
     // Resist Fingerprinting — LibreWolf spoofs screen size, timezone, fonts
     // etc. to prevent tracking. Disabling it fixes video conferencing apps
     // (Meet, Zoom) not being able to enumerate audio devices, and exempted
     // domains don't work reliably enough to maintain.
-    defaultPref("privacy.resistFingerprinting", false);
+    pref("privacy.resistFingerprinting", false);
     // WebGL — LibreWolf disables it by default as a fingerprinting vector.
     // Needed for image editors, maps, and anything GPU-accelerated in-browser.
-    defaultPref("webgl.disabled", false);
+    pref("webgl.disabled", false);
     // Hardware acceleration — force-enable VA-API video decode and GPU compositing.
-    defaultPref("media.ffmpeg.vaapi.enabled", true);
-    defaultPref("gfx.webrender.all", true);
+    pref("media.ffmpeg.vaapi.enabled", true);
+    pref("gfx.webrender.all", true);
   '';
 
   # Tell browser-cli where LibreWolf is so browsh can find it
