@@ -10,11 +10,10 @@
     config = {
       DOMAIN = "https://vault.decio.us";
       ROCKET_PORT = 8222;
-      WEBSOCKET_ENABLED = true;
-      WEBSOCKET_PORT = 3012;
       SIGNUPS_ALLOWED = false;
       INVITATIONS_ALLOWED = true;
       SHOW_PASSWORD_HINT = false;
+      EXPERIMENTAL_CLIENT_FEATURE_FLAGS = "ssh-key-vault-item,ssh-agent";
     };
   };
 
@@ -40,9 +39,4 @@
       echo "ADMIN_TOKEN='$HASHED'" > "$out/vaultwarden.env"
     '';
   };
-
-  networking.firewall.allowedTCPPorts = [
-    8222
-    3012
-  ];
 }
