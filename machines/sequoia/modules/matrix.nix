@@ -140,11 +140,15 @@ in
   services.nginx = {
     enable = true;
     recommendedProxySettings = true;
+    serverTokens = false;
 
     # Suppress default nginx welcome page
     virtualHosts."_default" = {
       default = true;
-      locations."/".return = "404";
+      locations."/".extraConfig = ''
+        default_type text/plain;
+        return 200 "nothing here, yet :)";
+      '';
     };
 
     # Reverse proxy for Synapse — only expose /_matrix, block /_synapse admin API
@@ -164,7 +168,10 @@ in
         client_max_body_size 1G;
       '';
       locations."/_matrix".proxyPass = "http://127.0.0.1:${toString synapsePort}";
-      locations."/".return = "404";
+      locations."/".extraConfig = ''
+        default_type text/plain;
+        return 404;
+      '';
     };
 
     # .well-known delegation for federation discovery
@@ -184,7 +191,10 @@ in
         add_header Access-Control-Allow-Origin *;
         return 200 '{"m.homeserver": {"base_url": "https://${matrixDomain}"}}';
       '';
-      locations."/".return = "404";
+      locations."/".extraConfig = ''
+        default_type text/plain;
+        return 200 "nothing here, yet :)";
+      '';
     };
   };
 
