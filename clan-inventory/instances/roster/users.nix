@@ -33,7 +33,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILYzh3yIsSTOYXkJMFHBKzkakoDfonm3/RED5rqMqhIO britton@framework"
     ];
     defaultPosition = "admin";
-    defaultShell = "fish";
+    defaultShell = "bash";
   };
 
   dima = {
@@ -50,7 +50,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5iZ0/HBn1HPJw/nMuJB9smTmhBkXdy4FiNVTXMtDqo github-ssh-key"
     ];
     defaultPosition = "admin";
-    defaultShell = "fish";
+    defaultShell = "bash";
   };
 
   fmzakari = {
