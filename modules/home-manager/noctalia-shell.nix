@@ -3,9 +3,6 @@
   pkgs,
   ...
 }:
-# Desktop environment module for niri compositor.
-# Intentionally coupled to noctalia-shell — this IS the desktop UX,
-# combining shell bar/widgets, wallpaper, and niri window manager config.
 let
   wallpaperDir = "${config.home.homeDirectory}/wallpapers";
   wallpaperImage = pkgs.fetchurl {
@@ -111,5 +108,4 @@ in
       };
     };
   };
-  xdg.configFile."niri/config.kdl".source = ./niri/config.kdl;
 }

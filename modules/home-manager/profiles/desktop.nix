@@ -2,7 +2,8 @@
 {
   imports = [
     ../kitty
-    ../desktop.nix
+    ../niri
+    ../noctalia-shell.nix
     ../librewolf.nix
   ];
 }
