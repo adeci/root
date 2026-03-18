@@ -51,6 +51,9 @@ in
     // Hardware acceleration — force-enable VA-API video decode and GPU compositing.
     pref("media.ffmpeg.vaapi.enabled", true);
     pref("gfx.webrender.all", true);
+    // Keep cookies and storage across sessions — LibreWolf defaults to clearing
+    // them on shutdown, which nukes all your logins every time you close the browser.
+    pref("privacy.clearOnShutdown_v2.cookiesAndStorage", false);
   '';
 
   # Tell browser-cli where LibreWolf is so browsh can find it

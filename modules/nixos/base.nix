@@ -28,8 +28,14 @@
     download-buffer-size = 268435456; # 256MB
     fallback = true;
   };
-  programs.fish.enable = true;
-  programs.zsh.enable = true;
+  #programs.fish.enable = true;
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    enableGlobalCompInit = false;
+    enableLsColors = false;
+    promptInit = "";
+  };
   environment.systemPackages = [ pkgs.kitty.terminfo ];
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {

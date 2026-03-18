@@ -206,25 +206,6 @@
           fi
         ''}
 
-        # Atuin — bind Ctrl-R and up arrow
-        if (( $+commands[atuin] )); then
-          export ATUIN_NOBIND="true"
-          eval "$(atuin init zsh)"
-          bindkey '^r' _atuin_search_widget
-          bindkey '^[[A' _atuin_search_widget
-          bindkey '^[OA' _atuin_search_widget
-        fi
-
-        # Clan completions
-        if (( $+commands[clan] )); then
-          eval "$(${pkgs.python3Packages.argcomplete}/bin/register-python-argcomplete --shell zsh clan)"
-        fi
-
-        # Direnv
-        if (( $+commands[direnv] )); then
-          eval "$(direnv hook zsh)"
-        fi
-
         # Reset terminal to sane defaults after commands
         ttyctl -f
       ''

@@ -8,9 +8,9 @@ let
 in
 {
   home.packages = [
-    packages.starship
+    # packages.starship
     packages.cheat
-    pkgs.python3Packages.argcomplete
+    self.inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
   ];
   programs.atuin = {
     enable = true;
