@@ -4,7 +4,7 @@
     ../base-tools.nix
     ../shell-tools.nix
     ../dev-tools.nix
-    ../fish.nix
+    ../zsh.nix
     ../git.nix
     ../htop.nix
     ../tmux.nix

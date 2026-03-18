@@ -9,6 +9,7 @@ in
 {
   home.packages = [
     packages.starship
+    packages.cheat
     pkgs.python3Packages.argcomplete
   ];
   programs.atuin = {
@@ -19,7 +20,7 @@ in
   };
   programs.zoxide = {
     enable = true;
-    enableFishIntegration = true;
+    enableZshIntegration = true;
   };
   programs.direnv = {
     enable = true;

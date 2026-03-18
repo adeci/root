@@ -12,15 +12,15 @@
       };
     };
   };
-  programs.fish.interactiveShellInit = lib.mkOrder 1100 ''
+  programs.zsh.initContent = lib.mkOrder 1100 ''
     # Shopify tec (includes shadowenv, dev tools, wish, and shell hooks)
-    if test -x $HOME/.local/state/tec/profiles/base/current/global/init
-      $HOME/.local/state/tec/profiles/base/current/global/init fish | source
-    end
+    if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
+      eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
+    fi
   '';
   # Disable wish aliases (cd→wcd, ls→wls, j→wj) to avoid
-  # conflicts with zoxide and missing fish completions
-  xdg.configFile."wish.fish.toml".text = ''
+  # conflicts with zoxide
+  xdg.configFile."wish.zsh.toml".text = ''
     [features]
     "alias.cd" = false
     "alias.j" = false
@@ -29,7 +29,7 @@
     worldjump = true
     worldpath = false
   '';
-  programs.fish.shellAliases = {
+  programs.zsh.shellAliases = {
     claude = "devx claude";
     pi = "devx pi";
   };
