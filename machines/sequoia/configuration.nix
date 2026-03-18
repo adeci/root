@@ -17,6 +17,6 @@
     ./modules/matrix.nix
     ./modules/vaultwarden.nix
     ./modules/opencrow
-    # ./modules/buildbot.nix  # moved to leviathan (master + worker)
+    ./modules/atuin.nix
   ];
 }

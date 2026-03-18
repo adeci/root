@@ -29,6 +29,7 @@
     fallback = true;
   };
   programs.fish.enable = true;
+  programs.zsh.enable = true;
   environment.systemPackages = [ pkgs.kitty.terminfo ];
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {

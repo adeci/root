@@ -16,6 +16,8 @@ in
     enable = true;
     settings = {
       enter_accept = false;
+      sync_address = "http://sequoia:8888";
+      auto_sync = true;
     };
   };
   programs.zoxide = {
