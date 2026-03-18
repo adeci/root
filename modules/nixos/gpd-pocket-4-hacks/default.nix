@@ -32,57 +32,41 @@
     backslash = "nextsong";
   };
 
-  # Reload i2c_hid_acpi module to fix intermittent touchscreen breakage
-  # after suspension. Runs automatically on resume; can also be triggered
-  # manually with: systemctl start fix-touchscreen
-  systemd.services.fix-touchscreen =
-    let
-      fix-touchscreen = pkgs.writeShellScript "fix-touchscreen" ''
-        export PATH=${
-          pkgs.lib.makeBinPath [
-            pkgs.kmod
-            pkgs.systemd
-            pkgs.coreutils
-            pkgs.findutils
-            pkgs.gnugrep
-          ]
-        }
+  # The GPD Pocket 4 touchscreen (NVTK0603) often fails to reinitialize
+  # properly after suspend, coming back as PROP=2 (touchpad) instead of
+  # PROP=1 (touchscreen). Cycling the i2c_hid_acpi module fixes it.
+  # Also bound to Alt+= via keyd for manual trigger.
+  systemd.services.fix-touchscreen = {
+    description = "Reload i2c_hid_acpi to fix touchscreen after suspend";
+    after = [
+      "systemd-suspend.service"
+      "systemd-hibernate.service"
+    ];
+    wantedBy = [
+      "suspend.target"
+      "hibernate.target"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "fix-touchscreen" ''
+        modprobe=${pkgs.kmod}/bin/modprobe
+        grep=${pkgs.gnugrep}/bin/grep
 
-        for attempt in 1 2 3; do
-          modprobe -r i2c_hid_acpi 2>/dev/null || true
-          udevadm settle --timeout=5
-          sleep 1
-          modprobe i2c_hid_acpi
-          udevadm settle --timeout=5
+        for attempt in 1 2; do
+          $modprobe -r i2c_hid_acpi 2>/dev/null || true
+          sleep 2
+          $modprobe i2c_hid_acpi
+          sleep 2
 
-          # Check if a touchscreen input device appeared under the driver
-          if find /sys/bus/i2c/drivers/i2c_hid_acpi/ -path '*/input/input*/name' 2>/dev/null \
-               | xargs -r grep -qi touch; then
-            echo "Touchscreen restored on attempt $attempt"
+          if $grep -A8 'NVTK0603' /proc/bus/input/devices | $grep -q 'PROP=1'; then
+            echo "Touchscreen restored (attempt $attempt)"
             exit 0
           fi
-
-          echo "Attempt $attempt: touchscreen not detected, retrying..."
-          sleep 1
         done
 
-        echo "Warning: touchscreen not detected after 3 attempts"
+        echo "Touchscreen not restored after 2 attempts" >&2
         exit 1
       '';
-    in
-    {
-      description = "Reload i2c_hid_acpi module to fix touchscreen";
-      after = [
-        "systemd-suspend.service"
-        "systemd-hibernate.service"
-      ];
-      wantedBy = [
-        "suspend.target"
-        "hibernate.target"
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = fix-touchscreen;
-      };
     };
+  };
 }
