@@ -53,7 +53,13 @@ in
     pref("gfx.webrender.all", true);
     // Keep cookies and storage across sessions — LibreWolf defaults to clearing
     // them on shutdown, which nukes all your logins every time you close the browser.
+    // lifetimePolicy 2 (LibreWolf default) forces ALL cookies to be session-only,
+    // so they die on close regardless of clearOnShutdown. Set to 0 for normal expiry.
+    pref("network.cookie.lifetimePolicy", 0);
     pref("privacy.clearOnShutdown_v2.cookiesAndStorage", false);
+    // v1 equivalents — still checked in some LibreWolf versions
+    pref("privacy.clearOnShutdown.cookies", false);
+    pref("privacy.clearOnShutdown.sessions", false);
   '';
 
   # Tell browser-cli where LibreWolf is so browsh can find it
