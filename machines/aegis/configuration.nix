@@ -28,7 +28,7 @@ in
     ../../modules/nixos/laptop.nix
     ../../modules/nixos/printing.nix
     ../../modules/nixos/social.nix
-    ../../modules/nixos/llm-secrets.nix
+
     ../../modules/nixos/remote-builder.nix
   ];
 
