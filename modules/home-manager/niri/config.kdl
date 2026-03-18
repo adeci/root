@@ -83,11 +83,17 @@ input {
 // Remember to uncomment the node by removing "/-"!
 
 // aegis - lenovo x220 display
-output "Seiko Epson Corporation 0x3047 Unknown" {
-    mode "1366x768@60.002"
+output "LG Display 0x02D8 Unknown" {
+    mode "1366x768@60.019"
     scale 1
     transform "normal"
 }
+// aegis - lenovo x220 display (old TN panel)
+// output "Seiko Epson Corporation 0x3047 Unknown" {
+//     mode "1366x768@60.002"
+//     scale 1
+//     transform "normal"
+// }
 
 // modus - framework 13 display
 output "BOE NE135A1M-NY1 Unknown" {
