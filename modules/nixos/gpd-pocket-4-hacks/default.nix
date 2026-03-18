@@ -22,15 +22,14 @@
     };
   };
 
-  # Alt+= hotkey to fix touchscreen (keyd runs as root, no sudo needed)
-  services.keyd.keyboards.default.settings.main."A-equal" =
-    "command(systemctl start fix-touchscreen)";
-
-  # Media controls — mirrors Fn+volume key positions with Alt instead
-  services.keyd.keyboards.default.settings.main = {
-    "A-[" = "previoussong";
-    "A-]" = "playpause";
-    "A-\\" = "nextsong";
+  # Alt layer bindings (keyd uses [alt] layer, not A- prefix)
+  services.keyd.keyboards.default.settings.alt = {
+    # Fix touchscreen (keyd runs as root, no sudo needed)
+    equal = "command(${pkgs.systemd}/bin/systemctl start fix-touchscreen)";
+    # Media controls — mirrors Fn+volume key positions
+    leftbrace = "previoussong";
+    rightbrace = "playpause";
+    backslash = "nextsong";
   };
 
   # Reload i2c_hid_acpi module to fix intermittent touchscreen breakage

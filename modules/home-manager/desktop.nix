@@ -28,6 +28,7 @@ in
       };
       appLauncher = {
         terminalCommand = "kitty -e";
+        enableClipboardHistory = true;
       };
       bar = {
         barType = "simple";
@@ -73,6 +74,7 @@ in
         location = "top_right";
       };
       location = {
+        name = "";
         useFahrenheit = true;
         use12hourFormat = true;
       };

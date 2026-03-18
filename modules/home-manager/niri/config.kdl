@@ -338,6 +338,7 @@ binds {
         spawn-sh r#"set -- $(niri msg -j focused-window 2>/dev/null | jq -r '.app_id, .pid') && [ "$1" = kitty ] && child=$(ps -o pid=,tty= --ppid "$2" | grep -v '?' | head -1 | awk '{print $1}') && [ -n "$child" ] && exec kitty -d "$(readlink -f /proc/$child/cwd)" || exec kitty"#
     }
     Mod+D hotkey-overlay-title="Run an Application" { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    Mod+Alt+V hotkey-overlay-title="Clipboard History" { spawn "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
