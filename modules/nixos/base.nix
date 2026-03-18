@@ -19,8 +19,6 @@
   programs.ssh.extraConfig = ''
     Host *
       AddKeysToAgent yes
-      CanonicalizeHostname yes
-      CanonicalDomains cymric-daggertooth.ts.net adeci
   '';
   nix.settings = {
     http-connections = 64;
