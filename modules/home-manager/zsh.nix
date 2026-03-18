@@ -62,6 +62,7 @@
       curl = "noglob curl";
       wget = "noglob wget";
       nrb = "noglob nix build --max-jobs 0 --builders @/etc/nix/machines";
+      rz = "exec zsh";
     };
 
     plugins = [
@@ -156,6 +157,24 @@
             cat "$1" | pbcopy
           else
             cat "$1" | wl-copy
+          fi
+        }
+
+        ekh() {
+          if [[ $# -eq 0 ]]; then
+            nvim ~/.ssh/known_hosts
+          else
+            local kh=~/.ssh/known_hosts
+            for pattern in "$@"; do
+              local matches=$(grep -c "$pattern" "$kh" 2>/dev/null)
+              if (( matches > 0 )); then
+                grep --color=always "$pattern" "$kh"
+                sed -i "/$pattern/d" "$kh"
+                echo "Removed $matches entry(s) matching '$pattern'"
+              else
+                echo "No entries matching '$pattern'"
+              fi
+            done
           fi
         }
 
