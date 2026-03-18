@@ -57,10 +57,9 @@
   # Primary user
   system.primaryUser = config.adeci.primaryUser;
 
-  # Fish shell
+  # Zsh shell
   # NOTE: nix-darwin doesn't actually change the macOS login shell via dscl.
-  # You must manually run: sudo dscl . -change /Users/<user> UserShell /bin/zsh /run/current-system/sw/bin/fish
-  programs.fish.enable = true;
-  environment.shells = [ pkgs.fish ];
-  programs.direnv.enable = true;
+  # You must manually run: sudo dscl . -change /Users/<user> UserShell /bin/zsh /run/current-system/sw/bin/zsh
+  programs.zsh.enable = true;
+  environment.shells = [ pkgs.zsh ];
 }
