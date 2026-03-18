@@ -51,6 +51,7 @@ in
           right = [
             { id = "Tray"; }
             { id = "NotificationHistory"; }
+            { id = "VPN"; }
             { id = "Network"; }
             { id = "Battery"; }
             { id = "Volume"; }

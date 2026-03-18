@@ -6,6 +6,7 @@
     ../../modules/home-manager/profiles/desktop.nix
     ../../modules/home-manager/rbw.nix
     ../../modules/home-manager/bitwarden.nix
+    ../../modules/home-manager/mullvad-browser.nix
   ];
 
   home.stateVersion = osConfig.system.stateVersion;

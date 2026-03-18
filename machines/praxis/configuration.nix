@@ -26,6 +26,7 @@
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/creative.nix
     ../../modules/nixos/yubikey.nix
+    ../../modules/nixos/mullvad.nix
 
     ../../modules/nixos/remote-builder.nix
   ];
