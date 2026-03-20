@@ -120,12 +120,15 @@
         zstyle :prompt:pure:git:branch:cached color red
         zstyle :prompt:pure:git:dirty color yellow
         zstyle :prompt:pure:git:arrow color cyan
-        zstyle :prompt:pure:user color blue
-        zstyle :prompt:pure:host color green
+        zstyle :prompt:pure:user color '#7aa2f7'
+        zstyle :prompt:pure:host color '#9ece6a'
         zstyle :prompt:pure:prompt:success color green
         zstyle :prompt:pure:prompt:error color red
         zstyle :prompt:pure:execution_time color yellow
         prompt pure
+
+        # Always show user@host (pure only shows in SSH/container/root by default)
+        prompt_pure_state[username]='%F{#7aa2f7}%n%f%F{#9ece6a}@%m%f'
 
         # Non-zero exit code in right prompt
         RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
