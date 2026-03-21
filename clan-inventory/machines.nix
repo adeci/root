@@ -5,7 +5,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@aegis";
+    deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
   };
 
   claudia = {
@@ -13,7 +13,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@claudia";
+    deploy.targetHost = "root@claudia.cymric-daggertooth.ts.net";
   };
 
   kasha = {
@@ -21,7 +21,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@kasha";
+    deploy.targetHost = "root@kasha.cymric-daggertooth.ts.net";
   };
 
   leviathan = {
@@ -29,7 +29,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@leviathan";
+    deploy.targetHost = "root@leviathan.cymric-daggertooth.ts.net";
   };
 
   malum = {
@@ -44,7 +44,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@modus";
+    deploy.targetHost = "root@modus.cymric-daggertooth.ts.net";
   };
 
   praxis = {
@@ -52,7 +52,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@praxis";
+    deploy.targetHost = "root@praxis.cymric-daggertooth.ts.net";
   };
 
   sequoia = {
@@ -60,7 +60,7 @@
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@sequoia";
+    deploy.targetHost = "root@sequoia.cymric-daggertooth.ts.net";
   };
 
 }
