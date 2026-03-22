@@ -216,7 +216,7 @@ task — get the forge running first.
       a curated set?
 - [ ] Mirror schedule — default 8h is fine, or more frequent?
 - [ ] Should mirrored repos be publicly browsable (`REQUIRE_SIGNIN_VIEW
-    = false`) or private by default?
+  = false`) or private by default?
 - [ ] Backup strategy — restic path for `/var/lib/forgejo`, or also
       dump PostgreSQL separately?
 - [ ] Domain: `git.decio.us` feels right. Any other preference?

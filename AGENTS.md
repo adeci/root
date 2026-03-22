@@ -117,13 +117,43 @@ imports = [
   wiring. Examples: leviathan's harmonia signing keys, sequoia's
   buildbot master with its specific GitHub App and worker list.
 
-**Clan services** in `clan-services/` are for multi-machine coordination
-via the inventory. They follow the Clan service module structure with
-`_class = "clan.service"`, manifest metadata, and role definitions.
-Use clan services when the inventory's tag-based assignment adds value
-(e.g., roster assigns users to many machines). Use plain NixOS modules
-when the config is explicit and doesn't benefit from inventory indirection.
-See `clan-services/roster/default.nix` as the reference implementation.
+**Clan services** come in two forms:
+
+- **Built-in** (`input = "clan-core"`): Services shipped with clan-core.
+  Used by creating an instance in `clan-inventory/instances/` that
+  references them by name. No code in `clan-services/`. Examples:
+  `syncthing`, `borgbackup`, `sshd`, `importer`.
+
+- **Custom** (`input = "self"`): Services we define in `clan-services/`.
+  They follow the Clan service module structure with
+  `_class = "clan.service"`, manifest metadata, and role definitions.
+  Registered in `clan-services/default.nix` with `@adeci/<name>` naming.
+  See `clan-services/roster/default.nix` as the reference implementation.
+
+**When to use a clan service vs a plain NixOS module:**
+
+Use a **clan service** (built-in or custom) when:
+
+- Multiple machines need coordinated config (shared secrets, device
+  mesh, cross-machine references).
+- `clan.core.vars` adds value for credential generation/distribution.
+- The inventory's tag/machine assignment model fits naturally (assign
+  by tag, override per-machine via settings).
+- Examples: syncthing (auto device mesh via vars), roster (users across
+  machines), borgbackup (client/server key exchange), sshd (certificate
+  authority).
+
+Use a **plain NixOS module** when:
+
+- Config is self-contained to one machine or doesn't need cross-machine
+  coordination.
+- You're enabling a capability, not wiring machines together.
+- The inventory indirection would add complexity without benefit.
+- Examples: `laptop.nix` (power management), `gaming.nix` (Steam/GPU),
+  `niri.nix` (compositor setup).
+
+Prefer built-in clan services over writing custom ones when clan-core
+already provides what you need.
 
 **Roster**: The `@adeci/roster` service manages users (UIDs, groups,
 sudo, SSH keys, passwords, shells) across machines. Users defined in
