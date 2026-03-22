@@ -3,7 +3,7 @@ let
   clan = inputs.clan-core.lib.clan {
     inherit (inputs) self;
     meta.name = "adeci";
-    meta.domain = "adeci";
+    meta.domain = "cymric-daggertooth.ts.net";
     inventory = import ../clan-inventory {
       inherit (inputs.nixpkgs) lib;
       inherit inputs;

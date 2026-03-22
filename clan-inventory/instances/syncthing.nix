@@ -10,21 +10,27 @@
         aegis = { };
         sequoia = { };
       };
+
+      extraModules = [
+        { services.syncthing.user = "alex"; }
+      ];
+
       settings = {
+        extraDevices = {
+          razr = {
+            id = "PXAMRHT-G7OA3GU-VMEBK2F-TPQTS55-4A4KBXO-AWATRBJ-FZ7KH7L-3OU2GQA";
+            name = "razr";
+          };
+        };
+
         folders = {
           notes = {
             path = "/home/alex/notes";
           };
         };
-        # Phone configured via Syncthing Android app — add device ID here
-        # after installing Syncthing on the Razr and copying the ID.
-        # extraDevices = {
-        #   razr = {
-        #     id = "XXXX";
-        #     name = "Motorola Razr";
-        #   };
-        # };
+
       };
     };
   };
+
 }
