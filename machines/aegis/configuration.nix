@@ -30,8 +30,6 @@ in
     ../../modules/nixos/social.nix
     ../../modules/nixos/yubikey.nix
     ../../modules/nixos/mullvad.nix
-
-    ../../modules/nixos/remote-builder.nix
   ];
 
   home-manager.users.alex = import ./home.nix;
