@@ -2,14 +2,19 @@
   lib,
   pkgs,
   inputs,
+
   ...
 }:
 let
-  micsSkills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
-  chromeTabGc = pkgs.callPackage ../../packages/chrome-tab-gc-extension { };
-  policies = import ../../packages/librewolf-policies.nix {
-    inherit (micsSkills) browser-cli-extension;
-    chrome-tab-gc-extension = chromeTabGc;
+  inherit (pkgs.stdenv.hostPlatform) system;
+  micsSkills = inputs.mics-skills.packages.${system};
+  policies = {
+    ExtensionSettings = {
+      "browser-cli-controller@thalheim.io" = {
+        installation_mode = "force_installed";
+        install_url = "file://${micsSkills.browser-cli-extension}/browser-cli-extension.xpi";
+      };
+    };
   };
   librewolfPath =
     if pkgs.stdenv.isDarwin then
