@@ -4,11 +4,11 @@ let
     inherit (inputs) self;
     meta.name = "adeci";
     meta.domain = "cymric-daggertooth.ts.net";
-    inventory = import ../clan-inventory {
+    inventory = import ../inventory {
       inherit (inputs.nixpkgs) lib;
       inherit inputs;
     };
-    modules = import ../clan-services { inherit inputs; };
+    modules = import ../modules/clan { inherit inputs; };
     specialArgs = {
       inherit (inputs) self;
       inherit inputs;
@@ -24,6 +24,6 @@ in
       clanInternals
       ;
     clan = clan.config;
-    clanModules = import ../clan-services { inherit inputs; };
+    clanModules = import ../modules/clan { inherit inputs; };
   };
 }

@@ -3,9 +3,9 @@
   perSystem =
     { pkgs, lib, ... }:
     let
-      dotpkgs = import ../dotpkgs { inherit pkgs inputs; };
-      customPkgs = import ../pkgs { inherit pkgs inputs; };
-      allPkgs = builtins.mapAttrs (_: v: v.wrapper or v) dotpkgs // customPkgs;
+      wrappedPkgs = import ../packages/wrapped { inherit pkgs inputs; };
+      customPkgs = import ../packages { inherit pkgs inputs; };
+      allPkgs = builtins.mapAttrs (_: v: v.wrapper or v) wrappedPkgs // customPkgs;
     in
     {
       packages = lib.filterAttrs (

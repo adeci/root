@@ -1,6 +1,6 @@
 # dotpkgs
 
-Wrapped tool packages with configs baked in. Uses [adeci/wrappers](https://github.com/adeci/wrappers) under the hood.
+Wrapped tool packages with configs baked in. Uses [lassulus/wrappers](https://github.com/lassulus/wrappers) under the hood.
 
 ## Packages
 

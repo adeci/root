@@ -44,15 +44,13 @@ _: {
     perInstance =
       { settings, ... }:
       {
-        nixosModule =
-          _:
-          {
-            nix.settings.extra-substituters = map (
-              cache: "${cache.url}?priority=${toString cache.priority}"
-            ) settings.caches;
+        nixosModule = _: {
+          nix.settings.extra-substituters = map (
+            cache: "${cache.url}?priority=${toString cache.priority}"
+          ) settings.caches;
 
-            nix.settings.extra-trusted-public-keys = map (cache: cache.publicKey) settings.caches;
-          };
+          nix.settings.extra-trusted-public-keys = map (cache: cache.publicKey) settings.caches;
+        };
       };
   };
 }

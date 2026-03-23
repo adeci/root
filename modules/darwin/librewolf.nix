@@ -6,12 +6,12 @@
 }:
 let
   micsSkills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
-  chromeTabGc = pkgs.callPackage ../../pkgs/chrome-tab-gc-extension { };
-  policies = import ../../pkgs/librewolf-policies.nix {
+  chromeTabGc = pkgs.callPackage ../../packages/chrome-tab-gc-extension { };
+  policies = import ../../packages/librewolf-policies.nix {
     inherit (micsSkills) browser-cli-extension;
     chrome-tab-gc-extension = chromeTabGc;
   };
-  librewolfMacos = pkgs.callPackage ../../pkgs/librewolf-macos { };
+  librewolfMacos = pkgs.callPackage ../../packages/librewolf-macos { };
   librewolf = librewolfMacos.withPolicies policies;
 in
 {
