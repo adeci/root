@@ -8,7 +8,7 @@ let
       inherit (inputs.nixpkgs) lib;
       inherit inputs;
     };
-    modules = import ../clan-services { };
+    modules = import ../clan-services { inherit inputs; };
     specialArgs = {
       inherit (inputs) self;
       inherit inputs;
@@ -24,6 +24,6 @@ in
       clanInternals
       ;
     clan = clan.config;
-    clanModules = import ../clan-services { };
+    clanModules = import ../clan-services { inherit inputs; };
   };
 }

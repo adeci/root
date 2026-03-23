@@ -15,7 +15,6 @@ in
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
-    ./modules/harmonia.nix
     ./modules/buildbot.nix
   ];
 

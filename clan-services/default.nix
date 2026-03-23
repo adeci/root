@@ -1,12 +1,9 @@
-_:
-let
-  module_definitions = {
-    "@adeci/roster" = import ./roster;
-
-    # Local service modules
-    "@adeci/tailscale" = import ./tailscale;
-    "@adeci/cloudflare-tunnel" = import ./cloudflare-tunnel;
-    "@adeci/siteup" = import ./siteup;
-  };
-in
-module_definitions
+{ inputs }:
+{
+  "@adeci/roster" = import ./roster;
+  "@adeci/tailscale" = import ./tailscale;
+  "@adeci/cloudflare-tunnel" = import ./cloudflare-tunnel;
+  "@adeci/siteup" = import ./siteup;
+  "@adeci/harmonia" = import ./harmonia { inherit inputs; };
+  "@adeci/trusted-caches" = import ./trusted-caches;
+}

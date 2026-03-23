@@ -3,11 +3,6 @@
   ...
 }:
 {
-  imports = [
-    ./leviathan-cache.nix
-    ./numtide-cache.nix
-  ];
-
   nixpkgs.config.allowUnfree = true;
   services.openssh = {
     enable = true;
