@@ -19,6 +19,8 @@
     ./plugins/yanky.nix
   ];
 
+  extraPlugins = [ pkgs.vimPlugins.plenary-nvim ];
+
   extraPackages = with pkgs; [
     ripgrep # telescope live_grep
     fd # telescope find_files
