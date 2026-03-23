@@ -45,11 +45,11 @@ _: {
       { settings, ... }:
       {
         nixosModule = _: {
-          nix.settings.extra-substituters = map (
+          nix.settings.substituters = map (
             cache: "${cache.url}?priority=${toString cache.priority}"
           ) settings.caches;
 
-          nix.settings.extra-trusted-public-keys = map (cache: cache.publicKey) settings.caches;
+          nix.settings.trusted-public-keys = map (cache: cache.publicKey) settings.caches;
         };
       };
   };

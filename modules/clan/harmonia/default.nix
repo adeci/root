@@ -134,7 +134,7 @@ in
               (varsForInstance instanceName pkgs)
             ];
 
-            nix.settings.extra-substituters = map (
+            nix.settings.substituters = map (
               machineName:
               let
                 serverSettings = roles.server.machines.${machineName}.settings;
@@ -145,7 +145,7 @@ in
               "http://${address}:${toString serverSettings.port}?priority=${toString priority}"
             ) (lib.attrNames roles.server.machines);
 
-            nix.settings.extra-trusted-public-keys = [
+            nix.settings.trusted-public-keys = [
               (lib.strings.trim
                 config.clan.core.vars.generators."harmonia-${instanceName}".files."signing-key.pub".value
               )
