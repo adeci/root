@@ -12,7 +12,7 @@ let
       runtimeInputs = [ pkgs.nix ];
       script = ''
         nix-store --generate-binary-cache-key \
-          ${instanceName}-1 \
+          ${instanceName} \
           "$out"/signing-key \
           "$out"/signing-key.pub
       '';
