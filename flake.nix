@@ -65,9 +65,6 @@
     devblog.url = "github:adeci/devblog";
     devblog.inputs.nixpkgs.follows = "nixpkgs";
     devblog.inputs.flake-parts.follows = "flake-parts";
-
-    # trader-rs.url = "git+ssh://git@github.com/adeci/trader-rs";
-    # trader-rs.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
