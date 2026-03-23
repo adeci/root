@@ -14,7 +14,7 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
-    ./modules/matrix.nix
+    ./modules/matrix-synapse.nix
     ./modules/vaultwarden.nix
     ./modules/opencrow
     ./modules/atuin.nix

@@ -21,22 +21,27 @@ in
     users.groups.opencrow.gid = 2000;
 
     # --- Matrix credentials ---
-    # Access token for @onix:decio.us. Register the user first:
-    #   sudo -u matrix-synapse register_new_matrix_user \
-    #     -c /var/lib/matrix-synapse/secrets.yaml \
-    #     http://localhost:8008
+    # The watari user is created declaratively by the matrix-synapse module.
+    # One-time setup after first deploy:
     #
-    # Then generate an access token:
-    #   curl -s -X POST https://matrix.decio.us/_matrix/client/v3/login \
-    #     -d '{"type":"m.login.password","user":"onix","password":"<password>"}' \
-    #     | jq -r '.access_token'
+    # 1. Read watari's password from vars:
+    #      clan vars get sequoia matrix-password-watari matrix-password-watari
     #
-    # Store it via: clan vars set sequoia opencrow-matrix access-token
+    # 2. Generate an access token:
+    #      curl -s -X POST https://matrix.decio.us/_matrix/client/v3/login \
+    #        -d '{"type":"m.login.password","user":"watari","password":"<password>"}' \
+    #        | jq -r '.access_token'
+    #
+    # 3. Store it:
+    #      clan vars set sequoia opencrow-matrix access-token
+    #
+    # The token persists across deploys — watari is re-checked but not
+    # re-registered, so existing sessions stay valid.
 
     clan.core.vars.generators.opencrow-matrix = {
       files.access-token.secret = true;
       prompts.access-token = {
-        description = "Matrix access token for @onix:decio.us";
+        description = "Matrix access token for @watari:decio.us";
         type = "hidden";
         persist = true;
       };
@@ -65,7 +70,7 @@ in
       environment = {
         OPENCROW_BACKEND = "matrix";
         OPENCROW_MATRIX_HOMESERVER = "http://127.0.0.1:8008";
-        OPENCROW_MATRIX_USER_ID = "@onix:decio.us";
+        OPENCROW_MATRIX_USER_ID = "@watari:decio.us";
         OPENCROW_ALLOWED_USERS = "@alex:decio.us";
         OPENCROW_SOUL_FILE = "${./soul.md}";
         OPENCROW_LOG_LEVEL = "debug";

@@ -5,7 +5,7 @@
       input = "self";
     };
     roles.peer = {
-      tags."adeci-net" = { };
+      tags = [ "adeci-net" ];
       settings = { };
     };
   };

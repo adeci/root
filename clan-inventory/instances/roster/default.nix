@@ -5,7 +5,7 @@ _: {
       input = "self";
     };
     roles.default = {
-      tags.all = { };
+      tags = [ "all" ];
       settings = {
         users = import ./users.nix;
         machines = import ./machines.nix;

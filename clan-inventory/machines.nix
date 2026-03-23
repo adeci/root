@@ -4,6 +4,7 @@
     name = "aegis";
     tags = [
       "adeci-net"
+      "wayfinders"
     ];
     deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
   };
@@ -43,6 +44,7 @@
     name = "modus";
     tags = [
       "adeci-net"
+      "wayfinders"
     ];
     deploy.targetHost = "root@modus.cymric-daggertooth.ts.net";
   };
@@ -51,6 +53,7 @@
     name = "praxis";
     tags = [
       "adeci-net"
+      "wayfinders"
     ];
     deploy.targetHost = "root@praxis.cymric-daggertooth.ts.net";
   };
