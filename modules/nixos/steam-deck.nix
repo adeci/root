@@ -11,6 +11,7 @@
 
   # Steam Deck hardware support (kernel, fan control, firmware, audio DSP, controller)
   jovian.devices.steamdeck.enable = true;
+  jovian.devices.steamdeck.autoUpdate = true;
 
   # Gaming Mode via gamescope session
   jovian.steam = {
