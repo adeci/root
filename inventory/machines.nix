@@ -20,7 +20,7 @@
   chrysalis = {
     name = "chrysalis";
     tags = [
-      "adeci-net"
+      "adeci-net-ephemeral"
       "wayfinders"
     ];
   };
