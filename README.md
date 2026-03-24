@@ -2,7 +2,7 @@
 
 NixOS and Darwin machines managed with [Clan](https://docs.clan.lol).
 
-8 machines (7 NixOS, 1 Darwin).
+10 machines (9 NixOS, 1 Darwin).
 
 ## Layout
 
@@ -41,4 +41,5 @@ nix fmt                                        # format everything
 clan machines list                             # list machines
 nix eval .#nixosConfigurations.<m>.config.system.build.toplevel.drvPath  # check eval
 clan machines update <machine>                 # deploy
+clan flash write chrysalis --disk main /dev/sdX  # flash installer
 ```

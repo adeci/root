@@ -1,7 +1,7 @@
 # AGENTS.md
 
-Clan-based NixOS/Darwin infrastructure monorepo. Manages 9 machines
-(8 NixOS, 1 Darwin) via declarative Nix configuration.
+Clan-based NixOS/Darwin infrastructure monorepo. Manages 10 machines
+(9 NixOS, 1 Darwin) via declarative Nix configuration.
 
 ## System
 
@@ -41,23 +41,31 @@ nix build .#homeConfigurations.<name>.activationPackage
 
 ```
 flake.nix                        # Entry point (flake-parts)
-flake-outputs/                   # Modular flake configuration
+outputs/                         # Modular flake configuration
   clan.nix                       #   Clan orchestration
-  dotpkgs.nix                    #   Wrapped tool packages
+  packages.nix                   #   Custom packages
   home-configurations.nix        #   Standalone home-manager
   formatter.nix                  #   treefmt (nixfmt, shellcheck, deadnix, statix, prettier)
   devshell.nix                   #   Dev environment
+  checks.nix                     #   CI checks
 
-clan-inventory/                  # What runs where (central truth)
+inventory/                       # What runs where (central truth)
   machines.nix                   #   Machine declarations + tags
   instances/                     #   Service role assignments (by tag)
 
-clan-services/                   # Service definitions
-  roster/                        #   User/group management (core service)
-  tailscale/                     #   Mesh VPN
-  vaultwarden/                   #   Password manager
-  cloudflare-tunnel/             #   Tunnel ingress
-  siteup/                        #   Web app deployment
+modules/                         # Shared composable modules
+  clan/                          #   Custom clan service definitions (@adeci/*)
+    roster/                      #     User/group management
+    tailscale/                   #     Mesh VPN
+    harmonia/                    #     Binary cache
+    remote-builder/              #     Nix remote build offloading
+    cloudflare-tunnel/           #     Tunnel ingress
+    siteup/                      #     Web app deployment
+    trusted-caches/              #     External binary cache config
+  nixos/                         #   NixOS modules (portable capabilities)
+  darwin/                        #   Darwin modules
+  home-manager/                  #   Home-manager modules
+    profiles/                    #     HM profile groupings (import sets of HM modules)
 
 machines/<name>/                 # Per-machine configs
   configuration.nix              #   NixOS/Darwin config (explicit module imports)
@@ -66,21 +74,16 @@ machines/<name>/                 # Per-machine configs
   facter.json                    #   Hardware facts (don't edit)
   modules/                       #   Machine-specific modules (only this machine)
 
-modules/                         # Shared composable feature modules
-  nixos/                         #   NixOS modules (portable capabilities)
-  darwin/                        #   Darwin modules
-  home-manager/                  #   Home-manager modules
-    profiles/                    #   HM profile groupings (import sets of HM modules)
+packages/                        # Custom package derivations
+  wrapped/                       #   Wrapped tools (btop, kitty, starship, fuzzel, nixvim)
 
-dotpkgs/                         # Wrapped tools (btop, kitty, starship, fuzzel, nixvim)
-pkgs/                            # Custom package derivations
-plans/                           # Planning documents (reference, not config)
+cloud/                           # AWS/OpenTofu provisioning
 ```
 
 ## Key Concepts
 
-**Inventory-driven**: `clan-inventory/machines.nix` declares machines with
-tags. Services in `clan-inventory/instances/` are assigned to tags, not
+**Inventory-driven**: `inventory/machines.nix` declares machines with
+tags. Services in `inventory/instances/` are assigned to tags, not
 individual machines. A machine gets a service by having the right tag.
 
 **Explicit imports**: Modules are plain config files. Machine configs
@@ -114,21 +117,21 @@ imports = [
 
 - `machines/<name>/modules/` — machine-specific config. Tightly coupled
   to one machine's deployment: its domains, its secrets, its service
-  wiring. Examples: leviathan's harmonia signing keys, sequoia's
-  buildbot master with its specific GitHub App and worker list.
+  wiring. Examples: leviathan's buildbot config, sequoia's vaultwarden
+  with its specific domains and reverse proxy setup.
 
 **Clan services** come in two forms:
 
 - **Built-in** (`input = "clan-core"`): Services shipped with clan-core.
-  Used by creating an instance in `clan-inventory/instances/` that
-  references them by name. No code in `clan-services/`. Examples:
-  `syncthing`, `borgbackup`, `sshd`, `importer`.
+  Used by creating an instance in `inventory/instances/` that references
+  them by name. No code in `modules/clan/`. Examples: `syncthing`,
+  `borgbackup`, `sshd`, `wifi`, `state-version`.
 
-- **Custom** (`input = "self"`): Services we define in `clan-services/`.
+- **Custom** (`input = "self"`): Services we define in `modules/clan/`.
   They follow the Clan service module structure with
   `_class = "clan.service"`, manifest metadata, and role definitions.
-  Registered in `clan-services/default.nix` with `@adeci/<name>` naming.
-  See `clan-services/roster/default.nix` as the reference implementation.
+  Registered in `modules/clan/default.nix` with `@adeci/<name>` naming.
+  See `modules/clan/roster/default.nix` as the reference implementation.
 
 **When to use a clan service vs a plain NixOS module:**
 
@@ -141,7 +144,7 @@ Use a **clan service** (built-in or custom) when:
   by tag, override per-machine via settings).
 - Examples: syncthing (auto device mesh via vars), roster (users across
   machines), borgbackup (client/server key exchange), sshd (certificate
-  authority).
+  authority), harmonia (server/client with signing keys).
 
 Use a **plain NixOS module** when:
 
@@ -150,16 +153,22 @@ Use a **plain NixOS module** when:
 - You're enabling a capability, not wiring machines together.
 - The inventory indirection would add complexity without benefit.
 - Examples: `laptop.nix` (power management), `gaming.nix` (Steam/GPU),
-  `niri.nix` (compositor setup).
+  `niri.nix` (compositor setup), `steam-deck.nix` (Jovian + gamescope).
 
 Prefer built-in clan services over writing custom ones when clan-core
 already provides what you need.
 
 **Roster**: The `@adeci/roster` service manages users (UIDs, groups,
 sudo, SSH keys, passwords, shells) across machines. Users defined in
-`clan-inventory/instances/roster/users.nix`, assigned to machines in
+`inventory/instances/roster/users.nix`, assigned to machines in
 `roster/machines.nix`. Position hierarchy: `owner > admin > basic > service`.
 Roster does NOT handle home-manager — that's per-machine `home.nix`.
+
+**Chrysalis**: Custom installer machine (`machines/chrysalis/`). Imports
+clan-core's installer module, adds our harmonia binary cache, tailscale,
+wifi, and SSH keys. Flash to USB with `clan flash write chrysalis --disk main /dev/sdX`.
+Pre-build a machine's closure on leviathan first (`nrb`), then the
+installer pulls everything from the harmonia cache.
 
 ## Code Conventions
 
@@ -197,13 +206,13 @@ profile in `modules/home-manager/profiles/` or import directly in a
 machine's `home.nix`.
 
 **Add a machine**: Create `machines/<name>/configuration.nix`, add entry
-to `clan-inventory/machines.nix` with tags, add user assignments in
-`clan-inventory/instances/roster/machines.nix`.
+to `inventory/machines.nix` with tags, add user assignments in
+`inventory/instances/roster/machines.nix`.
 
-**Add a clan service**: Create module in `clan-services/<name>/`, register
-in `clan-services/default.nix`, create instance in
-`clan-inventory/instances/<name>.nix`, assign roles to tags or machines.
+**Add a clan service**: Create module in `modules/clan/<name>/`, register
+in `modules/clan/default.nix`, create instance in
+`inventory/instances/<name>.nix`, assign roles to tags or machines.
 Only use for multi-machine coordination where inventory assignment helps.
 
-**Add a dotpkg**: Create directory in `dotpkgs/<name>/` with `module.nix`.
-See `dotpkgs/README.md` for the wrapper pattern.
+**Flash the installer**: `clan flash write chrysalis --disk main /dev/sdX`.
+SSH keys, wifi, and harmonia cache are baked in — no flags needed.
