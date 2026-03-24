@@ -1,6 +1,7 @@
 {
   inputs,
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -19,6 +20,12 @@
     autoStart = true;
     user = config.adeci.primaryUser;
     desktopSession = "niri";
+    environment = {
+      # nixpkgs sets this on the Steam wrapper, but Gaming Mode bypasses it
+      STEAM_EXTRA_COMPAT_TOOLS_PATHS =
+        lib.makeSearchPathOutput "steamcompattool" ""
+          config.programs.steam.extraCompatPackages;
+    };
   };
 
   # Decky Loader plugin framework for Gaming Mode
