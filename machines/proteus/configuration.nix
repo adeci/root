@@ -1,12 +1,9 @@
 {
-  inputs,
   config,
   ...
 }:
 {
   imports = [
-    inputs.jovian.nixosModules.default
-
     ../../modules/nixos/home-manager.nix
 
     ../../modules/nixos/base.nix

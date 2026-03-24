@@ -1,5 +1,14 @@
-{ config, pkgs, ... }:
 {
+  inputs,
+  config,
+  pkgs,
+  ...
+}:
+{
+  imports = [
+    inputs.jovian.nixosModules.default
+  ];
+
   # Steam Deck hardware support (kernel, fan control, firmware, audio DSP, controller)
   jovian.devices.steamdeck.enable = true;
 
