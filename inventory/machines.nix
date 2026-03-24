@@ -17,6 +17,14 @@
     deploy.targetHost = "root@claudia.cymric-daggertooth.ts.net";
   };
 
+  chrysalis = {
+    name = "chrysalis";
+    tags = [
+      "adeci-net"
+      "wayfinders"
+    ];
+  };
+
   kasha = {
     name = "kasha";
     tags = [
