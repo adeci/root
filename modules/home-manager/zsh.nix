@@ -61,7 +61,7 @@
       nom = "noglob nom";
       curl = "noglob curl";
       wget = "noglob wget";
-      nrb = "noglob nix build --max-jobs 0 --builders @/etc/nix/machines";
+      nrb = "noglob nom build --max-jobs 0 --builders @/etc/nix/machines";
       rz = "exec zsh";
     };
 

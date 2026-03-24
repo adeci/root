@@ -6,6 +6,10 @@
     };
     roles.server.machines.leviathan = {
       settings = {
+        systems = [
+          "x86_64-linux"
+          "i686-linux"
+        ];
         maxJobs = 16;
         speedFactor = 10;
       };

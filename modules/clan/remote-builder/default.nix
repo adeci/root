@@ -16,10 +16,10 @@
       { lib, ... }:
       {
         options = {
-          system = lib.mkOption {
-            type = lib.types.str;
-            default = "x86_64-linux";
-            description = "The system type this builder provides";
+          systems = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ "x86_64-linux" ];
+            description = "System types this builder can build for";
           };
 
           maxJobs = lib.mkOption {
@@ -67,6 +67,7 @@
         nixosModule =
           {
             config,
+            pkgs,
             lib,
             ...
           }:
@@ -87,6 +88,7 @@
               isSystemUser = true;
               home = "/var/empty";
               group = "nix";
+              shell = pkgs.bashInteractive;
               openssh.authorizedKeys.keys = clientKeys ++ settings.externalKeys;
             };
             users.groups.nix = { };
@@ -136,7 +138,7 @@
               {
                 hostName = "${machineName}${dotDomain}";
                 inherit (serverSettings)
-                  system
+                  systems
                   maxJobs
                   speedFactor
                   supportedFeatures
