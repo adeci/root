@@ -20,6 +20,9 @@
     wrappers.url = "github:adeci/wrappers?ref=btop";
     wrappers.inputs.nixpkgs.follows = "nixpkgs";
 
+    jovian.url = "github:Jovian-Experiments/Jovian-NixOS";
+    jovian.inputs.nixpkgs.follows = "nixpkgs";
+
     noctalia-shell.url = "github:noctalia-dev/noctalia-shell";
     noctalia-shell.inputs.nixpkgs.follows = "nixpkgs";
 

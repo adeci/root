@@ -58,6 +58,15 @@
     deploy.targetHost = "root@praxis.cymric-daggertooth.ts.net";
   };
 
+  proteus = {
+    name = "proteus";
+    tags = [
+      "adeci-net"
+      "wayfinders"
+    ];
+    deploy.targetHost = "root@proteus.cymric-daggertooth.ts.net";
+  };
+
   sequoia = {
     name = "sequoia";
     tags = [

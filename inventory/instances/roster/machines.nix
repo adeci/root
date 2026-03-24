@@ -50,6 +50,12 @@
     };
   };
 
+  proteus = {
+    users = {
+      alex = { };
+    };
+  };
+
   sequoia = {
     users = {
       alex = { };

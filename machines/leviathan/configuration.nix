@@ -54,6 +54,10 @@
   # of the requesting process.
   services.envfs.enable = true;
 
+  environment.systemPackages = with pkgs; [
+    numactl
+  ];
+
   programs = {
 
     # I got tired of facing NixOS issues
