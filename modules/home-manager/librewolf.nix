@@ -50,12 +50,18 @@ in
     // (Meet, Zoom) not being able to enumerate audio devices, and exempted
     // domains don't work reliably enough to maintain.
     pref("privacy.resistFingerprinting", false);
-    // WebGL — LibreWolf disables it by default as a fingerprinting vector.
-    // Needed for image editors, maps, and anything GPU-accelerated in-browser.
+    // WebGL — LibreWolf disables it and gates it behind a per-site permission
+    // prompt. Needed for image editors, maps, and anything GPU-accelerated.
+    // force-enabled overrides the GPU driver blocklist that silently kills WebGL.
     pref("webgl.disabled", false);
-    // Hardware acceleration — force-enable VA-API video decode and GPU compositing.
+    pref("webgl.force-enabled", true);
+    pref("librewolf.webgl.prompt", false);
+    // Hardware acceleration — force-enable VA-API video decode, GPU compositing,
+    // and EGL (required for WebGL on Wayland, better than GLX on X11 too).
     pref("media.ffmpeg.vaapi.enabled", true);
     pref("gfx.webrender.all", true);
+    pref("layers.acceleration.force-enabled", true);
+    pref("widget.dmabuf.force-enabled", true);
     // Keep cookies and storage across sessions — LibreWolf defaults to clearing
     // them on shutdown, which nukes all your logins every time you close the browser.
     // lifetimePolicy 2 (LibreWolf default) forces ALL cookies to be session-only,
