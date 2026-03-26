@@ -10,6 +10,7 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
+    ../../modules/nixos/cloudflared.nix
     ./modules/buildbot.nix
   ];
 

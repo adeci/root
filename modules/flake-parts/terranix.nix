@@ -16,6 +16,7 @@
         inherit system;
         modules = [
           ../terranix/base.nix
+          ../terranix/cloudflare.nix
           ../../machines/conduit/terraform-configuration.nix
         ];
         extraArgs = {
