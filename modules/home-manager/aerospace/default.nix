@@ -15,6 +15,6 @@ in
       (builtins.readFile ./config.toml);
 
   home.activation.reloadAerospace = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    ${pkgs.procps}/bin/pgrep -x AeroSpace && /opt/homebrew/bin/aerospace reload-config || true
+    /usr/bin/pgrep -x AeroSpace && /opt/homebrew/bin/aerospace reload-config || true
   '';
 }

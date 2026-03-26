@@ -7,7 +7,7 @@
     # Font
     font = {
       name = "CaskaydiaMono Nerd Font Mono";
-      size = if pkgs.stdenv.isDarwin then 14.0 else 10.0;
+      size = if pkgs.stdenv.isDarwin then 12.0 else 10.0;
     };
 
     # Theme (replaces 30+ manual color lines)

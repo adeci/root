@@ -3,6 +3,8 @@ _: {
     enable = true;
     onActivation.cleanup = "zap";
     taps = [
+      "homebrew/core"
+      "homebrew/cask"
       "FelixKratz/formulae"
       "nikitabobko/tap"
     ];
