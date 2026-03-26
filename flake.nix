@@ -1,6 +1,4 @@
 {
-  description = "adeci's root flake";
-
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
@@ -36,6 +34,10 @@
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
 
+    terranix.url = "github:terranix/terranix";
+    terranix.inputs.flake-parts.follows = "flake-parts";
+    terranix.inputs.nixpkgs.follows = "nixpkgs";
+
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -63,15 +65,14 @@
     niri.url = "github:adeci/niri?ref=window-rule-on-output";
     niri.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Sites
     devblog.url = "github:adeci/devblog";
     devblog.inputs.nixpkgs.follows = "nixpkgs";
     devblog.inputs.flake-parts.follows = "flake-parts";
   };
 
   outputs =
-    inputs@{ flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -80,13 +81,12 @@
       ];
 
       imports = [
-        ./outputs/clan.nix
-        ./outputs/packages.nix
-        ./outputs/home-configurations.nix
-        ./outputs/formatter.nix
-        ./outputs/devshell.nix
-        ./outputs/checks.nix
-        ./modules/clan/roster/flake-module.nix
+        inputs.clan-core.flakeModules.default
+        inputs.treefmt-nix.flakeModule
+        ./modules/flake-parts/flake-module.nix
       ];
+
+      # debug mode in repl
+      debug = builtins ? currentSystem;
     };
 }

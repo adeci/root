@@ -9,12 +9,12 @@
     deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
   };
 
-  claudia = {
-    name = "claudia";
+  conduit = {
+    name = "conduit";
     tags = [
       "adeci-net"
     ];
-    deploy.targetHost = "root@claudia.cymric-daggertooth.ts.net";
+    deploy.targetHost = "root@conduit.cymric-daggertooth.ts.net";
   };
 
   chrysalis = {

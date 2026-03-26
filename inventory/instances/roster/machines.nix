@@ -6,7 +6,7 @@
     };
   };
 
-  claudia = {
+  conduit = {
     users = {
       alex = { };
     };

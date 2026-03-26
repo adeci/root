@@ -1,11 +1,8 @@
 result
-
 .direnv/
-.envrc
 
 *.terraform/
 *.tfstate
-*.tfstate.*
 config.tf.json
 
 .pi/

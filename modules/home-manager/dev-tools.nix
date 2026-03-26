@@ -7,7 +7,6 @@
   home.packages =
     with pkgs;
     [
-      awscli2
       gh
       jujutsu
       nixpkgs-review
