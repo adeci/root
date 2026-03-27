@@ -2,7 +2,7 @@
 _:
 let
   varsForInstance = instanceName: pkgs: {
-    clan.core.vars.generators."harmonia-${instanceName}" = {
+    clan.core.vars.generators.${instanceName} = {
       share = true;
       files.signing-key = {
         secret = true;
@@ -65,7 +65,7 @@ in
         nixosModule =
           { config, pkgs, ... }:
           let
-            varName = "harmonia-${instanceName}";
+            varName = instanceName;
           in
           {
             imports = [
@@ -146,9 +146,7 @@ in
             ) (lib.attrNames roles.server.machines);
 
             nix.settings.trusted-public-keys = [
-              (lib.strings.trim
-                config.clan.core.vars.generators."harmonia-${instanceName}".files."signing-key.pub".value
-              )
+              (lib.strings.trim config.clan.core.vars.generators.${instanceName}.files."signing-key.pub".value)
             ];
           };
       };

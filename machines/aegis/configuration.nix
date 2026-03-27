@@ -17,7 +17,7 @@ in
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/dev.nix
-    ../../modules/nixos/niri.nix
+    ../../modules/nixos/desktop.nix
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/zram.nix
