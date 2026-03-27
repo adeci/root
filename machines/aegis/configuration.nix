@@ -5,7 +5,7 @@
   ...
 }:
 let
-  packages = self.packages.${pkgs.stdenv.hostPlatform.system};
+  wrappedPkgs = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   imports = [
@@ -13,9 +13,8 @@ in
 
     self.users.alex.nixosModule
 
-    ../../modules/nixos/home-manager.nix
-
     ../../modules/nixos/base.nix
+    ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/dev.nix
     ../../modules/nixos/niri.nix
@@ -27,16 +26,21 @@ in
     ../../modules/nixos/social.nix
     ../../modules/nixos/yubikey.nix
     ../../modules/nixos/mullvad.nix
+    ../../modules/nixos/rbw.nix
   ];
 
-  home-manager.users.alex = import ./home.nix;
+  environment.systemPackages = [
+    wrappedPkgs.librewolf
+    pkgs.bitwarden-desktop
+    pkgs.mullvad-browser
+  ];
 
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
   security.wrappers.btop = {
     owner = "root";
     group = "root";
     capabilities = "cap_perfmon+ep";
-    source = "${packages.btop}/bin/btop";
+    source = "${wrappedPkgs.btop}/bin/btop";
   };
 
   # Enable Intel graphics acceleration for Sandy Bridge

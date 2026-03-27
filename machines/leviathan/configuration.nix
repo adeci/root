@@ -11,17 +11,19 @@
     self.users.dima.nixosModule
     self.users.fmzakari.nixosModule
 
-    ../../modules/nixos/home-manager.nix
-
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
+    ../../modules/nixos/zsh.nix
     ../../modules/nixos/cloudflared.nix
     ./modules/buildbot.nix
   ];
 
-  home-manager.users.alex = import ./home.nix;
-
   time.timeZone = "America/New_York";
+
+  environment.systemPackages = [
+    pkgs.numactl
+    self.packages.${pkgs.stdenv.hostPlatform.system}.big-htop
+  ];
 
   # Transparent Huge Pages configuration for ZGC
   boot.kernelParams = [ "transparent_hugepage=madvise" ];
@@ -53,10 +55,6 @@
   # and /usr/bin/ so that it contains all executables from the PATH
   # of the requesting process.
   services.envfs.enable = true;
-
-  environment.systemPackages = with pkgs; [
-    numactl
-  ];
 
   programs = {
 

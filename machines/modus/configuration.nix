@@ -13,6 +13,8 @@ let
     sha256 = "sha256-Xu3KlpNMiZzS2fXYGGx0u0Qch7CoEus6ODwNVL4Bq4U=";
   };
 
+  wrappedPkgs = self.packages.${pkgs.stdenv.hostPlatform.system};
+
 in
 {
 
@@ -22,9 +24,8 @@ in
     inputs.nixos-hardware.nixosModules.framework-13-7040-amd
     inputs.grub2-themes.nixosModules.default
 
-    ../../modules/nixos/home-manager.nix
-
     ../../modules/nixos/base.nix
+    ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/dev.nix
     ../../modules/nixos/niri.nix
@@ -39,13 +40,12 @@ in
     ../../modules/nixos/creative.nix
   ];
 
-  home-manager.users.alex = import ./home.nix;
-
-  environment.systemPackages = with pkgs; [
-    imagemagick
-    os-prober
-    # calibre # broken in nixpkgs — qmake missing from qt6 setup hook
-    linux-wifi-hotspot
+  environment.systemPackages = [
+    wrappedPkgs.librewolf
+    pkgs.imagemagick
+    pkgs.os-prober
+    # pkgs.calibre # broken in nixpkgs — qmake missing from qt6 setup hook
+    pkgs.linux-wifi-hotspot
   ];
 
   # vm building

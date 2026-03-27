@@ -1,4 +1,5 @@
 {
+  pkgs,
   self,
   ...
 }:
@@ -6,9 +7,8 @@
   imports = [
     self.users.alex.nixosModule
 
-    ../../modules/nixos/home-manager.nix
-
     ../../modules/nixos/base.nix
+    ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/niri.nix
     ../../modules/nixos/amd-gpu.nix
@@ -17,7 +17,9 @@
     ../../modules/nixos/steam-deck.nix
   ];
 
-  home-manager.users.alex = import ./home.nix;
+  environment.systemPackages = [
+    self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf
+  ];
 
   nix.settings.trusted-users = [
     "root"

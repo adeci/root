@@ -13,9 +13,8 @@
 
     self.users.alex.nixosModule
 
-    ../../modules/nixos/home-manager.nix
-
     ../../modules/nixos/base.nix
+    ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/dev.nix
     ../../modules/nixos/niri.nix
@@ -30,10 +29,10 @@
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/creative.nix
     ../../modules/nixos/yubikey.nix
+    ../../modules/nixos/ssh-tpm-agent.nix
     ../../modules/nixos/mullvad.nix
+    ../../modules/nixos/rbw.nix
   ];
-
-  home-manager.users.alex = import ./home.nix;
 
   # gsim module
   networking.modemmanager.enable = true;
@@ -53,13 +52,16 @@
 
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
-  environment.systemPackages = with pkgs; [
-    calibre
-    modem-manager-gui
-    linux-wifi-hotspot
+  environment.systemPackages = [
+    self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf
+    pkgs.bitwarden-desktop
+    pkgs.mullvad-browser
+    pkgs.calibre
+    pkgs.modem-manager-gui
+    pkgs.linux-wifi-hotspot
     inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
-    amd-debug-tools
-    ethtool
+    pkgs.amd-debug-tools
+    pkgs.ethtool
   ];
 
   # vm building

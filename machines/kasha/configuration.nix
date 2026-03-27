@@ -12,16 +12,13 @@
 
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
 
-    ../../modules/nixos/home-manager.nix
-
     ../../modules/nixos/base.nix
+    ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/gnome.nix
     ../../modules/nixos/amd-gpu.nix
     ../../modules/nixos/printing.nix
   ];
-
-  home-manager.users.alex = import ./home.nix;
 
   boot.loader = {
     timeout = 0;
