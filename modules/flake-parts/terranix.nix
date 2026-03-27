@@ -1,7 +1,15 @@
 {
   inputs,
+  lib,
   ...
 }:
+let
+  # Auto-discover terraform-configuration.nix files from machines/
+  machineDir = ../../machines;
+  machineTfConfigs =
+    builtins.filter (name: builtins.pathExists (machineDir + "/${name}/terraform-configuration.nix"))
+      (builtins.attrNames (lib.filterAttrs (_: type: type == "directory") (builtins.readDir machineDir)));
+in
 {
   perSystem =
     {
@@ -17,9 +25,10 @@
         modules = [
           ../terranix/base.nix
           ../terranix/cloudflare.nix
-          ../../machines/conduit/terraform-configuration.nix
-        ];
+        ]
+        ++ map (name: machineDir + "/${name}/terraform-configuration.nix") machineTfConfigs;
         extraArgs = {
+          inherit (inputs) self;
           inherit self' inputs inputs';
         };
       };

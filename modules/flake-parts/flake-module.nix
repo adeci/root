@@ -5,8 +5,9 @@
     ./devshell.nix
     ./formatter.nix
     ./home-configurations.nix
+    ./resources.nix
     ./packages.nix
     ./terranix.nix
-    ../../modules/clan/roster/flake-module.nix
+    ./users.nix
   ];
 }

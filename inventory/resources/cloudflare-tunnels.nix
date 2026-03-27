@@ -1,6 +1,4 @@
-# Cloudflare tunnel definitions — single source of truth.
-# Drives both terraform (tunnel + DNS creation) and NixOS (cloudflared).
-# Machine names must match networking.hostName.
+# Machine names must match networking.hostName
 {
   sequoia = {
     "vault.decio.us" = "http://localhost:8222";

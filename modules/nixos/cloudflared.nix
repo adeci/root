@@ -1,14 +1,13 @@
-# Runs cloudflared in connector mode when this machine has a tunnel
-# defined in inventory/tunnels.nix. The tunnel token is provided by
-# terraform via clan vars.
+# Runs cloudflared in connector mode when this machine has a tunnel defined in self.resources.tunnels. The tunnel token is provided by terraform via clan vars.
 {
   config,
   lib,
   pkgs,
+  self,
   ...
 }:
 let
-  tunnels = import ../../inventory/tunnels.nix;
+  inherit (self.resources) tunnels;
   machineName = config.networking.hostName;
   hasTunnel = tunnels ? ${machineName};
   tokenPath = config.clan.core.vars.generators.cloudflare-tunnel-token.files.token.path;

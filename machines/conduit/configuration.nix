@@ -1,7 +1,9 @@
-{ ... }:
+{ self, ... }:
 {
 
   imports = [
+    self.users.alex.nixosModule
+
     ../../modules/nixos/home-manager.nix
 
     ../../modules/nixos/base.nix
@@ -9,11 +11,6 @@
   ];
 
   home-manager.users.alex = import ./home.nix;
-
-  networking = {
-    networkmanager.enable = true;
-    hostName = "conduit";
-  };
 
   time.timeZone = "America/New_York";
 

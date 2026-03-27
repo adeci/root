@@ -3,7 +3,7 @@
   clan = {
     meta.name = "adeci";
     meta.domain = "cymric-daggertooth.ts.net";
-    inventory = import ../../inventory {
+    inventory = import ../../inventory/clan {
       inherit (inputs.nixpkgs) lib;
       inherit inputs;
     };

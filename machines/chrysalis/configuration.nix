@@ -2,6 +2,7 @@
   inputs,
   config,
   lib,
+  self,
   ...
 }:
 {
@@ -9,7 +10,6 @@
     inputs.clan-core.nixosModules.installer
   ];
 
-  # Live installer — no state-version tracking needed
   clan.core.settings.state-version.enable = false;
   system.stateVersion = config.system.nixos.release;
 
@@ -21,9 +21,8 @@
   services.xserver.xkb.layout = "us";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # SSH access — baked in so we don't need --ssh-pubkey at flash time
-  users.users.root.openssh.authorizedKeys.keys =
-    (import ../../inventory/instances/roster/users.nix).alex.sshAuthorizedKeys;
+  # SSH key baked in so no need for --ssh-pubkey at flash time
+  users.users.root.openssh.authorizedKeys.keys = self.users.alex.sshKeys;
 
   # Boot
   boot.loader.grub.enable = lib.mkDefault true;

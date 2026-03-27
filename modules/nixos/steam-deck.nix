@@ -1,8 +1,9 @@
 {
-  inputs,
   config,
+  inputs,
   lib,
   pkgs,
+  self,
   ...
 }:
 {
@@ -18,7 +19,7 @@
   jovian.steam = {
     enable = true;
     autoStart = true;
-    user = config.adeci.primaryUser;
+    user = self.users.alex.username;
     desktopSession = "niri";
     environment = {
       # nixpkgs sets this on the Steam wrapper, but Gaming Mode bypasses it
@@ -31,7 +32,7 @@
   # Decky Loader plugin framework for Gaming Mode
   jovian.decky-loader = {
     enable = true;
-    user = config.adeci.primaryUser;
+    user = self.users.alex.username;
   };
 
   # X11 input translation for Wayland desktop mode

@@ -1,7 +1,7 @@
 {
   inputs,
   pkgs,
-  config,
+  self,
   ...
 }:
 
@@ -17,6 +17,8 @@ in
 {
 
   imports = [
+    self.users.alex.nixosModule
+
     inputs.nixos-hardware.nixosModules.framework-13-7040-amd
     inputs.grub2-themes.nixosModules.default
 
@@ -46,11 +48,6 @@ in
     linux-wifi-hotspot
   ];
 
-  networking = {
-    networkmanager.enable = true;
-    hostName = "modus";
-  };
-
   # vm building
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
@@ -72,7 +69,7 @@ in
 
   nix.settings.trusted-users = [
     "root"
-    config.adeci.primaryUser
+    self.users.alex.username
   ];
 
 }

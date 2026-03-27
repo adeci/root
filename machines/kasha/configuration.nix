@@ -1,12 +1,15 @@
 {
   inputs,
   pkgs,
-  config,
+  self,
   ...
 }:
 {
 
   imports = [
+    self.users.alex.nixosModule
+    self.users.natalya.nixosModule
+
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
 
     ../../modules/nixos/home-manager.nix
@@ -19,11 +22,6 @@
   ];
 
   home-manager.users.alex = import ./home.nix;
-
-  networking = {
-    networkmanager.enable = true;
-    hostName = "kasha";
-  };
 
   boot.loader = {
     timeout = 0;
@@ -59,8 +57,7 @@
 
   nix.settings.trusted-users = [
     "root"
-    "@wheel"
-    config.adeci.primaryUser
+    self.users.alex.username
   ];
 
 }

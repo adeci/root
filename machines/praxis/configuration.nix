@@ -2,6 +2,7 @@
   inputs,
   pkgs,
   config,
+  self,
   ...
 }:
 
@@ -9,6 +10,8 @@
 
   imports = [
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
+
+    self.users.alex.nixosModule
 
     ../../modules/nixos/home-manager.nix
 
@@ -32,6 +35,9 @@
 
   home-manager.users.alex = import ./home.nix;
 
+  # gsim module
+  networking.modemmanager.enable = true;
+
   boot.kernelPackages = pkgs.linuxPackagesFor (
     pkgs.linux_6_19.override {
       argsOverride = rec {
@@ -44,10 +50,11 @@
       };
     }
   );
+
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
   environment.systemPackages = with pkgs; [
-    # calibre
+    calibre
     modem-manager-gui
     linux-wifi-hotspot
     inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -55,20 +62,9 @@
     ethtool
   ];
 
-  networking = {
-    networkmanager.enable = true;
-    modemmanager.enable = true;
-    hostName = "praxis";
-  };
-
   # vm building
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
-
-  nix.settings.trusted-users = [
-    "root"
-    config.adeci.primaryUser
-  ];
 
   services.udev.extraRules = ''
     # SDWire USB SD card mux (usb device + block device for dd without sudo)
@@ -80,4 +76,8 @@
     SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", MODE="0666"
   '';
 
+  nix.settings.trusted-users = [
+    "root"
+    self.users.alex.username
+  ];
 }

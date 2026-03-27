@@ -1,12 +1,10 @@
 {
   config,
+  self,
   self',
   lib,
   ...
 }:
-let
-  users = import ../../inventory/instances/roster/users.nix;
-in
 {
   terraform.required_providers = {
     hcloud = {
@@ -30,10 +28,10 @@ in
     token = config.data.external.hcloud-api-token "result.secret";
   };
 
-  # SSH key from roster
+  # SSH key
   resource.hcloud_ssh_key.alex = {
     name = "alex";
-    public_key = builtins.head users.alex.sshAuthorizedKeys;
+    public_key = builtins.head self.users.alex.sshKeys;
   };
 
   # Firewall

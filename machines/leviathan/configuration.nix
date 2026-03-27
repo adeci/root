@@ -1,11 +1,16 @@
 {
   pkgs,
-  config,
+  self,
   ...
 }:
 {
 
   imports = [
+    self.users.alex.nixosModule
+    self.users.brittonr.nixosModule
+    self.users.dima.nixosModule
+    self.users.fmzakari.nixosModule
+
     ../../modules/nixos/home-manager.nix
 
     ../../modules/nixos/base.nix
@@ -15,11 +20,6 @@
   ];
 
   home-manager.users.alex = import ./home.nix;
-
-  networking = {
-    networkmanager.enable = true;
-    hostName = "leviathan";
-  };
 
   time.timeZone = "America/New_York";
 
@@ -42,11 +42,10 @@
     max-jobs = 16;
     trusted-users = [
       "root"
-      "@wheel"
-      config.adeci.primaryUser
-      "brittonr"
-      "dima"
-      "fmzakari"
+      self.users.alex.username
+      self.users.brittonr.username
+      self.users.dima.username
+      self.users.fmzakari.username
     ];
   };
 

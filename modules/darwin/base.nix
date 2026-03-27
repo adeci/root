@@ -1,6 +1,6 @@
 {
-  config,
   pkgs,
+  self,
   ...
 }:
 {
@@ -55,7 +55,7 @@
   };
 
   # Primary user
-  system.primaryUser = config.adeci.primaryUser;
+  system.primaryUser = self.users.alex.username;
 
   # Zsh shell
   # NOTE: nix-darwin doesn't actually change the macOS login shell via dscl.

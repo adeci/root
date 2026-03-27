@@ -11,7 +11,7 @@
     key = "tofu.tfstate";
     region = "us-east-005";
 
-    # B2 isn't real S3: skip AWS-specific checks
+    # B2 isn't *real* S3 so skip AWS-specific checks
     skip_credentials_validation = true;
     skip_region_validation = true;
     skip_metadata_api_check = true;

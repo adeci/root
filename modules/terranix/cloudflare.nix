@@ -1,17 +1,20 @@
+# Cloudflare provider, tunnels, and DNS records.
+# Tunnel definitions come from self.resources.tunnels.
 {
   config,
+  self,
   self',
   inputs',
   lib,
   ...
 }:
 let
-  tunnels = import ../../inventory/tunnels.nix;
+  inherit (self.resources) tunnels;
+  inherit (inputs'.clan-core.packages) clan-cli;
 
-  # Split hostname into name + zone
+  # Split hostname into name + zone.
   # "vault.decio.us" → { name = "vault"; zone = "decio.us"; }
-  # "decio.us" → { name = "@"; zone = "decio.us"; }
-  # "adeci.dev" → { name = "@"; zone = "adeci.dev"; }
+  # "decio.us"       → { name = "@";     zone = "decio.us"; }
   splitHostname =
     hostname:
     let
@@ -27,18 +30,27 @@ let
       zone = matchedZone;
     };
 
-  # Generate a safe terraform resource name from a hostname
   safeName = hostname: builtins.replaceStrings [ "." "-" ] [ "_" "_" ] hostname;
 
-  inherit (inputs'.clan-core.packages) clan-cli;
+  zoneRef =
+    zone:
+    if zone == "decio.us" then
+      config.data.cloudflare_zone.decio_us "id"
+    else
+      config.data.cloudflare_zone.adeci_dev "id";
 in
 {
+  # ── Provider + zones ────────────────────────────────────────────────
+
   terraform.required_providers.cloudflare = {
     source = "cloudflare/cloudflare";
     version = "~> 4.0";
   };
 
-  # Cloudflare credentials from clan secrets
+  terraform.required_providers.random = {
+    source = "hashicorp/random";
+  };
+
   data.external.cloudflare-api-token = {
     program = [
       (lib.getExe self'.packages.get-clan-secret)
@@ -57,16 +69,10 @@ in
     api_token = config.data.external.cloudflare-api-token "result.secret";
   };
 
-  # Zone data sources
-  data.cloudflare_zone.decio_us = {
-    name = "decio.us";
-  };
+  data.cloudflare_zone.decio_us.name = "decio.us";
+  data.cloudflare_zone.adeci_dev.name = "adeci.dev";
 
-  data.cloudflare_zone.adeci_dev = {
-    name = "adeci.dev";
-  };
-
-  # ── Tunnels ──────────────────────────────────────────────────────────
+  # ── Tunnels ─────────────────────────────────────────────────────────
 
   resource.random_id = lib.mapAttrs' (
     machine: _:
@@ -101,25 +107,20 @@ in
     }
   ) tunnels;
 
-  # ── Tunnel DNS records ──────────────────────────────────────────────
+  # ── DNS records ─────────────────────────────────────────────────────
 
   resource.cloudflare_record =
     let
-      # Tunnel CNAME records
+      # Tunnel CNAME records (auto-generated from tunnel definitions)
       tunnelRecords = lib.concatMapAttrs (
         machine: ingress:
         lib.mapAttrs' (
           hostname: _:
           let
             parts = splitHostname hostname;
-            zoneRef =
-              if parts.zone == "decio.us" then
-                config.data.cloudflare_zone.decio_us "id"
-              else
-                config.data.cloudflare_zone.adeci_dev "id";
           in
           lib.nameValuePair "tunnel_${safeName hostname}" {
-            zone_id = zoneRef;
+            zone_id = zoneRef parts.zone;
             inherit (parts) name;
             type = "CNAME";
             content = "${config.resource.cloudflare_tunnel.${machine} "id"}.cfargotunnel.com";
@@ -128,8 +129,7 @@ in
         ) ingress
       ) tunnels;
 
-      # ── Minecraft A records (point to conduit) ──────────────────────
-
+      # Minecraft A records (point to conduit)
       minecraftRecords = {
         mc_rlc = {
           zone_id = config.data.cloudflare_zone.decio_us "id";
@@ -157,8 +157,7 @@ in
         };
       };
 
-      # ── Minecraft SRV records ───────────────────────────────────────
-
+      # Minecraft SRV records
       srvRecords = {
         srv_rlc = {
           zone_id = config.data.cloudflare_zone.decio_us "id";
@@ -194,11 +193,10 @@ in
           };
         };
       };
-
     in
     tunnelRecords // minecraftRecords // srvRecords;
 
-  # ── Tunnel token → clan vars via local-exec ─────────────────────────
+  # ── Tunnel token → clan vars ────────────────────────────────────────
 
   resource.terraform_data = lib.mapAttrs' (
     machine: _:
@@ -210,9 +208,4 @@ in
       };
     }
   ) tunnels;
-
-  # Required for tunnel secrets
-  terraform.required_providers.random = {
-    source = "hashicorp/random";
-  };
 }

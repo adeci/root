@@ -1,9 +1,13 @@
 {
   pkgs,
+  self,
   ...
 }:
 {
   nixpkgs.config.allowUnfree = true;
+  users.mutableUsers = false;
+  users.users.root.openssh.authorizedKeys.keys = self.users.alex.sshKeys;
+  networking.networkmanager.enable = true;
   services.openssh = {
     enable = true;
     settings = {

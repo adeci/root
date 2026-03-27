@@ -1,9 +1,11 @@
 {
-  config,
+  self,
   ...
 }:
 {
   imports = [
+    self.users.alex.nixosModule
+
     ../../modules/nixos/home-manager.nix
 
     ../../modules/nixos/base.nix
@@ -17,10 +19,8 @@
 
   home-manager.users.alex = import ./home.nix;
 
-  networking.hostName = "proteus";
-
   nix.settings.trusted-users = [
     "root"
-    config.adeci.primaryUser
+    self.users.alex.username
   ];
 }

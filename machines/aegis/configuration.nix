@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  config,
   self,
   ...
 }:
@@ -9,13 +8,10 @@ let
   packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
-  networking = {
-    hostName = "aegis";
-    networkmanager.enable = true;
-  };
-
   imports = [
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x220
+
+    self.users.alex.nixosModule
 
     ../../modules/nixos/home-manager.nix
 
@@ -59,7 +55,7 @@ in
 
   nix.settings.trusted-users = [
     "root"
-    config.adeci.primaryUser
+    self.users.alex.username
   ];
 
 }

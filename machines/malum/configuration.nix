@@ -1,6 +1,8 @@
-{ ... }:
+{ self, ... }:
 {
   imports = [
+    self.users.alex.darwinModule
+
     ../../modules/darwin/base.nix
     ../../modules/darwin/home-manager.nix
     ../../modules/darwin/librewolf.nix
