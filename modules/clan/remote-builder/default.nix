@@ -78,7 +78,7 @@
               clanLib.getPublicValue {
                 flake = config.clan.core.settings.directory;
                 machine = machineName;
-                generator = "remote-builder-${instanceName}";
+                generator = instanceName;
                 file = "id_ed25519.pub";
               }
             ) (roles.client.machines or { });
@@ -116,7 +116,7 @@
             ...
           }:
           let
-            varName = "remote-builder-${instanceName}";
+            varName = instanceName;
             inherit (config.clan.core.settings) domain;
             dotDomain = if domain != null then ".${domain}" else "";
           in
@@ -126,7 +126,7 @@
               files."id_ed25519.pub".secret = false;
               runtimeInputs = [ pkgs.openssh ];
               script = ''
-                ssh-keygen -t ed25519 -N "" -f "$out"/id_ed25519
+                ssh-keygen -t ed25519 -N "" -C "" -f "$out"/id_ed25519
               '';
             };
 
