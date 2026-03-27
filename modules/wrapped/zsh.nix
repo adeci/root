@@ -13,6 +13,15 @@ let
 
   llm-agents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
   mics-skills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
+
+  atunConfigDir = pkgs.runCommand "atuin-config" { } ''
+    mkdir -p $out
+    cat > $out/config.toml <<'EOF'
+    enter_accept = false
+    sync_address = "http://sequoia:8888"
+    auto_sync = true
+    EOF
+  '';
 in
 {
   imports = [ wlib.wrapperModules.zsh ];
@@ -28,6 +37,7 @@ in
       EDITOR = "nvim";
       VISUAL = "nvim";
       WORDCHARS = "*?_-.[]~=&;!#$%^(){}<>";
+      ATUIN_CONFIG_DIR = "${atunConfigDir}";
     };
 
     prefixVar = [

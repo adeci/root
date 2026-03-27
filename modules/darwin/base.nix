@@ -54,10 +54,16 @@
     dock.wvous-br-corner = 1;
   };
 
-  # Primary user
+  # User
   system.primaryUser = self.users.alex.username;
 
   # Zsh shell
+
+  # when migrating later to wrappers can use this
+  # programs.zsh.enable = true;
+  # environment.shells = [ self.packages.${pkgs.stdenv.hostPlatform.system}.zsh ];
+  # environment.pathsToLink = [ "/share/zsh" ];
+
   # NOTE: nix-darwin doesn't actually change the macOS login shell via dscl.
   # You must manually run: sudo dscl . -change /Users/<user> UserShell /bin/zsh /run/current-system/sw/bin/zsh
   programs.zsh.enable = true;

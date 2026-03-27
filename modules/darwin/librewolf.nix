@@ -1,23 +1,14 @@
+# Installs the LibreWolf .app bundle to /Applications for Dock/Spotlight.
+# Configuration (policies, overrides, browser-cli) is handled by
+# modules/wrapped/librewolf.nix — this module only does macOS app installation.
 {
-  lib,
+  self,
   pkgs,
-  inputs,
+  lib,
   ...
 }:
 let
-  inherit (pkgs.stdenv.hostPlatform) system;
-  micsSkills = inputs.mics-skills.packages.${system};
-  policies = {
-    ExtensionSettings = {
-      "browser-cli-controller@thalheim.io" = {
-        installation_mode = "force_installed";
-        install_url = "file://${micsSkills.browser-cli-extension}/browser-cli-extension.xpi";
-      };
-    };
-  };
-  librewolf = pkgs.librewolf.override {
-    extraPolicies = policies;
-  };
+  librewolfApp = self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf.librewolfWithPolicies;
 in
 {
   system.activationScripts.postActivation.text = lib.mkAfter ''
@@ -26,7 +17,7 @@ in
     markerDir="$targetDir/.sources"
     mkdir -p "$targetDir" "$markerDir"
 
-    src="${librewolf}"
+    src="${librewolfApp}"
     app="$src/Applications/LibreWolf.app"
     dest="$targetDir/LibreWolf.app"
     marker="$markerDir/LibreWolf.app"
