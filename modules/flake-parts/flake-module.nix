@@ -9,5 +9,6 @@
     ./packages.nix
     ./terranix.nix
     ./users.nix
+    ./wrapped.nix
   ];
 }

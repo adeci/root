@@ -55,6 +55,9 @@
     opencrow.inputs.nixpkgs.follows = "nixpkgs";
     opencrow.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    wrapper-modules.url = "github:BirdeeHub/nix-wrapper-modules";
+    wrapper-modules.inputs.nixpkgs.follows = "nixpkgs";
+
     sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
     sdwire-cli.inputs.nixpkgs.follows = "nixpkgs";
 

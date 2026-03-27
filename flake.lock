@@ -708,6 +708,7 @@
         "sdwire-cli": "sdwire-cli",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix_6",
+        "wrapper-modules": "wrapper-modules",
         "wrappers": "wrappers"
       }
     },
@@ -1028,6 +1029,26 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "wrapper-modules": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1774622331,
+        "narHash": "sha256-73C9XYuBrgo8unDbmqEFq4pNwQaSGXrTnBckqkOXmBk=",
+        "owner": "BirdeeHub",
+        "repo": "nix-wrapper-modules",
+        "rev": "364e0007179fc2c910a6588e8826fd3fd7a45c14",
+        "type": "github"
+      },
+      "original": {
+        "owner": "BirdeeHub",
+        "repo": "nix-wrapper-modules",
         "type": "github"
       }
     },
