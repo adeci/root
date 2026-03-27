@@ -5,4 +5,5 @@
   "@adeci/trusted-caches" = import ./trusted-caches;
   "@adeci/remote-builder" = import ./remote-builder;
   "@adeci/siteup" = import ./siteup;
+  "@adeci/security-keys" = import ./security-keys;
 }
