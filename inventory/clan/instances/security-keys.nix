@@ -11,7 +11,10 @@
           name = "spark";
           owner = "alex";
         }
-        # { name = "ember"; owner = "alex"; }  # TODO: generate on aegis security key
+        {
+          name = "ember";
+          owner = "alex";
+        }
         # { name = "vault"; owner = "alex"; }  # TODO: generate on backup security key
       ];
     };

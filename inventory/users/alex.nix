@@ -12,11 +12,10 @@
     "dialout"
   ];
   sshKeys = [
-    # YubiKeys (ed25519-sk resident keys)
     "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIB1VQn5GADumTi+/slg5hcEG2p2q28pAV83diGoowvZTAAAACXNzaDpzcGFyaw== spark"
-    # TODO: add ember (aegis yubikey) and vault (backup yubikey)
+    "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIOf0URzmusd83C/zYSVyJotzH+hqL3KiKAVlxTvuDpYqAAAACXNzaDplbWJlcg== ember
+"
 
-    # Legacy keys (keep until YubiKey setup confirmed on all machines)
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJVB44hBiASLPelTC//teEK3CpzrwswdBccLe9MKbaMp adecigear"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeeoL1jwVSachA9GdJxm/5TgCRBULfSDGLyP/nfmkMq alex@DESKTOP-SVRV9Q8"
   ];
