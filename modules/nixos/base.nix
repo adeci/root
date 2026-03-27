@@ -1,5 +1,6 @@
 {
   pkgs,
+  inputs,
   self,
   ...
 }:
@@ -33,7 +34,10 @@
     enableLsColors = false;
     promptInit = "";
   };
-  environment.systemPackages = [ pkgs.kitty.terminfo ];
+  environment.systemPackages = [
+    inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+    pkgs.kitty.terminfo
+  ];
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_US.UTF-8";
