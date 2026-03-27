@@ -49,6 +49,7 @@ in
             [
               # Wrapped packages
               wrappedGit
+              inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
 
               # Core CLI tools
               pkgs.ripgrep

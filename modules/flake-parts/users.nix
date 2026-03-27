@@ -29,7 +29,7 @@ let
             isNormalUser = true;
             createHome = true;
             home = "/home/${name}";
-            shell = pkgs.${attrs.shell};
+            shell = lib.mkIf (attrs.shell != "bash") (lib.mkDefault pkgs.${attrs.shell});
             extraGroups = attrs.groups;
             openssh.authorizedKeys.keys = attrs.sshKeys;
             hashedPasswordFile =
