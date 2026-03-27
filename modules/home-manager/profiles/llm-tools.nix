@@ -1,6 +1,0 @@
-{ ... }:
-{
-  imports = [
-    ../llm-tools.nix
-  ];
-}
