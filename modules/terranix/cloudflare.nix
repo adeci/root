@@ -1,5 +1,5 @@
-# Cloudflare provider, tunnels, and DNS records.
-# Tunnel definitions come from self.resources.tunnels.
+# Cloudflare provider logic
+# Data layer consumed thru self.resources.cloudflare.{zones,tunnels,dns,...}
 {
   config,
   self,
@@ -9,7 +9,7 @@
   ...
 }:
 let
-  inherit (self.resources) tunnels;
+  inherit (self.resources.cloudflare) zones tunnels dns;
   inherit (inputs'.clan-core.packages) clan-cli;
 
   # Split hostname into name + zone.
@@ -18,10 +18,6 @@ let
   splitHostname =
     hostname:
     let
-      zones = [
-        "decio.us"
-        "adeci.dev"
-      ];
       matchedZone = lib.findFirst (z: lib.hasSuffix z hostname) null zones;
       name = if hostname == matchedZone then "@" else lib.removeSuffix ".${matchedZone}" hostname;
     in
@@ -30,14 +26,14 @@ let
       zone = matchedZone;
     };
 
-  safeName = hostname: builtins.replaceStrings [ "." "-" ] [ "_" "_" ] hostname;
+  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
 
-  zoneRef =
-    zone:
-    if zone == "decio.us" then
-      config.data.cloudflare_zone.decio_us "id"
-    else
-      config.data.cloudflare_zone.adeci_dev "id";
+  zoneRef = zone: config.data.cloudflare_zone.${safeName zone} "id";
+
+  # Resolve a symbolic target reference to a terraform expression.
+  # { resource = "hcloud_server"; name = "conduit"; field = "ipv4_address"; }
+  # becomes config.resource.hcloud_server.conduit "ipv4_address"
+  resolveTarget = target: config.resource.${target.resource}.${target.name} target.field;
 in
 {
   # ── Provider + zones ────────────────────────────────────────────────
@@ -69,8 +65,15 @@ in
     api_token = config.data.external.cloudflare-api-token "result.secret";
   };
 
-  data.cloudflare_zone.decio_us.name = "decio.us";
-  data.cloudflare_zone.adeci_dev.name = "adeci.dev";
+  # Zone data sources — generated from self.resources.cloudflare.zones
+  data.cloudflare_zone = lib.listToAttrs (
+    map (zone: {
+      name = safeName zone;
+      value = {
+        name = zone;
+      };
+    }) zones
+  );
 
   # ── Tunnels ─────────────────────────────────────────────────────────
 
@@ -129,74 +132,30 @@ in
         ) ingress
       ) tunnels;
 
-      # Minecraft A records (point to conduit)
-      minecraftRecords = {
-        mc_rlc = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "rlc";
-          type = "A";
-          content = config.resource.hcloud_server.conduit "ipv4_address";
-        };
-        mc_rats = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "rats";
-          type = "A";
-          content = config.resource.hcloud_server.conduit "ipv4_address";
-        };
-        mc_dj2 = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "dj2";
-          type = "A";
-          content = config.resource.hcloud_server.conduit "ipv4_address";
-        };
-        mc_bruh = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "bruh";
-          type = "A";
-          content = config.resource.hcloud_server.conduit "ipv4_address";
-        };
-      };
-
-      # Minecraft SRV records
-      srvRecords = {
-        srv_rlc = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "_minecraft._tcp.rlc";
-          type = "SRV";
-          data = {
-            priority = 0;
-            weight = 0;
-            port = 25565;
-            target = "rlc.decio.us";
-          };
-        };
-        srv_rats = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "_minecraft._tcp.rats";
-          type = "SRV";
-          data = {
-            priority = 0;
-            weight = 0;
-            port = 25566;
-            target = "rats.decio.us";
-          };
-        };
-        srv_dj2 = {
-          zone_id = config.data.cloudflare_zone.decio_us "id";
-          name = "_minecraft._tcp.dj2";
-          type = "SRV";
-          data = {
-            priority = 0;
-            weight = 0;
-            port = 25568;
-            target = "dj2.decio.us";
-          };
-        };
-      };
+      # Standalone DNS records from self.resources.cloudflare.dns
+      # Two conveniences: "zone" → zone_id lookup, "target" → resolved terraform ref.
+      # Everything else passes through to the cloudflare_record resource as-is.
+      dnsRecords = lib.mapAttrs (
+        _: record:
+        let
+          # Strip our convenience fields, keep everything else
+          passthrough = removeAttrs record [
+            "zone"
+            "target"
+          ];
+        in
+        passthrough
+        // {
+          zone_id = zoneRef record.zone;
+        }
+        // lib.optionalAttrs (record ? target) {
+          content = resolveTarget record.target;
+        }
+      ) dns;
     in
-    tunnelRecords // minecraftRecords // srvRecords;
+    tunnelRecords // dnsRecords;
 
-  # ── Tunnel token → clan vars ────────────────────────────────────────
+  # ── Tunnel token thru clan vars ────────────────────────────────────────
 
   resource.terraform_data = lib.mapAttrs' (
     machine: _:

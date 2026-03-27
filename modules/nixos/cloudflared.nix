@@ -7,7 +7,7 @@
   ...
 }:
 let
-  inherit (self.resources) tunnels;
+  inherit (self.resources.cloudflare) tunnels;
   machineName = config.networking.hostName;
   hasTunnel = tunnels ? ${machineName};
   tokenPath = config.clan.core.vars.generators.cloudflare-tunnel-token.files.token.path;

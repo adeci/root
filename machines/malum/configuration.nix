@@ -10,6 +10,10 @@
     ../../modules/darwin/homebrew.nix
   ];
 
+  # Company laptop — don't publish personal SSH keys or enable sshd
+  users.users.alex.openssh.authorizedKeys.keys = [ ];
+  services.openssh.enable = false;
+
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 6;
 

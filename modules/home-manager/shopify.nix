@@ -18,8 +18,7 @@
       eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
     fi
   '';
-  # Disable wish aliases (cd→wcd, ls→wls, j→wj) to avoid
-  # conflicts with zoxide
+  # Disable wish aliases (cd->wcd, ls->wls, j->wj) to avoid conflicts with zoxide
   xdg.configFile."wish.zsh.toml".text = ''
     [features]
     "alias.cd" = false

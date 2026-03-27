@@ -1,0 +1,4 @@
+[
+  "decio.us"
+  "adeci.dev"
+]

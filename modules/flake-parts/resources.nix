@@ -4,6 +4,6 @@
   options.flake.resources = lib.mkOption { default = { }; };
 
   config.flake.resources = {
-    tunnels = import ../../inventory/resources/cloudflare-tunnels.nix;
+    cloudflare = import ../../inventory/resources/cloudflare;
   };
 }
