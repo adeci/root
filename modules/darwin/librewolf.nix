@@ -1,4 +1,3 @@
-# LibreWolf for macOS — installs .app bundle and browser-cli config.
 {
   pkgs,
   lib,

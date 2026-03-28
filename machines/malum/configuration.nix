@@ -4,10 +4,10 @@
     self.users.alex.darwinModule
 
     ../../modules/darwin/base.nix
-    ../../modules/darwin/home-manager.nix
     ../../modules/darwin/librewolf.nix
+    ../../modules/darwin/karabiner.nix
+    ../../modules/darwin/aerospace
     ../../modules/darwin/shopify.nix
-    ../../modules/darwin/homebrew.nix
   ];
 
   # Company laptop — don't publish personal SSH keys or enable sshd
@@ -16,6 +16,4 @@
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 6;
-
-  home-manager.users.alex = import ./home.nix;
 }

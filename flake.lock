@@ -326,26 +326,6 @@
         "type": "github"
       }
     },
-    "home-manager": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1774293042,
-        "narHash": "sha256-OEBV+Y5I4Ldu98k0KvGXRfJYh+jjE8ocCSL/dxTGs1s=",
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "rev": "bc357c75e3142a31b849ba49c5299fb52c61cf59",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "type": "github"
-      }
-    },
     "import-tree": {
       "locked": {
         "lastModified": 1763762820,
@@ -695,7 +675,6 @@
         "flake-parts": "flake-parts",
         "grub2-themes": "grub2-themes",
         "harmonia": "harmonia",
-        "home-manager": "home-manager",
         "jovian": "jovian",
         "llm-agents": "llm-agents",
         "mics-skills": "mics-skills",
@@ -708,8 +687,7 @@
         "sdwire-cli": "sdwire-cli",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix_6",
-        "wrapper-modules": "wrapper-modules",
-        "wrappers": "wrappers"
+        "wrapper-modules": "wrapper-modules"
       }
     },
     "rust-overlay": {
@@ -1049,27 +1027,6 @@
       "original": {
         "owner": "BirdeeHub",
         "repo": "nix-wrapper-modules",
-        "type": "github"
-      }
-    },
-    "wrappers": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1774304154,
-        "narHash": "sha256-iA9X/leTHzVhhEkargn6ICpBG3ZbIhkXpU7eoqd4A1o=",
-        "owner": "adeci",
-        "repo": "wrappers",
-        "rev": "aeec5f70573677b83021bf9711139b1a48b2ed02",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "ref": "btop",
-        "repo": "wrappers",
         "type": "github"
       }
     }

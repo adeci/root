@@ -2,8 +2,6 @@
 # Consolidates audio DSP, suspend fixes, and touchscreen workarounds.
 { pkgs, ... }:
 {
-  imports = [ ./audio-dsp.nix ];
-
   # Fix USB keyboard (258a:000c) blocking suspend
   # Keep keyboard always-on but disable wakeup
   services.udev.extraRules = ''

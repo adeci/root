@@ -26,9 +26,7 @@ in
 {
   imports = [ wlib.wrapperModules.zsh ];
 
-  options.withLLMTools = lib.mkEnableOption "LLM tools (pi, claude-code, etc.)" // {
-    default = true;
-  };
+  options.withLLMTools = lib.mkEnableOption "LLM tools (pi, claude-code, etc.)";
 
   config = {
     hmSessionVariables = null;

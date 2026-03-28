@@ -13,6 +13,9 @@
 
     self.users.alex.nixosModule
 
+    ./modules/gpd-hacks.nix
+    ./modules/gpd-audio-dsp.nix
+
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-timezone.nix
@@ -23,7 +26,6 @@
     ../../modules/nixos/amd-gpu.nix
     ../../modules/nixos/zram.nix
     ../../modules/nixos/laptop.nix
-    ../../modules/nixos/gpd-pocket-4-hacks
     ../../modules/nixos/printing.nix
     ../../modules/nixos/social.nix
     ../../modules/nixos/gaming.nix

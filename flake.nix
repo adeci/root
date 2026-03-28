@@ -11,13 +11,6 @@
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
     clan-core.inputs.flake-parts.follows = "flake-parts";
 
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
-    #wrappers.url = "github:lassulus/wrappers";
-    wrappers.url = "github:adeci/wrappers?ref=btop";
-    wrappers.inputs.nixpkgs.follows = "nixpkgs";
-
     jovian.url = "github:Jovian-Experiments/Jovian-NixOS";
     jovian.inputs.nixpkgs.follows = "nixpkgs";
 
