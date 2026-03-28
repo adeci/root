@@ -32,6 +32,7 @@
     ../../modules/nixos/ssh-tpm-agent.nix
     ../../modules/nixos/mullvad.nix
     ../../modules/nixos/rbw.nix
+    ../../modules/nixos/cheat.nix
   ];
 
   # gsim module

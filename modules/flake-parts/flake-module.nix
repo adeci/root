@@ -6,7 +6,7 @@
     ./formatter.nix
     ./home-configurations.nix
     ./resources.nix
-    ./packages.nix
+    ./nixvim.nix
     ./terranix.nix
     ./users.nix
     ./wrapped.nix

@@ -24,6 +24,7 @@
     ../../modules/nixos/yubikey.nix
     ../../modules/nixos/mullvad.nix
     ../../modules/nixos/rbw.nix
+    ../../modules/nixos/cheat.nix
   ];
 
   environment.systemPackages = [

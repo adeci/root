@@ -23,7 +23,7 @@ in
       infraCloud = inputs.terranix.lib.terranixConfiguration {
         inherit system;
         modules = [
-          ../terranix/base.nix
+          ../terranix/backend.nix
           ../terranix/cloudflare.nix
         ]
         ++ map (name: machineDir + "/${name}/terraform-configuration.nix") machineTfConfigs;
