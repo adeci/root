@@ -3,6 +3,7 @@
   perSystem =
     {
       self',
+      pkgs,
       lib,
       system,
       ...
@@ -15,7 +16,15 @@
         ) self.nixosConfigurations
       );
 
-      packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") self'.packages;
+      packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") (
+        lib.filterAttrs (
+          _: pkg:
+          let
+            eval = builtins.tryEval (lib.meta.availableOn pkgs.stdenv.hostPlatform pkg);
+          in
+          eval.success && eval.value
+        ) self'.packages
+      );
 
       devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self'.devShells;
     in
