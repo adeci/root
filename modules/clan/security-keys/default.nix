@@ -3,13 +3,13 @@ _: {
 
   manifest = {
     name = "@adeci/security-keys";
-    description = "Deploy FIDO2 SSH key handles to machines";
+    description = "Deploy FIDO2 SSH key handles and configure SSH identity discovery";
     categories = [ "Security" ];
     readme = builtins.readFile ./README.md;
   };
 
   roles.default = {
-    description = "Receives FIDO2 SSH key handles and deploys them to ~/.ssh/";
+    description = "Receives FIDO2 SSH key handles, deploys them to ~/.ssh/, and configures SSH to use them";
 
     interface =
       { lib, ... }:
@@ -20,7 +20,7 @@ _: {
               options = {
                 name = lib.mkOption {
                   type = lib.types.str;
-                  description = "Name of the FIDO2 security key (e.g. spark, ember, vault)";
+                  description = "Name of the FIDO2 security key";
                   example = "spark";
                 };
                 owner = lib.mkOption {
@@ -31,7 +31,15 @@ _: {
               };
             }
           );
-          description = "List of YubiKey FIDO2 keys to deploy handles for";
+          description = "All FIDO2 keys in the fleet (defined at role level)";
+        };
+        options.use = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Which keys to use on this machine (subset of key names)";
+          example = [
+            "spark"
+          ];
         };
       };
 
@@ -46,52 +54,62 @@ _: {
             ...
           }:
           let
-            generatorName = instanceName;
-            keyNames = map (k: k.name) settings.keys;
+            allKeyNames = map (k: k.name) settings.keys;
+            deployKeys = builtins.filter (k: builtins.elem k.name settings.use) settings.keys;
+            unknownKeys = builtins.filter (name: !builtins.elem name allKeyNames) settings.use;
           in
           {
-            # Generate clan vars for each key handle
-            clan.core.vars.generators."${generatorName}" = {
+            assertions = [
+              {
+                assertion = unknownKeys == [ ];
+                message = "security-keys: unknown key(s) in 'use': ${lib.concatStringsSep ", " unknownKeys}. Must be defined in role-level 'keys'.";
+              }
+            ];
+            # Shared generator — identical across all machines, stores ALL key handles
+            clan.core.vars.generators.${instanceName} = {
               share = true;
               files = lib.listToAttrs (
                 map (name: {
                   inherit name;
-                  value = {
-                    secret = true;
-                  };
-                }) keyNames
+                  value.secret = true;
+                }) allKeyNames
               );
               runtimeInputs = [ pkgs.coreutils ];
-
               prompts = lib.listToAttrs (
                 map (name: {
                   inherit name;
                   value = {
-                    description = "FIDO2 SSH key handle for '${name}' (paste contents of id_ed25519_sk_${name})";
+                    description = "FIDO2 SSH key handle for '${name}'";
                     type = "multiline-hidden";
                     persist = true;
                   };
-                }) keyNames
+                }) allKeyNames
               );
-
-              script = lib.concatMapStringsSep "\n" (name: ''
-                cp "$prompts"/${name} "$out"/${name}
-              '') keyNames;
+              script = lib.concatMapStringsSep "\n" (name: ''cp "$prompts"/${name} "$out"/${name}'') allKeyNames;
             };
 
-            # Deploy key handles to each owner's ~/.ssh/
-            system.activationScripts."deploy-security-keys-${instanceName}" = lib.concatMapStringsSep "\n" (
+            # Deploy only this machine's keys
+            system.activationScripts."deploy-fido2-handles" = lib.concatMapStringsSep "\n" (
               key:
               let
-                handlePath = config.clan.core.vars.generators."${generatorName}".files.${key.name}.path;
-                user = key.owner;
-                homeDir = config.users.users.${user}.home;
+                handlePath = config.clan.core.vars.generators.${instanceName}.files.${key.name}.path;
+                homeDir = config.users.users.${key.owner}.home;
               in
               ''
-                install -d -m 700 -o ${user} ${homeDir}/.ssh
-                install -m 600 -o ${user} ${handlePath} ${homeDir}/.ssh/id_ed25519_sk_${key.name}
+                install -d -m 700 -o ${key.owner} ${homeDir}/.ssh
+                install -m 600 -o ${key.owner} ${handlePath} ${homeDir}/.ssh/id_ed25519_sk_${key.name}
+                if [ "$(tail -c1 ${homeDir}/.ssh/id_ed25519_sk_${key.name})" != "" ]; then
+                  echo >> ${homeDir}/.ssh/id_ed25519_sk_${key.name}
+                fi
               ''
-            ) settings.keys;
+            ) deployKeys;
+
+            # SSH config for this machine's keys only
+            programs.ssh.extraConfig = lib.concatStringsSep "\n" (
+              map (
+                key: "IdentityFile ${config.users.users.${key.owner}.home}/.ssh/id_ed25519_sk_${key.name}"
+              ) deployKeys
+            );
           };
       };
   };

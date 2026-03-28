@@ -5,7 +5,6 @@
       input = "self";
     };
     roles.default = {
-      tags = [ "keybearers" ];
       settings.keys = [
         {
           name = "spark";
@@ -15,8 +14,9 @@
           name = "ember";
           owner = "alex";
         }
-        # { name = "vault"; owner = "alex"; }  # TODO: generate on backup security key
       ];
+      machines.aegis.settings.use = [ "ember" ];
+      machines.praxis.settings.use = [ "spark" ];
     };
   };
 }

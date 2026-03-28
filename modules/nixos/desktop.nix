@@ -24,7 +24,9 @@
     enable32Bit = true;
   };
 
-  security.pam.services.login.enableGnomeKeyring = true;
+  # Disable only the GCR SSH agent — it can't handle FIDO2 keys.
+  # GNOME Keyring itself stays for secret storage (Electron apps, etc.)
+  services.gnome.gcr-ssh-agent.enable = false;
 
   environment.systemPackages = [
     pkgs.nautilus

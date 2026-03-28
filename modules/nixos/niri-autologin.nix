@@ -11,5 +11,5 @@
       user = self.users.alex.username;
     };
   };
-  security.pam.services.greetd.enableGnomeKeyring = true;
+
 }
