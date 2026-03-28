@@ -2,6 +2,7 @@
 {
   self,
   pkgs,
+  lib,
   inputs,
   ...
 }:
@@ -34,8 +35,8 @@ in
   # NOTE: nix-darwin doesn't change the macOS login shell via dscl.
   # Run once: sudo dscl . -change /Users/alex UserShell /bin/zsh <path-to-wrapped-zsh>
   programs.zsh.enable = true;
-  environment.shells = [ wrapped.zsh ];
   environment.pathsToLink = [ "/share/zsh" ];
+  environment.shells = lib.mkDefault [ wrapped.zsh ];
 
   # Wrapped tools available system-wide
   environment.systemPackages = [

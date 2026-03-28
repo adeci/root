@@ -1,4 +1,25 @@
-_: {
+# Shopify work environment — 1Password SSH, tec/shadowenv, homebrew casks.
+{
+  self,
+  pkgs,
+  ...
+}:
+let
+  shopifyZsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap {
+    extraInit = # zsh
+      ''
+        # Shopify tec (includes shadowenv, dev tools, wish, and shell hooks)
+        if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
+          eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
+        fi
+      '';
+  };
+in
+{
+  # Replace default zsh with shopify variant
+  environment.shells = [ shopifyZsh ];
+  environment.systemPackages = [ shopifyZsh ];
+
   nix.extraOptions = ''
     !include nix.conf.d/shopify.conf
   '';
@@ -16,7 +37,7 @@ _: {
     ];
   };
 
-  # 1Password ssh agent
+  # 1Password SSH agent
   environment.etc."ssh/ssh_config.d/shopify".text = ''
     Host *
       AddKeysToAgent yes
