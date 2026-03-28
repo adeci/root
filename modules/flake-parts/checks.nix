@@ -16,6 +16,13 @@
         ) self.nixosConfigurations
       );
 
+      # Automatically check all Darwin machines that match this system
+      darwinMachines = lib.mapAttrs' (n: lib.nameValuePair "darwin-${n}") (
+        lib.filterAttrs (_name: machine: machine.pkgs.stdenv.hostPlatform.system == system) (
+          self.darwinConfigurations or { }
+        )
+      );
+
       packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") (
         lib.filterAttrs (
           _: pkg:
@@ -31,6 +38,7 @@
     {
       checks =
         lib.mapAttrs (_: machine: machine.config.system.build.toplevel) nixosMachines
+        // lib.mapAttrs (_: machine: machine.system) darwinMachines
         // packages
         // devShells;
     };

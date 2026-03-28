@@ -1,4 +1,6 @@
-# Karabiner-Elements configuration — caps lock as escape (tap) / control (hold) on all keyboards
+# caps lock as escape (tap)
+# control (hold)
+# on all keyboards
 {
   config,
   pkgs,
