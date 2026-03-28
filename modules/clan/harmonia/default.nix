@@ -1,30 +1,11 @@
 { inputs }:
-_:
-let
-  varsForInstance = instanceName: pkgs: {
-    clan.core.vars.generators.${instanceName} = {
-      share = true;
-      files.signing-key = {
-        secret = true;
-        deploy = false;
-      };
-      files."signing-key.pub".secret = false;
-      runtimeInputs = [ pkgs.nix ];
-      script = ''
-        nix-store --generate-binary-cache-key \
-          ${instanceName} \
-          "$out"/signing-key \
-          "$out"/signing-key.pub
-      '';
-    };
-  };
-in
+{ clanLib, ... }:
 {
   _class = "clan.service";
 
   manifest = {
     name = "@adeci/harmonia";
-    description = "Harmonia binary cache with automatic client configuration via clan vars";
+    description = "Harmonia binary cache with per-server signing keys";
     categories = [ "System" ];
     readme = builtins.readFile ./README.md;
   };
@@ -41,51 +22,65 @@ in
             default = 5000;
             description = "Port for the harmonia cache server";
           };
-
           address = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = ''
-              Override address for clients to reach this server.
-              Defaults to machineName.domain from clan meta.
-            '';
+            description = "Override address for clients to reach this server";
           };
-
           priority = lib.mkOption {
             type = lib.types.int;
             default = 40;
-            description = "Default nix substituter priority advertised to clients";
+            description = "Nix substituter priority advertised to clients";
           };
         };
       };
 
     perInstance =
-      { instanceName, settings, ... }:
+      {
+        instanceName,
+        settings,
+        ...
+      }:
       {
         nixosModule =
           { config, pkgs, ... }:
           let
-            varName = instanceName;
+            inherit (config.clan.core) machineName;
+            generatorName = "${instanceName}-${machineName}";
           in
           {
-            imports = [
-              inputs.harmonia.nixosModules.harmonia
-              (varsForInstance instanceName pkgs)
-            ];
+            imports = [ inputs.harmonia.nixosModules.harmonia ];
 
-            # Per-machine copy of the signing key (only deployed to server)
-            clan.core.vars.generators."${varName}-signing-key" = {
-              dependencies = [ varName ];
+            # Generate this server's signing keypair (shared pub key, secret private key)
+            clan.core.vars.generators.${generatorName} = {
+              share = true;
+              files.signing-key = {
+                secret = true;
+                deploy = false;
+              };
+              files."signing-key.pub".secret = false;
+              runtimeInputs = [ pkgs.nix ];
+              script = ''
+                nix-store --generate-binary-cache-key \
+                  ${generatorName} \
+                  "$out"/signing-key \
+                  "$out"/signing-key.pub
+              '';
+            };
+
+            # Per-server private copy — only this machine deploys the signing key
+            clan.core.vars.generators."${generatorName}-private" = {
+              dependencies = [ generatorName ];
               files.signing-key.secret = true;
               script = ''
-                cp "$in"/${varName}/signing-key "$out"/signing-key
+                cp "$in"/${generatorName}/signing-key "$out"/signing-key
               '';
             };
 
             services.harmonia-dev.cache = {
               enable = true;
               signKeyPaths = [
-                config.clan.core.vars.generators."${varName}-signing-key".files.signing-key.path
+                config.clan.core.vars.generators."${generatorName}-private".files.signing-key.path
               ];
               settings.bind = "[::]:${toString settings.port}";
             };
@@ -106,7 +101,7 @@ in
         options.priority = lib.mkOption {
           type = lib.types.nullOr lib.types.int;
           default = null;
-          description = "Override substituter priority (defaults to server's priority setting)";
+          description = "Override substituter priority (defaults to server's priority)";
         };
       };
 
@@ -121,33 +116,36 @@ in
         nixosModule =
           {
             config,
-            pkgs,
             lib,
             ...
           }:
           let
             inherit (config.clan.core.settings) domain;
             dotDomain = if domain != null then ".${domain}" else "";
+            serverNames = lib.attrNames roles.server.machines;
           in
           {
-            imports = [
-              (varsForInstance instanceName pkgs)
-            ];
-
             nix.settings.substituters = map (
-              machineName:
+              name:
               let
-                serverSettings = roles.server.machines.${machineName}.settings;
-                address =
-                  if serverSettings.address != null then serverSettings.address else "${machineName}${dotDomain}";
+                serverSettings = roles.server.machines.${name}.settings;
+                address = if serverSettings.address != null then serverSettings.address else "${name}${dotDomain}";
                 priority = if settings.priority != null then settings.priority else serverSettings.priority;
               in
               "http://${address}:${toString serverSettings.port}?priority=${toString priority}"
-            ) (lib.attrNames roles.server.machines);
+            ) serverNames;
 
-            nix.settings.trusted-public-keys = [
-              (lib.strings.trim config.clan.core.vars.generators.${instanceName}.files."signing-key.pub".value)
-            ];
+            # Read pub keys directly from shared vars — no generator needed on clients
+            nix.settings.trusted-public-keys = map (
+              name:
+              lib.strings.trim (
+                clanLib.getPublicValue {
+                  flake = config.clan.core.settings.directory;
+                  generator = "${instanceName}-${name}";
+                  file = "signing-key.pub";
+                }
+              )
+            ) serverNames;
           };
       };
   };
