@@ -4,9 +4,6 @@
   self,
   ...
 }:
-let
-  wrappedPkgs = self.packages.${pkgs.stdenv.hostPlatform.system};
-in
 {
   imports = [
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x220
@@ -30,7 +27,6 @@ in
   ];
 
   environment.systemPackages = [
-    wrappedPkgs.librewolf
     pkgs.bitwarden-desktop
     pkgs.mullvad-browser
   ];
@@ -40,7 +36,7 @@ in
     owner = "root";
     group = "root";
     capabilities = "cap_perfmon+ep";
-    source = "${wrappedPkgs.btop}/bin/btop";
+    source = "${self.packages.${pkgs.system}.btop}/bin/btop";
   };
 
   # Enable Intel graphics acceleration for Sandy Bridge

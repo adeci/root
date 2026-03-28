@@ -1,8 +1,4 @@
-{
-  pkgs,
-  self,
-  ...
-}:
+{ self, ... }:
 {
   imports = [
     self.users.alex.nixosModule
@@ -18,7 +14,6 @@
   ];
 
   environment.systemPackages = [
-    self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf
   ];
 
   nix.settings.trusted-users = [

@@ -53,7 +53,6 @@
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
   environment.systemPackages = [
-    self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf
     pkgs.bitwarden-desktop
     pkgs.mullvad-browser
     pkgs.calibre

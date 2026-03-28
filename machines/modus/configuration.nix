@@ -13,8 +13,6 @@ let
     sha256 = "sha256-Xu3KlpNMiZzS2fXYGGx0u0Qch7CoEus6ODwNVL4Bq4U=";
   };
 
-  wrappedPkgs = self.packages.${pkgs.stdenv.hostPlatform.system};
-
 in
 {
 
@@ -41,7 +39,6 @@ in
   ];
 
   environment.systemPackages = [
-    wrappedPkgs.librewolf
     pkgs.imagemagick
     pkgs.os-prober
     # pkgs.calibre # broken in nixpkgs — qmake missing from qt6 setup hook

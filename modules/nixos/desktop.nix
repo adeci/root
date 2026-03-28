@@ -4,6 +4,9 @@
   pkgs,
   ...
 }:
+let
+  wrapped = self.packages.${pkgs.system};
+in
 {
   imports = [
     ./pipewire.nix
@@ -12,7 +15,7 @@
 
   # Niri compositor with baked-in config
   programs.niri.enable = true;
-  programs.niri.package = self.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+  programs.niri.package = wrapped.niri;
 
   fonts.packages = with pkgs; [
     nerd-fonts.caskaydia-mono
@@ -29,6 +32,7 @@
   services.gnome.gcr-ssh-agent.enable = false;
 
   environment.systemPackages = [
+    wrapped.librewolf
     pkgs.nautilus
     pkgs.xwayland-satellite
     pkgs.libnotify
