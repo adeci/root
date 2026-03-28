@@ -57,7 +57,8 @@ in
   environment.systemPackages = [ librewolf ];
 
   # browser-cli config — tells the CLI where to find LibreWolf
-  environment.etc."xdg/browser-cli/config.toml".text = ''
-    firefox_path = "${librewolf}/bin/librewolf"
-  '';
+  environment.etc."xdg/browser-cli/config.toml".text = # toml
+    ''
+      firefox_path = "${librewolf}/bin/librewolf"
+    '';
 }

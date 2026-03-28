@@ -37,28 +37,30 @@ let
 in
 {
   # browser-cli config — tells the CLI where to find LibreWolf
-  environment.etc."xdg/browser-cli/config.toml".text = ''
-    firefox_path = "${librewolfBin}"
-  '';
+  environment.etc."xdg/browser-cli/config.toml".text = # toml
+    ''
+      firefox_path = "${librewolfBin}"
+    '';
 
   # Install .app bundle for Dock/Spotlight
-  system.activationScripts.postActivation.text = lib.mkAfter ''
-    echo "installing LibreWolf.app..." >&2
-    targetDir='/Applications/Nix Apps'
-    markerDir="$targetDir/.sources"
-    mkdir -p "$targetDir" "$markerDir"
+  system.activationScripts.postActivation.text = # bash
+    lib.mkAfter ''
+        echo "installing LibreWolf.app..." >&2
+      targetDir='/Applications/Nix Apps'
+      markerDir="$targetDir/.sources"
+      mkdir -p "$targetDir" "$markerDir"
 
-    src="${librewolf}"
-    app="$src/Applications/LibreWolf.app"
-    dest="$targetDir/LibreWolf.app"
-    marker="$markerDir/LibreWolf.app"
+      src="${librewolf}"
+      app="$src/Applications/LibreWolf.app"
+      dest="$targetDir/LibreWolf.app"
+      marker="$markerDir/LibreWolf.app"
 
-    if [[ ! -f "$marker" ]] || [[ "$(cat "$marker")" != "$src" ]]; then
-      echo "Syncing LibreWolf.app..." >&2
-      chmod -R u+w "$dest" 2>/dev/null || true
-      rm -rf "$dest"
-      /usr/bin/ditto "$app" "$dest"
-      echo "$src" > "$marker"
-    fi
-  '';
+      if [[ ! -f "$marker" ]] || [[ "$(cat "$marker")" != "$src" ]]; then
+        echo "Syncing LibreWolf.app..." >&2
+        chmod -R u+w "$dest" 2>/dev/null || true
+        rm -rf "$dest"
+        /usr/bin/ditto "$app" "$dest"
+        echo "$src" > "$marker"
+      fi
+    '';
 }

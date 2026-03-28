@@ -132,9 +132,10 @@
               files.id_ed25519 = { };
               files."id_ed25519.pub".secret = false;
               runtimeInputs = [ pkgs.openssh ];
-              script = ''
-                ssh-keygen -t ed25519 -N "" -C "" -f "$out"/id_ed25519
-              '';
+              script = # bash
+                ''
+                  ssh-keygen -t ed25519 -N "" -C "" -f "$out"/id_ed25519
+                '';
             };
 
             nix.buildMachines = map (

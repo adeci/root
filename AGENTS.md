@@ -18,14 +18,14 @@ Always verify before considering work done:
 # Format everything (required — CI will check this)
 nix fmt
 
-# Verify a specific machine evaluates
+# Verify a specific NixOS machine evaluates
 nix eval .#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
 
 # Verify a Darwin machine (eval only — can't build cross-arch)
 nix eval .#darwinConfigurations.<machine>.config.system.primaryUser
 
-# Verify standalone home-manager
-nix build .#homeConfigurations.<name>.activationPackage
+# Verify all checks for the current system
+nix eval .#checks.x86_64-linux --json
 
 # Verify terraform config builds
 nix build .#packages.x86_64-linux.tf-plan --no-link
@@ -37,14 +37,16 @@ nix build .#packages.x86_64-linux.tf-plan --no-link
 
 - Use `nix eval` instead of `nix flake show` to look up flake attributes.
 - Use `--log-format bar-with-logs` with nix builds for better output.
-- Don't use `nix flake check` on the whole flake — it's too slow.
-  Build individual checks instead.
+- Don't use `nix flake check` on the whole flake — it tries to eval all
+  systems including darwin which fails on linux builders. Use per-system
+  eval instead.
 - Use `nix run nixpkgs#<pkg>` or `nix shell nixpkgs#<pkg> -c` for
   tools not in the dev shell.
 - When given a linter error, fix the root cause. Don't silence it.
 - Shell scripts must pass `shellcheck` (enforced by treefmt).
 - Read nix errors bottom-up. The last line is the actual problem,
   everything above is call stack.
+- Use `pkgs.stdenv.hostPlatform.system` not `pkgs.system` (deprecated).
 
 ## Do Not Touch
 
@@ -62,10 +64,8 @@ inventory/                       # What we manage — data, not logic
   users/                         #   User definitions (self.users.*)
     default.nix                  #     Auto-discovers per-user files
     alex.nix                     #     Per-user data (uid, keys, groups, shell)
-    brittonr.nix
-    ...
   resources/                     #   External resources we provision
-    cloudflare-tunnels.nix       #     Tunnel definitions (drives terraform + NixOS)
+    cloudflare/                  #     Cloudflare zones, tunnels, DNS records
   clan/                          #   Clan-specific inventory
     default.nix                  #     Inventory loader
     machines.nix                 #     Machine declarations + tags
@@ -78,37 +78,55 @@ modules/                         # Shared composable modules — logic, not data
     resources.nix                #     Exposes inventory/resources/ → self.resources
     clan.nix                     #     Clan orchestration
     terranix.nix                 #     Terraform wrapper scripts + auto-discovery
-    packages.nix                 #     Custom packages
-    home-configurations.nix      #     Standalone home-manager
+    nixvim.nix                   #     Nixvim standalone package
+    wrapped.nix                  #     Wrapped packages (BirdeeHub nix-wrapper-modules)
     formatter.nix                #     treefmt config
     devshell.nix                 #     Dev environment
-    checks.nix                   #     CI checks
+    checks.nix                   #     CI checks (auto-discovers NixOS + Darwin machines)
   clan/                          #   Custom clan service definitions (@adeci/*)
     tailscale/                   #     Mesh VPN
-    harmonia/                    #     Binary cache
+    harmonia/                    #     Binary cache (per-server signing keys)
     remote-builder/              #     Nix remote build offloading
+    security-keys/               #     FIDO2 SSH key handle distribution
     siteup/                      #     Web app deployment
     trusted-caches/              #     External binary cache config
-  terranix/                      #   Terraform modules
-    base.nix                     #     B2 backend + state encryption
+  terranix/                      #   Terraform modules (auto-discovered)
+    backend.nix                  #     B2 backend + state encryption
     cloudflare.nix               #     Provider, tunnels, DNS records, zones
   nixos/                         #   NixOS modules (portable capabilities)
     base.nix                     #     Fleet-wide defaults (ssh, nix, locale, users)
+    zsh.nix                      #     Wrapped zsh as login shell (+ LLM tools)
+    desktop.nix                  #     Full desktop (niri, librewolf, audio, theming)
+    librewolf.nix                #     LibreWolf with policies + browser-cli
+    social.nix                   #     Communication apps (element, signal, vesktop)
     cloudflared.nix              #     Cloudflare tunnel connector
+    ssh-tpm-agent.nix            #     TPM SSH agent (praxis only)
+    cheat.nix                    #     Claude CLI helper (rbw-dependent machines)
+    ...                          #     laptop, gaming, mullvad, yubikey, etc.
   darwin/                        #   Darwin modules
-  home-manager/                  #   Home-manager modules
-    profiles/                    #     HM profile groupings
+    base.nix                     #     Fleet-wide Darwin defaults + wrapped tools
+    librewolf.nix                #     LibreWolf .app install + policies
+    shopify.nix                  #     Work environment (1Password, tec, homebrew)
+    karabiner.nix                #     Keyboard remapping config
+    aerospace/                   #     Tiling window manager config
+  wrapped/                       #   Wrapped packages (BirdeeHub nix-wrapper-modules)
+    zsh.nix                      #     Shell + CLI tools (withLLMTools, extraInit)
+    git.nix                      #     Git with baked-in config
+    kitty.nix                    #     Terminal (embeds wrapped zsh)
+    tmux.nix                     #     Terminal multiplexer
+    btop.nix                     #     System monitor
+    big-htop.nix                 #     htop configured for leviathan
+    linux/                       #     Linux-only wrappers (excluded from darwin eval)
+      niri.nix                   #       Wayland compositor
+      noctalia-shell.nix         #       Status bar
+  nixvim/                        #   Nixvim config (temporary — migrating to neovim 0.12)
 
 machines/<name>/                 # Per-machine configs
   configuration.nix              #   NixOS/Darwin config (explicit module imports)
   terraform-configuration.nix    #   Terraform resources (auto-discovered)
-  home.nix                       #   Home-manager config (profile imports)
   disko.nix                      #   Disk partitioning
   facter.json                    #   Hardware facts (don't edit)
   modules/                       #   Machine-specific modules (only this machine)
-
-packages/                        # Custom package derivations
-  wrapped/                       #   Wrapped tools (btop, kitty, starship, fuzzel, nixvim)
 ```
 
 ## Key Concepts
@@ -118,6 +136,23 @@ assignments). Logic lives in `modules/` (flake-parts wiring, NixOS
 modules, terraform modules). Flake-parts modules in `modules/flake-parts/`
 bridge the two — they import data from `inventory/` and expose it
 flake-wide on `self.*`.
+
+**Wrapped packages**: CLI tools and desktop apps with config baked in
+via [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules).
+Each wrapper in `modules/wrapped/` becomes a flake package
+(`nix run .#<name>`). Wrappers are pure — no runtime file writes to
+`$HOME`. Linux-only wrappers go in `modules/wrapped/linux/` and are
+auto-excluded from darwin evaluation.
+
+The zsh wrapper supports extension via `.wrap`:
+
+```nix
+# NixOS — enable LLM tools
+zsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap { withLLMTools = true; };
+
+# Darwin — add extra shell init
+shopifyZsh = zsh.wrap { extraInit = "eval \"$(tec init zsh)\""; };
+```
 
 **`self.users`**: User definitions available everywhere in the flake.
 Each user has `.username`, `.uid`, `.sshKeys`, `.groups`, `.shell`, plus
@@ -130,15 +165,10 @@ imports = [
   self.users.alex.nixosModule
   self.users.dima.nixosModule
 ];
-
-# Terraform — reference user data directly
-resource.hcloud_ssh_key.alex = {
-  public_key = builtins.head self.users.alex.sshKeys;
-};
 ```
 
-**`self.resources`**: Shared resource data (tunnels, future B2 buckets,
-routeros configs). Defined in `inventory/resources/`, exposed by
+**`self.resources`**: Shared resource data (Cloudflare zones, tunnels,
+DNS records). Defined in `inventory/resources/`, exposed by
 `modules/flake-parts/resources.nix`. Consumed by terraform modules and
 NixOS modules via `self.resources.*`.
 
@@ -146,112 +176,129 @@ NixOS modules via `self.resources.*`.
 import exactly what they need:
 
 ```nix
+# NixOS machine
 imports = [
   self.users.alex.nixosModule
   ../../modules/nixos/base.nix
-  ../../modules/nixos/niri.nix
+  ../../modules/nixos/desktop.nix
+  ../../modules/nixos/zsh.nix
   ../../modules/nixos/laptop.nix
   ../../modules/nixos/cloudflared.nix
-  ./modules/harmonia.nix          # machine-specific module
 ];
-```
 
-Home-manager uses per-machine `home.nix` files that import profiles:
-
-```nix
+# Darwin machine
 imports = [
-  ../../modules/home-manager/profiles/base.nix
-  ../../modules/home-manager/profiles/desktop.nix
+  self.users.alex.darwinModule
+  ../../modules/darwin/base.nix
+  ../../modules/darwin/librewolf.nix
+  ../../modules/darwin/shopify.nix
 ];
 ```
 
 **Two kinds of modules**:
 
-- `modules/nixos/` — shared, portable capabilities. Any machine could
-  import these. Examples: `laptop.nix`, `gaming.nix`, `cloudflared.nix`.
-  A module belongs here even if only one machine uses it today, as long
-  as it describes a general capability rather than a specific machine's
-  service configuration.
+- `modules/nixos/` (or `modules/darwin/`) — shared, portable
+  capabilities. Any machine could import these. Examples: `laptop.nix`,
+  `gaming.nix`, `cloudflared.nix`, `desktop.nix`. A module belongs here
+  even if only one machine uses it today, as long as it describes a
+  general capability.
 
 - `machines/<name>/modules/` — machine-specific config. Tightly coupled
   to one machine's deployment: its domains, its secrets, its service
-  wiring. Examples: leviathan's buildbot config, sequoia's vaultwarden
-  with its specific domains and reverse proxy setup.
+  wiring. Examples: leviathan's buildbot config, sequoia's vaultwarden.
+
+**SSH infrastructure**: FIDO2 YubiKeys + TPM for SSH authentication.
+
+- YubiKey handles are distributed via the `@adeci/security-keys` clan
+  service. Each machine declares which keys it uses (`settings.use`).
+- TPM keys are machine-bound (praxis only). `ssh-tpm-agent` manages
+  them via `SSH_AUTH_SOCK`.
+- SSH priority: TPM agent (no touch) → FIDO2 handle files (YubiKey touch).
+- Public keys (YubiKey + TPM) are in `inventory/users/alex.nix`.
 
 **Terranix infrastructure provisioning**: Cloud resources are managed
 through Terranix (Nix → Terraform JSON → OpenTofu). All terraform
-modules merge into one config with shared B2 backend.
+modules are auto-discovered and merged into one config.
 
-- `modules/terranix/base.nix` — Backblaze B2 state backend + encryption
+- `modules/terranix/backend.nix` — Backblaze B2 state backend + encryption
 - `modules/terranix/cloudflare.nix` — tunnels, DNS, zones (driven by
-  `self.resources.tunnels`)
+  `self.resources.cloudflare`)
 - `machines/<name>/terraform-configuration.nix` — per-machine cloud
   resources (auto-discovered, e.g., conduit's Hetzner server)
 - Credentials come from clan secrets via `data.external` at apply time
 - Wrapper scripts: `nix run .#tf-{init,plan,apply,destroy}`
 
-**Cloudflare tunnels**: Defined in `inventory/resources/cloudflare-tunnels.nix`
-(single source of truth). Exposed as `self.resources.tunnels`. Terraform
-creates tunnels + DNS records and pushes tokens to clan vars via
-`local-exec`. The `modules/nixos/cloudflared.nix` module reads
-`self.resources.tunnels` and enables cloudflared on machines that have
-tunnels defined. Workflow: `tf-apply` → `clan machines update <machine>`.
+**Cloudflare resources**: Zones, tunnels, and DNS records defined as
+pure data in `inventory/resources/cloudflare/`. Terraform creates
+tunnels + DNS records and pushes tokens to clan vars. The
+`modules/nixos/cloudflared.nix` module enables cloudflared on machines
+that have tunnels defined. Workflow: `tf-apply` → `clan machines update`.
 
 **Clan services** come in two forms:
 
 - **Built-in** (`input = "clan-core"`): Services shipped with clan-core.
-  Used by creating an instance in `inventory/clan/instances/` that
-  references them by name. No code in `modules/clan/`. Examples:
-  `syncthing`, `borgbackup`, `sshd`, `wifi`, `state-version`.
+  Examples: `syncthing`, `borgbackup`, `sshd`, `wifi`, `state-version`.
 
 - **Custom** (`input = "self"`): Services we define in `modules/clan/`.
   They follow the Clan service module structure with
   `_class = "clan.service"`, manifest metadata, and role definitions.
   Registered in `modules/clan/default.nix` with `@adeci/<name>` naming.
 
+Key patterns in custom services:
+
+- Servers generate secrets, clients read public values via
+  `clanLib.getPublicValue` (no generator needed on clients).
+- Per-server signing keys (harmonia) — each server has its own keypair,
+  clients collect all public keys.
+- Per-client SSH keys (remote-builder) — each client generates a
+  keypair, servers collect public keys.
+
 **When to use terraform vs a clan service vs a plain NixOS module:**
 
 Use **terraform** when:
 
 - Managing cloud/external resources (VMs, DNS, tunnels, buckets).
-- The resource has an API, not an OS — you provision it, not deploy to it.
-- Cross-resource references are needed (DNS record → server IP).
+- The resource has an API, not an OS.
 
 Use a **clan service** when:
 
-- Multiple machines need coordinated config (shared secrets, device
-  mesh, cross-machine references).
-- `clan.core.vars` adds value for credential generation/distribution.
-- The inventory's tag/machine assignment model fits naturally.
+- Multiple machines need coordinated config (shared secrets, key
+  distribution, cross-machine references).
 
-Use a **plain NixOS module** when:
+Use a **plain NixOS/Darwin module** when:
 
 - Config is self-contained to one machine or doesn't need cross-machine
   coordination.
-- You're enabling a capability, not wiring machines together.
 
-**Chrysalis**: Custom installer machine (`machines/chrysalis/`). Imports
-clan-core's installer module, adds our harmonia binary cache, tailscale,
-wifi, and SSH keys. Flash to USB with `clan flash write chrysalis --disk main /dev/sdX`.
+**Chrysalis**: Custom installer machine (`machines/chrysalis/`). Flash
+to USB with `clan flash write chrysalis --disk main /dev/sdX`. SSH keys,
+wifi, and harmonia cache are baked in.
 
 ## Code Conventions
 
 - **Formatting**: `nix fmt` handles everything. Uses nixfmt for Nix,
   shellcheck for shell, deadnix + statix for Nix linting, prettier for
   markdown/json/yaml.
-- **Naming**: Kebab-case for module and profile filenames. Service names
-  use `@adeci/<name>`. Terraform config files use
+- **Naming**: Kebab-case for module filenames. Service names use
+  `@adeci/<name>`. Terraform config files use
   `terraform-configuration.nix`.
 - **No custom option namespaces**: Don't create custom options for
   wrapping upstream config. Modules are plain config — importing a
-  module enables its features. Configure upstream options directly
-  (e.g., `services.buildbot-nix.master.*`, not a wrapper).
+  module enables its features. Configure upstream options directly.
+- **No home-manager**: All machines use wrapped packages + NixOS/Darwin
+  modules. No `home.file`, no `programs.*` from HM, no `home.nix`.
+- **Shell language hints**: Use `# bash` or `# zsh` comments before
+  long multiline shell strings for editor syntax highlighting:
+  ```nix
+  script = # bash
+    ''
+      echo "highlighted as bash"
+    '';
+  ```
 - **Commented-out imports**: Commented-out import lines in machine configs
-  (e.g., `# ./modules/buildbot.nix`) are intentional — they indicate a
-  module is ready but not yet deployed. Don't remove them.
+  are intentional — they indicate a module is ready but not yet deployed.
 - **Commented-out alternatives**: Commented-out lines next to active
-  config (e.g., a previous URL or value) are intentional bookmarks for
-  quick swapping — don't remove them.
+  config are intentional bookmarks for quick swapping.
 - **No orphan files**: Everything must be `git add`ed before `nix build`
   will see it (flakes only see tracked files).
 
@@ -261,21 +308,21 @@ wifi, and SSH keys. Flash to USB with `clan flash write chrysalis --disk main /d
 groups, sshKeys. It's auto-discovered. Import
 `self.users.<name>.nixosModule` in machine configs that need the user.
 
-**Add a user to a machine**: Add `self.users.<name>.nixosModule` to the
-machine's `configuration.nix` imports. For Darwin, use
-`self.users.<name>.darwinModule`.
-
 **Add a shared NixOS module**: Create `modules/nixos/<name>.nix` as plain
 config. Import it in the relevant `machines/<name>/configuration.nix`.
 
-**Add a machine-specific module**: Create
-`machines/<name>/modules/<module>.nix` as plain config. Import it in
-that machine's `configuration.nix` as `./modules/<module>.nix`.
+**Add a shared Darwin module**: Create `modules/darwin/<name>.nix`. Import
+in `machines/malum/configuration.nix`. Homebrew taps/casks/brews go in
+the module that needs them (not a central homebrew.nix).
 
-**Add a home-manager module**: Create `modules/home-manager/<name>.nix`
-(or `<name>/default.nix` for multi-file) as plain config. Add it to a
-profile in `modules/home-manager/profiles/` or import directly in a
-machine's `home.nix`.
+**Add a wrapped package**: Create `modules/wrapped/<name>.nix` (or
+`modules/wrapped/linux/<name>.nix` for linux-only). It's auto-discovered
+and becomes a flake package. Use `wlib.modules.default` for the common
+wrapper pattern, or `wlib.wrapperModules.<name>` for upstream modules.
+
+**Add a machine-specific module**: Create
+`machines/<name>/modules/<module>.nix`. Import it in that machine's
+`configuration.nix` as `./modules/<module>.nix`.
 
 **Add a machine**: Create `machines/<name>/configuration.nix`, add entry
 to `inventory/clan/machines.nix` with tags.
@@ -283,18 +330,16 @@ to `inventory/clan/machines.nix` with tags.
 **Add a clan service**: Create module in `modules/clan/<name>/`, register
 in `modules/clan/default.nix`, create instance in
 `inventory/clan/instances/<name>.nix`, assign roles to tags or machines.
-Only use for multi-machine coordination where inventory assignment helps.
 
 **Add a Cloudflare tunnel**: Add machine + ingress rules to
-`inventory/resources/cloudflare-tunnels.nix`. Import
-`modules/nixos/cloudflared.nix` in the machine's `configuration.nix`.
-Run `nix run .#tf-apply` then `clan machines update <machine>`.
+`inventory/resources/cloudflare/tunnels.nix`. Import
+`modules/nixos/cloudflared.nix` in the machine config. Run
+`nix run .#tf-apply` then `clan machines update <machine>`.
 
 **Add terraform resources**: For machine-coupled infra, create
 `machines/<name>/terraform-configuration.nix` (auto-discovered). For
-shared resources, add to or create a file in `modules/terranix/`. Run
-`nix run .#tf-init` if new providers are needed, then
-`nix run .#tf-apply`.
+shared resources, create a file in `modules/terranix/` (auto-discovered).
+Run `nix run .#tf-init` if new providers, then `nix run .#tf-apply`.
 
 **Flash the installer**: `clan flash write chrysalis --disk main /dev/sdX`.
 SSH keys, wifi, and harmonia cache are baked in — no flags needed.

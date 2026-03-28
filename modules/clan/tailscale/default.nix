@@ -60,9 +60,10 @@ _: {
                 persist = true;
               };
 
-              script = ''
-                cat "$prompts"/auth_key > "$out"/auth_key
-              '';
+              script = # bash
+                ''
+                  cat "$prompts"/auth_key > "$out"/auth_key
+                '';
             };
 
             services.tailscale = finalSettings // {
@@ -80,11 +81,12 @@ _: {
                   # Trigger restart when flags change
                   restartTriggers = [ (builtins.toJSON finalSettings.extraUpFlags) ];
 
-                  script = ''
-                    ${pkgs.tailscale}/bin/tailscale up --reset ${
-                      lib.escapeShellArgs (finalSettings.extraUpFlags or [ ])
-                    }
-                  '';
+                  script = # bash
+                    ''
+                      ${pkgs.tailscale}/bin/tailscale up --reset ${
+                        lib.escapeShellArgs (finalSettings.extraUpFlags or [ ])
+                      }
+                    '';
 
                   serviceConfig = {
                     Type = "oneshot";

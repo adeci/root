@@ -20,10 +20,11 @@ in
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
 
-      script = ''
-        ${lib.getExe pkgs.cloudflared} tunnel --no-autoupdate run \
-          --token "$(cat "$CREDENTIALS_DIRECTORY/token")"
-      '';
+      script = # bash
+        ''
+          ${lib.getExe pkgs.cloudflared} tunnel --no-autoupdate run \
+            --token "$(cat "$CREDENTIALS_DIRECTORY/token")"
+        '';
 
       serviceConfig = {
         LoadCredential = [ "token:${tokenPath}" ];

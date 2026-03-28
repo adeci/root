@@ -67,9 +67,10 @@ in
             pkgs.jq
             clan-cli
           ];
-          text = ''
-            jq -n --arg secret "$(clan secrets get "$1")" '{"secret":$secret}'
-          '';
+          text = # bash
+            ''
+              jq -n --arg secret "$(clan secrets get "$1")" '{"secret":$secret}'
+            '';
         };
 
         provide-tf-passphrase = pkgs.writeShellApplication {
@@ -78,16 +79,17 @@ in
             pkgs.jq
             clan-cli
           ];
-          text = ''
-            echo '{"magic":"OpenTofu-External-Key-Provider","version":1}'
-            INPUT=$(cat) || true
-            PASSPHRASE=$(clan secrets get tf-passphrase)
-            if [[ "$INPUT" == "null" ]]; then
-              jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64)}}'
-            else
-              jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)}}'
-            fi
-          '';
+          text = # bash
+            ''
+              echo '{"magic":"OpenTofu-External-Key-Provider","version":1}'
+              INPUT=$(cat) || true
+              PASSPHRASE=$(clan secrets get tf-passphrase)
+              if [[ "$INPUT" == "null" ]]; then
+                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64)}}'
+              else
+                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)}}'
+              fi
+            '';
         };
       }
       //
@@ -110,10 +112,11 @@ in
                 pkgs.opentofu
                 clan-cli
               ];
-              text = ''
-                ${tfSetup}
-                tofu ${cmd} "$@"
-              '';
+              text = # bash
+                ''
+                  ${tfSetup}
+                  tofu ${cmd} "$@"
+                '';
             }
           );
     };

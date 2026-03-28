@@ -47,12 +47,13 @@ in
 {
   homebrew.casks = [ "karabiner-elements" ];
 
-  system.activationScripts.postActivation.text = lib.mkAfter ''
-    echo "installing karabiner config..." >&2
-    configDir="/Users/${user}/.config/karabiner"
-    mkdir -p "$configDir"
-    cp "${karabinerConfig}" "$configDir/karabiner.json"
-    chmod 644 "$configDir/karabiner.json"
-    chown ${user}:staff "$configDir/karabiner.json"
-  '';
+  system.activationScripts.postActivation.text = # bash
+    lib.mkAfter ''
+        echo "installing karabiner config..." >&2
+      configDir="/Users/${user}/.config/karabiner"
+      mkdir -p "$configDir"
+      cp "${karabinerConfig}" "$configDir/karabiner.json"
+      chmod 644 "$configDir/karabiner.json"
+      chown ${user}:staff "$configDir/karabiner.json"
+    '';
 }

@@ -60,21 +60,23 @@
               };
               files."signing-key.pub".secret = false;
               runtimeInputs = [ pkgs.nix ];
-              script = ''
-                nix-store --generate-binary-cache-key \
-                  ${generatorName} \
-                  "$out"/signing-key \
-                  "$out"/signing-key.pub
-              '';
+              script = # bash
+                ''
+                  nix-store --generate-binary-cache-key \
+                    ${generatorName} \
+                    "$out"/signing-key \
+                    "$out"/signing-key.pub
+                '';
             };
 
             # Per-server private copy — only this machine deploys the signing key
             clan.core.vars.generators."${generatorName}-private" = {
               dependencies = [ generatorName ];
               files.signing-key.secret = true;
-              script = ''
-                cp "$in"/${generatorName}/signing-key "$out"/signing-key
-              '';
+              script = # bash
+                ''
+                  cp "$in"/${generatorName}/signing-key "$out"/signing-key
+                '';
             };
 
             services.harmonia-dev.cache = {

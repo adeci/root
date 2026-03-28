@@ -41,10 +41,11 @@ in
     brews = [ "FelixKratz/formulae/borders" ];
     casks = [ "nikitabobko/tap/aerospace" ];
   };
-  system.activationScripts.postActivation.text = lib.mkAfter ''
-    AEROSPACE_DIR="/Users/${primaryUser}/.config/aerospace"
-    mkdir -p "$AEROSPACE_DIR"
-    cp ${aerospaceConfig} "$AEROSPACE_DIR/aerospace.toml"
-    /usr/bin/pgrep -x AeroSpace && /opt/homebrew/bin/aerospace reload-config || true
-  '';
+  system.activationScripts.postActivation.text = # bash
+    lib.mkAfter ''
+        AEROSPACE_DIR="/Users/${primaryUser}/.config/aerospace"
+      mkdir -p "$AEROSPACE_DIR"
+      cp ${aerospaceConfig} "$AEROSPACE_DIR/aerospace.toml"
+      /usr/bin/pgrep -x AeroSpace && /opt/homebrew/bin/aerospace reload-config || true
+    '';
 }
