@@ -125,6 +125,13 @@
             serverNames = lib.attrNames roles.server.machines;
           in
           {
+            assertions = [
+              {
+                assertion = serverNames != [ ];
+                message = "@adeci/harmonia: client has no servers. Add machines to roles.server.";
+              }
+            ];
+
             nix.settings.substituters = map (
               name:
               let

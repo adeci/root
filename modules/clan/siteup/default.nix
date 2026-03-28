@@ -119,6 +119,13 @@ in
               hasSecrets = secrets != [ ];
             in
             {
+              assertions = [
+                {
+                  assertion = inputs ? ${flakeRef};
+                  message = "@adeci/siteup: flake input '${flakeRef}' not found for site '${name}'.";
+                }
+              ];
+
               # Create dedicated user and group
               users.users."siteup-${name}" = {
                 isSystemUser = true;

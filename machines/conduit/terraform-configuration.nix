@@ -1,6 +1,5 @@
 {
   config,
-  self,
   self',
   lib,
   ...
@@ -28,10 +27,11 @@
     token = config.data.external.hcloud-api-token "result.secret";
   };
 
-  # SSH key
+  # SSH key — used only for Hetzner rescue console / initial provisioning.
+  # Pinned to avoid server replacement when sshKeys order changes.
   resource.hcloud_ssh_key.alex = {
     name = "alex";
-    public_key = builtins.head self.users.alex.sshKeys;
+    public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJVB44hBiASLPelTC//teEK3CpzrwswdBccLe9MKbaMp adecigear";
   };
 
   # Firewall

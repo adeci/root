@@ -121,6 +121,13 @@
             dotDomain = if domain != null then ".${domain}" else "";
           in
           {
+            assertions = [
+              {
+                assertion = lib.attrNames roles.server.machines != [ ];
+                message = "@adeci/remote-builder: client has no servers. Add machines to roles.server.";
+              }
+            ];
+
             clan.core.vars.generators.${varName} = {
               files.id_ed25519 = { };
               files."id_ed25519.pub".secret = false;
