@@ -1,12 +1,26 @@
-# LibreWolf for macOS — installs .app bundle and browser-cli config.
+# LibreWolf with policies, preferences, and browser-cli baked in.
+# No runtime file writes — everything is in the package or /etc.
 {
   pkgs,
-  lib,
   inputs,
   ...
 }:
 let
   micsSkills = inputs.mics-skills.packages.${pkgs.system};
+
+  # Native messaging host for browser-cli extension
+  browserCliNativeHost = pkgs.runCommand "browser-cli-native-host" { } ''
+    mkdir -p $out/lib/mozilla/native-messaging-hosts
+    cat > $out/lib/mozilla/native-messaging-hosts/io.thalheim.browser_cli.bridge.json <<EOF
+    {
+      "name": "io.thalheim.browser_cli.bridge",
+      "description": "Browser CLI bridge",
+      "path": "${micsSkills.browser-cli}/bin/browser-cli-server",
+      "type": "stdio",
+      "allowed_extensions": ["browser-cli-controller@thalheim.io"]
+    }
+    EOF
+  '';
 
   librewolf = pkgs.librewolf.override {
     extraPolicies = {
@@ -27,39 +41,23 @@ let
       pref("webgl.disabled", false);
       pref("webgl.force-enabled", true);
       pref("librewolf.webgl.prompt", false);
+      pref("media.ffmpeg.vaapi.enabled", true);
+      pref("gfx.webrender.all", true);
+      pref("layers.acceleration.force-enabled", true);
+      pref("widget.dmabuf.force-enabled", true);
       pref("network.cookie.lifetimePolicy", 0);
       pref("privacy.clearOnShutdown_v2.cookiesAndStorage", false);
       pref("privacy.clearOnShutdown.cookies", false);
       pref("privacy.clearOnShutdown.sessions", false);
     '';
+    nativeMessagingHosts = [ browserCliNativeHost ];
   };
-
-  librewolfBin = "/Applications/Nix Apps/LibreWolf.app/Contents/MacOS/librewolf";
 in
 {
+  environment.systemPackages = [ librewolf ];
+
   # browser-cli config — tells the CLI where to find LibreWolf
   environment.etc."xdg/browser-cli/config.toml".text = ''
-    firefox_path = "${librewolfBin}"
-  '';
-
-  # Install .app bundle for Dock/Spotlight
-  system.activationScripts.postActivation.text = lib.mkAfter ''
-    echo "installing LibreWolf.app..." >&2
-    targetDir='/Applications/Nix Apps'
-    markerDir="$targetDir/.sources"
-    mkdir -p "$targetDir" "$markerDir"
-
-    src="${librewolf}"
-    app="$src/Applications/LibreWolf.app"
-    dest="$targetDir/LibreWolf.app"
-    marker="$markerDir/LibreWolf.app"
-
-    if [[ ! -f "$marker" ]] || [[ "$(cat "$marker")" != "$src" ]]; then
-      echo "Syncing LibreWolf.app..." >&2
-      chmod -R u+w "$dest" 2>/dev/null || true
-      rm -rf "$dest"
-      /usr/bin/ditto "$app" "$dest"
-      echo "$src" > "$marker"
-    fi
+    firefox_path = "${librewolf}/bin/librewolf"
   '';
 }

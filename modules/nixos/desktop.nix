@@ -11,6 +11,7 @@ in
   imports = [
     ./pipewire.nix
     ./gtk-theme.nix
+    ./librewolf.nix
   ];
 
   # Niri compositor with baked-in config
@@ -32,7 +33,6 @@ in
   services.gnome.gcr-ssh-agent.enable = false;
 
   environment.systemPackages = [
-    wrapped.librewolf
     pkgs.nautilus
     pkgs.xwayland-satellite
     pkgs.libnotify
