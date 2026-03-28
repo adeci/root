@@ -1,66 +1,48 @@
 # Wrapped programs — config baked into packages via nix-wrapper-modules.
-# Auto-discovers wrapper configs from modules/wrapped/*.nix.
-# Linux-only wrappers go in modules/wrapped/linux/*.nix.
 # Each wrapper becomes a flake package: nix run .#<name>
+#
+# modules/wrapped/*.nix        — all platforms
+# modules/wrapped/linux/*.nix  — linux only (excluded from darwin eval)
 { inputs, lib, ... }:
 let
-  wrappedDir = ../wrapped;
-  linuxDir = ../wrapped/linux;
+  # Discover wrapper modules in a directory, returning { name = { imports, ... }; }
+  discover =
+    dir:
+    lib.mapAttrs'
+      (
+        filename: type:
+        lib.nameValuePair (if type == "regular" then lib.removeSuffix ".nix" filename else filename) {
+          imports = [ (dir + "/${filename}") ];
+          _module.args.inputs = inputs;
+        }
+      )
+      (
+        lib.filterAttrs (
+          name: type:
+          (type == "regular" && lib.hasSuffix ".nix" name)
+          || (type == "directory" && builtins.pathExists (dir + "/${name}/default.nix"))
+        ) (builtins.readDir dir)
+      );
 
-  isModule =
-    name: type:
-    (type == "regular" && lib.hasSuffix ".nix" name)
-    || (
-      type == "directory" && name != "linux" && builtins.pathExists (wrappedDir + "/${name}/default.nix")
-    );
-
-  isLinuxModule =
-    name: type:
-    (type == "regular" && lib.hasSuffix ".nix" name)
-    || (type == "directory" && builtins.pathExists (linuxDir + "/${name}/default.nix"));
-
-  toWrapper = dir: name: type: {
-    name = if type == "regular" then lib.removeSuffix ".nix" name else name;
-    value = {
-      imports = [ (dir + "/${name}") ];
-      _module.args.inputs = inputs;
-    };
-  };
-
-  crossPlatform = lib.mapAttrs' (
-    name: type:
-    let
-      w = toWrapper wrappedDir name type;
-    in
-    lib.nameValuePair w.name w.value
-  ) (lib.filterAttrs isModule (builtins.readDir wrappedDir));
-
-  linuxOnly = lib.optionalAttrs (builtins.pathExists linuxDir) (
-    lib.mapAttrs' (
-      name: type:
-      let
-        w = toWrapper linuxDir name type;
-      in
-      lib.nameValuePair w.name w.value
-    ) (lib.filterAttrs isLinuxModule (builtins.readDir linuxDir))
-  );
+  crossPlatform = lib.removeAttrs (discover ../wrapped) [ "linux" ];
+  linuxOnly = discover ../wrapped/linux;
 in
 {
   imports = [ inputs.wrapper-modules.flakeModules.wrappers ];
 
+  flake.wrappers = crossPlatform // linuxOnly;
+
   perSystem =
     { system, ... }:
-    let
-      isDarwin = lib.hasSuffix "-darwin" system;
-    in
     {
       wrappers.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;
       };
-      # Exclude linux-only wrappers on darwin (they reference linux-only inputs at eval time)
-      wrappers.packages = lib.optionalAttrs isDarwin (lib.mapAttrs (_: _: true) linuxOnly);
+      # Linux-only wrappers reference linux-only inputs at eval time,
+      # so they must be excluded on darwin (not just filtered at build time).
+      wrappers.packages = lib.optionalAttrs (lib.hasSuffix "-darwin" system) (
+        lib.mapAttrs (_: _: true) linuxOnly
+      );
     };
-
-  flake.wrappers = crossPlatform // linuxOnly;
 }
