@@ -2,9 +2,9 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, system, ... }:
     {
-      packages.nixvim = inputs.nixvim.legacyPackages.${pkgs.system}.makeNixvimWithModule {
+      packages.nixvim = inputs.nixvim.legacyPackages.${system}.makeNixvimWithModule {
         inherit pkgs;
         module = ../nixvim;
       };

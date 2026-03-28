@@ -6,7 +6,7 @@
   ...
 }:
 let
-  micsSkills = inputs.mics-skills.packages.${pkgs.system};
+  micsSkills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
 
   # Native messaging host for browser-cli extension
   browserCliNativeHost = pkgs.runCommand "browser-cli-native-host" { } ''

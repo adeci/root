@@ -2,10 +2,11 @@
 {
   self,
   pkgs,
+  inputs,
   ...
 }:
 let
-  wrapped = self.packages.${pkgs.system};
+  wrapped = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   nix.enable = true;
@@ -43,8 +44,8 @@ in
     wrapped.kitty
     wrapped.tmux
     wrapped.btop
-    self.packages.${pkgs.system}.nixvim
-    pkgs.clan-cli
+    self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
+    inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
   ];
 
   # System defaults

@@ -37,7 +37,7 @@
     owner = "root";
     group = "root";
     capabilities = "cap_perfmon+ep";
-    source = "${self.packages.${pkgs.system}.btop}/bin/btop";
+    source = "${self.packages.${pkgs.stdenv.hostPlatform.system}.btop}/bin/btop";
   };
 
   # Enable Intel graphics acceleration for Sandy Bridge

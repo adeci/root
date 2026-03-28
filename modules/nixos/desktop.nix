@@ -5,7 +5,7 @@
   ...
 }:
 let
-  wrapped = self.packages.${pkgs.system};
+  wrapped = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   imports = [

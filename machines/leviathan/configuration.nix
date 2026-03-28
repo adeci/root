@@ -22,7 +22,7 @@
 
   environment.systemPackages = [
     pkgs.numactl
-    self.packages.${pkgs.system}.big-htop
+    self.packages.${pkgs.stdenv.hostPlatform.system}.big-htop
   ];
 
   # Transparent Huge Pages configuration for ZGC

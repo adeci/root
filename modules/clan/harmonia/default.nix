@@ -45,7 +45,7 @@
         nixosModule =
           { config, pkgs, ... }:
           let
-            inherit (config.clan.core) machineName;
+            machineName = config.clan.core.settings.machine.name;
             generatorName = "${instanceName}-${machineName}";
           in
           {

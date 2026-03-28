@@ -5,7 +5,7 @@
   ...
 }:
 let
-  micsSkills = inputs.mics-skills.packages.${pkgs.system};
+  micsSkills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
 
   librewolf = pkgs.librewolf.override {
     extraPolicies = {
