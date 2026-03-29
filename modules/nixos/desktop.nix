@@ -1,5 +1,6 @@
 # Full desktop: niri compositor, audio, theming, fonts, and common tools.
 {
+  lib,
   self,
   pkgs,
   ...
@@ -28,9 +29,10 @@ in
     enable32Bit = true;
   };
 
-  # Disable only the GCR SSH agent — it can't handle FIDO2 keys.
+  # GCR SSH agent can't handle FIDO2 keys — use the standard ssh-agent instead.
   # GNOME Keyring itself stays for secret storage (Electron apps, etc.)
   services.gnome.gcr-ssh-agent.enable = false;
+  programs.ssh.startAgent = lib.mkDefault true;
 
   environment.systemPackages = [
     pkgs.nautilus

@@ -16,6 +16,7 @@
       KbdInteractiveAuthentication = false;
     };
   };
+
   programs.ssh.extraConfig = ''
     Host *
       AddKeysToAgent yes

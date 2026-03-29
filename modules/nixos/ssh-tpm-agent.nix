@@ -1,8 +1,3 @@
-# TPM-bound SSH agent for touch-free SSH.
-# Same access as YubiKey, just no physical touch needed.
-#
-# Only import on machines with a TPM2.0 chip.
-# One-time setup: ssh-tpm-keygen → add pub key to alex.nix
 {
   pkgs,
   config,
@@ -14,6 +9,9 @@ let
   };
 in
 {
+  # Disable the standard ssh-agent so TPM agent can take over
+  programs.ssh.startAgent = false;
+
   security.tpm2.enable = true;
   security.tpm2.tctiEnvironment.enable = true;
   users.users.alex.extraGroups = [ config.security.tpm2.tssGroup ];
@@ -48,7 +46,7 @@ in
     };
   };
 
-  # Use TPM agent as the default SSH agent on this machine
+  # Use TPM agent as the default SSH agent
   environment.sessionVariables = {
     SSH_AUTH_SOCK = "/run/user/${toString config.users.users.alex.uid}/ssh-tpm-agent.sock";
   };
