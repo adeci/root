@@ -10,6 +10,7 @@ let
   inherit (pkgs.stdenv) isLinux;
 
   wrappedGit = inputs.self.wrappers.git.wrap { inherit pkgs; };
+  wrappedTmux = inputs.self.wrappers.tmux.wrap { inherit pkgs; };
 
   llm-agents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
   mics-skills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
@@ -85,7 +86,7 @@ in
               pkgs.zoxide
               pkgs.direnv
               pkgs.atuin
-              pkgs.tmux
+              wrappedTmux
             ]
             ++ lib.optionals isLinux [
               pkgs.usbutils
