@@ -29,7 +29,7 @@
           };
           priority = lib.mkOption {
             type = lib.types.int;
-            default = 40;
+            default = 50;
             description = "Nix substituter priority advertised to clients";
           };
         };

@@ -30,7 +30,7 @@ _: {
                 };
                 priority = lib.mkOption {
                   type = lib.types.int;
-                  default = 42;
+                  default = 50;
                   description = "Substituter priority (lower = higher priority)";
                 };
               };
