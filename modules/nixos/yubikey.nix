@@ -1,6 +1,19 @@
 { pkgs, ... }:
 {
+  # Smart card daemon
+  services.pcscd.enable = true;
+
   services.udev.packages = [ pkgs.yubikey-personalization ];
+
+  # Allow pcscd access from non-graphical sessions (SSH, TTY)
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.debian.pcsc-lite.access_pcsc" ||
+          action.id == "org.debian.pcsc-lite.access_card") {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 
   environment.systemPackages = with pkgs; [
     yubikey-manager
