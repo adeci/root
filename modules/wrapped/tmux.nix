@@ -103,9 +103,13 @@
     # Confirm before kill
     bind-key K confirm kill-window
 
-    # Prompt navigation in copy mode
-    bind-key -T copy-mode-vi [ send-keys -X previous-prompt
-    bind-key -T copy-mode-vi ] send-keys -X next-prompt
+    # Prompt navigation in copy mode (search-based — OSC 133 marks are
+    # broken in tmux with pure prompt's multi-line rendering)
+    bind-key -T copy-mode-vi [ send-keys -X search-backward '❯'
+    bind-key -T copy-mode-vi ] send-keys -X search-forward '❯'
+
+    # Copy last command output (command line + output + trailing prompt)
+    bind y run-shell 'tmux copy-mode && tmux send-keys -X search-backward ❯ && tmux send-keys -X search-backward ❯ && tmux send-keys -X begin-selection && tmux send-keys -X search-forward ❯ && tmux send-keys -X end-of-line && tmux send-keys -X copy-selection-and-cancel'
 
     # Resize fix — sync stty rows/cols
     bind R run "echo \"stty columns $(tmux display -p \#{pane_width}); stty rows $(tmux display -p \#{pane_height})\" | tmux load-buffer - ; tmux paste-buffer"

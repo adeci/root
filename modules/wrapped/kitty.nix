@@ -3,7 +3,6 @@
   wlib,
   pkgs,
   lib,
-  inputs,
   ...
 }:
 let
@@ -28,15 +27,6 @@ in
 
   config.package = lib.mkDefault pkgs.kitty;
 
-  # Embed the zsh wrapper — kitty launches this as its shell
-  options.zsh = lib.mkOption {
-    type = wlib.types.subWrapperModule [
-      inputs.self.wrapperModules.zsh
-      { inherit pkgs; }
-    ];
-    default = { };
-  };
-
   options.settings = lib.mkOption {
     type = lib.types.attrsOf (
       lib.types.oneOf [
@@ -59,8 +49,7 @@ in
   };
 
   config.settings = {
-    # Shell — launch the embedded wrapped zsh
-    shell = "${config.zsh.wrapper}${config.zsh.wrapper.shellPath} --login";
+    # Shell — use the login shell (wrapped zsh via system packages)
 
     # Font
     font_family = "CaskaydiaMono Nerd Font Mono";

@@ -35,6 +35,9 @@ in
   programs.ssh.startAgent = lib.mkDefault true;
 
   environment.systemPackages = [
+    (lib.hiPrio wrapped.zsh)
+    wrapped.kitty
+    wrapped.noctalia-shell
     pkgs.nautilus
     pkgs.xwayland-satellite
     pkgs.libnotify

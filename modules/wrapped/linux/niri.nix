@@ -6,11 +6,11 @@
   ...
 }:
 let
-  wrappedKitty = inputs.self.wrappers.kitty.wrap { inherit pkgs; };
-  wrappedNoctalia = inputs.self.wrappers.noctalia-shell.wrap { inherit pkgs; };
-
-  kittyBin = lib.getExe wrappedKitty;
-  noctaliaBin = lib.getExe wrappedNoctalia;
+  # Referenced by name from PATH (provided by desktop.nix systemPackages)
+  # so that niri's config doesn't bake in store paths — rebuilding kitty/zsh/tmux
+  # takes effect in new terminals without restarting the compositor.
+  kittyBin = "kitty";
+  noctaliaBin = "noctalia-shell";
 
   wallpaper = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/tokyo-night/tokyo-night_nix.png";

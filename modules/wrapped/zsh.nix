@@ -190,6 +190,9 @@ in
         bindkey -v
         export KEYTIMEOUT=1
 
+        # Fix paste creating un-editable regions in vi mode
+        zle_highlight+=(paste:none)
+
         autoload -Uz add-zle-hook-widget
         _cursor_block() { print -n '\e[1 q' > /dev/tty; }
         add-zle-hook-widget zle-line-init _cursor_block
@@ -206,6 +209,7 @@ in
         PURE_GIT_PULL=0
         PURE_CMD_MAX_EXEC_TIME=4
         PURE_PROMPT_SYMBOL="%(?.%F{green}.%F{red})❯%f"
+        PURE_PROMPT_VICMD_SYMBOL="%F{blue}❯%f"
         zstyle :prompt:pure:path color cyan
         zstyle :prompt:pure:git:branch color magenta
         zstyle :prompt:pure:git:branch:cached color red
@@ -222,8 +226,12 @@ in
 
         RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
 
-        # OSC 133 prompt marks
-        precmd() { print -Pn "\e]133;A\e\\"; }
+        # OSC 133 marks — broken in tmux with multi-line prompts (pure prompt
+        # triggers CSI 0 J which wipes the marks). Kept for kitty without tmux.
+        _osc133_prompt() { print -Pn "\e]133;A\e\\"; }
+        _osc133_command() { print -Pn "\e]133;C\e\\"; }
+        precmd_functions+=(_osc133_prompt)
+        preexec_functions+=(_osc133_command)
 
         # ── fzf-tab configuration ────────────────────────────────────────
         if (( $+commands[tmux] )); then
