@@ -18,6 +18,11 @@
   };
 
   programs.ssh.extraConfig = ''
+    Host *.cymric-daggertooth.ts.net
+      ControlMaster auto
+      ControlPersist 10m
+      ControlPath ~/.ssh/cm-%C
+
     Host *
       AddKeysToAgent yes
   '';
