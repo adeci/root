@@ -8,6 +8,11 @@ let
   shopifyZsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap {
     extraInit = # zsh
       ''
+        # Google Cloud SDK (homebrew cask doesn't symlink into /opt/homebrew/bin)
+        if [[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]]; then
+          source /opt/homebrew/share/google-cloud-sdk/path.zsh.inc
+        fi
+
         # Shopify tec (includes shadowenv, dev tools, wish, and shell hooks)
         if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
           eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
