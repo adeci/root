@@ -14,6 +14,9 @@
     jovian.url = "github:Jovian-Experiments/Jovian-NixOS";
     jovian.inputs.nixpkgs.follows = "nixpkgs";
 
+    nix-index-database.url = "github:nix-community/nix-index-database";
+    nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
+
     noctalia-shell.url = "github:noctalia-dev/noctalia-shell";
     noctalia-shell.inputs.nixpkgs.follows = "nixpkgs";
 

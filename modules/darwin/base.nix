@@ -10,7 +10,14 @@ let
   wrapped = self.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
+  imports = [
+    inputs.nix-index-database.darwinModules.nix-index
+  ];
+
   nix.enable = true;
+
+  # nix-index with pre-built database: command-not-found handler + comma
+  programs.nix-index-database.comma.enable = true;
 
   # Homebrew for macOS-native apps not available in nixpkgs
   homebrew = {
