@@ -5,6 +5,7 @@
     tags = [
       "adeci-net"
       "wayfinders"
+      "keybearers"
     ];
     deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
   };
@@ -62,6 +63,7 @@
     tags = [
       "adeci-net"
       "wayfinders"
+      "keybearers"
     ];
     deploy.targetHost = "root@praxis.cymric-daggertooth.ts.net";
   };
