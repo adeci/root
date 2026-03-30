@@ -112,13 +112,14 @@ modules/                         # Shared composable modules — logic, not data
   wrapped/                       #   Wrapped packages (BirdeeHub nix-wrapper-modules)
     zsh.nix                      #     Shell + CLI tools (withLLMTools, extraInit)
     git.nix                      #     Git with baked-in config
-    kitty.nix                    #     Terminal (embeds wrapped zsh)
+    kitty.nix                    #     Terminal (uses login shell, decoupled from zsh)
     tmux.nix                     #     Terminal multiplexer
     btop.nix                     #     System monitor
     big-htop.nix                 #     htop configured for leviathan
     linux/                       #     Linux-only wrappers (excluded from darwin eval)
-      niri.nix                   #       Wayland compositor
+      niri.nix                   #       Wayland compositor (references kitty/noctalia by name from PATH)
       noctalia-shell.nix         #       Status bar
+      desktop.nix                #       Self-contained desktop (niri + kitty + noctalia + zsh for demos)
   nixvim/                        #   Nixvim config (temporary — migrating to neovim 0.12)
 
 machines/<name>/                 # Per-machine configs
@@ -143,6 +144,17 @@ Each wrapper in `modules/wrapped/` becomes a flake package
 (`nix run .#<name>`). Wrappers are pure — no runtime file writes to
 `$HOME`. Linux-only wrappers go in `modules/wrapped/linux/` and are
 auto-excluded from darwin evaluation.
+
+**Wrapper decoupling**: Wrappers are intentionally NOT nested into each
+other on the system. Niri references kitty and noctalia-shell by name
+(resolved from PATH at runtime), and kitty uses the login shell rather
+than embedding a specific zsh store path. This means rebuilding
+zsh/tmux/kitty takes effect in new terminals without restarting the
+compositor. The `desktop` wrapper (`nix run .#desktop`) re-nests
+everything into a self-contained package for demos.
+
+`desktop.nix` adds wrapped kitty, noctalia-shell, and zsh (via
+`lib.hiPrio` to win over the system zsh) to `environment.systemPackages`.
 
 The zsh wrapper supports extension via `.wrap`:
 
@@ -215,6 +227,13 @@ imports = [
   them via `SSH_AUTH_SOCK`.
 - SSH priority: TPM agent (no touch) → FIDO2 handle files (YubiKey touch).
 - Public keys (YubiKey + TPM) are in `inventory/users/alex.nix`.
+- Desktop machines get `ssh-agent` via `desktop.nix` (`programs.ssh.startAgent`,
+  `mkDefault` so `ssh-tpm-agent.nix` cleanly overrides it).
+- Servers get no SSH agent (they're targets, not sources).
+- `yubikey.nix` provides pcscd, udev rules, management tools, and
+  `yubikey-touch-detector` for desktop notifications when touch is needed.
+- `base.nix` configures SSH ControlMaster for Tailscale hosts
+  (connection reuse, reduces FIDO2 touch prompts).
 
 **Terranix infrastructure provisioning**: Cloud resources are managed
 through Terranix (Nix → Terraform JSON → OpenTofu). All terraform
