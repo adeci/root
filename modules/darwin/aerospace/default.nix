@@ -43,9 +43,9 @@ in
   };
   system.activationScripts.postActivation.text = # bash
     lib.mkAfter ''
-        AEROSPACE_DIR="/Users/${primaryUser}/.config/aerospace"
+      AEROSPACE_DIR="/Users/${primaryUser}/.config/aerospace"
       mkdir -p "$AEROSPACE_DIR"
       cp ${aerospaceConfig} "$AEROSPACE_DIR/aerospace.toml"
-      /usr/bin/pgrep -x AeroSpace && /opt/homebrew/bin/aerospace reload-config || true
+      /usr/bin/pgrep -qx AeroSpace && /opt/homebrew/bin/aerospace reload-config 2>/dev/null || true
     '';
 }

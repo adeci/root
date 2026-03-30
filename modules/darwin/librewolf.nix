@@ -45,7 +45,7 @@ in
   # Install .app bundle for Dock/Spotlight
   system.activationScripts.postActivation.text = # bash
     lib.mkAfter ''
-        echo "installing LibreWolf.app..." >&2
+        echo "installing LibreWolf.app..."
       targetDir='/Applications/Nix Apps'
       markerDir="$targetDir/.sources"
       mkdir -p "$targetDir" "$markerDir"
@@ -56,7 +56,7 @@ in
       marker="$markerDir/LibreWolf.app"
 
       if [[ ! -f "$marker" ]] || [[ "$(cat "$marker")" != "$src" ]]; then
-        echo "Syncing LibreWolf.app..." >&2
+        echo "Syncing LibreWolf.app..."
         chmod -R u+w "$dest" 2>/dev/null || true
         rm -rf "$dest"
         /usr/bin/ditto "$app" "$dest"
