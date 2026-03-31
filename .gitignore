@@ -1,9 +1,10 @@
 result
 .direnv/
 
-*.terraform/
-*.tfstate
-config.tf.json
+# Terraform working directories (providers, config, cache)
+# Lock files are tracked (provider version pins)
+.terraform/*/
+!.terraform/*.lock.hcl
 
 .pi/
 .claude/

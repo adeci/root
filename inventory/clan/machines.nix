@@ -10,6 +10,13 @@
     deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
   };
 
+  janus = {
+    name = "janus";
+    tags = [
+      "adeci-net"
+    ];
+  };
+
   conduit = {
     name = "conduit";
     tags = [

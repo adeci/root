@@ -1,14 +1,19 @@
 {
-  pkgs,
-  inputs,
   self,
+  inputs,
+  pkgs,
+  lib,
   ...
 }:
 {
   nixpkgs.config.allowUnfree = true;
   users.mutableUsers = false;
-  users.users.root.openssh.authorizedKeys.keys = self.users.alex.sshKeys;
-  networking.networkmanager.enable = true;
+  users.users.root = {
+    openssh.authorizedKeys.keys = self.users.alex.sshKeys;
+    packages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim ];
+  };
+  environment.variables.EDITOR = "nvim";
+  networking.networkmanager.enable = lib.mkDefault true;
   services.openssh = {
     enable = true;
     settings = {

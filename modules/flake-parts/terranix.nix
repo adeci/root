@@ -1,18 +1,32 @@
+# Cloud infrastructure Terraform workspace (Cloudflare, Hetzner)
+# RouterOS network workspace is in routeros.nix (separate state).
 {
   inputs,
   lib,
   ...
 }:
 let
-  # Auto-discover shared terranix modules
+  # Auto-discover cloud terranix modules (excludes routeros — separate workspace)
   terranixDir = ../terranix;
-  terranixModules = map (name: terranixDir + "/${name}") (
-    builtins.attrNames (
-      lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".nix" name) (
-        builtins.readDir terranixDir
-      )
-    )
-  );
+  terranixModules =
+    let
+      entries = builtins.readDir terranixDir;
+      isModule =
+        name: type:
+        (type == "regular" && lib.hasSuffix ".nix" name)
+        || (
+          type == "directory"
+          && name != "routeros"
+          && builtins.pathExists (terranixDir + "/${name}/default.nix")
+        );
+    in
+    map (
+      name:
+      let
+        type = entries.${name};
+      in
+      if type == "directory" then terranixDir + "/${name}" else terranixDir + "/${name}"
+    ) (builtins.attrNames (lib.filterAttrs isModule entries));
 
   # Auto-discover per-machine terraform configs
   machineDir = ../../machines;
@@ -47,6 +61,8 @@ in
       tfSetup = # bash
         ''
           cd "$(git rev-parse --show-toplevel)"
+          mkdir -p .terraform/cloud
+          cd .terraform/cloud
 
           AWS_ACCESS_KEY_ID=$(clan secrets get b2-key-id)
           AWS_SECRET_ACCESS_KEY=$(clan secrets get b2-application-key)
@@ -55,8 +71,7 @@ in
           export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           export AWS_REQUEST_CHECKSUM_CALCULATION AWS_RESPONSE_CHECKSUM_VALIDATION
 
-          rm -f config.tf.json
-          cp ${tfConfig} config.tf.json
+          install -m644 ${tfConfig} config.tf.json
         '';
     in
     {

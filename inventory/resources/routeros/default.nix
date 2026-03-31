@@ -1,0 +1,3 @@
+{
+  nexus = import ./nexus.nix;
+}

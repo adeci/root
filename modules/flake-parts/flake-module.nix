@@ -7,6 +7,7 @@
 
     ./resources.nix
     ./nixvim.nix
+    ./routeros.nix
     ./terranix.nix
     ./users.nix
     ./wrapped.nix
