@@ -83,24 +83,7 @@
         net-init = netCommand "net-init" "init";
         net-plan = netCommand "net-plan" "plan";
         net-apply = netCommand "net-apply" "apply";
-
-        # ── Deploy (init + apply in one shot) ──────────────────────
-        routeros-deploy = linuxOnly (
-          pkgs.writeShellApplication {
-            name = "routeros-deploy";
-            runtimeInputs = [
-              pkgs.gitMinimal
-              pkgs.opentofu
-              clan-cli
-            ];
-            text = # bash
-              ''
-                ${netTfSetup}
-                tofu init -input=false
-                tofu apply "$@"
-              '';
-          }
-        );
+        net-destroy = netCommand "net-destroy" "destroy";
 
         # ── Bootstrap ──────────────────────────────────────────────
         routeros-bootstrap = linuxOnly (
