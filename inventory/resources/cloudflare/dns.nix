@@ -44,6 +44,17 @@
     };
   };
 
+  mc_hunter = {
+    zone = "decio.us";
+    name = "hunter";
+    type = "A";
+    target = {
+      resource = "hcloud_server";
+      name = "conduit";
+      field = "ipv4_address";
+    };
+  };
+
   # Minecraft SRV records
   srv_rlc = {
     zone = "decio.us";
@@ -76,6 +87,17 @@
       weight = 0;
       port = 25568;
       target = "dj2.decio.us";
+    };
+  };
+  srv_hunter = {
+    zone = "decio.us";
+    name = "_minecraft._tcp.hunter";
+    type = "SRV";
+    data = {
+      priority = 0;
+      weight = 0;
+      port = 25567;
+      target = "hunter.decio.us";
     };
   };
 }

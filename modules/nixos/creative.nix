@@ -7,5 +7,6 @@
     audacity
     prusa-slicer
     obs-studio
+    gimp
   ];
 }

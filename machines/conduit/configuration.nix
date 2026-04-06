@@ -44,17 +44,25 @@
         proxy_pass 100.99.42.67:24457;
       }
 
+      # Minecraft hunter server
+      server {
+        listen 25567;
+        proxy_pass lazarus.tail0e36b8.ts.net:25565;
+      }
+
     '';
   };
 
   networking.firewall.allowedTCPPorts = [
     25565
     25566
+    25567
     25568
   ];
   networking.firewall.allowedUDPPorts = [
     24454
     24455
+    24456
     24457
   ];
 

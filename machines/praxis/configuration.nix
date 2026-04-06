@@ -55,6 +55,8 @@
 
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
+  services.teamviewer.enable = true;
+
   environment.systemPackages = [
     pkgs.bitwarden-desktop
     pkgs.mullvad-browser
