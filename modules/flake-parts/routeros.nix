@@ -99,6 +99,11 @@
               '';
           }
         );
+
+        # ── Netinstall ─────────────────────────────────────────────
+        routeros-netinstall-cap-ax = import ../terranix/routeros/netinstall-cap-ax.nix {
+          inherit pkgs clan-cli;
+        };
       };
     };
 }

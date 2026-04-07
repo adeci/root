@@ -29,8 +29,8 @@
       comment = "Uplink — axon";
     };
     "ether24" = {
-      vlan = "mgmt";
-      comment = "axon management";
+      trunk = true;
+      comment = "TEMP — janus test trunk (revert to mgmt access for axon)";
     };
     # "ether5" = { vlan = "iot"; comment = "Blink camera"; };
   };

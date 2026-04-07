@@ -2,7 +2,12 @@
 
 Expects: factory-reset RouterOS device plugged into this machine.
 Does: set password, clear ALL default config, add DHCP client on ether1.
-After: plug ether1 into network, run routeros-deploy.
+After: plug ether1 into network, run net-apply.
+
+The cleanup script is scheduled to run via RouterOS scheduler (not executed
+directly) so it completes even when removing IPs/bridges kills the API
+connection. This is critical for WAPs where bootstrap connects via the
+bridge interface.
 """
 
 import json
@@ -128,10 +133,25 @@ def main():
     with temporary_ip(interface):
         # ── Connect ──────────────────────────────────────────────────
         print("==> Checking for RouterOS device at 192.168.88.1...")
+
+        # Try empty password first (older devices), fall back to sticker password
+        factory_auth = ("admin", "")
         try:
-            identity = api("system/identity")
+            identity = api("system/identity", auth=factory_auth)
         except ApiError:
             identity = None
+
+        if identity is None:
+            # Newer RouterOS 7 devices have a random password on a sticker
+            sticker_pw = input(
+                "\n    Default (empty) password failed.\n"
+                "    Enter the password from the device sticker: "
+            )
+            factory_auth = ("admin", sticker_pw)
+            try:
+                identity = api("system/identity", auth=factory_auth)
+            except ApiError:
+                identity = None
 
         if identity is None:
             print(
@@ -148,12 +168,17 @@ def main():
         # ── Set password ─────────────────────────────────────────────
         print("==> Setting admin password from clan secrets...")
         password = get_password()
-        api("user/admin", method="PATCH", data={"password": password})
+        api("user/admin", method="PATCH", data={"password": password}, auth=factory_auth)
         print("    Password set.")
 
         auth = ("admin", password)
 
         # ── Clear default config ─────────────────────────────────────
+        # The script removes everything: firewall, bridge, IPs, wifi config.
+        # Removing the bridge/IPs kills our API connection (we connect via
+        # ether2 → bridge → 192.168.88.1). To ensure the script runs to
+        # completion, we schedule it via RouterOS scheduler instead of
+        # executing it directly over the API.
         print(f"==> Clearing default config and adding DHCP client on {ros_iface}...")
 
         script = "\n".join([
@@ -162,13 +187,33 @@ def main():
             "/interface list member remove [find]",
             "/ip dhcp-server remove [find]",
             "/ip pool remove [find]",
-            "/ip address remove [find]",
+            # Clear wifi config (no-op on devices without wifi)
+            "/interface/wifi set [find] disabled=yes",
+            "/interface/wifi/configuration remove [find]",
+            "/interface/wifi/security remove [find]",
+            "/interface/wifi/datapath remove [find]",
+            "/interface/wifi/channel remove [find]",
+            # Clear inline wifi settings on physical interfaces
+            "/interface/wifi set [find] "
+            "configuration.mode=\"\" configuration.ssid=\"\" "
+            "security.authentication-types=\"\" security.passphrase=\"\" "
+            "security.ft=\"\" security.ft-over-ds=\"\" "
+            "channel.band=\"\" channel.width=\"\" channel.skip-dfs-channels=\"\"",
+            # Remove bridge (kills ether2 connectivity)
             "/interface bridge port remove [find]",
             "/interface bridge remove [find]",
+            # Remove all IPs and DHCP clients, start fresh
+            "/ip dhcp-client remove [find]",
+            "/ip address remove [find]",
             f"/ip dhcp-client add interface={ros_iface} disabled=no",
+            # Self-clean: remove the scheduler and script
+            "/system scheduler remove terraform-bootstrap-run",
+            "/system script remove terraform-bootstrap",
         ])
 
-        # Remove previous bootstrap script if it exists (best-effort)
+        # Remove previous bootstrap artifacts (best-effort)
+        api("system/scheduler/remove", method="POST",
+            data={"numbers": "terraform-bootstrap-run"}, auth=auth, lenient=True)
         api("system/script/remove", method="POST",
             data={"numbers": "terraform-bootstrap"}, auth=auth, lenient=True)
 
@@ -176,14 +221,17 @@ def main():
         api("system/script/add", method="POST",
             data={"name": "terraform-bootstrap", "source": script}, auth=auth)
 
-        # Run it — device drops its IP here, timeout is expected
-        api("system/script/run", method="POST",
-            data={"number": "terraform-bootstrap"}, auth=auth, timeout=10, lenient=True)
+        # Schedule it to run in 3 seconds — runs independently of our
+        # API connection, so it completes even after connectivity drops.
+        # on-event takes a script name (must exist in /system/script).
+        api("system/scheduler/add", method="POST", data={
+            "name": "terraform-bootstrap-run",
+            "interval": "00:00:03",
+            "on-event": "terraform-bootstrap",
+        }, auth=auth)
 
-        # Best-effort cleanup (device likely unreachable)
-        api("system/script/remove", method="POST",
-            data={"numbers": "terraform-bootstrap"}, auth=auth, timeout=3, lenient=True)
-
+        print("    Scheduled. Waiting for cleanup to complete...")
+        time.sleep(10)
         print("    Done.")
 
     print(f"""
@@ -193,9 +241,10 @@ def main():
 
   The device has been configured with:
     - Admin password (from clan secrets)
-    - Default config cleared (bridge, firewall, IPs)
+    - Default config cleared (bridge, firewall, wifi, IPs)
     - DHCP client on {ros_iface}
 
+  Next: plug {ros_iface} into management network, then net-apply.
 """)
 
 
