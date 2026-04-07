@@ -1,26 +1,21 @@
-# One-shot provisioning for MikroTik cAP ax (ARM64, WiFi 6).
-# Netinstalls RouterOS + wifi-qcom, sets admin password, adds DHCP client.
+# One-shot provisioning for MikroTik CRS328-24P-4S+RM (ARM, main switch).
+# Netinstalls RouterOS, sets admin password, adds DHCP client.
 # Device goes from factory/blank to terraform-ready in one command.
 #
-# Usage: nix run .#routeros-netinstall-cap-ax
+# Usage: nix run .#routeros-netinstall-crs328
 { pkgs, clan-cli }:
 let
   version = "7.22.1";
-  arch = "arm64";
+  arch = "arm";
   netinstall-cli = import ./netinstall-cli.nix { inherit pkgs; };
 
   routeros = pkgs.fetchurl {
     url = "https://download.mikrotik.com/routeros/${version}/routeros-${version}-${arch}.npk";
-    hash = "sha256-pfyYQKeoeDLYHpaZzqga6Wmz2SSEegtFNpdOWlibIGc=";
-  };
-
-  wifi-qcom = pkgs.fetchurl {
-    url = "https://download.mikrotik.com/routeros/${version}/wifi-qcom-${version}-${arch}.npk";
-    hash = "sha256-6npDjebffBOnASLOiAWNjCyppdGdsAPd20HDjs6+dZU=";
+    hash = "sha256-lQCnt2vusjy1/tCmUZ4dvGzccnj4rOe+LIdQQcLElvw=";
   };
 in
 pkgs.writeShellApplication {
-  name = "routeros-netinstall-cap-ax";
+  name = "routeros-netinstall-crs328";
   runtimeInputs = [
     pkgs.iproute2
     pkgs.iptables
@@ -29,7 +24,7 @@ pkgs.writeShellApplication {
   ];
   text = # bash
     ''
-      echo "RouterOS Netinstall — cAP ax (${arch}, v${version})"
+      echo "RouterOS Netinstall — CRS328-24P-4S+RM (${arch}, v${version})"
       echo ""
       echo "Prerequisites:"
       echo "  1. Device in Netinstall mode (hold reset 15s: flash → solid → off → release)"
@@ -90,7 +85,7 @@ pkgs.writeShellApplication {
 
       # ── Run netinstall ───────────────────────────────────────────
       echo "==> Running netinstall..."
-      echo "    Packages: routeros-${version}-${arch}.npk, wifi-qcom-${version}-${arch}.npk"
+      echo "    Packages: routeros-${version}-${arch}.npk"
       echo ""
       echo "    Waiting for device in Netinstall mode..."
       echo ""
@@ -99,15 +94,15 @@ pkgs.writeShellApplication {
         -s "$setup_script" \
         -i "$iface" \
         -a 192.168.88.3 \
-        "${routeros}" "${wifi-qcom}"
+        "${routeros}"
 
       echo ""
       echo "========================================================"
-      echo "  Netinstall complete! (cAP ax, v${version})"
+      echo "  Netinstall complete! (CRS328-24P-4S+RM, v${version})"
       echo "========================================================"
       echo ""
       echo "  Device has been configured with:"
-      echo "    - RouterOS ${version} (${arch}) + wifi-qcom"
+      echo "    - RouterOS ${version} (${arch})"
       echo "    - Admin password (from clan secrets)"
       echo "    - DHCP client on ether1"
       echo ""

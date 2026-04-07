@@ -47,7 +47,7 @@ in
       "${name}_fallback" = {
         provider = deviceProvider name;
         address = device.fallbackAddress;
-        interface = device.managementPort;
+        interface = device.fallbackPort or device.managementPort;
         comment = "Static fallback — Managed by Terraform";
       };
     }

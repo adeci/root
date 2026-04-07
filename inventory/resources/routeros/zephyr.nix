@@ -1,7 +1,7 @@
 # MikroTik cAP ax (Gen 6) — living room WAP
 {
   model = "cAP-ax";
-  host = "10.99.0.5";
+  host = "192.168.50.179"; # TEMP — revert to 10.99.0.5 after cutover
   port = 8728;
 
   identity = "zephyr";
@@ -14,6 +14,7 @@
       vlan = 10;
       security = "wpa3";
       secret = "wifi-aether";
+      primary = true; # bound to physical radios, others get virtual interfaces
     };
     guest = {
       ssid = "Penumbra";

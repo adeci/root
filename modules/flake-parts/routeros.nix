@@ -84,26 +84,59 @@
         net-plan = netCommand "net-plan" "plan";
         net-apply = netCommand "net-apply" "apply";
         net-destroy = netCommand "net-destroy" "destroy";
+        net-state = netCommand "net-state" "state";
 
-        # ── Bootstrap ──────────────────────────────────────────────
-        routeros-bootstrap = linuxOnly (
+        # Remove all terraform resources for a device in one session
+        net-state-rm-device = linuxOnly (
           pkgs.writeShellApplication {
-            name = "routeros-bootstrap";
+            name = "net-state-rm-device";
             runtimeInputs = [
-              pkgs.iproute2
+              pkgs.gitMinimal
+              pkgs.opentofu
               clan-cli
             ];
             text = # bash
               ''
-                exec ${lib.getExe pkgs.python3} ${../terranix/routeros/bootstrap.py} "$@"
+                ${netTfSetup}
+                if [[ $# -ne 1 ]]; then
+                  echo "Usage: net-state-rm-device <device-name>"
+                  exit 1
+                fi
+                device="$1"
+                mapfile -t resources < <(tofu state list 2>/dev/null | grep "$device")
+                if [[ ''${#resources[@]} -eq 0 ]]; then
+                  echo "No resources found matching '$device'"
+                  exit 0
+                fi
+                echo "Removing ''${#resources[@]} resources matching '$device':"
+                for r in "''${resources[@]}"; do
+                  echo "  $r"
+                done
+                echo ""
+                read -rp "Continue? [y/N] " confirm
+                if [[ "$confirm" != "y" ]]; then
+                  echo "Aborted."
+                  exit 0
+                fi
+                for r in "''${resources[@]}"; do
+                  tofu state rm "$r"
+                done
+                echo "Done."
               '';
           }
         );
 
-        # ── Netinstall ─────────────────────────────────────────────
+        # ── Netinstall (one-shot device provisioning) ────────────────
         routeros-netinstall-cap-ax = import ../terranix/routeros/netinstall-cap-ax.nix {
           inherit pkgs clan-cli;
         };
+        routeros-netinstall-crs328 = import ../terranix/routeros/netinstall-crs328.nix {
+          inherit pkgs clan-cli;
+        };
+        routeros-netinstall-crs310 = import ../terranix/routeros/netinstall-crs310.nix {
+          inherit pkgs clan-cli;
+        };
+
       };
     };
 }

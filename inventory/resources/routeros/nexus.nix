@@ -22,11 +22,11 @@
   ports = {
     "sfp-sfpplus1" = {
       trunk = true;
-      comment = "WAN — janus";
+      comment = "Uplink — axon (10G SFP+)";
     };
     "sfp-sfpplus2" = {
       trunk = true;
-      comment = "Uplink — axon";
+      comment = "WAN — janus (future SFP+)";
     };
     "ether24" = {
       trunk = true;

@@ -14,6 +14,7 @@
       vlan = 10;
       security = "wpa3";
       secret = "wifi-aether";
+      primary = true;
     };
     guest = {
       ssid = "Penumbra";

@@ -5,7 +5,7 @@ let
   # ── Interfaces ─────────────────────────────────────────────────────
   # Temp test PC — swap these for the Qotom when ready
   wan = "enp2s0"; # built-in RJ45 → ISP modem
-  lan = "enp0s20f0u5"; # USB ethernet → nexus sfp-sfpplus1 (trunk) # same as lan for now — dedicated RJ45 on Qotom later
+  lan = "enp0s20f0u2"; # USB ethernet → nexus ether24 (temp trunk) # same as lan for now — dedicated RJ45 on Qotom later
   # Qotom Q20321G9:
   # wan  = "...";  # RJ45 → ISP modem
   # lan  = "...";  # SFP+ → nexus (VLAN trunk)
@@ -42,7 +42,11 @@ let
       ip = "10.99.0.2";
       vlan = "mgmt";
     };
-    # axon = { mac = "xx:xx:xx:xx:xx:xx"; ip = "10.99.0.3";  vlan = "mgmt"; };
+    axon = {
+      mac = "04:F4:1C:84:68:A4"; # bridge VLAN 99 interface MAC (not ether1)
+      ip = "10.99.0.3";
+      vlan = "mgmt";
+    };
 
     # Trusted network (VLAN 10)
     # praxis = { mac = "xx:xx:xx:xx:xx:xx"; ip = "10.10.0.10"; vlan = "trusted"; };

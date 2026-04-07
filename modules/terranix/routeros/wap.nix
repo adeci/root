@@ -1,10 +1,18 @@
-# RouterOS WAP resources — WiFi, security, datapaths, bridge
+# RouterOS WAP resources — WiFi + VLAN bridging (Approach B)
 # Applied to devices that have a `wifi` attribute in their data.
 #
-# Each SSID gets:
-#   - routeros_wifi_security       (passphrase + auth type)
-#   - routeros_wifi_datapath       (VLAN mapping via bridge)
-#   - routeros_wifi_configuration  (SSID + security + datapath binding)
+# Management: ether1 stays standalone with DHCP client (safe, same as switches).
+# WiFi VLANs: VLAN sub-interfaces on ether1 carry tagged traffic from the switch.
+# Per-VLAN bridges connect each VLAN sub-interface to its WiFi interfaces.
+# No vlan_filtering needed — traffic is already separated by sub-interfaces.
+#
+# The switch port facing the WAP must be a hybrid port: native VLAN for
+# management (untagged) + tagged VLANs for WiFi traffic.
+#
+# WiFi: one SSID is marked primary and gets bound to the physical radios
+# (wifi1=5GHz, wifi2=2.4GHz). These pre-exist after netinstall and are
+# imported via declarative import blocks. Secondary SSIDs get virtual
+# interfaces created under each radio — these are new resources, no import.
 {
   config,
   self,
@@ -29,6 +37,38 @@ let
       "wpa3-psk"
     ];
   };
+
+  # VLAN name from ID (for resource naming)
+  vlanName =
+    id:
+    {
+      "10" = "trusted";
+      "20" = "iot";
+      "30" = "guest";
+    }
+    .${toString id};
+
+  # Unique VLAN IDs used by a device's WiFi config
+  deviceVlans = device: lib.unique (lib.mapAttrsToList (_: ssid: ssid.vlan) device.wifi);
+
+  # Split SSIDs into primary (bound to physical radios) and secondary (virtual interfaces)
+  primarySsidName =
+    device: lib.findFirst (n: device.wifi.${n}.primary or false) null (lib.attrNames device.wifi);
+  secondarySsidNames =
+    device: lib.filter (n: !(device.wifi.${n}.primary or false)) (lib.attrNames device.wifi);
+
+  # Physical radios — wifi1 is 5GHz, wifi2 is 2.4GHz on cAP ax.
+  # IDs are stable after netinstall: wifi1=*2, wifi2=*3.
+  radios = [
+    {
+      name = "wifi1";
+      id = "*2";
+    }
+    {
+      name = "wifi2";
+      id = "*3";
+    }
+  ];
 in
 {
   # ── WiFi secrets ───────────────────────────────────────────────────
@@ -52,7 +92,55 @@ in
       }) allSecrets
     );
 
-  # ── WiFi security profiles ──────────────────────────────────────────
+  # ── VLAN sub-interfaces on ether1 ──────────────────────────────────
+
+  resource.routeros_interface_vlan = lib.concatMapAttrs (
+    name: device:
+    lib.listToAttrs (
+      map (vlanId: {
+        name = "${name}_${vlanName vlanId}";
+        value = {
+          provider = deviceProvider name;
+          name = "vlan${toString vlanId}";
+          interface = "ether1";
+          vlan_id = vlanId;
+        };
+      }) (deviceVlans device)
+    )
+  ) waps;
+
+  # ── Per-VLAN bridges ───────────────────────────────────────────────
+
+  resource.routeros_interface_bridge = lib.concatMapAttrs (
+    name: device:
+    lib.listToAttrs (
+      map (vlanId: {
+        name = "${name}_${vlanName vlanId}";
+        value = {
+          provider = deviceProvider name;
+          name = "bridge-${vlanName vlanId}";
+        };
+      }) (deviceVlans device)
+    )
+  ) waps;
+
+  # ── Bridge ports (VLAN sub-interface → bridge) ─────────────────────
+
+  resource.routeros_interface_bridge_port = lib.concatMapAttrs (
+    name: device:
+    lib.listToAttrs (
+      map (vlanId: {
+        name = "${name}_${vlanName vlanId}";
+        value = {
+          provider = deviceProvider name;
+          bridge = config.resource.routeros_interface_bridge."${name}_${vlanName vlanId}" "name";
+          interface = config.resource.routeros_interface_vlan."${name}_${vlanName vlanId}" "name";
+        };
+      }) (deviceVlans device)
+    )
+  ) waps;
+
+  # ── WiFi security profiles ────────────────────────────────────────
 
   resource.routeros_wifi_security = lib.concatMapAttrs (
     name: device:
@@ -67,7 +155,7 @@ in
     ) device.wifi
   ) waps;
 
-  # ── WiFi datapaths (SSID → VLAN mapping) ───────────────────────────
+  # ── WiFi datapaths (SSID → per-VLAN bridge) ───────────────────────
 
   resource.routeros_wifi_datapath = lib.concatMapAttrs (
     name: device:
@@ -76,13 +164,12 @@ in
       lib.nameValuePair "${name}_${ssidName}" {
         provider = deviceProvider name;
         name = "${name}-${ssidName}";
-        bridge = config.resource.routeros_interface_bridge.${name} "name";
-        vlan_id = ssidCfg.vlan;
+        bridge = config.resource.routeros_interface_bridge."${name}_${vlanName ssidCfg.vlan}" "name";
       }
     ) device.wifi
   ) waps;
 
-  # ── WiFi configurations (ties SSID + security + datapath) ──────────
+  # ── WiFi configurations (SSID + security + datapath + mode) ───────
 
   resource.routeros_wifi_configuration = lib.concatMapAttrs (
     name: device:
@@ -93,6 +180,7 @@ in
         name = "${name}-${ssidName}";
         inherit (ssidCfg) ssid;
         country = "United States";
+        mode = "ap";
         security = {
           config = config.resource.routeros_wifi_security."${name}_${ssidName}" "name";
         };
@@ -104,15 +192,58 @@ in
     ) device.wifi
   ) waps;
 
-  # ── Bridge for WAPs ─────────────────────────────────────────────────
-  # WiFi interfaces join the bridge via datapaths.
-  # VLAN filtering tags traffic per SSID.
+  # ── Physical radio interfaces (imported) ───────────────────────────
+  # wifi1/wifi2 pre-exist after netinstall. Import blocks bring them into
+  # state on first apply. Each gets the primary SSID configuration.
 
-  resource.routeros_interface_bridge = lib.concatMapAttrs (name: _: {
-    ${name} = {
+  resource.routeros_wifi = lib.concatMapAttrs (
+    name: device:
+    let
+      primary = primarySsidName device;
+      secondaries = secondarySsidNames device;
+    in
+    # Physical radios — primary SSID
+    lib.listToAttrs (
+      map (radio: {
+        name = "${name}_${radio.name}";
+        value = {
+          provider = deviceProvider name;
+          inherit (radio) name;
+          disabled = false;
+          configuration = {
+            config = config.resource.routeros_wifi_configuration."${name}_${primary}" "name";
+          };
+        };
+      }) radios
+    )
+    # Virtual interfaces — secondary SSIDs on each radio
+    // lib.listToAttrs (
+      lib.concatMap (
+        radio:
+        map (ssidName: {
+          name = "${name}_${radio.name}_${ssidName}";
+          value = {
+            provider = deviceProvider name;
+            name = "${radio.name}-${ssidName}";
+            master_interface = config.resource.routeros_wifi."${name}_${radio.name}" "name";
+            disabled = false;
+            configuration = {
+              config = config.resource.routeros_wifi_configuration."${name}_${ssidName}" "name";
+            };
+          };
+        }) secondaries
+      ) radios
+    )
+  ) waps;
+
+  # ── Import blocks for pre-existing physical radios ─────────────────
+
+  import = lib.concatMap (
+    name:
+    map (radio: {
+      to = "routeros_wifi.${name}_${radio.name}";
+      inherit (radio) id;
       provider = deviceProvider name;
-      name = "bridge";
-      vlan_filtering = true;
-    };
-  }) waps;
+    }) radios
+  ) (lib.attrNames waps);
 }

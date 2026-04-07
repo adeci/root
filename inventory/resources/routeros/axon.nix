@@ -1,12 +1,13 @@
 # MikroTik CRS310-8G+2S+IN — upstairs mini rack switch
 {
   model = "CRS310-8G+2S+IN";
-  host = "10.99.0.3"; # update after bootstrap + static lease
+  host = "10.99.0.210"; # TEMP — revert to 10.99.0.3 after janus static lease kicks in
   port = 8728;
 
   identity = "axon";
 
-  managementPort = "ether1"; # standalone, not in bridge, keeps DHCP client
+  managementPort = null; # all ether ports in bridge (single SFP+ uplink, no mgmt cable)
+  fallbackPort = "ether1"; # fallback IP goes here for local laptop recovery
 
   vlans = {
     trusted = 10;
@@ -20,7 +21,7 @@
   ports = {
     "sfp-sfpplus1" = {
       trunk = true;
-      comment = "Downlink — nexus";
+      comment = "Downlink — nexus (10G SFP+)";
     };
     # "ether5" = { vlan = "iot"; comment = "IoT device"; };
   };

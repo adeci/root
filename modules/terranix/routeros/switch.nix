@@ -37,6 +37,12 @@ let
   accessPorts = device: lib.filter (p: !isTrunk device p) (bridgePorts device);
   accessPortsForVlan =
     device: vlanName: lib.filter (p: portVlan device p == vlanName) (accessPorts device);
+
+  # Switches that need a management VLAN interface on the bridge.
+  # Either no dedicated management port, or explicitly requesting one via fallbackPort.
+  switchesNeedingMgmtVlan = lib.filterAttrs (
+    _: d: d.managementPort == null || d ? fallbackPort
+  ) switches;
 in
 {
   # ── Bridge ──────────────────────────────────────────────────────────
@@ -74,6 +80,23 @@ in
 
   # ── Bridge VLANs ───────────────────────────────────────────────────
 
+  resource.routeros_interface_vlan = lib.concatMapAttrs (name: device: {
+    "${name}_mgmt" = {
+      provider = deviceProvider name;
+      name = "vlan${toString device.vlans.mgmt}";
+      interface = config.resource.routeros_interface_bridge.${name} "name";
+      vlan_id = device.vlans.mgmt;
+    };
+  }) switchesNeedingMgmtVlan;
+
+  resource.routeros_ip_dhcp_client = lib.concatMapAttrs (name: _device: {
+    "${name}_mgmt" = {
+      provider = deviceProvider name;
+      interface = config.resource.routeros_interface_vlan."${name}_mgmt" "name";
+      comment = "Management VLAN — Managed by Terraform";
+    };
+  }) switchesNeedingMgmtVlan;
+
   resource.routeros_interface_bridge_vlan = lib.concatMapAttrs (
     name: device:
     lib.mapAttrs' (
@@ -82,7 +105,7 @@ in
         provider = deviceProvider name;
         bridge = config.resource.routeros_interface_bridge.${name} "name";
         vlan_ids = [ vlanId ];
-        tagged = trunkPorts device;
+        tagged = [ "bridge" ] ++ trunkPorts device;
         untagged = accessPortsForVlan device vlanName;
       }
     ) device.vlans
