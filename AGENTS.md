@@ -66,6 +66,7 @@ inventory/                       # What we manage — data, not logic
     alex.nix                     #     Per-user data (uid, keys, groups, shell)
   resources/                     #   External resources we provision
     cloudflare/                  #     Cloudflare zones, tunnels, DNS records
+    routeros/                    #     MikroTik device configs (switches, WAPs)
   clan/                          #   Clan-specific inventory
     default.nix                  #     Inventory loader
     machines.nix                 #     Machine declarations + tags
@@ -93,6 +94,12 @@ modules/                         # Shared composable modules — logic, not data
   terranix/                      #   Terraform modules (auto-discovered)
     backend.nix                  #     B2 backend + state encryption
     cloudflare.nix               #     Provider, tunnels, DNS records, zones
+    routeros/                    #     MikroTik network infrastructure
+      provider.nix               #       Providers, identity, fallback IPs, services
+      switch.nix                 #       Bridge, ports, VLANs, PoE, mgmt VLAN interface
+      wap.nix                    #       Per-VLAN bridges, WiFi stack
+      models.nix                 #       Hardware specs (port counts per model)
+      netinstall-*.nix           #       Per-model firmware flash packages
   nixos/                         #   NixOS modules (portable capabilities)
     base.nix                     #     Fleet-wide defaults (ssh, nix, locale, users)
     zsh.nix                      #     Wrapped zsh as login shell (+ LLM tools)
@@ -247,6 +254,25 @@ modules are auto-discovered and merged into one config.
 - Credentials come from clan secrets via `data.external` at apply time
 - Wrapper scripts: `nix run .#tf-{init,plan,apply,destroy}`
 
+**RouterOS network infrastructure**: Physical network (switches, WAPs)
+managed via a separate Terranix workspace. Device data lives in
+`inventory/resources/routeros/`, logic in `modules/terranix/routeros/`.
+
+- Two terraform workspaces: cloud (`tf-*`) and network (`net-*`) with
+  separate state files in B2.
+- `modules/terranix/routeros/switch.nix` — bridge, ports (access/trunk/
+  hybrid), VLANs, PoE, management VLAN interfaces.
+- `modules/terranix/routeros/wap.nix` — per-VLAN bridges, VLAN
+  sub-interfaces, WiFi security/datapath/configuration profiles.
+- `modules/terranix/routeros/provider.nix` — per-device providers,
+  identity, fallback IPs, service hardening.
+- Device provisioning: `nix run .#routeros-netinstall-<model>` flashes
+  firmware + sets password + DHCP client. Then `net-apply` configures.
+- Wrapper scripts: `nix run .#net-{init,plan,apply,state}`
+- `machines/janus/modules/router.nix` — NixOS router with VLAN
+  sub-interfaces, nftables firewall, dnsmasq DHCP/DNS, NAT.
+- See `/home/alex/notes/netinfra.md` for full network documentation.
+
 **Cloudflare resources**: Zones, tunnels, and DNS records defined as
 pure data in `inventory/resources/cloudflare/`. Terraform creates
 tunnels + DNS records and pushes tokens to clan vars. The
@@ -359,6 +385,13 @@ in `modules/clan/default.nix`, create instance in
 `machines/<name>/terraform-configuration.nix` (auto-discovered). For
 shared resources, create a file in `modules/terranix/` (auto-discovered).
 Run `nix run .#tf-init` if new providers, then `nix run .#tf-apply`.
+
+**Add a RouterOS device**: Create `inventory/resources/routeros/<name>.nix`
+with model, host, VLANs/WiFi config. Add to registry in
+`inventory/resources/routeros/default.nix`. Netinstall first
+(`nix run .#routeros-netinstall-<model>`), plug into switch, get MAC
+from janus DHCP leases, add static lease to `router.nix`, then
+`nix run .#net-apply`. See `/home/alex/notes/netinfra.md` for details.
 
 **Flash the installer**: `clan flash write chrysalis --disk main /dev/sdX`.
 SSH keys, wifi, and harmonia cache are baked in — no flags needed.
