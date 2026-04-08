@@ -1,7 +1,7 @@
 # MikroTik cAP ax (Gen 6) — living room WAP
 {
   model = "cAP-ax";
-  host = "192.168.50.179"; # TEMP — revert to 10.99.0.5 after cutover
+  host = "10.99.0.5";
   port = 8728;
 
   identity = "zephyr";

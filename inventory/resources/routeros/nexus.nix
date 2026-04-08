@@ -32,6 +32,28 @@
       trunk = true;
       comment = "TEMP — janus test trunk (revert to mgmt access for axon)";
     };
+    "ether23" = {
+      hybrid = true;
+      vlan = "mgmt";
+      tagged = [
+        "trusted"
+        "iot"
+        "guest"
+      ];
+      poe = "auto-on";
+      comment = "WAP — zephyr (PoE+)";
+    };
+    "ether22" = {
+      hybrid = true;
+      vlan = "mgmt";
+      tagged = [
+        "trusted"
+        "iot"
+        "guest"
+      ];
+      poe = "auto-on";
+      comment = "WAP — nimbus (PoE+)";
+    };
     # "ether5" = { vlan = "iot"; comment = "Blink camera"; };
   };
 

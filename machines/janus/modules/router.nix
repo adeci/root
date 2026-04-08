@@ -47,6 +47,16 @@ let
       ip = "10.99.0.3";
       vlan = "mgmt";
     };
+    zephyr = {
+      mac = "04:F4:1C:E9:EF:E5";
+      ip = "10.99.0.5";
+      vlan = "mgmt";
+    };
+    nimbus = {
+      mac = "04:F4:1C:EA:18:83";
+      ip = "10.99.0.6";
+      vlan = "mgmt";
+    };
 
     # Trusted network (VLAN 10)
     # praxis = { mac = "xx:xx:xx:xx:xx:xx"; ip = "10.10.0.10"; vlan = "trusted"; };

@@ -30,13 +30,25 @@ let
 
   portCfg = device: port: device.ports.${port} or { };
   isTrunk = device: port: (portCfg device port).trunk or false;
+  isHybrid = device: port: (portCfg device port).hybrid or false;
   portVlan = device: port: (portCfg device port).vlan or device.defaultVlan;
   portVlanId = device: port: device.vlans.${portVlan device port};
+  portTaggedVlans = device: port: (portCfg device port).tagged or [ ];
 
   trunkPorts = device: lib.filter (isTrunk device) (bridgePorts device);
-  accessPorts = device: lib.filter (p: !isTrunk device p) (bridgePorts device);
+  hybridPorts = device: lib.filter (isHybrid device) (bridgePorts device);
+  accessPorts = device: lib.filter (p: !isTrunk device p && !isHybrid device p) (bridgePorts device);
   accessPortsForVlan =
     device: vlanName: lib.filter (p: portVlan device p == vlanName) (accessPorts device);
+
+  # Hybrid ports that carry a given VLAN as tagged
+  hybridPortsTaggedForVlan =
+    device: vlanName:
+    lib.filter (p: builtins.elem vlanName (portTaggedVlans device p)) (hybridPorts device);
+
+  # Hybrid ports whose native (untagged) VLAN matches
+  hybridPortsUntaggedForVlan =
+    device: vlanName: lib.filter (p: portVlan device p == vlanName) (hybridPorts device);
 
   # Switches that need a management VLAN interface on the bridge.
   # Either no dedicated management port, or explicitly requesting one via fallbackPort.
@@ -68,13 +80,36 @@ in
           interface = port;
           pvid = if isTrunk device port then device.vlans.${device.defaultVlan} else portVlanId device port;
           frame_types =
-            if isTrunk device port then "admit-all" else "admit-only-untagged-and-priority-tagged";
+            if isTrunk device port || isHybrid device port then
+              "admit-all"
+            else
+              "admit-only-untagged-and-priority-tagged";
           ingress_filtering = true;
         }
         // lib.optionalAttrs ((portCfg device port).comment or null != null) {
           inherit ((portCfg device port)) comment;
         };
       }) (bridgePorts device)
+    )
+  ) switches;
+
+  # ── Ethernet port settings (PoE, etc.) ─────────────────────────────
+
+  resource.routeros_interface_ethernet = lib.concatMapAttrs (
+    name: device:
+    let
+      portsWithPoe = lib.filter (p: (portCfg device p).poe or null != null) (portsForModel device.model);
+    in
+    lib.listToAttrs (
+      map (port: {
+        name = "${name}_${safeName port}";
+        value = {
+          provider = deviceProvider name;
+          factory_name = port;
+          name = port;
+          poe_out = (portCfg device port).poe;
+        };
+      }) portsWithPoe
     )
   ) switches;
 
@@ -105,8 +140,8 @@ in
         provider = deviceProvider name;
         bridge = config.resource.routeros_interface_bridge.${name} "name";
         vlan_ids = [ vlanId ];
-        tagged = [ "bridge" ] ++ trunkPorts device;
-        untagged = accessPortsForVlan device vlanName;
+        tagged = [ "bridge" ] ++ trunkPorts device ++ hybridPortsTaggedForVlan device vlanName;
+        untagged = accessPortsForVlan device vlanName ++ hybridPortsUntaggedForVlan device vlanName;
       }
     ) device.vlans
   ) switches;
