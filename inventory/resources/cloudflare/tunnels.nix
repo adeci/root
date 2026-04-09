@@ -10,4 +10,8 @@
   leviathan = {
     "buildbot.decio.us" = "http://localhost:80";
   };
+
+  conduit = {
+    "lab.decio.us" = "http://localhost:8000";
+  };
 }
