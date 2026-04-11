@@ -13,7 +13,13 @@ in
     inputs.nix-index-database.nixosModules.nix-index
   ];
 
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    enableGlobalCompInit = false;
+    enableLsColors = false;
+    promptInit = "";
+  };
   environment.pathsToLink = [ "/share/zsh" ];
 
   # nix-index with pre-built database: command-not-found handler + comma

@@ -23,6 +23,18 @@ let
   jq = lib.getExe pkgs.jq;
 
   msi = "Microstep MSI MAG321CQR KA3H071804955";
+
+  # ── Theming ───────────────────────────────────────────────────────
+  theme-name = "Tokyonight-Dark";
+  icon-theme-name = "Papirus-Dark";
+  cursor-theme = "phinger-cursors-dark";
+  cursor-size = "24";
+
+  # ── Fonts ─────────────────────────────────────────────────────────
+  fonts = [
+    pkgs.nerd-fonts.caskaydia-mono
+    pkgs.noto-fonts-color-emoji
+  ];
 in
 {
   imports = [ wlib.wrapperModules.niri ];
@@ -30,6 +42,66 @@ in
   # Use my fork with on-output window rule support
   config.package = lib.mkForce inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
   config."v2-settings" = true;
+
+  # ── Theming — baked into the derivation via postBuild ─────────────
+  config.drv.nativeBuildInputs = [ pkgs.dconf ];
+  config.drv.postBuild = ''
+    # Fontconfig — point at bundled fonts so the demo works without system fonts
+    mkdir -p $out/fontconfig
+    cat > $out/fontconfig/fonts.conf <<'FCEOF'
+    <?xml version="1.0"?>
+    <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+    <fontconfig>
+      <dir>/run/current-system/sw/share/X11/fonts</dir>
+      <dir>~/.local/share/fonts</dir>
+      <dir>~/.fonts</dir>
+      ${lib.concatMapStringsSep "\n  " (f: "<dir>${f}/share/fonts</dir>") fonts}
+      <include ignore_missing="yes">/etc/fonts/fonts.conf</include>
+    </fontconfig>
+    FCEOF
+
+    # GTK settings
+    mkdir -p $out/xdg/gtk-3.0 $out/xdg/gtk-4.0
+    cat > $out/xdg/gtk-3.0/settings.ini <<'GTKEOF'
+    [Settings]
+    gtk-theme-name = ${theme-name}
+    gtk-icon-theme-name = ${icon-theme-name}
+    gtk-cursor-theme-name = ${cursor-theme}
+    gtk-cursor-theme-size = ${cursor-size}
+    GTKEOF
+    cp $out/xdg/gtk-3.0/settings.ini $out/xdg/gtk-4.0/settings.ini
+
+    # dconf compiled database (dconf compile expects a directory of keyfiles)
+    mkdir -p $out/dconf $TMPDIR/dconf-keyfiles
+    cat > $TMPDIR/dconf-keyfiles/defaults <<'DCONFEOF'
+    [org/gnome/desktop/interface]
+    gtk-theme='${theme-name}'
+    icon-theme='${icon-theme-name}'
+    color-scheme='prefer-dark'
+    cursor-theme='${cursor-theme}'
+    cursor-size=24
+
+    [org/gnome/desktop/background]
+    color-shading-type='solid'
+    picture-options='zoom'
+    DCONFEOF
+    dconf compile $out/dconf/db $TMPDIR/dconf-keyfiles
+
+    cat > $out/dconf/profile <<PROFILEEOF
+    user-db:user
+    file-db:$out/dconf/db
+    PROFILEEOF
+  '';
+
+  config.env = {
+    GTK_THEME = theme-name;
+    XCURSOR_THEME = cursor-theme;
+    XCURSOR_SIZE = cursor-size;
+    QT_QPA_PLATFORMTHEME = "gtk3";
+    XDG_CONFIG_DIRS = "${placeholder "out"}/xdg";
+    DCONF_PROFILE = "${placeholder "out"}/dconf/profile";
+    FONTCONFIG_FILE = "${placeholder "out"}/fontconfig/fonts.conf";
+  };
 
   # Runtime libs for nested mode (demo inside an existing session)
   config.prefixVar = [
@@ -42,6 +114,18 @@ in
           pkgs.libxrandr
           pkgs.libxi
           pkgs.libx11
+        ])
+      ];
+    }
+    {
+      data = [
+        "XDG_DATA_DIRS"
+        ":"
+        (lib.concatStringsSep ":" [
+          "${pkgs.tokyonight-gtk-theme}/share"
+          "${pkgs.papirus-icon-theme}/share"
+          "${pkgs.phinger-cursors}/share"
+          "${pkgs.glib}/share"
         ])
       ];
     }
@@ -137,8 +221,8 @@ in
     # ── Cursor ─────────────────────────────────────────────────────
 
     cursor = {
-      xcursor-theme = "phinger-cursors-dark";
-      xcursor-size = 24;
+      xcursor-theme = cursor-theme;
+      xcursor-size = lib.strings.toInt cursor-size;
       hide-after-inactive-ms = 1000;
     };
 

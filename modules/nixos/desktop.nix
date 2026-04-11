@@ -1,4 +1,4 @@
-# Full desktop: niri compositor, audio, theming, fonts, and common tools.
+# Full desktop: niri compositor, audio, fonts, and common tools.
 {
   lib,
   self,
@@ -11,7 +11,6 @@ in
 {
   imports = [
     ./pipewire.nix
-    ./gtk-theme.nix
     ./librewolf.nix
   ];
 
@@ -35,7 +34,6 @@ in
   programs.ssh.startAgent = lib.mkDefault true;
 
   environment.systemPackages = [
-    (lib.hiPrio wrapped.zsh)
     wrapped.kitty
     wrapped.noctalia-shell
     pkgs.nautilus
