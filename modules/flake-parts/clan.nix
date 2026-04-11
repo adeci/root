@@ -1,5 +1,14 @@
 { inputs, ... }:
 {
+  perSystem =
+    { system, ... }:
+    {
+      clan.pkgs = import inputs.nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+    };
+
   clan = {
     meta.name = "adeci";
     meta.domain = "cymric-daggertooth.ts.net";

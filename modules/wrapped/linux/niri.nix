@@ -187,7 +187,7 @@ in
       hide-not-bound = null;
     };
 
-    prefer-no-csd = null;
+    prefer-no-csd = _: { };
 
     screenshot-path = "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
 
