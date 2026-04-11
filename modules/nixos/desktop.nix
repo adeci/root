@@ -33,7 +33,13 @@ in
   services.gnome.gcr-ssh-agent.enable = false;
   programs.ssh.startAgent = lib.mkDefault true;
 
+  # Theme packages needed at the system level so the cursor/icons resolve
+  # for portals, login greeters, and apps outside niri.
+  # The niri wrapper carries identical settings for the standalone demo.
   environment.systemPackages = [
+    pkgs.tokyonight-gtk-theme
+    pkgs.papirus-icon-theme
+    pkgs.phinger-cursors
     wrapped.kitty
     wrapped.noctalia-shell
     pkgs.nautilus
@@ -49,6 +55,30 @@ in
     pkgs.xdg-utils
     pkgs.nmgui
   ];
+
+  environment.sessionVariables = {
+    XCURSOR_THEME = "phinger-cursors-dark";
+    XCURSOR_SIZE = "24";
+    GTK_THEME = "Tokyonight-Dark";
+    QT_QPA_PLATFORMTHEME = "gtk3";
+  };
+
+  programs.dconf = {
+    enable = lib.mkDefault true;
+    profiles.user.databases = [
+      {
+        settings = {
+          "org/gnome/desktop/interface" = {
+            gtk-theme = "Tokyonight-Dark";
+            icon-theme = "Papirus-Dark";
+            color-scheme = "prefer-dark";
+            cursor-theme = "phinger-cursors-dark";
+            cursor-size = lib.gvariant.mkInt32 24;
+          };
+        };
+      }
+    ];
+  };
 
   systemd.user.services.polkit-gnome = {
     description = "Polkit GNOME authentication agent";
