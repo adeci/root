@@ -6,7 +6,7 @@
   ...
 }:
 let
-  zsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap { withLLMTools = true; };
+  zsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap { };
 in
 {
   imports = [

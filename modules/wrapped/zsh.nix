@@ -12,9 +12,6 @@ let
   wrappedGit = inputs.self.wrappers.git.wrap { inherit pkgs; };
   wrappedTmux = inputs.self.wrappers.tmux.wrap { inherit pkgs; };
 
-  llm-agents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
-  mics-skills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
-
   atunConfigDir = pkgs.runCommand "atuin-config" { } ''
     mkdir -p $out
     cat > $out/config.toml <<'EOF'
@@ -26,8 +23,6 @@ let
 in
 {
   imports = [ wlib.wrapperModules.zsh ];
-
-  options.withLLMTools = lib.mkEnableOption "LLM tools (pi, claude-code, etc.)";
 
   options.extraInit = lib.mkOption {
     type = lib.types.lines;
@@ -93,19 +88,6 @@ in
               pkgs.unrar
               pkgs.dmidecode
               pkgs.pciutils
-            ]
-            ++ lib.optionals config.withLLMTools [
-              llm-agents.claude-code
-              llm-agents.pi
-              llm-agents.ccusage
-              llm-agents.ccusage-pi
-              llm-agents.workmux
-              llm-agents.openspec
-              mics-skills.kagi-search
-              mics-skills.context7-cli
-              mics-skills.browser-cli
-              mics-skills.pexpect-cli
-              mics-skills.screenshot-cli
             ]
           ))
         ];

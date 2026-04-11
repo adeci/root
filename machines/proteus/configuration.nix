@@ -5,6 +5,7 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
+    ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/amd-gpu.nix

@@ -18,10 +18,11 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
+    ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/dev.nix
     ../../modules/nixos/desktop.nix
-    ../../modules/nixos/niri-autologin.nix
+    # ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/amd-gpu.nix
     ../../modules/nixos/zram.nix

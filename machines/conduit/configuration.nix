@@ -7,6 +7,7 @@
     ../../modules/nixos/base.nix
     ../../modules/nixos/dev.nix
     ../../modules/nixos/zsh.nix
+    ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
   ];
 
