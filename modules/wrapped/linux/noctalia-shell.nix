@@ -127,7 +127,7 @@
       enabled = false;
     };
     location = {
-      name = "Blacks Ford"; # noctalia geocodes this — no GeoClue auto-detect
+      name = "Blacks Ford";
       useFahrenheit = true;
       use12hourFormat = true;
       weatherEnabled = true;

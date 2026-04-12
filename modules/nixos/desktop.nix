@@ -48,6 +48,7 @@ in
     pkgs.playerctl
     pkgs.pulseaudio
     pkgs.pavucontrol
+    pkgs.easyeffects
     pkgs.wl-clipboard
     pkgs.wl-clip-persist
     pkgs.brightnessctl
@@ -89,6 +90,22 @@ in
       ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
       Restart = "on-failure";
       RestartSec = 1;
+    };
+    wantedBy = [ "graphical-session.target" ];
+  };
+
+  systemd.user.services.easyeffects = {
+    description = "EasyEffects audio processing";
+    partOf = [ "graphical-session.target" ];
+    after = [
+      "graphical-session.target"
+      "pipewire.service"
+    ];
+    requisite = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.easyeffects}/bin/easyeffects --gapplication-service";
+      Restart = "on-failure";
+      RestartSec = 3;
     };
     wantedBy = [ "graphical-session.target" ];
   };
