@@ -1,22 +1,52 @@
 { pkgs, ... }:
-let
-  # Pin prusa-slicer to a known-good nixpkgs rev — current unstable has a
-  # Mesa/LLVM regression that segfaults on AMD radeonsi during GL init.
-  # https://github.com/NixOS/nixpkgs/issues/347719
-  pinnedPkgs = import
-    (builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/6c9a78c09ff4d6c21d0319114873508a6ec01655.tar.gz";
-      sha256 = "0szij1c0cl4xvjhzb0cwvskkl54dyw11skb9hgmnhamcmmsm6bji";
-    })
-    { inherit (pkgs) system; config.allowUnfree = true; };
-in
 {
   environment.systemPackages = with pkgs; [
     blender
     freecad
     openscad
     audacity
-    pinnedPkgs.prusa-slicer
+    # WebKit's gamepad support calls libmanette → hidapi. hid_get_device_info()
+    # returns an invalid non-NULL pointer (0x31) for some hidraw devices,
+    # causing a segfault when libmanette dereferences it. Stub hid_get_device_info
+    # to validate the return value — this IS an exported hidapi symbol so
+    # LD_PRELOAD works.
+    (
+      let
+        hidapi-fix =
+          pkgs.runCommand "hidapi-fix"
+            {
+              nativeBuildInputs = [ pkgs.gcc ];
+            }
+            ''
+                      mkdir -p $out/lib
+                      cat > fix.c << 'EOF'
+              #include <dlfcn.h>
+              #include <stdint.h>
+
+              struct hid_device_info;
+
+              struct hid_device_info *hid_get_device_info(void *dev) {
+                  struct hid_device_info *(*real)(void *) = dlsym(RTLD_NEXT, "hid_get_device_info");
+                  struct hid_device_info *info = real(dev);
+                  /* hidapi sometimes returns a small invalid pointer instead of NULL */
+                  if ((uintptr_t)info < 0x1000)
+                      return (void *)0;
+                  return info;
+              }
+              EOF
+                      gcc -shared -fPIC -o $out/lib/hidapi-fix.so fix.c -ldl
+            '';
+      in
+      pkgs.symlinkJoin {
+        name = "prusa-slicer-wrapped";
+        paths = [ prusa-slicer ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/prusa-slicer \
+            --set LD_PRELOAD ${hidapi-fix}/lib/hidapi-fix.so
+        '';
+      }
+    )
     obs-studio
     gimp
   ];

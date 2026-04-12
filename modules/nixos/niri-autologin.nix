@@ -12,4 +12,7 @@
     };
   };
 
+  # greetd needs gnome-keyring PAM integration so the keyring daemon
+  # starts properly for the graphical session (even with autologin).
+  security.pam.services.greetd.enableGnomeKeyring = true;
 }

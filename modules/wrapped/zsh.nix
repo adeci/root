@@ -74,6 +74,7 @@ in
               pkgs.pueue
               pkgs.xxd
               pkgs.radare2
+              pkgs.gdb
               pkgs.python3
               pkgs.uv
 
