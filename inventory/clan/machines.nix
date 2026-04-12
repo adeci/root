@@ -15,6 +15,7 @@
     tags = [
       "adeci-net"
     ];
+    deploy.targetHost = "root@janus.cymric-daggertooth.ts.net";
   };
 
   conduit = {

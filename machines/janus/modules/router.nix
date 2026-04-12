@@ -1,15 +1,34 @@
-# janus — NixOS router
+# janus — NixOS router (Qotom Q20321G9)
 # WAN (DHCP from ISP) → VLAN trunk to switches → inter-VLAN routing + NAT
+#
+# ── Qotom Q20321G9 Port Map ─────────────────────────────────────────
+#
+# 2.5G RJ45 (igc driver):
+#                        Label Eth3 = enp4s0    Label Eth4 = enp5s0
+#   Label Eth5 = enp8s0  Label Eth1 = enp6s0    Label Eth2 = enp7s0
+#
+# SFP+ right side (ixgbe driver, 10G):
+#   Right-top    = eno2
+#   Right-bottom = eno1
+#
 { lib, ... }:
 let
-  # ── Interfaces ─────────────────────────────────────────────────────
-  # Temp test PC — swap these for the Qotom when ready
-  wan = "enp2s0"; # built-in RJ45 → ISP modem
-  lan = "enp0s20f0u2"; # USB ethernet → nexus ether24 (temp trunk) # same as lan for now — dedicated RJ45 on Qotom later
-  # Qotom Q20321G9:
-  # wan  = "...";  # RJ45 → ISP modem
-  # lan  = "...";  # SFP+ → nexus (VLAN trunk)
-  # mgmt = "...";  # RJ45 → nexus ether1 (management)
+  # ── Port Map (label → linux interface) ─────────────────────────────
+  # Profiled 2026-04-12 by plug-testing each port.
+  eth1 = "enp6s0"; # 2.5G RJ45 # 2.5G RJ45 # 2.5G RJ45 # 2.5G RJ45
+  eth5 = "enp8s0"; # 2.5G RJ45 # 10G SFP+ (right-top)
+  sfpPlus2 = "eno1"; # 10G SFP+ (right-bottom)
+
+  # ── Role Assignment ────────────────────────────────────────────────
+  wan = eth5; # → ISP modem
+  lan = sfpPlus2; # → nexus sfp-sfpplus1 (VLAN trunk)
+  mgmt = eth1; # → nexus ether1 (management)
+
+  # ── Tailscale admin IPs (stable, assigned by Tailscale) ─────────────
+  tsAdmin = [
+    "100.101.208.55" # praxis
+    "100.64.57.12" # aegis
+  ];
 
   # ── VLANs ──────────────────────────────────────────────────────────
   # Must match switch config in inventory/resources/routeros/
@@ -43,7 +62,7 @@ let
       vlan = "mgmt";
     };
     axon = {
-      mac = "04:F4:1C:84:68:A4"; # bridge VLAN 99 interface MAC (not ether1)
+      mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1 MAC (standalone management port)
       ip = "10.99.0.3";
       vlan = "mgmt";
     };
@@ -82,16 +101,24 @@ in
   networking.useDHCP = false;
 
   # VLAN sub-interfaces on the LAN trunk
-  systemd.network.netdevs = lib.mapAttrs' (
-    _: v:
-    lib.nameValuePair "20-${vlanIf v}" {
-      netdevConfig = {
-        Name = vlanIf v;
-        Kind = "vlan";
+  systemd.network.netdevs =
+    lib.mapAttrs' (
+      _: v:
+      lib.nameValuePair "20-${vlanIf v}" {
+        netdevConfig = {
+          Name = vlanIf v;
+          Kind = "vlan";
+        };
+        vlanConfig.Id = v.id;
+      }
+    ) vlans
+    // {
+      # Management bridge — merges dedicated mgmt RJ45 + VLAN 99 trunk
+      "10-br-mgmt".netdevConfig = {
+        Name = "br-mgmt";
+        Kind = "bridge";
       };
-      vlanConfig.Id = v.id;
-    }
-  ) vlans;
+    };
 
   systemd.network.networks = {
     # WAN — DHCP from ISP
@@ -108,19 +135,36 @@ in
       linkConfig.RequiredForOnline = "carrier";
     };
 
-    # TODO: management bridge (br-mgmt) for Qotom
-    # Bridges the dedicated mgmt RJ45 with vlan99 so nexus (direct cable)
-    # and axon/WAPs (via VLAN 99 trunk) share one 10.99.0.0/24 subnet.
-    # Not needed on the temp PC where lan == mgmt.
+    # Dedicated mgmt RJ45 — bridged into br-mgmt (see netdev below)
+    "20-mgmt" = {
+      matchConfig.Name = mgmt;
+      networkConfig.Bridge = "br-mgmt";
+      linkConfig.RequiredForOnline = "no";
+    };
+
+    # VLAN 99 sub-interface — also bridged into br-mgmt
+    "20-vlan99-bridge" = {
+      matchConfig.Name = vlanIf vlans.mgmt;
+      networkConfig.Bridge = "br-mgmt";
+      linkConfig.RequiredForOnline = "no";
+    };
+
+    # Management bridge — nexus (direct RJ45) + axon/WAPs (via VLAN 99)
+    # share one 10.99.0.0/24 subnet
+    "30-br-mgmt" = {
+      matchConfig.Name = "br-mgmt";
+      address = [ "${vlans.mgmt.subnet}.1/24" ];
+      linkConfig.RequiredForOnline = "no";
+    };
   }
   // lib.mapAttrs' (
-    _: v:
+    _name: v:
     lib.nameValuePair "30-${vlanIf v}" {
       matchConfig.Name = vlanIf v;
       address = [ "${v.subnet}.1/24" ];
       linkConfig.RequiredForOnline = "no";
     }
-  ) vlans;
+  ) (lib.filterAttrs (name: _: name != "mgmt") vlans);
 
   # ── IP forwarding ─────────────────────────────────────────────────
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
@@ -142,18 +186,15 @@ in
         iif lo accept
         ip protocol icmp accept
 
-        # DHCP + DNS from all VLANs
-        iifname { ${ifSet allVlanIfs} } udp dport { 53, 67 } accept
-        iifname { ${ifSet allVlanIfs} } tcp dport 53 accept
+        # DHCP + DNS from all VLANs + mgmt bridge
+        iifname { ${ifSet allVlanIfs}, "br-mgmt" } udp dport { 53, 67 } accept
+        iifname { ${ifSet allVlanIfs}, "br-mgmt" } tcp dport 53 accept
 
         # Tailscale — full trust (already authenticated)
         iifname "tailscale0" accept
 
         # SSH from trusted + management only
-        iifname { "${vlanIf vlans.trusted}", "${vlanIf vlans.mgmt}" } tcp dport 22 accept
-
-        # WAN SSH — temp for test rig, remove for production
-        iifname "${wan}" tcp dport 22 accept
+        iifname { "${vlanIf vlans.trusted}", "br-mgmt" } tcp dport 22 accept
       }
 
       # ── Forwarding ─────────────────────────────────────────────────
@@ -163,11 +204,14 @@ in
         ct state established,related accept
         ct state invalid drop
 
+        # Tailscale — only admin machines can forward to local subnets
+        iifname "tailscale0" ip saddr { ${lib.concatStringsSep ", " tsAdmin} } accept
+
         # Route to per-zone chains
         iifname "${vlanIf vlans.trusted}" jump from-trusted
         iifname "${vlanIf vlans.iot}"     jump from-iot
         iifname "${vlanIf vlans.guest}"   jump from-guest
-        iifname "${vlanIf vlans.mgmt}"    jump from-mgmt
+        iifname "br-mgmt"                 jump from-mgmt
       }
 
       # ── Zone: trusted ──────────────────────────────────────────────
@@ -220,14 +264,21 @@ in
       listen-address = [ "127.0.0.1" ] ++ map (v: "${v.subnet}.1") (lib.attrValues vlans);
       bind-dynamic = true;
 
-      dhcp-range = map (v: "${vlanIf v},${v.subnet}.100,${v.subnet}.250,255.255.255.0,24h") (
-        lib.attrValues vlans
-      );
+      dhcp-range =
+        map (v: "${vlanIf v},${v.subnet}.100,${v.subnet}.250,255.255.255.0,24h") (
+          lib.attrValues (lib.filterAttrs (n: _: n != "mgmt") vlans)
+        )
+        ++ [ "br-mgmt,${vlans.mgmt.subnet}.100,${vlans.mgmt.subnet}.250,255.255.255.0,24h" ];
 
-      dhcp-option = lib.concatMap (v: [
-        "${vlanIf v},option:router,${v.subnet}.1"
-        "${vlanIf v},option:dns-server,${v.subnet}.1"
-      ]) (lib.attrValues vlans);
+      dhcp-option =
+        lib.concatMap (v: [
+          "${vlanIf v},option:router,${v.subnet}.1"
+          "${vlanIf v},option:dns-server,${v.subnet}.1"
+        ]) (lib.attrValues (lib.filterAttrs (n: _: n != "mgmt") vlans))
+        ++ [
+          "br-mgmt,option:router,${vlans.mgmt.subnet}.1"
+          "br-mgmt,option:dns-server,${vlans.mgmt.subnet}.1"
+        ];
 
       dhcp-host = dhcpHosts;
 

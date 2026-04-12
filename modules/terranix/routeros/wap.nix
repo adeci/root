@@ -213,6 +213,14 @@ in
           configuration = {
             config = config.resource.routeros_wifi_configuration."${name}_${primary}" "name";
           };
+          security = {
+            config = config.resource.routeros_wifi_security."${name}_${primary}" "name";
+            authentication_types = lib.concatStringsSep "," authTypes.${device.wifi.${primary}.security};
+            passphrase = config.data.external.${device.wifi.${primary}.secret} "result.secret";
+          };
+          datapath = {
+            config = config.resource.routeros_wifi_datapath."${name}_${primary}" "name";
+          };
         };
       }) radios
     )

@@ -261,17 +261,45 @@ managed via a separate Terranix workspace. Device data lives in
 - Two terraform workspaces: cloud (`tf-*`) and network (`net-*`) with
   separate state files in B2.
 - `modules/terranix/routeros/switch.nix` — bridge, ports (access/trunk/
-  hybrid), VLANs, PoE, management VLAN interfaces.
+  hybrid), VLANs, PoE, management VLAN interfaces. Supports standalone
+  trunk management: when `managementPort` is a trunk port, it stays out
+  of the bridge with VLAN sub-interfaces feeding tagged traffic in
+  (same architecture as WAPs). This enables one-shot terraform apply
+  for switches with a single trunk uplink.
 - `modules/terranix/routeros/wap.nix` — per-VLAN bridges, VLAN
-  sub-interfaces, WiFi security/datapath/configuration profiles.
+  sub-interfaces on ether1, WiFi security/datapath/configuration
+  profiles. Physical radio security is set inline (not just via profile
+  reference) so changes to `security` in device configs take effect.
 - `modules/terranix/routeros/provider.nix` — per-device providers,
   identity, fallback IPs, service hardening.
 - Device provisioning: `nix run .#routeros-netinstall-<model>` flashes
-  firmware + sets password + DHCP client. Then `net-apply` configures.
+  firmware + sets password + DHCP client. CRS310 script adds DHCP on
+  both ether1 and sfp-sfpplus1 so it works plugged into either.
+  Then `net-apply` configures everything.
 - Wrapper scripts: `nix run .#net-{init,plan,apply,state}`
-- `machines/janus/modules/router.nix` — NixOS router with VLAN
-  sub-interfaces, nftables firewall, dnsmasq DHCP/DNS, NAT.
+- `nix run .#net-state-rm-device` — bulk remove devices from state.
+  Accepts multiple device names: `net-state-rm-device axon zephyr nimbus`.
+- `machines/janus/modules/router.nix` — NixOS router (Qotom Q20321G9)
+  with port map, VLAN sub-interfaces, br-mgmt bridge, nftables firewall
+  (zone-based with Tailscale admin restrictions), dnsmasq DHCP/DNS, NAT.
+- Janus advertises local subnets via Tailscale for remote management.
+  `net-plan`/`net-apply` work from anywhere via Tailscale subnet routing.
 - See `/home/alex/notes/netinfra.md` for full network documentation.
+
+**Tailscale DNS and routing**: The `@adeci/tailscale` clan service handles
+a known conflict between Tailscale subnet routing and local DNS. When a
+machine with `accept-routes` is directly on an advertised subnet, DNS
+breaks. The fix has three parts (all in `modules/clan/tailscale/`):
+
+- `accept-dns = false` — prevents Tailscale from hijacking systemd-resolved.
+- `services.resolved.dnsDelegates.tailscale` — systemd 258+ dns-delegate
+  routes `.ts.net` queries to MagicDNS (100.100.100.100), independent of
+  any network interface. `tailnet-domain` setting adds search domain for
+  short hostname resolution.
+- NetworkManager dispatcher adds `ip rule priority 5200 lookup main
+  suppress_prefixlength 0` — prefers direct local routes over Tailscale's
+  table 52. Priority 5200 is outside Tailscale's managed range (5210-5310).
+- See `/home/alex/notes/tailnetwriteup.md` for full writeup.
 
 **Cloudflare resources**: Zones, tunnels, and DNS records defined as
 pure data in `inventory/resources/cloudflare/`. Terraform creates

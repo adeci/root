@@ -12,14 +12,14 @@
     main = {
       ssid = "Aether";
       vlan = 10;
-      security = "wpa3";
+      security = "wpa2-wpa3";
       secret = "wifi-aether";
       primary = true;
     };
     guest = {
       ssid = "Penumbra";
       vlan = 30;
-      security = "wpa3";
+      security = "wpa2-wpa3";
       secret = "wifi-penumbra";
     };
     iot = {

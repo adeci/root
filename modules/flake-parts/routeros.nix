@@ -98,17 +98,21 @@
             text = # bash
               ''
                 ${netTfSetup}
-                if [[ $# -ne 1 ]]; then
-                  echo "Usage: net-state-rm-device <device-name>"
+                if [[ $# -eq 0 ]]; then
+                  echo "Usage: net-state-rm-device <device-name> [device-name ...]"
                   exit 1
                 fi
-                device="$1"
-                mapfile -t resources < <(tofu state list 2>/dev/null | grep "$device")
+                all_state="$(tofu state list 2>/dev/null)"
+                resources=()
+                for device in "$@"; do
+                  mapfile -t matched < <(echo "$all_state" | grep "$device")
+                  resources+=("''${matched[@]}")
+                done
                 if [[ ''${#resources[@]} -eq 0 ]]; then
-                  echo "No resources found matching '$device'"
+                  echo "No resources found matching: $*"
                   exit 0
                 fi
-                echo "Removing ''${#resources[@]} resources matching '$device':"
+                echo "Removing ''${#resources[@]} resources matching: $*"
                 for r in "''${resources[@]}"; do
                   echo "  $r"
                 done
@@ -118,9 +122,7 @@
                   echo "Aborted."
                   exit 0
                 fi
-                for r in "''${resources[@]}"; do
-                  tofu state rm "$r"
-                done
+                tofu state rm "''${resources[@]}"
                 echo "Done."
               '';
           }

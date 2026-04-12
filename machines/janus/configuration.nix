@@ -7,7 +7,7 @@
     self.users.alex.nixosModule
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
-    # ./modules/router.nix # DISABLED — re-enable after interface discovery on Qotom
+    ./modules/router.nix
   ];
 
   time.timeZone = "America/New_York";

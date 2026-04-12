@@ -1,7 +1,7 @@
 # MikroTik CRS328-24P-4S+RM — main rack switch
 {
   model = "CRS328-24P-4S+RM";
-  host = "192.168.50.173"; # TEMP — revert to 10.99.0.2 after testing
+  host = "10.99.0.2";
   port = 8728;
 
   identity = "nexus";
@@ -22,17 +22,19 @@
   ports = {
     "sfp-sfpplus1" = {
       trunk = true;
-      comment = "Uplink — axon (10G SFP+)";
+      comment = "Uplink — janus (10G SFP+)";
     };
     "sfp-sfpplus2" = {
-      trunk = true;
-      comment = "WAN — janus (future SFP+)";
+      hybrid = true;
+      vlan = "mgmt";
+      tagged = [
+        "trusted"
+        "iot"
+        "guest"
+      ];
+      comment = "Uplink — axon (10G SFP+)";
     };
-    "ether24" = {
-      trunk = true;
-      comment = "TEMP — janus test trunk (revert to mgmt access for axon)";
-    };
-    "ether23" = {
+    "ether2" = {
       hybrid = true;
       vlan = "mgmt";
       tagged = [
@@ -43,7 +45,7 @@
       poe = "auto-on";
       comment = "WAP — zephyr (PoE+)";
     };
-    "ether22" = {
+    "ether3" = {
       hybrid = true;
       vlan = "mgmt";
       tagged = [

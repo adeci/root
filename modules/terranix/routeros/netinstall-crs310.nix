@@ -81,6 +81,7 @@ pkgs.writeShellApplication {
       cat > "$setup_script" << SETUP
       /user set admin password="$password"
       /ip dhcp-client add interface=ether1 disabled=no
+      /ip dhcp-client add interface=sfp-sfpplus1 disabled=no
       SETUP
 
       # ── Run netinstall ───────────────────────────────────────────
@@ -104,9 +105,9 @@ pkgs.writeShellApplication {
       echo "  Device has been configured with:"
       echo "    - RouterOS ${version} (${arch})"
       echo "    - Admin password (from clan secrets)"
-      echo "    - DHCP client on ether1"
+      echo "    - DHCP client on ether1 and sfp-sfpplus1"
       echo ""
-      echo "  Plug ether1 into management network, then net-apply."
+      echo "  Plug ether1 or sfp-sfpplus1 into the network, then net-apply."
       echo ""
     '';
   meta.platforms = pkgs.lib.platforms.linux;
