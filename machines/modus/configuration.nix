@@ -26,7 +26,6 @@ in
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/dev.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix

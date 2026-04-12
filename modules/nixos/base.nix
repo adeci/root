@@ -38,6 +38,7 @@
     download-buffer-size = 268435456; # 256MB
     fallback = true;
   };
+  programs.direnv.enable = true;
   environment.systemPackages = [
     inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
     pkgs.kitty.terminfo
