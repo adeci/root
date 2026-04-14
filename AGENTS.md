@@ -297,7 +297,7 @@ breaks. The fix has three parts (all in `modules/clan/tailscale/`):
   any network interface. `tailnet-domain` setting adds search domain for
   short hostname resolution.
 - NetworkManager dispatcher adds `ip rule priority 5200 lookup main
-  suppress_prefixlength 0` — prefers direct local routes over Tailscale's
+suppress_prefixlength 0` — prefers direct local routes over Tailscale's
   table 52. Priority 5200 is outside Tailscale's managed range (5210-5310).
 - See `/home/alex/notes/tailnetwriteup.md` for full writeup.
 

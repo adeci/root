@@ -13,6 +13,23 @@ let
   noctaliaBin = "noctalia-shell";
   emptyNode = _: { };
 
+  kvantum-tokyo-night = pkgs.stdenvNoCC.mkDerivation {
+    pname = "kvantum-tokyo-night";
+    version = "unstable-2024-11-17";
+    src = pkgs.fetchFromGitHub {
+      owner = "0xsch1zo";
+      repo = "Kvantum-Tokyo-Night";
+      rev = "82d104e0047fa7d2b777d2d05c3f22722419b9ee";
+      sha256 = "0fc1s22pc7zz1kkcgpx02p7aqa8wd1z7n0minv23kb0h3avdcbsk";
+    };
+    installPhase = ''
+      mkdir -p $out/share/Kvantum
+      cp -r Kvantum-Tokyo-Night $out/share/Kvantum/
+    '';
+  };
+
+  kvantum-qt5 = pkgs.libsForQt5.qtstyleplugin-kvantum;
+
   wallpaper = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/adeci/wallpapers/main/tokyo-night/tokyo-night_nix.png";
     sha256 = "sha256-W5GaKCOiV2S3NuORGrRaoOE2x9X6gUS+wYf7cQkw9CY=";
@@ -71,6 +88,13 @@ in
     GTKEOF
     cp $out/xdg/gtk-3.0/settings.ini $out/xdg/gtk-4.0/settings.ini
 
+    # Kvantum — tell it to use the Tokyo Night theme
+    mkdir -p $out/xdg/Kvantum
+    cat > $out/xdg/Kvantum/kvantum.kvconfig <<'KVEOF'
+    [General]
+    theme=Kvantum-Tokyo-Night
+    KVEOF
+
     # dconf compiled database (dconf compile expects a directory of keyfiles)
     mkdir -p $out/dconf $TMPDIR/dconf-keyfiles
     cat > $TMPDIR/dconf-keyfiles/defaults <<'DCONFEOF'
@@ -97,7 +121,10 @@ in
     GTK_THEME = theme-name;
     XCURSOR_THEME = cursor-theme;
     XCURSOR_SIZE = cursor-size;
-    QT_QPA_PLATFORMTHEME = "gtk3";
+    QT_QPA_PLATFORMTHEME = "kvantum";
+    QT_STYLE_OVERRIDE = "kvantum";
+    QT_PLUGIN_PATH = "${kvantum-qt5}/lib/qt-5.15.18/plugins";
+    KVANTUM_THEME_DIR = "${kvantum-tokyo-night}/share/Kvantum";
     XDG_CONFIG_DIRS = "${placeholder "out"}/xdg";
     DCONF_PROFILE = "${placeholder "out"}/dconf/profile";
     FONTCONFIG_FILE = "${placeholder "out"}/fontconfig/fonts.conf";

@@ -30,6 +30,7 @@
   environment.systemPackages = [
     pkgs.bitwarden-desktop
     pkgs.mullvad-browser
+    pkgs.openscad
   ];
 
   # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
