@@ -167,11 +167,6 @@ _: {
               };
             };
 
-            # When accepting subnet routes, prefer direct local routes over Tailscale.
-            # Adds a routing policy rule before table 52 that checks the main table
-            # for connected routes (suppress_prefixlength 0 ignores the default route):
-            #   - At home on WiFi: direct route to 10.10.0.0/24 wins → local path
-            #   - Away from home: no direct route → falls through to Tailscale subnet routing
             # Enable IP forwarding for subnet routing (mkDefault — won't conflict if router.nix sets it too)
             boot.kernel.sysctl = lib.mkIf (advertiseRoutes != [ ]) {
               "net.ipv4.ip_forward" = lib.mkDefault 1;
@@ -190,7 +185,10 @@ _: {
               lib.optionals acceptRoutes [
                 {
                   source = pkgs.writeShellScript "tailscale-local-routes" ''
-                    [ "$2" != "up" ] && exit 0
+                    case "$2" in
+                      up|connectivity-change) ;;
+                      *) exit 0 ;;
+                    esac
                     ${pkgs.iproute2}/bin/ip rule add priority 5200 lookup main suppress_prefixlength 0 2>/dev/null || true
                   '';
                   type = "basic";

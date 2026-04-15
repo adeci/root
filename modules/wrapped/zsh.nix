@@ -66,6 +66,7 @@ in
               pkgs.jujutsu
               pkgs.nixpkgs-review
               pkgs.nix-output-monitor
+              pkgs.smartmontools
               pkgs.socat
               pkgs.lsof
               pkgs.lazygit
