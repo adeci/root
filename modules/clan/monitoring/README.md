@@ -35,14 +35,15 @@ Exactly one machine. Runs Prometheus + Loki + Grafana + nginx.
 | Setting               | Default  | Description                                                          |
 | --------------------- | -------- | -------------------------------------------------------------------- |
 | `host`                | required | FQDN (Tailscale MagicDNS name) every agent uses to reach the server. |
-| `grafana.enable`      | `true`   | Provision Grafana dashboards and datasources.                        |
+| `grafana.enable`      | `true`   | Run Grafana and provision the Prometheus/Loki datasources.           |
 | `retentionDays`       | `30`     | Prometheus TSDB retention in days.                                   |
 | `loki.retentionHours` | `168`    | Loki log retention in hours (168h = 7 days).                         |
 
 Push endpoints (`/prometheus/`, `/loki/`) sit behind nginx basic auth whose
 credentials are shared with every agent via the perMachine generators. nginx
 is only reachable over Tailscale (`networking.firewall.interfaces.tailscale0.
-allowedTCPPorts = [ 80 ]`), Grafana is served at `${host}/grafana/`.
+allowedTCPPorts = [ 80 ]`), Grafana is served at `${host}/grafana/` with
+anonymous Admin access — the tailnet is the auth boundary.
 
 ### `agent`
 
@@ -63,6 +64,13 @@ default: `cpu`, `meminfo`, `filesystem`, `diskstats`, `netdev`, `netclass`,
 `loadavg`, `stat`, `uname`, `systemd`, `pressure`, `hwmon`, `textfile`. The
 `textfile` collector reads `/var/lib/alloy/textfile/*.prom`, so machine-
 specific modules can add custom metrics without editing this service.
+
+Host identity lives in the standard Prometheus `instance` label (set to the
+machine's short hostname). Alloy's unix exporter populates it automatically
+for node metrics; `alloy_self` overrides the listen-address default so that
+Alloy's own metrics carry the hostname too. Loki journal logs get `instance`
+from `__journal__hostname`. Alerts, dashboards, and community node-exporter
+dashboards can all query `{instance="$host"}` directly.
 
 ## Inventory example
 
@@ -91,10 +99,7 @@ specific modules can add custom metrics without editing this service.
 
 - `prometheus-auth`, `loki-auth` (perMachine, shared) — one htpasswd pair per
   endpoint. Alloy reads the password via systemd `LoadCredential`, nginx
-  reads the htpasswd file via `basicAuthFile`.
-- `grafana-admin` (server, prompted username + random password) —
-  the Grafana web UI login.
-- `grafana-secret` (server, random hex) — Grafana session signing key.
+  reads the htpasswd file via `basicAuthFile`. Username is `alloy`.
 
 ## Self-monitoring
 
@@ -108,10 +113,15 @@ on the Prometheus alerts page and in Grafana.
 
 ## Dashboards
 
-- `fleet-overview.json` — machine status, CPU/memory/disk, systemd units,
-  network traffic, load, temperatures, uptime.
-- `log-explorer.json` — log volume, top-noisy-services, warning/error
-  streams, live log tail.
+Dashboards are **not** provisioned from JSON — they're managed through the
+Grafana UI and persisted in PostgreSQL (already covered by the
+`clan.core.state.monitoring.folders` backup set via `clan.core.postgresql`).
 
-Add more dashboards by dropping `.json` files into `dashboards/`. Grafana
-picks them up on the next restart.
+Recommended community imports (Dashboards → New → Import → paste ID):
+
+- `1860` — Node Exporter Full. Drop-in with our `instance`-labelled metrics.
+- `13639` — Logs / App (Loki).
+- `20398` — Grafana Alloy overview.
+
+Add your own with Dashboards → New → New dashboard. Changes survive
+Grafana restarts because they live in the provisioned postgres DB.

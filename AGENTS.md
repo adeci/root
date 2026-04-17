@@ -281,7 +281,7 @@ managed via a separate Terranix workspace. Device data lives in
   Accepts multiple device names: `net-state-rm-device axon zephyr nimbus`.
 - `machines/janus/modules/router.nix` — NixOS router (Qotom Q20321G9)
   with port map, VLAN sub-interfaces, br-mgmt bridge, nftables firewall
-  (zone-based with Tailscale admin restrictions), dnsmasq DHCP/DNS, NAT.
+  (zone-based with Tailscale admin restrictions), Kea DHCP + Unbound DNS, NAT.
 - Janus advertises local subnets via Tailscale for remote management.
   `net-plan`/`net-apply` work from anywhere via Tailscale subnet routing.
 - See `/home/alex/notes/netinfra.md` for full network documentation.
@@ -300,6 +300,25 @@ breaks. The fix has three parts (all in `modules/clan/tailscale/`):
 suppress_prefixlength 0` — prefers direct local routes over Tailscale's
   table 52. Priority 5200 is outside Tailscale's managed range (5210-5310).
 - See `/home/alex/notes/tailnetwriteup.md` for full writeup.
+
+**Monitoring**: The `@adeci/monitoring` clan service runs Prometheus +
+Loki + Grafana on the `server` machine (sequoia, behind nginx + Tailscale-
+scoped firewall) and Grafana Alloy as the agent on every machine tagged
+`adeci-net`. Agents push metrics via `remote_write` and ship journal logs
+via Loki push.
+
+Per-agent settings (in `inventory/clan/instances/monitoring.nix`):
+
+- `extraCollectors` — additional `prometheus.exporter.unix` collectors.
+- `extraLabels` — external labels (e.g., `role = "router"`).
+- `extraScrapeTargets` — additional Prometheus jobs to scrape locally,
+  used for sidecar exporters like `prometheus-kea-exporter` on janus.
+  Each entry is `{ job; target; }`; Alloy renders a `prometheus.scrape`
+  block and forwards via the existing `remote_write`.
+- `journal.{mode,include,relabelRules}` — log shipping controls.
+
+See `modules/clan/monitoring/README.md` for the full architecture and
+the alert rules baked into the server.
 
 **Cloudflare resources**: Zones, tunnels, and DNS records defined as
 pure data in `inventory/resources/cloudflare/`. Terraform creates
@@ -408,6 +427,14 @@ in `modules/clan/default.nix`, create instance in
 `inventory/resources/cloudflare/tunnels.nix`. Import
 `modules/nixos/cloudflared.nix` in the machine config. Run
 `nix run .#tf-apply` then `clan machines update <machine>`.
+
+**Add a metrics exporter to a machine**: Enable the exporter (e.g.,
+`services.prometheus.exporters.<name>`) in the machine's NixOS config
+listening on `127.0.0.1`. Then add a scrape job to the machine's
+monitoring agent settings in `inventory/clan/instances/monitoring.nix`:
+`extraScrapeTargets = [{ job = "<name>"; target = "127.0.0.1:<port>"; }]`.
+Alloy renders a `prometheus.scrape` block and forwards via the existing
+`remote_write` — no firewall changes needed for localhost exporters.
 
 **Add terraform resources**: For machine-coupled infra, create
 `machines/<name>/terraform-configuration.nix` (auto-discovered). For

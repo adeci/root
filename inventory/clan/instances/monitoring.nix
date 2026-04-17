@@ -10,6 +10,12 @@
         machines.janus.settings = {
           extraCollectors = [ "conntrack" ];
           extraLabels.role = "router";
+          extraScrapeTargets = [
+            {
+              job = "kea-dhcp4";
+              target = "127.0.0.1:9547";
+            }
+          ];
         };
       };
       server.machines.sequoia.settings = {

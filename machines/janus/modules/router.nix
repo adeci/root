@@ -11,7 +11,7 @@
 #   Right-top    = eno2
 #   Right-bottom = eno1
 #
-{ lib, ... }:
+{ lib, pkgs, ... }:
 let
   # ── Port Map (label → linux interface) ─────────────────────────────
   # Profiled 2026-04-12 by plug-testing each port.
@@ -48,6 +48,7 @@ let
     mgmt = {
       id = 99;
       subnet = "10.99.0";
+      iface = "br-mgmt"; # bridged with the dedicated mgmt RJ45
     };
   };
 
@@ -83,10 +84,10 @@ let
 
   # ── Helpers ────────────────────────────────────────────────────────
   vlanIf = v: "vlan${toString v.id}";
+  # The interface where DHCP/DNS for a subnet binds. Defaults to the VLAN
+  # sub-interface; a vlan entry can override with `iface` (mgmt → br-mgmt).
+  subnetIface = v: v.iface or (vlanIf v);
   allVlanIfs = lib.mapAttrsToList (_: vlanIf) vlans;
-
-  # Generate dnsmasq dhcp-host lines from device list
-  dhcpHosts = lib.mapAttrsToList (name: d: "${d.mac},${name},${d.ip}") devices;
 
   # nftables interface set literal
   ifSet = ifs: lib.concatMapStringsSep ", " (i: ''"${i}"'') ifs;
@@ -164,7 +165,7 @@ in
       address = [ "${v.subnet}.1/24" ];
       linkConfig.RequiredForOnline = "no";
     }
-  ) (lib.filterAttrs (name: _: name != "mgmt") vlans);
+  ) (lib.filterAttrs (_: v: !(v ? iface)) vlans);
 
   # ── IP forwarding ─────────────────────────────────────────────────
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
@@ -251,48 +252,124 @@ in
     }
   '';
 
-  # ── DHCP + DNS (dnsmasq) ───────────────────────────────────────────
-  # One service for DHCP leases + DNS resolution + local domain.
-  # Static leases from the devices list above.
-  # Upstream DNS: Cloudflare + Quad9.
+  # ── DHCP (Kea) + DNS (Unbound) ─────────────────────────────────────
+  # Reservations and .lan records come from `devices` at deploy time;
+  # dynamic clients get IPs but no .lan name.
   services.resolved.enable = false;
   networking.nameservers = [ "127.0.0.1" ];
 
-  services.dnsmasq = {
+  services.kea.dhcp4 = {
     enable = true;
     settings = {
-      listen-address = [ "127.0.0.1" ] ++ map (v: "${v.subnet}.1") (lib.attrValues vlans);
-      bind-dynamic = true;
+      interfaces-config.interfaces = lib.mapAttrsToList (_: subnetIface) vlans;
 
-      dhcp-range =
-        map (v: "${vlanIf v},${v.subnet}.100,${v.subnet}.250,255.255.255.0,24h") (
-          lib.attrValues (lib.filterAttrs (n: _: n != "mgmt") vlans)
-        )
-        ++ [ "br-mgmt,${vlans.mgmt.subnet}.100,${vlans.mgmt.subnet}.250,255.255.255.0,24h" ];
+      lease-database = {
+        type = "memfile";
+        persist = true;
+        name = "/var/lib/kea/kea-leases4.csv";
+      };
 
-      dhcp-option =
-        lib.concatMap (v: [
-          "${vlanIf v},option:router,${v.subnet}.1"
-          "${vlanIf v},option:dns-server,${v.subnet}.1"
-        ]) (lib.attrValues (lib.filterAttrs (n: _: n != "mgmt") vlans))
-        ++ [
-          "br-mgmt,option:router,${vlans.mgmt.subnet}.1"
-          "br-mgmt,option:dns-server,${vlans.mgmt.subnet}.1"
-        ];
-
-      dhcp-host = dhcpHosts;
-
-      server = [
-        "1.1.1.1"
-        "9.9.9.9"
+      # lease_cmds: control-socket lease CRUD. stat_cmds: per-subnet
+      # metrics. Both consumed by prometheus-kea-exporter below.
+      hooks-libraries = [
+        {
+          library = "${pkgs.kea}/lib/kea/hooks/libdhcp_lease_cmds.so";
+          parameters = { };
+        }
+        {
+          library = "${pkgs.kea}/lib/kea/hooks/libdhcp_stat_cmds.so";
+          parameters = { };
+        }
       ];
 
-      # Local domain — <hostname>.lan resolves for all DHCP clients
-      domain = "lan";
-      local = "/lan/";
-      expand-hosts = true;
-      no-resolv = true;
-      cache-size = 1000;
+      control-socket = {
+        socket-type = "unix";
+        socket-name = "/run/kea/kea-dhcp4.sock";
+      };
+
+      # id = v.id (not a positional index) so subnet-ids stay stable
+      # across renames/additions — Kea persists subnet-id in the lease
+      # CSV and keys stats by it.
+      subnet4 = lib.mapAttrsToList (
+        name: v:
+        let
+          devicesOnVlan = lib.filterAttrs (_: d: d.vlan == name) devices;
+        in
+        {
+          inherit (v) id;
+          subnet = "${v.subnet}.0/24";
+          interface = subnetIface v;
+          pools = [ { pool = "${v.subnet}.100 - ${v.subnet}.250"; } ];
+          option-data = [
+            {
+              name = "routers";
+              data = "${v.subnet}.1";
+            }
+            {
+              name = "domain-name-servers";
+              data = "${v.subnet}.1";
+            }
+            {
+              name = "domain-name";
+              data = "lan";
+            }
+          ];
+          reservations = lib.mapAttrsToList (hostname: d: {
+            hw-address = d.mac;
+            ip-address = d.ip;
+            inherit hostname;
+          }) devicesOnVlan;
+        }
+      ) vlans;
     };
+  };
+
+  services.unbound = {
+    enable = true;
+    settings = {
+      server = {
+        interface = [ "127.0.0.1" ] ++ map (v: "${v.subnet}.1") (lib.attrValues vlans);
+        access-control = [
+          "127.0.0.0/8 allow"
+        ]
+        ++ map (v: "${v.subnet}.0/24 allow") (lib.attrValues vlans);
+
+        # static: unknown names → NXDOMAIN, known names with missing
+        # record types → NODATA. domain-insecure skips DNSSEC for the
+        # local zone (no chain of trust from root).
+        local-zone = [ ''"lan." static'' ];
+        local-data = lib.mapAttrsToList (name: d: ''"${name}.lan. A ${d.ip}"'') devices;
+        local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.lan"'') devices;
+        domain-insecure = [ "lan" ];
+
+        num-threads = 2;
+        msg-cache-size = "16m";
+        rrset-cache-size = "32m";
+      };
+
+      # janus disables systemd-resolved, so the @adeci/tailscale
+      # dns-delegate path is a no-op here. Alloy needs .ts.net resolution
+      # to push metrics to sequoia.
+      forward-zone = [
+        {
+          name = "ts.net.";
+          forward-addr = [ "100.100.100.100" ];
+        }
+      ];
+    };
+  };
+
+  # DNS up before DHCP so the resolver Kea hands out is already serving.
+  systemd.services.kea-dhcp4-server = {
+    after = [ "unbound.service" ];
+    wants = [ "unbound.service" ];
+  };
+
+  # Shares User="kea" + RuntimeDirectory with kea-dhcp4-server, so socket
+  # access is automatic. Scraped via @adeci/monitoring extraScrapeTargets.
+  services.prometheus.exporters.kea = {
+    enable = true;
+    listenAddress = "127.0.0.1";
+    targets = [ "/run/kea/kea-dhcp4.sock" ];
   };
 }

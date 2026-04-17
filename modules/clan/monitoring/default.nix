@@ -58,6 +58,36 @@ in
             description = "How often Alloy scrapes its local exporters.";
           };
 
+          extraScrapeTargets = lib.mkOption {
+            type = lib.types.listOf (
+              lib.types.submodule {
+                options = {
+                  job = lib.mkOption {
+                    type = lib.types.str;
+                    description = "Prometheus `job` label for this scrape.";
+                  };
+                  target = lib.mkOption {
+                    type = lib.types.str;
+                    example = "127.0.0.1:9547";
+                    description = "`address:port` to scrape.";
+                  };
+                };
+              }
+            );
+            default = [ ];
+            description = ''
+              Extra Prometheus scrape jobs to forward to the monitoring server.
+              Each entry becomes a `prometheus.scrape` Alloy component on this
+              agent. The `instance` label is set to the machine's hostname.
+            '';
+            example = [
+              {
+                job = "kea-dhcp4";
+                target = "127.0.0.1:9547";
+              }
+            ];
+          };
+
           extraLabels = lib.mkOption {
             type = lib.types.attrsOf lib.types.str;
             default = { };
@@ -176,8 +206,40 @@ in
               }
             '';
 
-            extraLabelPairs = lib.mapAttrsToList (n: v: "  \"${n}\" = \"${v}\",") settings.extraLabels;
-            extraLabelsHCL = concatStringsSep "\n" extraLabelPairs;
+            # Alloy component labels must match [a-zA-Z_][a-zA-Z0-9_]*; the
+            # human-friendly job name (e.g. "kea-dhcp4") is preserved as the
+            # Prometheus label, and the Alloy block name is sanitized.
+            extraScrapeBlocks = concatStringsSep "\n" (
+              map (
+                s:
+                let
+                  alloyName = builtins.replaceStrings [ "-" ] [ "_" ] s.job;
+                in
+                ''
+                  prometheus.scrape "${alloyName}" {
+                    targets = [{
+                      __address__ = "${s.target}",
+                      instance    = "${machineName}",
+                      job         = "${s.job}",
+                    }]
+                    honor_labels    = true
+                    forward_to      = [prometheus.remote_write.server.receiver]
+                    scrape_interval = "${settings.scrapeInterval}"
+                  }
+                ''
+              ) settings.extraScrapeTargets
+            );
+
+            extraLabelPairs = lib.mapAttrsToList (n: v: "    \"${n}\" = \"${v}\",") settings.extraLabels;
+            externalLabelsBlock =
+              if settings.extraLabels == { } then
+                ""
+              else
+                ''
+                  external_labels = {
+                  ${concatStringsSep "\n" extraLabelPairs}
+                  }
+                '';
 
             extraRelabelRules = concatStringsSep "\n" settings.journal.relabelRules;
 
@@ -192,24 +254,31 @@ in
                 }
               }
 
+              // Alloy's prometheus.exporter.unix auto-sets instance=<hostname>
+              // on every node metric, matching the Prometheus convention.
               prometheus.scrape "node" {
                 targets         = prometheus.exporter.unix.local_system.targets
                 forward_to      = [prometheus.remote_write.server.receiver]
                 scrape_interval = "${settings.scrapeInterval}"
               }
 
+              // Alloy's own /metrics has no hostname context, so we force
+              // instance=<hostname> via honor_labels + explicit target label.
               prometheus.scrape "alloy_self" {
-                targets         = [{__address__ = "127.0.0.1:12345", job = "alloy"}]
+                targets = [{
+                  __address__ = "127.0.0.1:12345",
+                  instance    = "${machineName}",
+                  job         = "alloy",
+                }]
+                honor_labels    = true
                 forward_to      = [prometheus.remote_write.server.receiver]
                 scrape_interval = "${settings.scrapeInterval}"
               }
 
-              prometheus.remote_write "server" {
-                external_labels = {
-                  "machine" = "${machineName}",
-              ${extraLabelsHCL}
-                }
+              ${extraScrapeBlocks}
 
+              prometheus.remote_write "server" {
+                ${externalLabelsBlock}
                 endpoint {
                   url = "${serverURL}/prometheus/api/v1/write"
                   basic_auth {
@@ -232,6 +301,10 @@ in
               loki.relabel "journal" {
                 ${journalKeepRule}
                 rule {
+                  source_labels = ["__journal__hostname"]
+                  target_label  = "instance"
+                }
+                rule {
                   source_labels = ["__journal__systemd_unit"]
                   target_label  = "service_name"
                 }
@@ -248,11 +321,7 @@ in
               }
 
               loki.write "server" {
-                external_labels = {
-                  "machine" = "${machineName}",
-              ${extraLabelsHCL}
-                }
-
+                ${externalLabelsBlock}
                 endpoint {
                   url = "${serverURL}/loki/loki/api/v1/push"
                   basic_auth {
@@ -350,13 +419,13 @@ in
                   rules:
                     - alert: HostStale
                       expr: |
-                        (time() - max by (machine) (timestamp(node_uname_info))) > 180
+                        (time() - max by (instance) (timestamp(node_uname_info))) > 180
                       for: 0m
                       labels:
                         severity: critical
                       annotations:
-                        summary: "Host {{ $labels.machine }} has not reported metrics for 3+ minutes"
-                        description: "No samples received from {{ $labels.machine }} in the last 3 minutes. Agent down, network issue, or host offline."
+                        summary: "Host {{ $labels.instance }} has not reported metrics for 3+ minutes"
+                        description: "No samples received from {{ $labels.instance }} in the last 3 minutes. Agent down, network issue, or host offline."
 
                     - alert: DiskSpaceHigh
                       expr: |
@@ -366,7 +435,7 @@ in
                       labels:
                         severity: warning
                       annotations:
-                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.machine }} is over 90% full"
+                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is over 90% full"
 
                     - alert: DiskSpaceCritical
                       expr: |
@@ -376,7 +445,7 @@ in
                       labels:
                         severity: critical
                       annotations:
-                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.machine }} is over 95% full"
+                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is over 95% full"
 
                     - alert: InodeExhaustionHigh
                       expr: |
@@ -386,7 +455,7 @@ in
                       labels:
                         severity: warning
                       annotations:
-                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.machine }} is over 90% inode-full"
+                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is over 90% inode-full"
 
                     - alert: SystemdUnitFailed
                       expr: node_systemd_unit_state{state="failed"} == 1
@@ -394,18 +463,18 @@ in
                       labels:
                         severity: warning
                       annotations:
-                        summary: "Systemd unit {{ $labels.name }} on {{ $labels.machine }} has been failed for 5+ minutes"
+                        summary: "Systemd unit {{ $labels.name }} on {{ $labels.instance }} has been failed for 5+ minutes"
 
                 - name: stack-health
                   rules:
                     - alert: AlloyWriteFailing
                       expr: |
-                        sum by (machine) (rate(prometheus_remote_write_samples_failed_total[5m])) > 0
+                        sum by (instance) (rate(prometheus_remote_write_samples_failed_total[5m])) > 0
                       for: 10m
                       labels:
                         severity: warning
                       annotations:
-                        summary: "Alloy agent on {{ $labels.machine }} is failing remote_write requests"
+                        summary: "Alloy agent on {{ $labels.instance }} is failing remote_write requests"
 
                     - alert: PrometheusIngestBroken
                       expr: |
@@ -448,20 +517,11 @@ in
               };
             };
 
-            # ── Server-only generators ──
+            # Grafana's NixOS module requires an explicit secret_key as of 26.05.
+            # Used to encrypt credentials in the dashboards DB; with anonymous
+            # Admin + no external datasources there's not much to protect, but
+            # we generate a random one anyway so it's stable across rebuilds.
             clan.core.vars.generators = lib.optionalAttrs settings.grafana.enable {
-              grafana-admin = {
-                prompts.username.description = "Grafana admin username";
-                files = {
-                  username.secret = false;
-                  password = { };
-                };
-                runtimeInputs = [ pkgs.openssl ];
-                script = ''
-                  cat "$prompts/username" > "$out/username"
-                  openssl rand -hex 32 > "$out/password"
-                '';
-              };
               grafana-secret = {
                 files.key = { };
                 runtimeInputs = [ pkgs.openssl ];
@@ -580,13 +640,16 @@ in
                 metrics.enabled = false;
                 public_dashboards.enabled = false;
 
-                security = {
-                  admin_user = "$__file{/run/credentials/grafana.service/grafana-admin-username}";
-                  admin_password = "$__file{/run/credentials/grafana.service/grafana-admin-password}";
-                  secret_key = "$__file{/run/credentials/grafana.service/grafana-secret-key}";
-                  cookie_secure = false;
-                  csrf_trusted_origins = settings.host;
+                # Tailscale-only endpoint: network auth already gates access.
+                # Anonymous Admin lets any tailnet visitor view and edit
+                # dashboards without a second login step.
+                "auth.anonymous" = {
+                  enabled = true;
+                  org_role = "Admin";
                 };
+                "auth".disable_login_form = true;
+
+                security.secret_key = "$__file{/run/credentials/grafana.service/grafana-secret-key}";
 
                 server = {
                   http_addr = "127.0.0.1";
@@ -602,18 +665,11 @@ in
                 };
               };
 
+              # Datasources are provisioned so imported dashboards "just work".
+              # Dashboards themselves are UI-managed (persisted in postgres,
+              # which `clan.core.state.monitoring.folders` already covers).
               provision = {
                 enable = true;
-
-                dashboards.settings.providers = [
-                  {
-                    name = "adeci";
-                    options.path = ./dashboards;
-                    foldersFromFilesStructure = false;
-                    allowUiUpdates = false;
-                  }
-                ];
-
                 datasources.settings.datasources = [
                   {
                     name = "prometheus";
@@ -636,8 +692,6 @@ in
 
             systemd.services.grafana.serviceConfig = lib.mkIf settings.grafana.enable {
               LoadCredential = [
-                "grafana-admin-username:${config.clan.core.vars.generators.grafana-admin.files.username.path}"
-                "grafana-admin-password:${config.clan.core.vars.generators.grafana-admin.files.password.path}"
                 "grafana-secret-key:${config.clan.core.vars.generators.grafana-secret.files.key.path}"
               ];
             };
@@ -649,17 +703,13 @@ in
               recommendedProxySettings = true;
               serverTokens = false;
 
-              commonHttpConfig = ''
-                # Prometheus remote-write bursts can be large
-                client_max_body_size 32m;
-              '';
-
               virtualHosts.${settings.host} = {
                 locations = {
                   "/prometheus/" = {
                     basicAuthFile = "/run/nginx/credentials/prometheus-auth-htpasswd";
                     proxyPass = "http://127.0.0.1:${toString prometheusPort}/";
                     extraConfig = ''
+                      client_max_body_size 32m;
                       proxy_read_timeout 120s;
                       proxy_send_timeout 120s;
                     '';
@@ -669,14 +719,18 @@ in
                     basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
                     proxyPass = "http://127.0.0.1:${toString lokiPort}/";
                     extraConfig = ''
+                      client_max_body_size 32m;
                       proxy_read_timeout 120s;
                       proxy_send_timeout 120s;
                     '';
                   };
                 }
                 // lib.optionalAttrs settings.grafana.enable {
+                  # No trailing slash on proxyPass: Grafana has serve_from_sub_path
+                  # = true and needs to see the full /grafana/... path, otherwise
+                  # it redirect-loops trying to re-add the prefix.
                   "/grafana/" = {
-                    proxyPass = "http://127.0.0.1:${toString grafanaPort}/";
+                    proxyPass = "http://127.0.0.1:${toString grafanaPort}";
                     proxyWebsockets = true;
                   };
 
