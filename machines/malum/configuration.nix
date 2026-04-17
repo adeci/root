@@ -8,6 +8,7 @@
     ../../modules/darwin/karabiner.nix
     ../../modules/darwin/aerospace
     ../../modules/darwin/shopify.nix
+    ../../modules/darwin/linux-rosetta-builder.nix
   ];
 
   # Company laptop — don't publish personal SSH keys or enable sshd

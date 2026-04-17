@@ -67,6 +67,10 @@
     devblog.url = "github:adeci/devblog";
     devblog.inputs.nixpkgs.follows = "nixpkgs";
     devblog.inputs.flake-parts.follows = "flake-parts";
+
+    # aarch64/x86_64-linux remote-builder VM via Virtualization.framework (Rosetta 2 passthrough)
+    nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
+    nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =

@@ -1,17 +1,19 @@
-# Shopify work environment — 1Password SSH, tec/shadowenv, homebrew casks.
 {
   self,
   pkgs,
+  lib,
   ...
 }:
 let
   shopifyZsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap {
     extraInit = # zsh
       ''
-        # Google Cloud SDK (homebrew cask doesn't symlink into /opt/homebrew/bin)
         if [[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]]; then
           source /opt/homebrew/share/google-cloud-sdk/path.zsh.inc
         fi
+
+        # shopify clusters to local kubernetes config
+        export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
 
         # Shopify tec (includes shadowenv, dev tools, wish, and shell hooks)
         if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
@@ -27,6 +29,14 @@ in
 
   nix.extraOptions = ''
     !include nix.conf.d/shopify.conf
+  '';
+
+  # move aside any externally-managed nix.custom.conf so nix-darwin's sha256 check doesn't abort
+  system.activationScripts.checks.text = lib.mkBefore ''
+    if [[ -e /etc/nix/nix.custom.conf ]] \
+        && /usr/bin/grep -q '^!include' /etc/nix/nix.custom.conf; then
+      /bin/mv /etc/nix/nix.custom.conf /etc/nix/nix.custom.conf.bak
+    fi
   '';
 
   homebrew = {

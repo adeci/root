@@ -95,4 +95,10 @@ in
     dock.wvous-bl-corner = 1;
     dock.wvous-br-corner = 1;
   };
+
+  nix.settings.trusted-users = [
+    "root"
+    self.users.alex.username
+  ];
+
 }
