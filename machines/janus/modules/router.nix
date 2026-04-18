@@ -191,7 +191,10 @@ in
         iifname { ${ifSet allVlanIfs}, "br-mgmt" } udp dport { 53, 67 } accept
         iifname { ${ifSet allVlanIfs}, "br-mgmt" } tcp dport 53 accept
 
-        # Tailscale — full trust (already authenticated)
+        # Tailscale: peer-initiated wireguard from the internet (41641 is
+        # Tailscale's default; without this rule only janus-initiated
+        # direct paths work, via conntrack). Tunnel already authenticated.
+        iifname "${wan}" udp dport 41641 accept
         iifname "tailscale0" accept
 
         # SSH from trusted + management only
