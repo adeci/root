@@ -79,7 +79,26 @@ let
     };
 
     # Trusted network (VLAN 10)
-    # praxis = { mac = "xx:xx:xx:xx:xx:xx"; ip = "10.10.0.10"; vlan = "trusted"; };
+    sequoia = {
+      mac = "00:e0:4c:6d:c5:c9";
+      ip = "10.10.0.10";
+      vlan = "trusted";
+    };
+    leviathan = {
+      mac = "e4:3d:1a:cd:96:60";
+      ip = "10.10.0.20";
+      vlan = "trusted";
+    };
+    praxis = {
+      mac = "4c:77:cb:ac:86:4a"; # wifi
+      ip = "10.10.0.30";
+      vlan = "trusted";
+    };
+    printer = {
+      mac = "9c:93:4e:2e:6e:e1";
+      ip = "10.10.0.50";
+      vlan = "trusted";
+    };
   };
 
   # ── Helpers ────────────────────────────────────────────────────────
