@@ -40,6 +40,7 @@ let
   jq = lib.getExe pkgs.jq;
 
   msi = "Microstep MSI MAG321CQR KA3H071804955";
+  md272qpw = "Microstep MSI MD272QPW PB1H252600064";
 
   # ── Theming ───────────────────────────────────────────────────────
   theme-name = "Tokyonight-Dark";
@@ -220,6 +221,19 @@ in
         };
       };
 
+      # praxis — MSI MD272QPW 27" monitor
+      ${md272qpw} = {
+        mode = "2560x1440@59.951";
+        scale = 1;
+        transform = "normal";
+        position = _: {
+          props = {
+            x = 0;
+            y = 0;
+          };
+        };
+      };
+
       # shared — MSI MAG321CQR 32" curved monitor
       ${msi} = {
         mode = "2560x1440@144";
@@ -311,7 +325,7 @@ in
     # ── Window Rules ───────────────────────────────────────────────
 
     window-rules = [
-      # Firefox/LibreWolf: 1/3 width on the MSI monitor
+      # Firefox/LibreWolf: 1/3 width on the MSI desktop monitors
       {
         matches = [
           {
@@ -321,6 +335,14 @@ in
           {
             app-id = "librewolf";
             on-output = msi;
+          }
+          {
+            app-id = "firefox";
+            on-output = md272qpw;
+          }
+          {
+            app-id = "librewolf";
+            on-output = md272qpw;
           }
         ];
         default-column-width = {
@@ -336,6 +358,7 @@ in
         ];
         excludes = [
           { on-output = msi; }
+          { on-output = md272qpw; }
         ];
         open-maximized = true;
       }
@@ -348,7 +371,7 @@ in
         clip-to-geometry = true;
       }
 
-      # Communication apps: 50% width on the MSI 32"
+      # Communication apps: 50% width on the MSI desktop monitors
       {
         matches = [
           {
@@ -367,6 +390,22 @@ in
             app-id = "^signal$";
             on-output = msi;
           }
+          {
+            app-id = "^discord$";
+            on-output = md272qpw;
+          }
+          {
+            app-id = "^vesktop$";
+            on-output = md272qpw;
+          }
+          {
+            app-id = "^Element";
+            on-output = md272qpw;
+          }
+          {
+            app-id = "^signal$";
+            on-output = md272qpw;
+          }
         ];
         default-column-width = {
           proportion = 0.5;
@@ -383,6 +422,7 @@ in
         ];
         excludes = [
           { on-output = msi; }
+          { on-output = md272qpw; }
         ];
         open-maximized = true;
       }
