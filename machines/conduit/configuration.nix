@@ -51,6 +51,16 @@
         proxy_pass lazarus.tail0e36b8.ts.net:25565;
       }
 
+      # Minecraft usf
+      server {
+        listen 25569;
+        proxy_pass 100.99.42.67:25569;
+      }
+      server {
+        listen 24458 udp;
+        proxy_pass 100.99.42.67:24458;
+      }
+
     '';
   };
 
@@ -59,12 +69,14 @@
     25566
     25567
     25568
+    25569
   ];
   networking.firewall.allowedUDPPorts = [
     24454
     24455
     24456
     24457
+    24458
   ];
 
 }

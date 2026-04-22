@@ -43,10 +43,19 @@
       field = "ipv4_address";
     };
   };
-
   mc_hunter = {
     zone = "decio.us";
     name = "hunter";
+    type = "A";
+    target = {
+      resource = "hcloud_server";
+      name = "conduit";
+      field = "ipv4_address";
+    };
+  };
+  mc_usf = {
+    zone = "decio.us";
+    name = "usf";
     type = "A";
     target = {
       resource = "hcloud_server";
@@ -78,6 +87,18 @@
       target = "rats.decio.us";
     };
   };
+  srv_hunter = {
+    zone = "decio.us";
+    name = "_minecraft._tcp.hunter";
+    type = "SRV";
+    data = {
+      priority = 0;
+      weight = 0;
+      port = 25567;
+      target = "hunter.decio.us";
+    };
+  };
+
   srv_dj2 = {
     zone = "decio.us";
     name = "_minecraft._tcp.dj2";
@@ -89,15 +110,16 @@
       target = "dj2.decio.us";
     };
   };
-  srv_hunter = {
+
+  srv_usf = {
     zone = "decio.us";
-    name = "_minecraft._tcp.hunter";
+    name = "_minecraft._tcp.usf";
     type = "SRV";
     data = {
       priority = 0;
       weight = 0;
-      port = 25567;
-      target = "hunter.decio.us";
+      port = 25569;
+      target = "usf.decio.us";
     };
   };
 }
