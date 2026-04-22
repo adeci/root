@@ -44,7 +44,6 @@
 
     mics-skills.url = "github:Mic92/mics-skills";
     mics-skills.inputs.nixpkgs.follows = "nixpkgs";
-    mics-skills.inputs.flake-parts.follows = "flake-parts";
     mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
 
     opencrow.url = "github:pinpox/opencrow";

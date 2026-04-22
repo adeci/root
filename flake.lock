@@ -394,9 +394,6 @@
     },
     "mics-skills": {
       "inputs": {
-        "flake-parts": [
-          "flake-parts"
-        ],
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -405,11 +402,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1775476198,
-        "narHash": "sha256-zrKJqjMxREOkqLtJErG1nahUazovcBRsHG+7EugiWI8=",
+        "lastModified": 1776590363,
+        "narHash": "sha256-6epp40cM+FTLnShBe9B2UoX9/NKHeeW84ksk8XM2iiQ=",
         "owner": "Mic92",
         "repo": "mics-skills",
-        "rev": "97551ab43f90c14dbadf2396d7d5c3b1e2f45a33",
+        "rev": "b263e7171f94540449d2d52f3108cc1ccf3fb666",
         "type": "github"
       },
       "original": {

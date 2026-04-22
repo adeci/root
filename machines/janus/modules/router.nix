@@ -89,6 +89,11 @@ let
       ip = "10.10.0.20";
       vlan = "trusted";
     };
+    leviathan-idrac = {
+      mac = "b0:7b:25:f0:b0:c8";
+      ip = "10.10.0.21";
+      vlan = "trusted";
+    };
     praxis = {
       mac = "4c:77:cb:ac:86:4a"; # wifi
       ip = "10.10.0.30";
