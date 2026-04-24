@@ -20,6 +20,7 @@ in
     llm-agents.pi
     llm-agents.ccusage
     llm-agents.ccusage-pi
+    llm-agents.ccusage-codex
     llm-agents.openspec
   ];
 
