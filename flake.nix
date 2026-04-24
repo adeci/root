@@ -37,6 +37,7 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
 
+    #llm-agents.url = "github:adeci/llm-agents.nix?ref=adeci";
     llm-agents.url = "github:numtide/llm-agents.nix";
     llm-agents.inputs.nixpkgs.follows = "nixpkgs";
     llm-agents.inputs.flake-parts.follows = "flake-parts";
