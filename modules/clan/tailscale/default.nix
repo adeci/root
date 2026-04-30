@@ -107,6 +107,11 @@ _: {
               // lib.optionalAttrs (extraFlags != [ ]) {
                 extraUpFlags = extraFlags;
               };
+
+            addLocalRoutesRule = # bash
+              ''
+                ${pkgs.iproute2}/bin/ip rule add priority 5200 lookup main suppress_prefixlength 0 2>/dev/null || true
+              '';
           in
           {
             clan.core.vars.generators."${generatorName}" = {
@@ -171,9 +176,30 @@ _: {
             # ip rule at priority 5200 (outside Tailscale's 5210-5310 range) makes
             # direct routes win over Tailscale's table 52. Gets cleared on network
             # changes and sleep/resume, so we re-add from multiple hooks.
-            powerManagement.resumeCommands = lib.mkIf acceptRoutes ''
-              ${pkgs.iproute2}/bin/ip rule add priority 5200 lookup main suppress_prefixlength 0 2>/dev/null || true
-            '';
+            systemd.services."tailscale-local-routes-${instanceName}" = lib.mkIf acceptRoutes {
+              description = "Prefer local routes over Tailscale subnet routes for ${instanceName}";
+              after = [
+                "tailscaled.service"
+              ]
+              ++ lib.optional (
+                (finalSettings.extraUpFlags or [ ]) != [ ]
+              ) "tailscale-apply-flags-${instanceName}.service";
+              wants = [
+                "tailscaled.service"
+              ]
+              ++ lib.optional (
+                (finalSettings.extraUpFlags or [ ]) != [ ]
+              ) "tailscale-apply-flags-${instanceName}.service";
+              wantedBy = [ "multi-user.target" ];
+              restartTriggers = [ (builtins.toJSON (finalSettings.extraUpFlags or [ ])) ];
+              script = addLocalRoutesRule;
+              serviceConfig = {
+                Type = "oneshot";
+                RemainAfterExit = true;
+              };
+            };
+
+            powerManagement.resumeCommands = lib.mkIf acceptRoutes addLocalRoutesRule;
 
             boot.kernel.sysctl = lib.mkIf (advertiseRoutes != [ ]) {
               "net.ipv4.ip_forward" = lib.mkDefault 1;
@@ -187,7 +213,7 @@ _: {
                 {
                   source = pkgs.writeShellScript "tailscale-local-routes" ''
                     case "$2" in up|connectivity-change) ;; *) exit 0 ;; esac
-                    ${pkgs.iproute2}/bin/ip rule add priority 5200 lookup main suppress_prefixlength 0 2>/dev/null || true
+                    ${addLocalRoutesRule}
                   '';
                   type = "basic";
                 }

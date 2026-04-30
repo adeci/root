@@ -69,9 +69,9 @@ let
 
   # Sub-interface names for bridge VLAN entries (replaces trunk port in tagged/untagged lists)
   uplinkSubIfsForVlan =
-    device: vlanName:
+    name: device: vlanName:
     if isMgmtTrunk device && vlanName != "mgmt" then
-      [ (uplinkSubIf device.managementPort device.vlans.${vlanName}) ]
+      [ (config.resource.routeros_interface_vlan."${name}_uplink_${vlanName}" "name") ]
     else
       [ ];
 
@@ -202,7 +202,7 @@ in
         untagged =
           accessPortsForVlan device vlanName
           ++ hybridPortsUntaggedForVlan device vlanName
-          ++ uplinkSubIfsForVlan device vlanName;
+          ++ uplinkSubIfsForVlan name device vlanName;
       }
     ) device.vlans
   ) switches;

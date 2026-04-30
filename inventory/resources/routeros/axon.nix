@@ -13,6 +13,7 @@
     trusted = 10;
     iot = 20;
     guest = 30;
+    tenant = 40;
     mgmt = 99;
   };
 
