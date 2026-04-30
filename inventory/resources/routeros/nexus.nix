@@ -12,6 +12,7 @@
     trusted = 10;
     iot = 20;
     guest = 30;
+    tenant = 40;
     mgmt = 99;
   };
 
@@ -31,8 +32,16 @@
         "trusted"
         "iot"
         "guest"
+        "tenant"
       ];
       comment = "Uplink — axon (10G SFP+)";
+    };
+    "sfp-sfpplus3" = {
+      comment = "Server — leviathan trusted (10G SFP+)";
+    };
+    "sfp-sfpplus4" = {
+      vlan = "tenant";
+      comment = "Server — leviathan tenant VMs (10G SFP+)";
     };
     "ether2" = {
       hybrid = true;
