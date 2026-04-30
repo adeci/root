@@ -11,7 +11,12 @@
 #   Right-top    = eno2
 #   Right-bottom = eno1
 #
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  self,
+  ...
+}:
 let
   # ── Port Map (label → linux interface) ─────────────────────────────
   # Profiled 2026-04-12 by plug-testing each port.
@@ -59,7 +64,7 @@ let
   # ── Devices ────────────────────────────────────────────────────────
   # Static DHCP leases — single source of truth for IP assignments.
   # Firewall rules and DNS reference devices by name from this list.
-  devices = {
+  baseDevices = {
     # Management network (VLAN 99)
     nexus = {
       mac = "08:55:31:21:A7:0D";
@@ -99,13 +104,6 @@ let
       vlan = "trusted";
     };
 
-    # Tenant network (VLAN 40)
-    leviathan-vm-1 = {
-      mac = "02:00:00:00:10:01";
-      ip = "10.40.0.10";
-      vlan = "tenant";
-    };
-
     praxis = {
       mac = "4c:77:cb:ac:86:4a"; # wifi
       ip = "10.10.0.30";
@@ -118,15 +116,26 @@ let
     };
   };
 
+  tenantDevices = builtins.mapAttrs (
+    _name: tenant:
+    let
+      vlan = tenant.network or "tenant";
+    in
+    {
+      inherit (tenant) mac;
+      ip = tenant.ip or "${vlans.${vlan}.subnet}.${toString tenant.id}";
+      inherit vlan;
+    }
+  ) self.compute.tenants;
+
+  devices = baseDevices // tenantDevices;
+
   # ── Helpers ────────────────────────────────────────────────────────
   vlanIf = v: "vlan${toString v.id}";
   # The interface where DHCP/DNS for a subnet binds. Defaults to the VLAN
   # sub-interface; a vlan entry can override with `iface` (mgmt → br-mgmt).
   subnetIface = v: v.iface or (vlanIf v);
   allVlanIfs = lib.mapAttrsToList (_: vlanIf) vlans;
-
-  # nftables interface set literal
-  ifSet = ifs: lib.concatMapStringsSep ", " (i: ''"${i}"'') ifs;
 in
 {
   # ── Override base.nix ──────────────────────────────────────────────
@@ -222,11 +231,6 @@ in
         ct state established,related accept
         ct state invalid drop
         iif lo accept
-        ip protocol icmp accept
-
-        # DHCP + DNS from all VLANs + mgmt bridge
-        iifname { ${ifSet allVlanIfs}, "br-mgmt" } udp dport { 53, 67 } accept
-        iifname { ${ifSet allVlanIfs}, "br-mgmt" } tcp dport 53 accept
 
         # Tailscale: peer-initiated wireguard from the internet (41641 is
         # Tailscale's default; without this rule only janus-initiated
@@ -234,8 +238,51 @@ in
         iifname "${wan}" udp dport 41641 accept
         iifname "tailscale0" accept
 
-        # SSH from trusted + management only
-        iifname { "${vlanIf vlans.trusted}", "br-mgmt" } tcp dport 22 accept
+        # Route router-local traffic to per-zone input chains. This avoids
+        # Linux weak-host behavior where a host on one VLAN can reach Janus'
+        # IP address on another VLAN.
+        iifname "${vlanIf vlans.trusted}" jump in-trusted
+        iifname "${vlanIf vlans.iot}"     jump in-iot
+        iifname "${vlanIf vlans.guest}"   jump in-guest
+        iifname "${vlanIf vlans.tenant}"  jump in-tenant
+        iifname "br-mgmt"                 jump in-mgmt
+      }
+
+      chain in-trusted {
+        udp dport 67 accept
+        ip daddr ${vlans.trusted.subnet}.1 udp dport 53 accept
+        ip daddr ${vlans.trusted.subnet}.1 tcp dport 53 accept
+        ip daddr ${vlans.trusted.subnet}.1 icmp type echo-request accept
+        ip daddr ${vlans.trusted.subnet}.1 tcp dport 22 accept
+      }
+
+      chain in-iot {
+        udp dport 67 accept
+        ip daddr ${vlans.iot.subnet}.1 udp dport 53 accept
+        ip daddr ${vlans.iot.subnet}.1 tcp dport 53 accept
+        ip daddr ${vlans.iot.subnet}.1 icmp type echo-request accept
+      }
+
+      chain in-guest {
+        udp dport 67 accept
+        ip daddr ${vlans.guest.subnet}.1 udp dport 53 accept
+        ip daddr ${vlans.guest.subnet}.1 tcp dport 53 accept
+        ip daddr ${vlans.guest.subnet}.1 icmp type echo-request accept
+      }
+
+      chain in-tenant {
+        udp dport 67 accept
+        ip daddr ${vlans.tenant.subnet}.1 udp dport 53 accept
+        ip daddr ${vlans.tenant.subnet}.1 tcp dport 53 accept
+        ip daddr ${vlans.tenant.subnet}.1 icmp type echo-request accept
+      }
+
+      chain in-mgmt {
+        udp dport 67 accept
+        ip daddr ${vlans.mgmt.subnet}.1 udp dport 53 accept
+        ip daddr ${vlans.mgmt.subnet}.1 tcp dport 53 accept
+        ip daddr ${vlans.mgmt.subnet}.1 icmp type echo-request accept
+        ip daddr ${vlans.mgmt.subnet}.1 tcp dport 22 accept
       }
 
       # ── Forwarding ─────────────────────────────────────────────────
