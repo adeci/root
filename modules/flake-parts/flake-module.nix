@@ -2,6 +2,7 @@
   imports = [
     ./checks.nix
     ./clan.nix
+    ./compute.nix
     ./devshell.nix
     ./formatter.nix
 
