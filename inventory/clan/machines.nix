@@ -1,3 +1,13 @@
+let
+  compute = import ../compute;
+  tenantMachines = builtins.mapAttrs (name: tenant: {
+    inherit name;
+    tags = tenant.tags or [ "tenant-vm" ];
+    deploy = (tenant.deploy or { }) // {
+      targetHost = tenant.deploy.targetHost or "root@${name}.lan";
+    };
+  }) compute.tenants;
+in
 {
 
   aegis = {
@@ -118,3 +128,4 @@
   };
 
 }
+// tenantMachines

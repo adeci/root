@@ -15,6 +15,7 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
+    ../../modules/microvms/host.nix
     ./modules/buildbot.nix
   ];
 
@@ -74,16 +75,6 @@
         };
         dhcpV4Config.ClientIdentifier = "mac";
         linkConfig.RequiredForOnline = "routable";
-      };
-
-      "20-tenant-lower" = {
-        matchConfig.Name = "eno12409np1"; # e4:3d:1a:cd:96:61 → nexus sfp-sfpplus4
-        networkConfig = {
-          DHCP = "no";
-          LinkLocalAddressing = "no";
-          IPv6AcceptRA = false;
-        };
-        linkConfig.RequiredForOnline = "no";
       };
     };
   };
