@@ -15,14 +15,14 @@
 let
   # ── Port Map (label → linux interface) ─────────────────────────────
   # Profiled 2026-04-12 by plug-testing each port.
-  eth1 = "enp6s0"; # 2.5G RJ45 # 2.5G RJ45 # 2.5G RJ45 # 2.5G RJ45
-  eth5 = "enp8s0"; # 2.5G RJ45 # 10G SFP+ (right-top)
+  eth4 = "enp5s0"; # 2.5G RJ45 (label Eth4)
+  eth5 = "enp8s0"; # 2.5G RJ45 (label Eth5)
   sfpPlus2 = "eno1"; # 10G SFP+ (right-bottom)
 
   # ── Role Assignment ────────────────────────────────────────────────
-  wan = eth5; # → ISP modem
+  wan = eth4; # → ISP modem
   lan = sfpPlus2; # → nexus sfp-sfpplus1 (VLAN trunk)
-  mgmt = eth1; # → nexus ether1 (management)
+  mgmt = eth5; # → nexus ether1 (management)
 
   # ── Tailscale admin IPs (stable, assigned by Tailscale) ─────────────
   tsAdmin = [
@@ -44,6 +44,10 @@ let
     guest = {
       id = 30;
       subnet = "10.30.0";
+    };
+    tenant = {
+      id = 40;
+      subnet = "10.40.0";
     };
     mgmt = {
       id = 99;
@@ -94,6 +98,14 @@ let
       ip = "10.10.0.21";
       vlan = "trusted";
     };
+
+    # Tenant network (VLAN 40)
+    leviathan-vm-1 = {
+      mac = "02:00:00:00:10:01";
+      ip = "10.40.0.10";
+      vlan = "tenant";
+    };
+
     praxis = {
       mac = "4c:77:cb:ac:86:4a"; # wifi
       ip = "10.10.0.30";
@@ -121,6 +133,7 @@ in
   networking.networkmanager.enable = false;
 
   # ── systemd-networkd ───────────────────────────────────────────────
+  hardware.facter.detected.dhcp.enable = false;
   systemd.network.enable = true;
   networking.useNetworkd = true;
   networking.useDHCP = false;
@@ -239,6 +252,7 @@ in
         iifname "${vlanIf vlans.trusted}" jump from-trusted
         iifname "${vlanIf vlans.iot}"     jump from-iot
         iifname "${vlanIf vlans.guest}"   jump from-guest
+        iifname "${vlanIf vlans.tenant}"  jump from-tenant
         iifname "br-mgmt"                 jump from-mgmt
       }
 
@@ -257,6 +271,13 @@ in
       # ── Zone: guest ─────────────────────────────────────────────────
       # Internet only — no local network access
       chain from-guest {
+        oifname "${wan}" accept
+      }
+
+      # ── Zone: tenant ────────────────────────────────────────────────
+      # VM/workload network — internet only. Trusted can reach it via
+      # from-trusted's full-access policy.
+      chain from-tenant {
         oifname "${wan}" accept
       }
 
