@@ -2,12 +2,12 @@
   id = 10;
   network = "tenant";
   plan = "small";
-  tags = [ "tenant-vm" ];
-
   lifecycle = {
     autostart = false;
     restartIfChanged = false;
   };
+
+  bootstrap.method = "seed-age-key";
 
   volumes = [
     {

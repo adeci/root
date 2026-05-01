@@ -23,12 +23,15 @@ let
     // {
       inherit name;
       network = networkName;
-      tags = tenant.tags or [ "tenant-vm" ];
       lifecycle = {
         autostart = false;
         restartIfChanged = false;
       }
       // (tenant.lifecycle or { });
+      bootstrap = {
+        method = "none";
+      }
+      // (tenant.bootstrap or { });
       mac = tenant.mac or "${network.macPrefix}:${pad2 tenant.id}";
     };
 in
