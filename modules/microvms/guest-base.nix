@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   self,
   pkgs,
   ...
@@ -11,6 +12,7 @@ let
     self.compute.tenants.${machineName} or (throw "No tenant VM inventory entry for ${machineName}");
   plan = self.compute.plans.${tenant.plan} or (throw "Unknown tenant VM plan ${tenant.plan}");
   hostId = builtins.substring 0 8 (builtins.replaceStrings [ "-" ] [ "" ] config.microvm.machineId);
+  seedBootstrap = (tenant.bootstrap.method or "none") == "seed-age-key";
   tapId = builtins.substring 0 15 "vm-${machineName}";
 in
 {
@@ -70,11 +72,42 @@ in
         size = 256;
       }
     ]
+    ++ lib.optionals seedBootstrap [
+      {
+        image = "/run/microvm-seeds/${machineName}.img";
+        mountPoint = null;
+        size = 8;
+        autoCreate = false;
+        readOnly = true;
+      }
+    ]
     ++ map (volume: {
       image = "${volume.name}.img";
       inherit (volume) mountPoint;
       size = volume.sizeMiB;
     }) (tenant.volumes or [ ]);
+  };
+
+  fileSystems."/run/seed" = lib.mkIf seedBootstrap {
+    device = "/dev/disk/by-label/SEED";
+    fsType = "ext4";
+    options = [
+      "ro"
+      "noatime"
+    ];
+  };
+
+  sops = lib.mkIf seedBootstrap {
+    useSystemdActivation = true;
+    age = {
+      keyFile = "/run/seed/age-key.txt";
+      sshKeyPaths = [ ];
+    };
+  };
+
+  systemd.services.sops-install-secrets = lib.mkIf seedBootstrap {
+    after = [ "run-seed.mount" ];
+    requires = [ "run-seed.mount" ];
   };
 
   systemd.tmpfiles.rules = [
