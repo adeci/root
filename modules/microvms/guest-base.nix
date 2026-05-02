@@ -44,7 +44,7 @@ in
   };
 
   microvm = {
-    hypervisor = "qemu";
+    inherit (instance) hypervisor;
     inherit (instance.resources) vcpu;
     mem = instance.resources.memoryMiB;
 
