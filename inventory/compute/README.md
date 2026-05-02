@@ -124,7 +124,7 @@ Current trusted-host bootstrap:
 ```nix
 bootstrap = {
   transport = "seed-disk";
-  material = "clan-machine-age-key";
+  material = "age-key-file";
 };
 ```
 

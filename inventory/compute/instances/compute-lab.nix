@@ -15,7 +15,7 @@
 
   bootstrap = {
     transport = "seed-disk";
-    material = "clan-machine-age-key";
+    material = "age-key-file";
   };
 
   volumes = [
