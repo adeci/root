@@ -28,7 +28,7 @@
       script = ''
         pass=$(cat "$in/buildbot-worker-leviathan/password")
         jq -n --arg pass "$pass" \
-          '[{"name":"leviathan","pass":$pass,"cores":32}]' \
+          '[{"name":"leviathan","pass":$pass,"cores":16}]' \
           > "$out/workers.json"
       '';
     };
@@ -99,6 +99,8 @@
     buildSystems = [ "x86_64-linux" ];
     admins = [ "adeci" ];
     workersFile = config.clan.core.vars.generators.buildbot-workers.files."workers.json".path;
+    evalWorkerCount = 16;
+    evalMaxMemorySize = 4096;
     github = {
       appId = 3002742;
       oauthId = "Iv23li39kVxcYTCXYahY";
@@ -114,6 +116,6 @@
     enable = true;
     workerPasswordFile = config.clan.core.vars.generators.buildbot-worker-leviathan.files.password.path;
     masterUrl = "tcp:host=localhost:port=9989";
-    workers = 32;
+    workers = 16;
   };
 }

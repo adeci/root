@@ -17,6 +17,7 @@
     ../../modules/nixos/cloudflared.nix
     ../../modules/microvms/host.nix
     ./modules/buildbot.nix
+    ./modules/resource-safety.nix
   ];
 
   time.timeZone = "America/New_York";
@@ -43,6 +44,7 @@
 
   nix.settings = {
     max-jobs = 16;
+    cores = 16;
     trusted-users = [
       "root"
       self.users.alex.username
