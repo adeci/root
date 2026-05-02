@@ -30,6 +30,7 @@
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
 
+    # Local path while microcompute is incubating; switch to a remote Git URL once published.
     microcompute.url = "path:/home/alex/git/microcompute";
     microcompute.inputs.nixpkgs.follows = "nixpkgs";
     microcompute.inputs.flake-parts.follows = "flake-parts";
