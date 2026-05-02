@@ -45,6 +45,7 @@ in
 
   microvm = {
     inherit (instance) hypervisor;
+    vsock.cid = lib.mkIf (instance.hypervisor == "cloud-hypervisor") instance.vsockCid;
     inherit (instance.resources) vcpu;
     mem = instance.resources.memoryMiB;
 

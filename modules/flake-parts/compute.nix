@@ -47,6 +47,9 @@ let
       "qemu"
       "cloud-hypervisor"
     ]) "compute instance ${name}: hypervisor must be one of: qemu, cloud-hypervisor";
+    assert lib.assertMsg (
+      !(instance ? vsockCid) || (builtins.isInt instance.vsockCid && instance.vsockCid > 2)
+    ) "compute instance ${name}: vsockCid must be an integer greater than 2";
     assert lib.assertMsg (builtins.elem bootstrap.transport [
       "none"
       "seed-disk"
@@ -64,6 +67,7 @@ let
     // {
       inherit name bootstrap;
       hypervisor = instance.hypervisor or "qemu";
+      vsockCid = instance.vsockCid or (4000 + instance.id);
       network = networkName;
       lifecycle = {
         autostart = false;
@@ -102,6 +106,9 @@ let
     lib.mapAttrsToList (_name: instance: "${instance.network}:${toString instance.id}") instances
   );
   duplicateMacs = duplicates (lib.mapAttrsToList (_name: instance: instance.mac) instances);
+  duplicateVsockCids = duplicates (
+    lib.mapAttrsToList (_name: instance: toString instance.vsockCid) instances
+  );
 
   validatedInstances =
     assert lib.assertMsg (unknownAssignmentHosts == [ ])
@@ -120,6 +127,9 @@ let
     assert lib.assertMsg (
       duplicateMacs == [ ]
     ) "compute instances have duplicate MACs: ${lib.concatStringsSep ", " duplicateMacs}";
+    assert lib.assertMsg (
+      duplicateVsockCids == [ ]
+    ) "compute instances have duplicate vsock CIDs: ${lib.concatStringsSep ", " duplicateVsockCids}";
     instances;
 
   targetFor = name: clanMachines.${name}.deploy.targetHost or "root@${name}";
@@ -135,6 +145,7 @@ let
         lifecycle
         bootstrap
         hypervisor
+        vsockCid
         ;
       host = instanceHosts.${name} or null;
       hostTarget = if builtins.hasAttr name instanceHosts then targetFor instanceHosts.${name} else null;

@@ -1,6 +1,7 @@
 {
   id = 10;
   network = "tenant";
+  hypervisor = "cloud-hypervisor";
 
   resources = {
     vcpu = 2;
