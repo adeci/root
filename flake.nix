@@ -30,8 +30,9 @@
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
 
-    microvm.url = "github:microvm-nix/microvm.nix";
-    microvm.inputs.nixpkgs.follows = "nixpkgs";
+    microcompute.url = "path:/home/alex/git/microcompute";
+    microcompute.inputs.nixpkgs.follows = "nixpkgs";
+    microcompute.inputs.flake-parts.follows = "flake-parts";
 
     terranix.url = "github:terranix/terranix";
     terranix.inputs.flake-parts.follows = "flake-parts";
@@ -88,6 +89,7 @@
 
       imports = [
         inputs.clan-core.flakeModules.default
+        inputs.microcompute.flakeModules.default
         inputs.treefmt-nix.flakeModule
         ./modules/flake-parts/flake-module.nix
       ];

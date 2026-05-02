@@ -376,9 +376,31 @@
         "type": "github"
       }
     },
+    "microcompute": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "microvm": "microvm",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1777704029,
+        "narHash": "sha256-P8ylsOk2hJ9sTsrm1yGeYLxUcgzZedH3g4FYyvpGUdI=",
+        "path": "/home/alex/git/microcompute",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/alex/git/microcompute",
+        "type": "path"
+      }
+    },
     "microvm": {
       "inputs": {
         "nixpkgs": [
+          "microcompute",
           "nixpkgs"
         ],
         "spectrum": "spectrum"
@@ -705,7 +727,7 @@
         "harmonia": "harmonia",
         "jovian": "jovian",
         "llm-agents": "llm-agents",
-        "microvm": "microvm",
+        "microcompute": "microcompute",
         "mics-skills": "mics-skills",
         "niri": "niri",
         "nix-index-database": "nix-index-database",

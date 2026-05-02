@@ -4,6 +4,8 @@ Status: trusted-host compute MVP proven on `compute-lab`.
 
 This is the canonical note for the Leviathan/Janus/Clan compute MicroVM work. It consolidates the original planning notes, review feedback, seed-disk experiment, and current implementation state.
 
+See `microcompute-extraction-plan.md` for the standalone flake extraction plan. Initial standalone repo exists at `/home/alex/git/microcompute`; this repo now consumes it as a local path flake input.
+
 ## Current conclusion
 
 The architecture works for long-lived hosted NixOS MicroVMs:
