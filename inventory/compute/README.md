@@ -96,7 +96,7 @@ users
 NixOS config inside guest
 ```
 
-Substrate changes require host deploy plus explicit VM restart:
+Substrate changes require installing/deploying the host runner plus explicit VM restart:
 
 ```text
 vCPU/RAM
@@ -105,6 +105,17 @@ MAC/TAP/network
 volume layout
 seed attachment
 ```
+
+Hypervisor can be selected per instance:
+
+```nix
+hypervisor = "qemu"; # default/fallback/debug
+hypervisor = "cloud-hypervisor";
+```
+
+`compute-lab` has passed the Cloud Hypervisor canary: DHCP, SSH, seed disk, sops secrets, read-only `/nix/store`, persistent volumes, restart, and hot-switch.
+
+Cloud Hypervisor instances get a stable `vsockCid` derived from the instance id by default. Override with `vsockCid = <int>;` only if needed.
 
 ## Current bootstrap model
 

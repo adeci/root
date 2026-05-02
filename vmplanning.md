@@ -530,7 +530,7 @@ H. Generic secret-bearing warm pool.
 
 ## Current decisions
 
-- Use QEMU for MVP/debuggability.
+- Keep QEMU supported for debug/fallback; `compute-lab` currently runs on Cloud Hypervisor after successful canary testing.
 - Keep `compute-lab` as explicit normal Clan machine.
 - Keep compute inventory limited to substrate metadata.
 - Use read-only host `/nix/store` sharing by default.
@@ -659,7 +659,7 @@ nix build .#packages.x86_64-linux.net-plan --no-link
 - Decide Tailscale identity policy per compute instance:
   - ephemeral nodes are fine for canaries but can temporarily create `-1` names after reboot until old nodes age out;
   - stable MagicDNS/Tailscale identity needs persistent Tailscale state on a VM disk and probably a non-ephemeral Clan tag.
-- Evaluate Cloud Hypervisor only after the QEMU path is clean. `hypervisor` is now an instance-level substrate knob with `qemu` default; keep QEMU as supported/default until Cloud Hypervisor proves DHCP/SSH/seed/persistence/restart parity.
+- Cloud Hypervisor canary passed for `compute-lab`: DHCP, SSH, seed disk, sops secrets, read-only `/nix/store`, persistent volumes, restart, and hot-switch all worked. Cloud Hypervisor instances get stable vsock CIDs for systemd notify. Keep QEMU available as fallback/debug path.
 
 ### Leviathan resource safety
 
