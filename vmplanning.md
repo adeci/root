@@ -1,6 +1,6 @@
 # Compute MicroVM architecture, research, and progress
 
-Status: proven on `compute-lab`.
+Status: trusted-host compute MVP proven on `compute-lab`.
 
 This is the canonical note for the Leviathan/Janus/Clan compute MicroVM work. It consolidates the original planning notes, review feedback, seed-disk experiment, and current implementation state.
 
@@ -21,9 +21,10 @@ Verified result:
 
 ```text
 compute-lab.lan            → 10.40.0.10
-compute-lab Tailscale IP   → 100.126.238.119
-Tailscale tag path         → adeci-net-ephemeral
+compute-lab Tailscale path → adeci-net-ephemeral auth works from inside guest
 No clan vars upload into guest needed after boot
+Guest config can be hot-switched with microvm.deploy.rebuild
+Leviathan CI/buildbot and MicroVMs are separated into ci.slice/compute.slice
 ```
 
 The local MVP is not a generic cloud yet. It is a clean trusted-host model:
@@ -66,7 +67,7 @@ Substrate concerns:
 
 ```text
 host placement
-vCPU/RAM plan
+vCPU/RAM allocation
 TAP device
 MAC/IP allocation
 VLAN/network attachment
@@ -542,6 +543,7 @@ H. Generic secret-bearing warm pool.
 - Keep canary `autostart = false`; production VMs can opt in later.
 - Do not give tenant/customer VMs trusted fleet tags by default.
 - `compute-lab` currently has `adeci-net-ephemeral` only because it is an admin canary for proving real Clan service secrets.
+- Compute instances are normal explicit Clan machines, but their guest updates use MicroVM tooling rather than ordinary `clan machines update <guest>`.
 
 ## Runbooks
 
@@ -592,6 +594,46 @@ ssh root@compute-lab.cymric-daggertooth.ts.net \
   'systemctl --no-pager --full status tailscaled; tailscale status --self'
 ```
 
+With the current `adeci-net-ephemeral` tag, reboots can temporarily create `compute-lab-1` style names until old ephemeral nodes age out. This is expected for the canary and not a stable identity policy.
+
+### Hot-switch guest config
+
+For guest-only NixOS changes, use microvm.nix's deploy wrapper:
+
+```bash
+nix run .#nixosConfigurations.compute-lab.config.microvm.deploy.rebuild -- \
+  root@leviathan.cymric-daggertooth.ts.net \
+  root@compute-lab.lan
+```
+
+This was tested successfully. It builds/installs the guest closure on Leviathan, SSHes into the guest, refreshes the guest Nix DB, updates `/nix/var/nix/profiles/system`, and runs `switch-to-configuration`. It does not reboot the VM.
+
+Preferred wrapper:
+
+```bash
+nix run .#compute-vm -- switch compute-lab
+```
+
+Other helper commands:
+
+```bash
+nix run .#compute-vm -- list
+nix run .#compute-vm -- info compute-lab
+nix run .#compute-vm -- status compute-lab
+nix run .#compute-vm -- restart compute-lab
+nix run .#compute-vm -- ssh compute-lab
+```
+
+Do not use hot-switch for substrate changes. These still require Leviathan deploy plus explicit VM restart:
+
+```text
+vCPU/RAM
+MAC/TAP/network
+volume layout
+hypervisor
+seed attachment
+```
+
 ### Validate repo changes
 
 ```bash
@@ -610,21 +652,14 @@ nix build .#packages.x86_64-linux.net-plan --no-link
 
 - Generalize seed bootstrap beyond `compute-lab` naming.
 - Add/finish assertions:
-  - compute instance name must have matching explicit Clan machine;
-  - assigned instance must exist;
-  - instance IDs unique per network;
-  - MAC/IP uniqueness;
   - TAP ID truncation/collision guard for long names.
+  - Optional: assert Janus-derived IP uniqueness if future networks define subnets outside Janus.
 - Add docs near `inventory/compute/` explaining substrate vs Clan machine config.
-- Test guest update flows:
-  - `microvm.deploy.rebuild`;
-  - `microvm.deploy.sshSwitch`;
-  - relationship to `clan machines update <guest>`.
 - Test host key persistence after restarts.
 - Decide Tailscale identity policy per compute instance:
   - ephemeral nodes are fine for canaries but can temporarily create `-1` names after reboot until old nodes age out;
   - stable MagicDNS/Tailscale identity needs persistent Tailscale state on a VM disk and probably a non-ephemeral Clan tag.
-- Evaluate Cloud Hypervisor only after the QEMU path is clean.
+- Evaluate Cloud Hypervisor only after the QEMU path is clean. `hypervisor` is now an instance-level substrate knob with `qemu` default; keep QEMU as supported/default until Cloud Hypervisor proves DHCP/SSH/seed/persistence/restart parity.
 
 ### Leviathan resource safety
 
@@ -633,7 +668,7 @@ Implemented v1:
 ```text
 256GiB /var/lib/swapfile
 nix.settings.max-jobs = 16
-nix.settings.cores = 8
+nix.settings.cores = 16
 buildbot eval workers = 16
 buildbot eval max memory = 4096 MiB
 buildbot worker count = 16
@@ -660,6 +695,20 @@ MemoryMax = 96G
 ```
 
 No zram in v1. Add it later only if swap IO/OOM behavior shows it is useful. Current tmux-managed game servers remain outside these slices until they move into MicroVMs or dedicated systemd units.
+
+Verified after deploy:
+
+```text
+/var/lib/swapfile active at 256G
+buildbot-master active in ci.slice
+buildbot-worker active in ci.slice
+nix-daemon active in ci.slice
+microvm@compute-lab active/configured for compute.slice
+```
+
+### Load simulation
+
+Synthetic load simulation is optional, not a blocker. The resource controls are simple cgroup limits/weights plus a swapfile, and runtime checks confirmed the units landed in the intended slices. Real confidence should come from observing normal buildbot pushes and later real workloads, not fake stress tests.
 
 ### Real workload module
 
