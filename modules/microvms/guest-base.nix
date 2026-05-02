@@ -8,11 +8,13 @@
 }:
 let
   machineName = config.clan.core.settings.machine.name or config.networking.hostName;
-  tenant =
-    self.compute.tenants.${machineName} or (throw "No tenant VM inventory entry for ${machineName}");
-  plan = self.compute.plans.${tenant.plan} or (throw "Unknown tenant VM plan ${tenant.plan}");
+  instance =
+    self.compute.instances.${machineName}
+      or (throw "No compute instance inventory entry for ${machineName}");
   hostId = builtins.substring 0 8 (builtins.replaceStrings [ "-" ] [ "" ] config.microvm.machineId);
-  seedBootstrap = (tenant.bootstrap.method or "none") == "seed-age-key";
+  seedBootstrap =
+    (instance.bootstrap.transport or "none") == "seed-disk"
+    && (instance.bootstrap.material or "none") == "clan-machine-age-key";
   tapId = builtins.substring 0 15 "vm-${machineName}";
 in
 {
@@ -43,14 +45,14 @@ in
 
   microvm = {
     hypervisor = "qemu";
-    inherit (plan) vcpu;
-    mem = plan.memoryMiB;
+    inherit (instance.resources) vcpu;
+    mem = instance.resources.memoryMiB;
 
     interfaces = [
       {
         type = "tap";
         id = tapId;
-        inherit (tenant) mac;
+        inherit (instance) mac;
         tap.vhost = true;
       }
     ];
@@ -85,7 +87,7 @@ in
       image = "${volume.name}.img";
       inherit (volume) mountPoint;
       size = volume.sizeMiB;
-    }) (tenant.volumes or [ ]);
+    }) (instance.volumes or [ ]);
   };
 
   fileSystems."/run/seed" = lib.mkIf seedBootstrap {
