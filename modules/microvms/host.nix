@@ -9,17 +9,20 @@
 let
   hostName = config.clan.core.settings.machine.name or config.networking.hostName;
   computeHost = self.compute.hosts.${hostName} or { };
-  assignedTenantNames = self.compute.assignments.${hostName} or [ ];
-  assignedTenants = lib.genAttrs assignedTenantNames (
+  assignedInstanceNames = self.compute.assignments.${hostName} or [ ];
+  assignedInstances = lib.genAttrs assignedInstanceNames (
     name:
-    self.compute.tenants.${name} or (throw "Unknown tenant MicroVM assignment ${name} on ${hostName}")
+    self.compute.instances.${name}
+      or (throw "Unknown compute instance assignment ${name} on ${hostName}")
   );
 
   seedDir = "/run/microvm-seeds";
   seedSecretName = name: "compute-seed-age-${name}";
-  seedAgeKeyTenants = lib.filterAttrs (
-    _name: tenant: (tenant.bootstrap.method or "none") == "seed-age-key"
-  ) assignedTenants;
+  seedAgeKeyInstances = lib.filterAttrs (
+    _name: instance:
+    (instance.bootstrap.transport or "none") == "seed-disk"
+    && (instance.bootstrap.material or "none") == "clan-machine-age-key"
+  ) assignedInstances;
 
   tenantInterface = computeHost.tenantInterface or "eno12409np1";
   tenantBridge = computeHost.tenantBridge or "br-tenant";
@@ -30,22 +33,22 @@ in
 
   microvm = {
     stateDir = "/var/lib/microvms";
-    vms = lib.mapAttrs (_name: tenant: {
+    vms = lib.mapAttrs (_name: instance: {
       flake = self;
-      inherit (tenant.lifecycle) autostart;
-      inherit (tenant.lifecycle) restartIfChanged;
-    }) assignedTenants;
+      inherit (instance.lifecycle) autostart;
+      inherit (instance.lifecycle) restartIfChanged;
+    }) assignedInstances;
   };
 
   sops.secrets = lib.mapAttrs' (
-    name: _tenant:
+    name: _instance:
     lib.nameValuePair (seedSecretName name) {
       sopsFile = config.clan.core.settings.directory + "/sops/secrets/${name}-age.key/secret";
       format = "json";
       key = "data";
       mode = "0400";
     }
-  ) seedAgeKeyTenants;
+  ) seedAgeKeyInstances;
 
   systemd.tmpfiles.rules = [
     "d ${seedDir} 0750 root kvm -"
@@ -53,7 +56,7 @@ in
 
   systemd.services =
     lib.mapAttrs' (
-      name: tenant:
+      name: instance:
       let
         ageKeyPath = config.sops.secrets.${seedSecretName name}.path;
         seedImage = "${seedDir}/${name}.img";
@@ -90,7 +93,7 @@ in
           install -d -m 0750 -o root -g kvm ${lib.escapeShellArg seedDir}
           install -m 0400 ${lib.escapeShellArg ageKeyPath} "$tmp_dir/age-key.txt"
           printf '%s\n' ${lib.escapeShellArg name} > "$tmp_dir/vm-name"
-          printf '%s\n' ${lib.escapeShellArg tenant.network} > "$tmp_dir/network"
+          printf '%s\n' ${lib.escapeShellArg instance.network} > "$tmp_dir/network"
 
           truncate -s 8M "$tmp_seed"
           mkfs.ext4 -q -F -L SEED -d "$tmp_dir" "$tmp_seed"
@@ -99,14 +102,14 @@ in
           mv "$tmp_seed" "$seed"
         '';
       }
-    ) seedAgeKeyTenants
+    ) seedAgeKeyInstances
     // lib.mapAttrs' (
-      name: _tenant:
+      name: _instance:
       lib.nameValuePair "microvm@${name}" {
         requires = [ "compute-microvm-seed-${name}.service" ];
         after = [ "compute-microvm-seed-${name}.service" ];
       }
-    ) seedAgeKeyTenants;
+    ) seedAgeKeyInstances;
 
   # Tenant VM bridge. The physical tenant NIC has no host IP; it only carries
   # VM frames to Janus VLAN 40 through Nexus.

@@ -1,13 +1,21 @@
 {
   id = 10;
   network = "tenant";
-  plan = "small";
+
+  resources = {
+    vcpu = 2;
+    memoryMiB = 3072;
+  };
+
   lifecycle = {
     autostart = false;
     restartIfChanged = false;
   };
 
-  bootstrap.method = "seed-age-key";
+  bootstrap = {
+    transport = "seed-disk";
+    material = "clan-machine-age-key";
+  };
 
   volumes = [
     {

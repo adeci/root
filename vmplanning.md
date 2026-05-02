@@ -97,20 +97,27 @@ Do not generate Clan machines from compute inventory. That made `compute-lab` fe
 
 ### Compute inventory owns substrate metadata
 
-`inventory/compute/tenants/compute-lab.nix` describes how the VM is hosted:
+`inventory/compute/instances/compute-lab.nix` describes how the VM is hosted:
 
 ```nix
 {
   id = 10;
   network = "tenant";
-  plan = "small";
+
+  resources = {
+    vcpu = 2;
+    memoryMiB = 3072;
+  };
 
   lifecycle = {
     autostart = false;
     restartIfChanged = false;
   };
 
-  bootstrap.method = "seed-age-key";
+  bootstrap = {
+    transport = "seed-disk";
+    material = "clan-machine-age-key";
+  };
 
   volumes = [
     {
@@ -131,6 +138,47 @@ Do not generate Clan machines from compute inventory. That made `compute-lab` fe
 ```
 
 `inventory/compute/hosts.nix` owns host substrate wiring, currently Leviathan's tenant bridge/NIC.
+
+### Future reusable network backends
+
+Current MVP uses Janus as the external DHCP/DNS/firewall authority. That is correct for this repo, but the core compute model should not become Janus-specific.
+
+Longer term, split networking into backends:
+
+```text
+external-dhcp
+  existing router owns DHCP/DNS/firewall
+  this repo's Janus adapter consumes compute instance outputs
+
+host-private-dhcp
+  compute host owns a private bridge/subnet and runs dnsmasq/Kea
+  useful default for a reusable standalone flake
+
+routed-static
+  host routes per-VM /32s instead of shared L2 DHCP
+  stronger isolation, more plumbing
+
+manual
+  user supplies MAC/IP/DNS externally
+```
+
+Do not run a host-local DHCP server on the same L2/VLAN where Janus Kea is already serving unless pools are deliberately partitioned. For a reusable project, host-local DHCP should own a private bridge/subnet or be a clearly separate backend.
+
+Desired future split:
+
+```text
+compute core flake
+  normalizes instances
+  runs MicroVMs on assigned hosts
+  provides guest base/bootstrap modules
+  exposes network facts
+
+root repo adapter
+  explicit Clan machines/configs
+  Janus DHCP/DNS/firewall consumption
+  Leviathan physical host assignment
+  Clan/sops secret source
+```
 
 ### Guest config is normal NixOS
 
@@ -500,10 +548,10 @@ H. Generic secret-bearing warm pool.
 ### Add a new long-lived compute VM
 
 1. Add explicit Clan machine in `inventory/clan/machines.nix`.
-2. Add substrate metadata in `inventory/compute/tenants/<name>.nix`.
+2. Add substrate metadata in `inventory/compute/instances/<name>.nix`.
 3. Add assignment in `inventory/compute/assignments.nix`.
 4. Add `machines/<name>/configuration.nix` importing `modules/microvms/guest-base.nix` and workload modules.
-5. If using seed-age-key bootstrap, ensure machine key exists and grant host access:
+5. If using `transport = "seed-disk"` and `material = "clan-machine-age-key"`, ensure machine key exists and grant host access:
 
    ```bash
    clan secrets machines add-secret leviathan <name>-age.key
@@ -561,10 +609,10 @@ nix build .#packages.x86_64-linux.net-plan --no-link
 ### MicroVM foundation
 
 - Generalize seed bootstrap beyond `compute-lab` naming.
-- Add assertions:
-  - compute tenant name must have matching explicit Clan machine;
-  - assigned tenant must exist;
-  - tenant IDs unique per network;
+- Add/finish assertions:
+  - compute instance name must have matching explicit Clan machine;
+  - assigned instance must exist;
+  - instance IDs unique per network;
   - MAC/IP uniqueness;
   - TAP ID truncation/collision guard for long names.
 - Add docs near `inventory/compute/` explaining substrate vs Clan machine config.
@@ -573,6 +621,9 @@ nix build .#packages.x86_64-linux.net-plan --no-link
   - `microvm.deploy.sshSwitch`;
   - relationship to `clan machines update <guest>`.
 - Test host key persistence after restarts.
+- Decide Tailscale identity policy per compute instance:
+  - ephemeral nodes are fine for canaries but can temporarily create `-1` names after reboot until old nodes age out;
+  - stable MagicDNS/Tailscale identity needs persistent Tailscale state on a VM disk and probably a non-ephemeral Clan tag.
 - Evaluate Cloud Hypervisor only after the QEMU path is clean.
 
 ### Leviathan resource safety

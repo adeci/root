@@ -116,19 +116,19 @@ let
     };
   };
 
-  tenantDevices = builtins.mapAttrs (
-    _name: tenant:
+  computeDevices = builtins.mapAttrs (
+    _name: instance:
     let
-      vlan = tenant.network or "tenant";
+      vlan = instance.network or "tenant";
     in
     {
-      inherit (tenant) mac;
-      ip = tenant.ip or "${vlans.${vlan}.subnet}.${toString tenant.id}";
+      inherit (instance) mac;
+      ip = instance.ip or "${vlans.${vlan}.subnet}.${toString instance.id}";
       inherit vlan;
     }
-  ) self.compute.tenants;
+  ) self.compute.instances;
 
-  devices = baseDevices // tenantDevices;
+  devices = baseDevices // computeDevices;
 
   # ── Helpers ────────────────────────────────────────────────────────
   vlanIf = v: "vlan${toString v.id}";
