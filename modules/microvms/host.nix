@@ -40,6 +40,16 @@ in
     }) assignedInstances;
   };
 
+  systemd.slices.compute = {
+    description = "Hosted compute MicroVM workloads";
+    sliceConfig = {
+      MemoryAccounting = true;
+      IOAccounting = true;
+      CPUWeight = 1000;
+      IOWeight = 1000;
+    };
+  };
+
   sops.secrets = lib.mapAttrs' (
     name: _instance:
     lib.nameValuePair (seedSecretName name) {
@@ -105,11 +115,16 @@ in
     ) seedAgeKeyInstances
     // lib.mapAttrs' (
       name: _instance:
-      lib.nameValuePair "microvm@${name}" {
-        requires = [ "compute-microvm-seed-${name}.service" ];
-        after = [ "compute-microvm-seed-${name}.service" ];
-      }
-    ) seedAgeKeyInstances;
+      lib.nameValuePair "microvm@${name}" (
+        {
+          serviceConfig.Slice = "compute.slice";
+        }
+        // lib.optionalAttrs (builtins.hasAttr name seedAgeKeyInstances) {
+          requires = [ "compute-microvm-seed-${name}.service" ];
+          after = [ "compute-microvm-seed-${name}.service" ];
+        }
+      )
+    ) assignedInstances;
 
   # Tenant VM bridge. The physical tenant NIC has no host IP; it only carries
   # VM frames to Janus VLAN 40 through Nexus.

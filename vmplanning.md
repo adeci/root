@@ -628,55 +628,38 @@ nix build .#packages.x86_64-linux.net-plan --no-link
 
 ### Leviathan resource safety
 
-Still pending from original reliability work:
-
-```nix
-zramSwap = {
-  enable = true;
-  algorithm = "lz4";
-  memoryPercent = 50;
-  priority = 100;
-};
-
-boot.kernel.sysctl = {
-  "vm.swappiness" = 100;
-  "vm.page-cluster" = 0;
-};
-
-swapDevices = [
-  {
-    device = "/var/lib/swapfile";
-    size = 524288; # 512 GiB
-    priority = 10;
-  }
-];
-```
-
-Recommended Nix/buildbot caps:
-
-```nix
-nix.settings = {
-  max-jobs = 16;
-  cores = 8;
-};
-
-services.buildbot-nix.master = {
-  evalWorkerCount = 16;
-  evalMaxMemorySize = 4096;
-};
-
-services.buildbot-nix.worker.workers = 16;
-```
-
-Slice direction:
+Implemented v1:
 
 ```text
-ci.slice      → buildbot/nix-daemon, best-effort, OOM first
-game.slice    → latency-sensitive game workloads
-tenant.slice  → hosted MicroVMs, bounded RAM/CPU/IO
+256GiB /var/lib/swapfile
+nix.settings.max-jobs = 16
+nix.settings.cores = 8
+buildbot eval workers = 16
+buildbot eval max memory = 4096 MiB
+buildbot worker count = 16
+ci.slice for nix-daemon/buildbot
+compute.slice for MicroVM services
 ```
 
-MicroVM services should eventually run under `tenant.slice` with explicit CPU/memory/IO policy.
+`ci.slice` is best-effort and OOM-first:
+
+```text
+CPUWeight = 100
+IOWeight = 100
+MemoryHigh = 96G
+MemoryMax = 128G
+```
+
+`compute.slice` is the total hosted MicroVM envelope:
+
+```text
+CPUWeight = 1000
+IOWeight = 1000
+MemoryLow = 16G
+MemoryMax = 96G
+```
+
+No zram in v1. Add it later only if swap IO/OOM behavior shows it is useful. Current tmux-managed game servers remain outside these slices until they move into MicroVMs or dedicated systemd units.
 
 ### Real workload module
 
