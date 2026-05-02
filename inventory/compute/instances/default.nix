@@ -4,6 +4,8 @@ let
     value = import (./. + "/${file}");
   };
 
-  files = builtins.filter (file: file != "default.nix") (builtins.attrNames (builtins.readDir ./.));
+  files = builtins.filter (file: file != "default.nix" && builtins.match ".*\\.nix" file != null) (
+    builtins.attrNames (builtins.readDir ./.)
+  );
 in
 builtins.listToAttrs (map importInstance files)
