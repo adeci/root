@@ -450,16 +450,15 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1775932260,
-        "narHash": "sha256-gdNhnle8shSQpgHmz3e43pGpOwpA3hCdyqWMNCCvgPw=",
-        "owner": "adeci",
+        "lastModified": 1777733745,
+        "narHash": "sha256-1TlpdT0WYyBGtUS3PH4oXHUmdno2EUh2TfHadK2BmJo=",
+        "owner": "niri-wm",
         "repo": "niri",
-        "rev": "68bb984d8757cc2a0ab82abcf1fd92f7904c1048",
+        "rev": "1f07cffa9f355298a31d7efe1b400ede93a97728",
         "type": "github"
       },
       "original": {
-        "owner": "adeci",
-        "ref": "window-rule-on-output",
+        "owner": "niri-wm",
         "repo": "niri",
         "type": "github"
       }
