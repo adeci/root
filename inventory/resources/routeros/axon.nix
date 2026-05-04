@@ -23,6 +23,10 @@
       trunk = true;
       comment = "Downlink — nexus (10G SFP+)";
     };
+    "ether4" = {
+      vlan = "guest";
+      comment = "Penumbra guest device";
+    };
     # "ether5" = { vlan = "iot"; comment = "IoT device"; };
   };
 
