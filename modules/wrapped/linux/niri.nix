@@ -235,7 +235,7 @@ in
 
       # shared — MSI MAG321CQR 32" curved monitor
       ${msi} = {
-        mode = "2560x1440@119.998";
+        mode = "2560x1440@59.951";
         scale = 1;
         transform = "normal";
         position = _: {
