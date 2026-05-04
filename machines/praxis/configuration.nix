@@ -40,18 +40,7 @@
   # gsim module
   networking.modemmanager.enable = true;
 
-  boot.kernelPackages = pkgs.linuxPackagesFor (
-    pkgs.linux_6_19.override {
-      argsOverride = rec {
-        version = "6.19.6";
-        modDirVersion = "6.19.6";
-        src = pkgs.fetchurl {
-          url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
-          hash = "sha256-TZ8/9zIU9owBlO8C25ykt7pxMlOsEEVEHU6fNSvCLhQ=";
-        };
-      };
-    }
-  );
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
