@@ -4,7 +4,7 @@
     name = "aegis";
     tags = [
       "adeci-net"
-      "wayfinders"
+      "wifi-preload"
       "keybearers"
     ];
     deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
@@ -30,7 +30,7 @@
     name = "chrysalis";
     tags = [
       "adeci-net-ephemeral"
-      "wayfinders"
+      "wifi-preload"
     ];
   };
 
@@ -61,7 +61,7 @@
     name = "modus";
     tags = [
       "adeci-net"
-      "wayfinders"
+      "wifi-preload"
     ];
     deploy.targetHost = "root@modus.cymric-daggertooth.ts.net";
   };
@@ -70,7 +70,7 @@
     name = "praxis";
     tags = [
       "adeci-net"
-      "wayfinders"
+      "wifi-preload"
       "keybearers"
     ];
     deploy.targetHost = "root@praxis.cymric-daggertooth.ts.net";
@@ -80,7 +80,7 @@
     name = "proteus";
     tags = [
       "adeci-net"
-      "wayfinders"
+      "wifi-preload"
     ];
     deploy.targetHost = "root@proteus.cymric-daggertooth.ts.net";
   };
