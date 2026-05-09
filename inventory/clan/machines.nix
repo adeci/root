@@ -10,6 +10,22 @@
     deploy.targetHost = "root@aegis.cymric-daggertooth.ts.net";
   };
 
+  atropos = {
+    name = "atropos";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@atropos.cymric-daggertooth.ts.net";
+  };
+
+  clotho = {
+    name = "clotho";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@clotho.cymric-daggertooth.ts.net";
+  };
+
   janus = {
     name = "janus";
     tags = [
@@ -40,6 +56,14 @@
       "adeci-net"
     ];
     deploy.targetHost = "root@kasha.cymric-daggertooth.ts.net";
+  };
+
+  lachesis = {
+    name = "lachesis";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@lachesis.cymric-daggertooth.ts.net";
   };
 
   leviathan = {
