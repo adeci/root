@@ -30,11 +30,6 @@
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Local path while microcompute is incubating; switch to a remote Git URL once published.
-    microcompute.url = "path:/home/alex/git/microcompute";
-    microcompute.inputs.nixpkgs.follows = "nixpkgs";
-    microcompute.inputs.flake-parts.follows = "flake-parts";
-
     terranix.url = "github:terranix/terranix";
     terranix.inputs.flake-parts.follows = "flake-parts";
     terranix.inputs.nixpkgs.follows = "nixpkgs";
@@ -90,7 +85,6 @@
 
       imports = [
         inputs.clan-core.flakeModules.default
-        inputs.microcompute.flakeModules.default
         inputs.treefmt-nix.flakeModule
         ./modules/flake-parts/flake-module.nix
       ];

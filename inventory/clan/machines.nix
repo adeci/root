@@ -42,14 +42,6 @@
     deploy.targetHost = "root@conduit.cymric-daggertooth.ts.net";
   };
 
-  compute-lab = {
-    name = "compute-lab";
-    tags = [
-      "adeci-net-ephemeral"
-    ];
-    deploy.targetHost = "root@compute-lab.lan";
-  };
-
   chrysalis = {
     name = "chrysalis";
     tags = [

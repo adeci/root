@@ -14,7 +14,6 @@
 {
   lib,
   pkgs,
-  self,
   ...
 }:
 let
@@ -116,19 +115,7 @@ let
     };
   };
 
-  computeDevices = builtins.mapAttrs (
-    _name: instance:
-    let
-      vlan = instance.network or "tenant";
-    in
-    {
-      inherit (instance) mac;
-      ip = instance.ip or "${vlans.${vlan}.subnet}.${toString instance.id}";
-      inherit vlan;
-    }
-  ) self.compute.instances;
-
-  devices = baseDevices // computeDevices;
+  devices = baseDevices;
 
   # ── Helpers ────────────────────────────────────────────────────────
   vlanIf = v: "vlan${toString v.id}";

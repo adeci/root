@@ -15,7 +15,6 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
-    ../../modules/microvms/host.nix
     ./modules/buildbot.nix
     ./modules/resource-safety.nix
   ];
@@ -59,8 +58,7 @@
   # of the requesting process.
   services.envfs.enable = true;
 
-  # Networking: one 10G host uplink on trusted, one 10G tenant VM uplink.
-  # The tenant NIC is a lower device only: no host DHCP, IP, or route.
+  # Networking: one 10G host uplink on trusted.
   hardware.facter.detected.dhcp.enable = false;
   networking.networkmanager.enable = false;
   networking.useNetworkd = true;

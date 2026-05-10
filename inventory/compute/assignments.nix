@@ -1,5 +1,0 @@
-{
-  leviathan = [
-    "compute-lab"
-  ];
-}
