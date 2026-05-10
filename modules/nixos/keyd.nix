@@ -1,9 +1,222 @@
-_: {
+{ lib, ... }:
+let
+  cleaningLockNoopKeys = [
+    "esc"
+    "1"
+    "2"
+    "3"
+    "4"
+    "5"
+    "6"
+    "7"
+    "8"
+    "9"
+    "0"
+    "minus"
+    "equal"
+    "backspace"
+    "tab"
+    "q"
+    "w"
+    "e"
+    "r"
+    "t"
+    "y"
+    "u"
+    "i"
+    "o"
+    "p"
+    "leftbrace"
+    "rightbrace"
+    "enter"
+    "a"
+    "s"
+    "d"
+    "f"
+    "g"
+    "h"
+    "j"
+    "k"
+    "l"
+    "semicolon"
+    "apostrophe"
+    "grave"
+    "backslash"
+    "z"
+    "x"
+    "c"
+    "v"
+    "b"
+    "n"
+    "m"
+    "comma"
+    "dot"
+    "slash"
+    "space"
+    "capslock"
+    "102nd"
+    "compose"
+    "menu"
+
+    "f1"
+    "f2"
+    "f3"
+    "f4"
+    "f5"
+    "f6"
+    "f7"
+    "f8"
+    "f9"
+    "f10"
+    "f11"
+    "f12"
+    "f13"
+    "f14"
+    "f15"
+    "f16"
+    "f17"
+    "f18"
+    "f19"
+    "f20"
+    "f21"
+    "f22"
+    "f23"
+    "f24"
+    "sysrq"
+    "scrolllock"
+    "pause"
+    "insert"
+    "delete"
+    "home"
+    "end"
+    "pageup"
+    "pagedown"
+    "up"
+    "down"
+    "left"
+    "right"
+
+    "numlock"
+    "kp0"
+    "kp1"
+    "kp2"
+    "kp3"
+    "kp4"
+    "kp5"
+    "kp6"
+    "kp7"
+    "kp8"
+    "kp9"
+    "kpasterisk"
+    "kpminus"
+    "kpplus"
+    "kpslash"
+    "kpenter"
+    "kpdot"
+    "kpequal"
+    "kpcomma"
+    "kpplusminus"
+    "kpjpcomma"
+    "kpleftparen"
+    "kprightparen"
+
+    "mute"
+    "volumedown"
+    "volumeup"
+    "previoussong"
+    "playpause"
+    "nextsong"
+    "stopcd"
+    "playcd"
+    "pausecd"
+    "record"
+    "rewind"
+    "fastforward"
+    "play"
+    "ejectcd"
+    "ejectclosecd"
+    "brightnessdown"
+    "brightnessup"
+    "kbdillumtoggle"
+    "kbdillumdown"
+    "kbdillumup"
+    "micmute"
+    "rfkill"
+    "wlan"
+    "bluetooth"
+    "switchvideomode"
+    "display"
+    "power"
+    "sleep"
+    "wakeup"
+    "suspend"
+    "camera"
+    "search"
+    "mail"
+    "homepage"
+    "refresh"
+    "calc"
+    "computer"
+    "www"
+    "back"
+    "forward"
+    "bookmarks"
+    "media"
+    "stop"
+    "again"
+    "props"
+    "undo"
+    "redo"
+    "copy"
+    "paste"
+    "cut"
+    "open"
+    "find"
+    "help"
+
+    "zenkakuhankaku"
+    "ro"
+    "katakana"
+    "hiragana"
+    "henkan"
+    "katakanahiragana"
+    "muhenkan"
+    "hangeul"
+    "hanja"
+    "yen"
+  ];
+
+  cleaningLockNoops = lib.concatMapStringsSep "\n" (key: "${key} = noop") cleaningLockNoopKeys;
+in
+{
   services.keyd = {
     enable = true;
     keyboards.default = {
       ids = [ "*" ];
       settings.main.capslock = "overload(control, esc)";
+      extraConfig = ''
+        # Keyboard cleaning lock. Super+Shift+Alt+Esc toggles it on/off.
+        [meta+shift+alt]
+        esc = toggle(clean)
+
+        [meta+shift+altgr]
+        esc = toggle(clean)
+
+        [clean]
+        ${cleaningLockNoops}
+        control = noop
+        shift = layer(clean_shift)
+        meta = layer(clean_meta)
+        alt = layer(clean_alt)
+        altgr = layer(clean_alt)
+
+        [clean_meta]
+        [clean_shift]
+        [clean_alt]
+
+        [clean+clean_meta+clean_shift+clean_alt]
+        esc = toggle(clean)
+      '';
     };
   };
 }
