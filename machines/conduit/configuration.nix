@@ -15,6 +15,12 @@
   services.nginx = {
     enable = true;
     streamConfig = ''
+      # Forgejo Git SSH
+      server {
+        listen 2222;
+        proxy_pass sequoia.cymric-daggertooth.ts.net:2222;
+      }
+
       # Minecraft rats rlc
       server {
         listen 25565;
@@ -65,6 +71,7 @@
   };
 
   networking.firewall.allowedTCPPorts = [
+    2222
     25565
     25566
     25567

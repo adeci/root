@@ -5,6 +5,7 @@
     "adeci.dev" = "http://localhost:4444";
     "matrix.decio.us" = "http://localhost:8448";
     "decio.us" = "http://localhost:8748";
+    "git.decio.us" = "http://localhost:8321";
   };
 
   leviathan = {
