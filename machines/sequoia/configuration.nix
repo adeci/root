@@ -12,6 +12,7 @@
 
     ./modules/matrix-synapse.nix
     ./modules/vaultwarden.nix
+    ./modules/forgejo.nix
     ./modules/opencrow
     ./modules/atuin.nix
   ];

@@ -2,6 +2,19 @@
 # The "target" field references a terraform resource symbolically —
 # the terranix logic layer resolves it to the actual terraform expression.
 {
+  # Forgejo Git SSH on conduit (Hetzner)
+  git_ssh = {
+    zone = "decio.us";
+    name = "git-ssh";
+    type = "A";
+    proxied = false;
+    target = {
+      resource = "hcloud_server";
+      name = "conduit";
+      field = "ipv4_address";
+    };
+  };
+
   # Minecraft servers on conduit (Hetzner)
   mc_rlc = {
     zone = "decio.us";

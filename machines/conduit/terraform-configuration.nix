@@ -49,6 +49,16 @@
           "::/0"
         ];
       }
+      # Forgejo Git SSH proxy
+      {
+        direction = "in";
+        protocol = "tcp";
+        port = "2222";
+        source_ips = [
+          "0.0.0.0/0"
+          "::/0"
+        ];
+      }
       # Minecraft server ports
       {
         direction = "in";
