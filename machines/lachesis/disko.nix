@@ -1,7 +1,7 @@
 # ---
 # schema = "ext4-single-disk"
 # [placeholders]
-# mainDisk = "/dev/disk/by-id/nvme-SAMSUNG_MZVLB512HAJQ-000L7_S3TNNE1JC31040" 
+# mainDisk = "/dev/disk/by-id/nvme-SAMSUNG_MZVLB512HAJQ-000L7_S3TNNE1JC31040"
 # ---
 # This file was automatically generated!
 # CHANGING this configuration requires wiping and reinstalling the machine
