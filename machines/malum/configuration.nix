@@ -6,6 +6,7 @@
     ../../modules/darwin/base.nix
     ../../modules/darwin/librewolf.nix
     ../../modules/darwin/karabiner.nix
+    ../../modules/darwin/mouse.nix
     ../../modules/darwin/aerospace
     ../../modules/darwin/shopify.nix
     ../../modules/darwin/linux-rosetta-builder.nix

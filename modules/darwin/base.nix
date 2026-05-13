@@ -23,10 +23,7 @@ in
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap";
-    casks = [
-      "raycast"
-      "scroll-reverser"
-    ];
+    casks = [ "raycast" ];
   };
 
   # Touch ID for sudo (including inside tmux/screen)
