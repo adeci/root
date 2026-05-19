@@ -17,6 +17,12 @@
             }
           ];
         };
+        machines.sequoia.settings.extraScrapeTargets = [
+          {
+            job = "litellm";
+            target = "127.0.0.1:4000";
+          }
+        ];
       };
       server.machines.sequoia.settings = {
         host = "sequoia.cymric-daggertooth.ts.net";

@@ -19,9 +19,8 @@ in
     llm-agents.claude-code
     llm-agents.pi
     llm-agents.ccusage
-    llm-agents.ccusage-pi
-    llm-agents.ccusage-codex
     llm-agents.openspec
+    llm-agents.workmux
   ];
 
   systemd.user.tmpfiles.rules = map (
