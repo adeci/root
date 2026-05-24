@@ -5,5 +5,6 @@
     ./provider.nix
     ./tunnels.nix
     ./dns.nix
+    ./rulesets.nix
   ];
 }
