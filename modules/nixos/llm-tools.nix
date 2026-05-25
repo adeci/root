@@ -16,9 +16,7 @@ in
 {
   environment.systemPackages = [
     skills
-    llm-agents.claude-code
     llm-agents.pi
-    llm-agents.ccusage
     llm-agents.openspec
     llm-agents.workmux
   ];
