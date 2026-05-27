@@ -63,7 +63,7 @@
       {
         direction = "in";
         protocol = "tcp";
-        port = "25565-25569";
+        port = "25565-25570";
         source_ips = [
           "0.0.0.0/0"
           "::/0"
@@ -73,7 +73,7 @@
       {
         direction = "in";
         protocol = "udp";
-        port = "24454-24458";
+        port = "24454-24459";
         source_ips = [
           "0.0.0.0/0"
           "::/0"

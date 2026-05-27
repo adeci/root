@@ -24,31 +24,31 @@
       # Minecraft rats rlc
       server {
         listen 25565;
-        proxy_pass 100.99.42.67:25565;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:25565;
       }
       server {
         listen 24454 udp;
-        proxy_pass 100.99.42.67:24454;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:24454;
       }
 
       # Minecraft rats
       server {
         listen 25566;
-        proxy_pass 100.99.42.67:25566;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:25566;
       }
       server {
         listen 24455 udp;
-        proxy_pass 100.99.42.67:24455;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:24455;
       }
 
       # Minecraft bros dj2
       server {
         listen 25568;
-        proxy_pass 100.99.42.67:25568;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:25568;
       }
       server {
         listen 24457 udp;
-        proxy_pass 100.99.42.67:24457;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:24457;
       }
 
       # Minecraft hunter server
@@ -60,11 +60,21 @@
       # Minecraft usf
       server {
         listen 25569;
-        proxy_pass 100.99.42.67:25569;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:25569;
       }
       server {
         listen 24458 udp;
-        proxy_pass 100.99.42.67:24458;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:24458;
+      }
+
+      # Minecraft jav
+      server {
+        listen 25570;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:25570;
+      }
+      server {
+        listen 24459 udp;
+        proxy_pass leviathan.cymric-daggertooth.ts.net:24459;
       }
 
     '';
@@ -77,6 +87,7 @@
     25567
     25568
     25569
+    25570
   ];
   networking.firewall.allowedUDPPorts = [
     24454
@@ -84,6 +95,7 @@
     24456
     24457
     24458
+    24459
   ];
 
 }
