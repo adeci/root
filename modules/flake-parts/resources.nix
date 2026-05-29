@@ -5,6 +5,7 @@
 
   config.flake.resources = {
     cloudflare = import ../../inventory/resources/cloudflare;
+    homelan = import ../../inventory/resources/homelan;
     routeros = import ../../inventory/resources/routeros;
   };
 }

@@ -14,6 +14,11 @@ in
     ./librewolf.nix
   ];
 
+  # Desktop machines need interactive network management (WiFi, VPNs,
+  # captive portals). Servers use clan's networkd default instead.
+  networking.networkmanager.enable = true;
+  networking.useNetworkd = false;
+
   # Niri compositor with baked-in config
   programs.niri.enable = true;
   programs.niri.package = wrapped.niri;

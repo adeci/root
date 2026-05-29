@@ -2,7 +2,6 @@
   self,
   inputs,
   pkgs,
-  lib,
   ...
 }:
 {
@@ -14,7 +13,6 @@
     packages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim ];
   };
   environment.variables.EDITOR = "nvim";
-  networking.networkmanager.enable = lib.mkDefault true;
   services.openssh = {
     enable = true;
     settings = {

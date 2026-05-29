@@ -14,7 +14,7 @@
     ./modules/vaultwarden.nix
     ./modules/forgejo.nix
     ./modules/litellm.nix
-    ./modules/opencrow
+    # ./modules/opencrow
     ./modules/atuin.nix
     ./modules/xerox-scans.nix
   ];

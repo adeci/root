@@ -11,16 +11,21 @@
 #   Right-top    = eno2
 #   Right-bottom = eno1
 #
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  self,
+  ...
+}:
 let
   # ── Port Map (label → linux interface) ─────────────────────────────
   # Profiled 2026-04-12 by plug-testing each port.
-  eth1 = "enp6s0"; # 2.5G RJ45 # 2.5G RJ45 # 2.5G RJ45 # 2.5G RJ45
-  eth5 = "enp8s0"; # 2.5G RJ45 # 10G SFP+ (right-top)
+  eth1 = "enp6s0"; # 2.5G RJ45
+  eth4 = "enp5s0"; # 2.5G RJ45
   sfpPlus2 = "eno1"; # 10G SFP+ (right-bottom)
 
   # ── Role Assignment ────────────────────────────────────────────────
-  wan = eth5; # → ISP modem
+  wan = eth4; # → ISP modem
   lan = sfpPlus2; # → nexus sfp-sfpplus1 (VLAN trunk)
   mgmt = eth1; # → nexus ether1 (management)
 
@@ -30,86 +35,24 @@ let
     "100.64.57.12" # aegis
   ];
 
-  # ── VLANs ──────────────────────────────────────────────────────────
-  # Must match switch config in inventory/resources/routeros/
-  vlans = {
-    trusted = {
-      id = 10;
-      subnet = "10.10.0";
-    };
-    iot = {
-      id = 20;
-      subnet = "10.20.0";
-    };
-    guest = {
-      id = 30;
-      subnet = "10.30.0";
-    };
-    mgmt = {
-      id = 99;
-      subnet = "10.99.0";
-      iface = "br-mgmt"; # bridged with the dedicated mgmt RJ45
-    };
-  };
+  inherit (self.resources) homelan;
+  inherit (homelan) vlans;
+  devices = homelan.hosts;
 
-  # ── Devices ────────────────────────────────────────────────────────
-  # Static DHCP leases — single source of truth for IP assignments.
-  # Firewall rules and DNS reference devices by name from this list.
-  devices = {
-    # Management network (VLAN 99)
-    nexus = {
-      mac = "08:55:31:21:A7:0D";
-      ip = "10.99.0.2";
-      vlan = "mgmt";
-    };
-    axon = {
-      mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1 MAC (standalone management port)
-      ip = "10.99.0.3";
-      vlan = "mgmt";
-    };
-    zephyr = {
-      mac = "04:F4:1C:E9:EF:E5";
-      ip = "10.99.0.5";
-      vlan = "mgmt";
-    };
-    nimbus = {
-      mac = "04:F4:1C:EA:18:83";
-      ip = "10.99.0.6";
-      vlan = "mgmt";
-    };
-
-    # Trusted network (VLAN 10)
-    sequoia = {
-      mac = "00:e0:4c:6d:c5:c9";
-      ip = "10.10.0.10";
-      vlan = "trusted";
-    };
-    leviathan = {
-      mac = "e4:3d:1a:cd:96:60";
-      ip = "10.10.0.20";
-      vlan = "trusted";
-    };
-    leviathan-idrac = {
-      mac = "b0:7b:25:f0:b0:c8";
-      ip = "10.10.0.21";
-      vlan = "trusted";
-    };
-    praxis = {
-      mac = "4c:77:cb:ac:86:4a"; # wifi
-      ip = "10.10.0.30";
-      vlan = "trusted";
-    };
-    printer = {
-      mac = "9c:93:4e:2e:6e:e1";
-      ip = "10.10.0.50";
-      vlan = "trusted";
-    };
-  };
-
-  localAliases = {
-    scans = devices.sequoia.ip;
-    xerox = devices.printer.ip;
-  };
+  localAliases = lib.concatMapAttrs (
+    _hostName: host:
+    builtins.listToAttrs (
+      map (alias: {
+        name = alias;
+        value = host.ip;
+      }) (host.aliases or [ ])
+    )
+  ) devices;
+  allAliases = lib.concatMap (host: host.aliases or [ ]) (lib.attrValues devices);
+  aliasHostConflicts = lib.intersectLists allAliases (lib.attrNames devices);
+  hostsWithUnknownVlans = lib.attrNames (
+    lib.filterAttrs (_: host: !(lib.hasAttr host.vlan vlans)) devices
+  );
 
   # ── Helpers ────────────────────────────────────────────────────────
   vlanIf = v: "vlan${toString v.id}";
@@ -122,6 +65,21 @@ let
   ifSet = ifs: lib.concatMapStringsSep ", " (i: ''"${i}"'') ifs;
 in
 {
+  assertions = [
+    {
+      assertion = lib.length allAliases == lib.length (lib.unique allAliases);
+      message = "homelan aliases must be unique";
+    }
+    {
+      assertion = aliasHostConflicts == [ ];
+      message = "homelan aliases conflict with host names: ${lib.concatStringsSep ", " aliasHostConflicts}";
+    }
+    {
+      assertion = hostsWithUnknownVlans == [ ];
+      message = "homelan hosts reference unknown VLANs: ${lib.concatStringsSep ", " hostsWithUnknownVlans}";
+    }
+  ];
+
   # ── Override base.nix ──────────────────────────────────────────────
   networking.networkmanager.enable = false;
 
@@ -183,7 +141,7 @@ in
     # share one 10.99.0.0/24 subnet
     "30-br-mgmt" = {
       matchConfig.Name = "br-mgmt";
-      address = [ "${vlans.mgmt.subnet}.1/24" ];
+      address = [ "${vlans.mgmt.gateway}/24" ];
       linkConfig.RequiredForOnline = "no";
     };
   }
@@ -191,7 +149,7 @@ in
     _name: v:
     lib.nameValuePair "30-${vlanIf v}" {
       matchConfig.Name = vlanIf v;
-      address = [ "${v.subnet}.1/24" ];
+      address = [ "${v.gateway}/24" ];
       linkConfig.RequiredForOnline = "no";
     }
   ) (lib.filterAttrs (_: v: !(v ? iface)) vlans);
@@ -329,28 +287,31 @@ in
         in
         {
           inherit (v) id;
-          subnet = "${v.subnet}.0/24";
+          subnet = v.cidr;
           interface = subnetIface v;
-          pools = [ { pool = "${v.subnet}.100 - ${v.subnet}.250"; } ];
+          pools = [ { pool = "${v.dhcpPool.start} - ${v.dhcpPool.end}"; } ];
           option-data = [
             {
               name = "routers";
-              data = "${v.subnet}.1";
+              data = v.gateway;
             }
             {
               name = "domain-name-servers";
-              data = "${v.subnet}.1";
+              data = v.gateway;
             }
             {
               name = "domain-name";
-              data = "lan";
+              data = homelan.domain;
             }
           ];
-          reservations = lib.mapAttrsToList (hostname: d: {
-            hw-address = d.mac;
-            ip-address = d.ip;
-            inherit hostname;
-          }) devicesOnVlan;
+          reservations = lib.mapAttrsToList (
+            hostname: d:
+            {
+              ip-address = d.ip;
+              inherit hostname;
+            }
+            // (if d ? clientId then { client-id = d.clientId; } else { hw-address = d.mac; })
+          ) devicesOnVlan;
         }
       ) vlans;
     };
@@ -360,21 +321,21 @@ in
     enable = true;
     settings = {
       server = {
-        interface = [ "127.0.0.1" ] ++ map (v: "${v.subnet}.1") (lib.attrValues vlans);
+        interface = [ "127.0.0.1" ] ++ map (v: v.gateway) (lib.attrValues vlans);
         access-control = [
           "127.0.0.0/8 allow"
         ]
-        ++ map (v: "${v.subnet}.0/24 allow") (lib.attrValues vlans);
+        ++ map (v: "${v.cidr} allow") (lib.attrValues vlans);
 
         # static: unknown names → NXDOMAIN, known names with missing
         # record types → NODATA. domain-insecure skips DNSSEC for the
         # local zone (no chain of trust from root).
-        local-zone = [ ''"lan." static'' ];
+        local-zone = [ ''"${homelan.domain}." static'' ];
         local-data =
-          lib.mapAttrsToList (name: d: ''"${name}.lan. A ${d.ip}"'') devices
-          ++ lib.mapAttrsToList (name: ip: ''"${name}.lan. A ${ip}"'') localAliases;
-        local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.lan"'') devices;
-        domain-insecure = [ "lan" ];
+          lib.mapAttrsToList (name: d: ''"${name}.${homelan.domain}. A ${d.ip}"'') devices
+          ++ lib.mapAttrsToList (name: ip: ''"${name}.${homelan.domain}. A ${ip}"'') localAliases;
+        local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.${homelan.domain}"'') devices;
+        domain-insecure = [ homelan.domain ];
 
         num-threads = 2;
         msg-cache-size = "16m";

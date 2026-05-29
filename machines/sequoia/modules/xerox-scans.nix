@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  self,
   ...
 }:
 let
@@ -11,7 +12,8 @@ let
   stateDir = "/var/lib/xerox-scans";
   filebrowserDb = "${stateDir}/filebrowser.db";
   filebrowserPort = 8385;
-  printerIp = "10.10.0.50";
+  inherit (self.resources) homelan;
+  printerIp = homelan.hosts.printer.ip;
   filebrowserUsers = [
     "alex"
     "yelena"
@@ -237,10 +239,9 @@ in
     virtualHosts."xerox-scans.localhost" = {
       serverAliases = [
         "scans"
-        "scans.lan"
+        "scans.${homelan.domain}"
         "sequoia"
-        "sequoia.lan"
-        "sequoia.cymric-daggertooth.ts.net"
+        "sequoia.${homelan.domain}"
       ];
       listen = [
         {
