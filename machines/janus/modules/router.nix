@@ -106,6 +106,11 @@ let
     };
   };
 
+  localAliases = {
+    scans = devices.sequoia.ip;
+    xerox = devices.printer.ip;
+  };
+
   # ── Helpers ────────────────────────────────────────────────────────
   vlanIf = v: "vlan${toString v.id}";
   # The interface where DHCP/DNS for a subnet binds. Defaults to the VLAN
@@ -365,7 +370,9 @@ in
         # record types → NODATA. domain-insecure skips DNSSEC for the
         # local zone (no chain of trust from root).
         local-zone = [ ''"lan." static'' ];
-        local-data = lib.mapAttrsToList (name: d: ''"${name}.lan. A ${d.ip}"'') devices;
+        local-data =
+          lib.mapAttrsToList (name: d: ''"${name}.lan. A ${d.ip}"'') devices
+          ++ lib.mapAttrsToList (name: ip: ''"${name}.lan. A ${ip}"'') localAliases;
         local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.lan"'') devices;
         domain-insecure = [ "lan" ];
 

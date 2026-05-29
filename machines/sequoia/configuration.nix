@@ -16,5 +16,6 @@
     ./modules/litellm.nix
     ./modules/opencrow
     ./modules/atuin.nix
+    ./modules/xerox-scans.nix
   ];
 }
