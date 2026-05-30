@@ -51,7 +51,7 @@
     opencrow.inputs.nixpkgs.follows = "nixpkgs";
     opencrow.inputs.treefmt-nix.follows = "treefmt-nix";
 
-    litellm-nix.url = "path:///home/alex/git/litellm-nix";
+    litellm-nix.url = "github:adeci/litellm-nix";
 
     wrapper-modules.url = "github:BirdeeHub/nix-wrapper-modules";
     wrapper-modules.inputs.nixpkgs.follows = "nixpkgs";

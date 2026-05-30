@@ -353,14 +353,17 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1779322362,
-        "narHash": "sha256-jBGfWLOGqKdaRAc7oceLjptXSTMxW7nqMBQkj9hX84I=",
-        "path": "/home/alex/git/litellm-nix",
-        "type": "path"
+        "lastModified": 1779559043,
+        "narHash": "sha256-PldYyr2UMHAwX0YppZ5kdymwBraprEBRCmQy/rQgZQw=",
+        "owner": "adeci",
+        "repo": "litellm-nix",
+        "rev": "8fca16cd1a591ecbfca30b3ed0d3e77f2c6a4344",
+        "type": "github"
       },
       "original": {
-        "path": "/home/alex/git/litellm-nix",
-        "type": "path"
+        "owner": "adeci",
+        "repo": "litellm-nix",
+        "type": "github"
       }
     },
     "llm-agents": {
