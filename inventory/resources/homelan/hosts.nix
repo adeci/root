@@ -68,13 +68,12 @@
     mac = "9c:93:4e:2e:6e:e1";
     ip = "10.10.0.50";
     vlan = "trusted";
-    aliases = [ "xerox" ];
+    publishDns = false;
   };
 
   sequoia = {
     mac = "00:e0:4c:6d:c5:c9";
     ip = "10.10.0.10";
     vlan = "trusted";
-    aliases = [ "scans" ];
   };
 }

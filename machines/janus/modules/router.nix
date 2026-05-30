@@ -38,6 +38,8 @@ let
   inherit (self.resources) homelan;
   inherit (homelan) vlans;
   devices = homelan.hosts;
+  dnsRecords = homelan.dns.records;
+  dnsDevices = lib.filterAttrs (_: host: host.publishDns or true) devices;
 
   localAliases = lib.concatMapAttrs (
     _hostName: host:
@@ -47,8 +49,8 @@ let
         value = host.ip;
       }) (host.aliases or [ ])
     )
-  ) devices;
-  allAliases = lib.concatMap (host: host.aliases or [ ]) (lib.attrValues devices);
+  ) dnsDevices;
+  allAliases = lib.concatMap (host: host.aliases or [ ]) (lib.attrValues dnsDevices);
   aliasHostConflicts = lib.intersectLists allAliases (lib.attrNames devices);
   hostsWithUnknownVlans = lib.attrNames (
     lib.filterAttrs (_: host: !(lib.hasAttr host.vlan vlans)) devices
@@ -328,14 +330,18 @@ in
         ++ map (v: "${v.cidr} allow") (lib.attrValues vlans);
 
         # static: unknown names → NXDOMAIN, known names with missing
-        # record types → NODATA. domain-insecure skips DNSSEC for the
-        # local zone (no chain of trust from root).
-        local-zone = [ ''"${homelan.domain}." static'' ];
+        # record types → NODATA. domain-insecure skips DNSSEC for local
+        # records with no chain of trust from root.
+        local-zone = [
+          ''"${homelan.domain}." static''
+        ]
+        ++ lib.mapAttrsToList (name: _: ''"${name}." static'') dnsRecords;
         local-data =
-          lib.mapAttrsToList (name: d: ''"${name}.${homelan.domain}. A ${d.ip}"'') devices
-          ++ lib.mapAttrsToList (name: ip: ''"${name}.${homelan.domain}. A ${ip}"'') localAliases;
-        local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.${homelan.domain}"'') devices;
-        domain-insecure = [ homelan.domain ];
+          lib.mapAttrsToList (name: d: ''"${name}.${homelan.domain}. A ${d.ip}"'') dnsDevices
+          ++ lib.mapAttrsToList (name: ip: ''"${name}.${homelan.domain}. A ${ip}"'') localAliases
+          ++ lib.mapAttrsToList (name: ip: ''"${name}. A ${ip}"'') dnsRecords;
+        local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.${homelan.domain}"'') dnsDevices;
+        domain-insecure = [ homelan.domain ] ++ lib.attrNames dnsRecords;
 
         num-threads = 2;
         msg-cache-size = "16m";

@@ -2,6 +2,16 @@
 # The "target" field references a terraform resource symbolically —
 # the terranix logic layer resolves it to the actual terraform expression.
 {
+  # Private Paperless endpoint. Public DNS resolves to Sequoia's Tailnet IP;
+  # Janus overrides this locally to Sequoia's LAN IP.
+  paperless = {
+    zone = "decio.us";
+    name = "paperless";
+    type = "A";
+    content = "100.112.147.63";
+    proxied = false;
+  };
+
   # Forgejo Git SSH on conduit (Hetzner)
   git_ssh = {
     zone = "decio.us";

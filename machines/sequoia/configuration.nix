@@ -9,6 +9,7 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
+    ../../modules/nixos/acme.nix
 
     ./modules/matrix-synapse.nix
     ./modules/vaultwarden.nix
@@ -16,6 +17,7 @@
     ./modules/litellm.nix
     # ./modules/opencrow
     ./modules/atuin.nix
-    ./modules/xerox-scans.nix
+    ./modules/paperless.nix
+    ./modules/paperless-xerox-ingest.nix
   ];
 }
