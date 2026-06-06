@@ -557,6 +557,19 @@ in
         ];
       };
 
+      # Display
+      "Mod+Alt+R" = _: {
+        props.hotkey-overlay-title = "Rotate Pocket display upside down";
+        content.spawn = [
+          "niri"
+          "msg"
+          "output"
+          "eDP-1"
+          "transform"
+          "180"
+        ];
+      };
+
       # Overview
       "Mod+O" = _: {
         props.repeat = false;
