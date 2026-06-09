@@ -55,6 +55,7 @@
     inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.amd-debug-tools
     pkgs.ethtool
+    pkgs.displaycal
   ];
 
   # vm building
