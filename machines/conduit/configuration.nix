@@ -1,4 +1,4 @@
-{ self, pkgs, ... }:
+{ self, ... }:
 {
 
   imports = [
@@ -8,28 +8,11 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
+
+    ./modules/pressroom.nix
   ];
 
   time.timeZone = "America/New_York";
-
-  # Static Pressroom deploy target. Local publish or future CI can rsync
-  # built files into releases/<git-sha> and atomically update current.
-  environment.systemPackages = [ pkgs.rsync ];
-  users.groups.deploy-pressroom = { };
-  users.users.deploy-pressroom = {
-    isSystemUser = true;
-    group = "deploy-pressroom";
-    home = "/srv/www/pressroom";
-    createHome = false;
-    shell = pkgs.bashInteractive;
-    openssh.authorizedKeys.keys = self.users.alex.sshKeys;
-  };
-  systemd.tmpfiles.rules = [
-    "d /srv/www/pressroom 0755 deploy-pressroom deploy-pressroom - -"
-    "d /srv/www/pressroom/releases 0755 deploy-pressroom deploy-pressroom - -"
-    "d /srv/www/pressroom/empty 0755 deploy-pressroom deploy-pressroom - -"
-    "L /srv/www/pressroom/current - - - - /srv/www/pressroom/empty"
-  ];
 
   services.nginx = {
     enable = true;

@@ -49,6 +49,25 @@
           "::/0"
         ];
       }
+      # Pressroom HTTP/HTTPS
+      {
+        direction = "in";
+        protocol = "tcp";
+        port = "80";
+        source_ips = [
+          "0.0.0.0/0"
+          "::/0"
+        ];
+      }
+      {
+        direction = "in";
+        protocol = "tcp";
+        port = "443";
+        source_ips = [
+          "0.0.0.0/0"
+          "::/0"
+        ];
+      }
       # Forgejo Git SSH proxy
       {
         direction = "in";
