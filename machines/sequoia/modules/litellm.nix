@@ -62,6 +62,8 @@ let
     general_settings = {
       master_key = "os.environ/LITELLM_MASTER_KEY";
       database_url = "os.environ/DATABASE_URL";
+      store_model_in_db = true;
+      store_prompts_in_spend_logs = true;
     };
   };
 in
