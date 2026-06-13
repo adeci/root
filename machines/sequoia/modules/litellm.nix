@@ -81,6 +81,39 @@ in
     envFiles = [ litellmEnvFile ];
   };
 
+  systemd.services.litellm-prune-prompt-logs = {
+    description = "Prune LiteLLM stored prompt/response bodies";
+    after = [ "postgresql.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "postgres";
+    };
+    script = # bash
+      ''
+        ${config.services.postgresql.package}/bin/psql -d litellm -v ON_ERROR_STOP=1 <<'SQL'
+          UPDATE "LiteLLM_SpendLogs"
+          SET
+            messages = '{}'::jsonb,
+            response = '{}'::jsonb,
+            proxy_server_request = '{}'::jsonb
+          WHERE "startTime" < now() - interval '180 days'
+            AND (
+              messages <> '{}'::jsonb
+              OR response <> '{}'::jsonb
+              OR proxy_server_request <> '{}'::jsonb
+            );
+        SQL
+      '';
+  };
+
+  systemd.timers.litellm-prune-prompt-logs = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
+  };
+
   # --- PostgreSQL (declarative via clan.core) ---
 
   clan.core.postgresql.enable = true;
