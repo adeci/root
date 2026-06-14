@@ -16,6 +16,7 @@
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
     ./modules/buildbot.nix
+    ./modules/llm/host.nix
     ./modules/v100-compute.nix
   ];
 

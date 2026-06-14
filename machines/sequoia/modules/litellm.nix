@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   self,
   ...
@@ -16,41 +17,82 @@ let
   yaml = pkgs.formats.yaml { };
 
   litellmPackage = self.inputs.litellm-nix.packages.${pkgs.stdenv.hostPlatform.system}."litellm-nix";
+  inherit (self.resources.llm) models weights;
+  leviathanLlmBaseUrl = "http://leviathan.cymric-daggertooth.ts.net:11435/v1";
+
   modelCostMap = builtins.fromJSON (
     builtins.readFile "${litellmPackage.pythonPackage.src}/litellm/model_prices_and_context_window_backup.json"
   );
-  gpt55Pricing =
+
+  pricingFromLiteLLM =
+    model:
     let
-      source = modelCostMap."gpt-5.5";
-      fields = [
-        "max_input_tokens"
-        "max_output_tokens"
-        "max_tokens"
-        "input_cost_per_token"
-        "input_cost_per_token_above_272k_tokens"
-        "output_cost_per_token"
-        "output_cost_per_token_above_272k_tokens"
-        "cache_read_input_token_cost"
-        "cache_read_input_token_cost_above_272k_tokens"
-      ];
+      source = modelCostMap.${model.pricing.model};
     in
     builtins.listToAttrs (
       builtins.map (name: {
         inherit name;
         value = source.${name};
-      }) fields
+      }) model.pricing.fields
     );
 
-  litellmConfig = yaml.generate "litellm-config.yaml" {
-    model_list = [
+  contextWindowFor =
+    model:
+    model.contextWindow or (
+      if model.backend.type == "local-gguf" then
+        weights.${model.backend.weight}.nativeContextWindow
+      else
+        null
+    );
+
+  modelInfo =
+    model:
+    let
+      contextWindow = contextWindowFor model;
+      pricing =
+        if (model.pricing.source or null) == "litellm" then
+          pricingFromLiteLLM model
+        else
+          {
+            input_cost_per_token = 0;
+            output_cost_per_token = 0;
+          };
+    in
+    pricing
+    // {
+      mode = model.mode or "chat";
+    }
+    // lib.optionalAttrs (contextWindow != null) {
+      max_input_tokens = contextWindow;
+      max_tokens = contextWindow;
+    }
+    // lib.optionalAttrs (model ? maxTokens) {
+      max_output_tokens = model.maxTokens;
+    };
+
+  litellmParams =
+    name: model:
+    if model.backend.type == "litellm" then
+      { inherit (model.backend) model; }
+    else if model.backend.type == "local-gguf" then
       {
-        model_name = "gpt-5.5";
-        model_info = gpt55Pricing // {
-          mode = "responses";
-        };
-        litellm_params.model = "chatgpt/gpt-5.5";
+        model = "openai/${name}";
+        api_base = leviathanLlmBaseUrl;
+        api_key = "local";
       }
-    ];
+    else
+      throw "unsupported LLM backend: ${model.backend.type}";
+
+  modelName = name: model: if model.backend.type == "local-gguf" then "local/${name}" else name;
+
+  mkLiteLLMModel = name: model: {
+    model_name = modelName name model;
+    model_info = modelInfo model;
+    litellm_params = litellmParams name model;
+  };
+
+  litellmConfig = yaml.generate "litellm-config.yaml" {
+    model_list = lib.mapAttrsToList mkLiteLLMModel models;
 
     litellm_settings = {
       drop_params = true;

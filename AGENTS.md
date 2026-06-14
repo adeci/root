@@ -31,6 +31,12 @@ nix eval .#checks.x86_64-linux --json
 nix build .#packages.x86_64-linux.tf-plan --no-link
 ```
 
+Leviathan's local LLM weights are runtime state under `/var/lib/llm-weights`,
+not part of the NixOS system closure. Keep large model downloads out of
+NixOS toplevels; local `nix build` validation should not fetch GGUF weights.
+Use `llm-weights-prepare.service` on Leviathan to validate and download model
+files.
+
 **Never run `clan machines update`** — deployment is a manual decision.
 
 ## Nix Tips
