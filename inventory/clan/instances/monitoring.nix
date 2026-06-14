@@ -17,6 +17,12 @@
             }
           ];
         };
+        machines.leviathan.settings.extraScrapeTargets = [
+          {
+            job = "dcgm";
+            target = "127.0.0.1:9400";
+          }
+        ];
         machines.sequoia.settings.extraScrapeTargets = [
           {
             job = "litellm";
