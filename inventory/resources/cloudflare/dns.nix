@@ -1,6 +1,9 @@
 # DNS records managed via Terraform.
 # The "target" field references a terraform resource symbolically —
 # the terranix logic layer resolves it to the actual terraform expression.
+let
+  sequoiaTailnetIp = "100.112.147.63";
+in
 {
   # Private Paperless endpoint. Public DNS resolves to Sequoia's Tailnet IP;
   # Janus overrides this locally to Sequoia's LAN IP.
@@ -8,7 +11,25 @@
     zone = "decio.us";
     name = "paperless";
     type = "A";
-    content = "100.112.147.63";
+    content = sequoiaTailnetIp;
+    proxied = false;
+  };
+
+  # Private LiteLLM admin endpoint. DNS points at Sequoia's Tailnet IP only.
+  litellm = {
+    zone = "decio.us";
+    name = "litellm";
+    type = "A";
+    content = sequoiaTailnetIp;
+    proxied = false;
+  };
+
+  # Private Grafana endpoint. DNS points at Sequoia's Tailnet IP only.
+  observe = {
+    zone = "decio.us";
+    name = "observe";
+    type = "A";
+    content = sequoiaTailnetIp;
     proxied = false;
   };
 

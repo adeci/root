@@ -9,6 +9,8 @@ let
   litellmPort = 4000;
   litellmTunnelPort = 8391;
   litellmAdminPort = 8392;
+  litellmAdminHost = "litellm.decio.us";
+  tailnetCidr = "100.64.0.0/10";
   stateDir = "/var/lib/litellm";
 
   litellmEnvFile = config.clan.core.vars.generators.litellm.files."litellm.env".path;
@@ -208,7 +210,11 @@ in
 
   # --- Network ---
 
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ litellmAdminPort ];
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
+    80
+    443
+    litellmAdminPort
+  ];
 
   # --- Nginx ---
 
@@ -245,6 +251,33 @@ in
       '';
     };
 
+    virtualHosts.${litellmAdminHost} = {
+      useACMEHost = "decio.us";
+      forceSSL = true;
+
+      extraConfig = ''
+        allow 127.0.0.1;
+        allow ${tailnetCidr};
+        deny all;
+        client_max_body_size 64M;
+      '';
+
+      locations = {
+        "= /" = {
+          return = "302 /ui/";
+        };
+
+        "/" = {
+          proxyPass = "http://127.0.0.1:${toString litellmPort}";
+          proxyWebsockets = true;
+          extraConfig = ''
+            proxy_buffering off;
+            proxy_read_timeout 3600s;
+          '';
+        };
+      };
+    };
+
     virtualHosts."litellm-admin.localhost" = {
       serverAliases = [
         "sequoia"
@@ -260,7 +293,7 @@ in
 
       extraConfig = ''
         allow 127.0.0.1;
-        allow 100.64.0.0/10;
+        allow ${tailnetCidr};
         deny all;
         client_max_body_size 64M;
       '';
