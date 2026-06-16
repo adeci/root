@@ -70,6 +70,16 @@
     };
   };
 
+  clan.core.state.buildbot-master = {
+    folders = [ "/var/lib/buildbot" ];
+    preRestoreScript = ''
+      ${config.systemd.package}/bin/systemctl stop buildbot-master.service
+    '';
+    postRestoreScript = ''
+      ${config.systemd.package}/bin/systemctl start buildbot-master.service
+    '';
+  };
+
   # Buildbot is served exclusively through the Cloudflare tunnel.
   # Bind nginx to localhost so it's unreachable from the network,
   # and redirect plain HTTP requests (detected via X-Forwarded-Proto)

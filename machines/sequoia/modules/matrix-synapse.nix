@@ -49,6 +49,10 @@ in
   };
   clan.core.postgresql.databases.matrix-synapse.restore.stopOnRestore = [ "matrix-synapse" ];
 
+  clan.core.state.matrix-synapse.folders = [
+    config.services.matrix-synapse.settings.media_store_path
+  ];
+
   # --- Synapse ---
 
   services.matrix-synapse = {

@@ -18,6 +18,17 @@ in
 
   clan.core.state.paperless.folders = [ dataDir ];
 
+  clan.core.postgresql.enable = true;
+  clan.core.postgresql.databases.paperless = {
+    create.enable = false;
+    restore.stopOnRestore = [
+      "paperless-consumer"
+      "paperless-scheduler"
+      "paperless-task-queue"
+      "paperless-web"
+    ];
+  };
+
   clan.core.vars.generators.paperless = {
     files = {
       admin-password.secret = true;
