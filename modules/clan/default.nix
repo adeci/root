@@ -7,4 +7,5 @@
   "@adeci/siteup" = import ./siteup;
   "@adeci/security-keys" = import ./security-keys;
   "@adeci/monitoring" = import ./monitoring;
+  "@adeci/restic" = import ./restic;
 }

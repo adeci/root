@@ -1,5 +1,4 @@
-_:
-{
+_: {
   clan.core.postgresql.enable = true;
   clan.core.postgresql.databases.atuin = {
     create.enable = false;

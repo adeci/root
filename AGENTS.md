@@ -326,6 +326,12 @@ Per-agent settings (in `inventory/clan/instances/monitoring.nix`):
 See `modules/clan/monitoring/README.md` for the full architecture and
 the alert rules baked into the server.
 
+**Restic backups**: `@adeci/restic` backs up `clan.core.state` folders to
+B2. Postgres services should use `clan.core.postgresql` so dumps and restore
+hooks stay tied to service state. Do not add parallel backup path lists; declare
+state at the service. Daily data-read checks are disabled to avoid B2 egress
+spikes. Restore notes live in `/home/alex/notes/backup-restore-runbook.md`.
+
 **Cloudflare resources**: Zones, tunnels, and DNS records defined as
 pure data in `inventory/resources/cloudflare/`. Terraform creates
 tunnels + DNS records and pushes tokens to clan vars. The
