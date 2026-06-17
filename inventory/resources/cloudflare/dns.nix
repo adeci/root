@@ -2,7 +2,7 @@
 # The "target" field references a terraform resource symbolically —
 # the terranix logic layer resolves it to the actual terraform expression.
 let
-  sequoiaTailnetIp = "100.112.147.63";
+  sequoiaTailnetIp = "100.116.83.84";
 in
 {
   # Private Paperless endpoint. Public DNS resolves to Sequoia's Tailnet IP;

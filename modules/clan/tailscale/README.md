@@ -1,85 +1,73 @@
 ---
-description = "Manages Tailscale VPN service" categories = ["Network", "System"] features = ["inventory"]
+description = "Thin Clan auth-key glue for the upstream Tailscale NixOS module"
+categories = ["Network", "System"]
+features = ["inventory"]
 ---
 
 # Tailscale
 
-This module manages the [Tailscale](https://tailscale.com/) VPN service, allowing easy connection to your Tailscale network.
+`@adeci/tailscale` assigns machines to a Tailscale instance, wires a Clan vars auth key into the upstream NixOS `services.tailscale` module, and defaults subnet-route acceptance off.
 
-## Overview
+It otherwise does not wrap Tailscale behavior. Configure Tailscale normally in NixOS with upstream options such as `services.tailscale.extraUpFlags`, `services.tailscale.extraSetFlags`, and `services.tailscale.useRoutingFeatures`.
 
-Tailscale is a zero-config VPN that creates a secure network between your devices. It works by establishing direct connections between devices when possible, and relays through their servers when not.
+Tailscale SaaS remains the control plane. Auth keys are supplied through Clan var prompts so machines can enroll as user-owned devices when needed.
 
-## Role
+## Split of Responsibility
 
-### Default
+- Clan service: fleet assignment, auth-key prompt glue, and safe route default.
+- Upstream NixOS module: all local `tailscaled` behavior.
+- Tailscale admin console: SaaS account state, sharing, ACLs, and manually generated auth keys.
 
-The default role installs and configures Tailscale with all features available.
+## Custom Option
 
-## Configuration Options
+Only one custom option exists:
 
-Any Tailscale option from the NixOS module may be set within the settings attrset for any inventory instance. This is made possible through the freeform type.
+- `auth-key-generator`: Clan vars generator name. Defaults to `tailscale-<instance>`.
 
-### Custom Options
-
-- `exitnode-optimization` (boolean): Enables kernel optimizations for better UDP throughput on exit nodes and subnet routers. Applies ethtool settings on boot for Linux 6.2+ kernels.
-
-## Examples
-
-### Basic Setup
+## Example
 
 ```nix
-# inventory/services/tailscale.nix
 {
-  instances = {
-    "my-network" = {
-      module.name = "tailscale";
-      module.input = "self";
-      roles.peer = {
-        tags.tailnet = { };  # Deploy to all machines with 'tailnet' tag
-      };
+  "adeci-net" = {
+    module = {
+      name = "@adeci/tailscale";
+      input = "self";
     };
+    roles.peer.tags = [ "adeci-net" ];
   };
 }
 ```
 
-### Exit Node Configuration
+Machine-specific Tailscale behavior belongs in normal NixOS config. Importing this Clan service defaults to:
 
 ```nix
 {
-  instances = {
-    "my-network" = {
-      module.name = "tailscale";
-      module.input = "self";
-      roles.peer = {
-        tags.tailnet = { };
+  services.tailscale.extraSetFlags = lib.mkDefault [ "--accept-routes=false" ];
+}
+```
 
-        # Configure gateway as exit node with optimizations
-        machines.gateway = {
-          settings = {
-            exitnode-optimization = true;  # Enable kernel optimizations
-            useRoutingFeatures = "server";
-            extraUpFlags = [ "--advertise-exit-node" ];
-          };
-        };
+Override it on machines that should consume advertised routes:
 
-        # Configure laptop to use exit node
-        machines.laptop = {
-          settings = {
-            useRoutingFeatures = "client";
-            extraUpFlags = [ "--exit-node=gateway" ];
-          };
-        };
-      };
-    };
+```nix
+{
+  services.tailscale = {
+    extraUpFlags = [ "--accept-routes" ];
+    extraSetFlags = [ "--accept-routes=true" ];
+    useRoutingFeatures = "client";
   };
 }
 ```
 
-### Authentication
+## Auth Key Setup
 
-When deploying, clan will prompt for the Tailscale auth key which is then stored securely:
+Generate an auth key in the Tailscale admin console and provide it when Clan prompts for this service's `auth_key` var. Use user-owned keys for machines that must access devices shared to your Tailscale user.
 
-```bash
-clan machines update <machine-name>
-```
+## Auth Key Expiry
+
+Auth-key expiry only controls future enrollment. Existing machines stay connected through their own Tailscale node state in `/var/lib/tailscale`.
+
+If an auth key expires and a rebuilt/new machine needs to join, generate a new key in the Tailscale admin console and update the Clan var.
+
+## Notes
+
+Headscale cannot participate in Tailscale SaaS node sharing. Keep SaaS while shared nodes matter.

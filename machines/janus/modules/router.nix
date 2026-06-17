@@ -29,12 +29,6 @@ let
   lan = sfpPlus2; # → nexus sfp-sfpplus1 (VLAN trunk)
   mgmt = eth1; # → nexus ether1 (management)
 
-  # ── Tailscale admin IPs (stable, assigned by Tailscale) ─────────────
-  tsAdmin = [
-    "100.101.208.55" # praxis
-    "100.64.57.12" # aegis
-  ];
-
   inherit (self.resources) homelan;
   inherit (homelan) vlans;
   devices = homelan.hosts;
@@ -62,6 +56,10 @@ let
   # sub-interface; a vlan entry can override with `iface` (mgmt → br-mgmt).
   subnetIface = v: v.iface or (vlanIf v);
   allVlanIfs = lib.mapAttrsToList (_: vlanIf) vlans;
+  localForwardIfs = allVlanIfs ++ [ "br-mgmt" ];
+  tailscaleRouteFlag = "--advertise-routes=${
+    lib.concatMapStringsSep "," (v: v.cidr) (lib.attrValues vlans)
+  }";
 
   # nftables interface set literal
   ifSet = ifs: lib.concatMapStringsSep ", " (i: ''"${i}"'') ifs;
@@ -89,6 +87,15 @@ in
   systemd.network.enable = true;
   networking.useNetworkd = true;
   networking.useDHCP = false;
+
+  services.tailscale = {
+    extraUpFlags = [ tailscaleRouteFlag ];
+    extraSetFlags = [
+      "--accept-routes=false"
+      tailscaleRouteFlag
+    ];
+    useRoutingFeatures = "server";
+  };
 
   # VLAN sub-interfaces on the LAN trunk
   systemd.network.netdevs =
@@ -197,8 +204,9 @@ in
         ct state established,related accept
         ct state invalid drop
 
-        # Tailscale — only admin machines can forward to local subnets
-        iifname "tailscale0" ip saddr { ${lib.concatStringsSep ", " tsAdmin} } accept
+        # Tailscale subnet routes. Access is controlled by route approval and
+        # Tailscale ACLs; peer 100.x addresses change on re-enrollment.
+        iifname "tailscale0" oifname { ${ifSet localForwardIfs} } accept
 
         # Route to per-zone chains
         iifname "${vlanIf vlans.trusted}" jump from-trusted

@@ -68,6 +68,16 @@
           "::/0"
         ];
       }
+      # Tailscale direct WireGuard endpoint
+      {
+        direction = "in";
+        protocol = "udp";
+        port = "41641";
+        source_ips = [
+          "0.0.0.0/0"
+          "::/0"
+        ];
+      }
       # Forgejo Git SSH proxy
       {
         direction = "in";
