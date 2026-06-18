@@ -8,6 +8,7 @@
     roles.client.machines = {
       sequoia = { };
       leviathan = { };
+      janus = { };
     };
   };
 }

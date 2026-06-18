@@ -41,6 +41,6 @@
       start = "10.99.0.100";
       end = "10.99.0.250";
     };
-    iface = "br-mgmt";
+    interface = "br-mgmt";
   };
 }
