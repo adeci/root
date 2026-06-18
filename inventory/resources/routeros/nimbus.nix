@@ -11,20 +11,20 @@
   wifi = {
     main = {
       ssid = "Aether";
-      vlan = 10;
+      vlan = "trusted";
       security = "wpa2-wpa3";
       secret = "wifi-aether";
       primary = true;
     };
     guest = {
       ssid = "Penumbra";
-      vlan = 30;
+      vlan = "guest";
       security = "wpa2-wpa3";
       secret = "wifi-penumbra";
     };
     iot = {
       ssid = "Mycelium";
-      vlan = 20;
+      vlan = "iot";
       security = "wpa2-wpa3";
       hidden = true;
       secret = "wifi-mycelium";

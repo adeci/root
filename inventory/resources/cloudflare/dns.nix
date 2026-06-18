@@ -1,8 +1,32 @@
 # DNS records managed via Terraform.
-# The "target" field references a terraform resource symbolically —
-# the terranix logic layer resolves it to the actual terraform expression.
+# Cloudflare owns DNS. Records may reference public edge/stream data, but the
+# Cloudflare module decides how those references materialize.
 let
   sequoiaTailnetIp = "100.116.83.84";
+
+  conduitEdge = "conduit";
+
+  minecraftA = name: {
+    zone = "adeci.net";
+    inherit name;
+    type = "A";
+    edge = conduitEdge;
+  };
+
+  minecraftSrv = host: stream: {
+    zone = "adeci.net";
+    name = "_minecraft._tcp.${host}";
+    type = "SRV";
+    ingressStream = {
+      edge = conduitEdge;
+      name = stream;
+    };
+    data = {
+      priority = 0;
+      weight = 0;
+      target = "${host}.adeci.net";
+    };
+  };
 in
 {
   # Private Paperless endpoint. Public DNS resolves to Sequoia's Tailnet IP;
@@ -33,156 +57,29 @@ in
     proxied = false;
   };
 
-  # Forgejo Git SSH on conduit (Hetzner)
+  # Forgejo Git SSH on conduit (Hetzner).
   git_ssh = {
     zone = "decio.us";
     name = "git-ssh";
     type = "A";
     proxied = false;
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
+    edge = conduitEdge;
   };
 
-  # Minecraft servers on conduit (Hetzner)
-  mc_rlc = {
-    zone = "adeci.net";
-    name = "rlc";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
-  mc_rats = {
-    zone = "adeci.net";
-    name = "rats";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
-  mc_dj2 = {
-    zone = "adeci.net";
-    name = "dj2";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
-  mc_bruh = {
-    zone = "adeci.net";
-    name = "bruh";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
-  mc_hunter = {
-    zone = "adeci.net";
-    name = "hunter";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
-  mc_jav = {
-    zone = "adeci.net";
-    name = "jav";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
-  mc_usf = {
-    zone = "adeci.net";
-    name = "usf";
-    type = "A";
-    target = {
-      resource = "hcloud_server";
-      name = "conduit";
-      field = "ipv4_address";
-    };
-  };
+  # Minecraft A records point at the public edge.
+  mc_rlc = minecraftA "rlc";
+  mc_rats = minecraftA "rats";
+  mc_dj2 = minecraftA "dj2";
+  mc_bruh = minecraftA "bruh";
+  mc_hunter = minecraftA "hunter";
+  mc_jav = minecraftA "jav";
+  mc_usf = minecraftA "usf";
 
-  # Minecraft SRV records
-  srv_rlc = {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.rlc";
-    type = "SRV";
-    data = {
-      priority = 0;
-      weight = 0;
-      port = 25565;
-      target = "rlc.adeci.net";
-    };
-  };
-  srv_rats = {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.rats";
-    type = "SRV";
-    data = {
-      priority = 0;
-      weight = 0;
-      port = 25566;
-      target = "rats.adeci.net";
-    };
-  };
-  srv_hunter = {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.hunter";
-    type = "SRV";
-    data = {
-      priority = 0;
-      weight = 0;
-      port = 25567;
-      target = "hunter.adeci.net";
-    };
-  };
-  srv_jav = {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.jav";
-    type = "SRV";
-    data = {
-      priority = 0;
-      weight = 0;
-      port = 25570;
-      target = "jav.adeci.net";
-    };
-  };
-  srv_dj2 = {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.dj2";
-    type = "SRV";
-    data = {
-      priority = 0;
-      weight = 0;
-      port = 25568;
-      target = "dj2.adeci.net";
-    };
-  };
-  srv_usf = {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.usf";
-    type = "SRV";
-    data = {
-      priority = 0;
-      weight = 0;
-      port = 25569;
-      target = "usf.adeci.net";
-    };
-  };
+  # Minecraft SRV records derive ports from ingress streams.
+  srv_rlc = minecraftSrv "rlc" "minecraft-rlc";
+  srv_rats = minecraftSrv "rats" "minecraft-rats";
+  srv_hunter = minecraftSrv "hunter" "minecraft-hunter";
+  srv_jav = minecraftSrv "jav" "minecraft-jav";
+  srv_dj2 = minecraftSrv "dj2" "minecraft-dj2";
+  srv_usf = minecraftSrv "usf" "minecraft-usf";
 }

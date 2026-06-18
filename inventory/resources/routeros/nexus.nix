@@ -8,12 +8,12 @@
 
   managementPort = "ether1"; # standalone, not in bridge, keeps DHCP client
 
-  vlans = {
-    trusted = 10;
-    iot = 20;
-    guest = 30;
-    mgmt = 99;
-  };
+  vlans = [
+    "trusted"
+    "iot"
+    "guest"
+    "mgmt"
+  ];
 
   # Ports not listed here default to access ports on this VLAN
   defaultVlan = "trusted";
@@ -33,6 +33,12 @@
         "guest"
       ];
       comment = "Uplink — axon (10G SFP+)";
+    };
+    "sfp-sfpplus3" = {
+      comment = "Server — leviathan trusted (10G SFP+)";
+    };
+    "sfp-sfpplus4" = {
+      comment = "Server — leviathan future microVM uplink, trusted for now (10G SFP+)";
     };
     "ether2" = {
       hybrid = true;

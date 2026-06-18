@@ -1,7 +1,7 @@
 # janus — NixOS router (Qotom Q20321G9)
-# WAN (DHCP from ISP) → VLAN trunk to switches → inter-VLAN routing + NAT
+# WAN (DHCP from ISP) -> VLAN trunk to switches -> inter-VLAN routing + NAT
 #
-# ── Qotom Q20321G9 Port Map ─────────────────────────────────────────
+# Qotom Q20321G9 port map, profiled 2026-04-12 by plug-testing.
 #
 # 2.5G RJ45 (igc driver):
 #                        Label Eth3 = enp4s0    Label Eth4 = enp5s0
@@ -10,31 +10,73 @@
 # SFP+ right side (ixgbe driver, 10G):
 #   Right-top    = eno2
 #   Right-bottom = eno1
-#
 {
+  config,
   lib,
   pkgs,
   self,
   ...
 }:
 let
-  # ── Port Map (label → linux interface) ─────────────────────────────
-  # Profiled 2026-04-12 by plug-testing each port.
-  eth1 = "enp6s0"; # 2.5G RJ45
-  eth4 = "enp5s0"; # 2.5G RJ45
-  sfpPlus2 = "eno1"; # 10G SFP+ (right-bottom)
+  ports = {
+    eth1 = "enp6s0";
+    eth2 = "enp7s0";
+    eth3 = "enp4s0";
+    eth4 = "enp5s0";
+    eth5 = "enp8s0";
+    sfpPlus1 = "eno2";
+    sfpPlus2 = "eno1";
+    sfpPlus3 = "eno3";
+    sfpPlus4 = "eno4";
+  };
 
-  # ── Role Assignment ────────────────────────────────────────────────
-  wan = eth4; # → ISP modem
-  lan = sfpPlus2; # → nexus sfp-sfpplus1 (VLAN trunk)
-  mgmt = eth1; # → nexus ether1 (management)
+  wan = ports.eth4; # -> ISP modem
+  lan = ports.sfpPlus2; # -> nexus sfp-sfpplus1 (VLAN trunk)
+  mgmt = ports.eth5; # -> nexus ether1 (management)
 
   inherit (self.resources) homelan;
   inherit (homelan) vlans;
+
   devices = homelan.hosts;
   dnsRecords = homelan.dns.records;
   dnsDevices = lib.filterAttrs (_: host: host.publishDns or true) devices;
 
+  vlanIf = vlan: "vlan${toString vlan.id}";
+  subnetIface = vlan: vlan.iface or (vlanIf vlan);
+
+  physicalIfs = lib.attrValues ports;
+  spareIfs = lib.subtractLists [
+    wan
+    lan
+    mgmt
+  ] physicalIfs;
+
+  trunkVlanIfs = lib.mapAttrsToList (_: vlanIf) vlans;
+  routedVlans = lib.filterAttrs (name: _: name != "mgmt") vlans;
+  routedVlanIfs = lib.mapAttrsToList (_: vlanIf) routedVlans;
+  serviceIfs = routedVlanIfs ++ [ "br-mgmt" ];
+  localForwardIfs = serviceIfs;
+
+  noIpv6 = {
+    LinkLocalAddressing = "no";
+    IPv6AcceptRA = false;
+  };
+
+  tailscaleRouteFlag = "--advertise-routes=${
+    lib.concatMapStringsSep "," (vlan: vlan.cidr) (lib.attrValues vlans)
+  }";
+
+  ifSet = ifs: lib.concatMapStringsSep ", " (iface: ''"${iface}"'') ifs;
+
+  countMatching = pred: values: builtins.length (builtins.filter pred values);
+  duplicates =
+    values:
+    lib.filter (value: countMatching (candidate: candidate == value) values > 1) (lib.unique values);
+  lower = value: lib.toLower value;
+
+  knownVlanHosts = lib.filterAttrs (_: host: host ? vlan && lib.hasAttr host.vlan vlans) devices;
+
+  allAliases = lib.concatMap (host: host.aliases or [ ]) (lib.attrValues dnsDevices);
   localAliases = lib.concatMapAttrs (
     _hostName: host:
     builtins.listToAttrs (
@@ -44,49 +86,189 @@ let
       }) (host.aliases or [ ])
     )
   ) dnsDevices;
-  allAliases = lib.concatMap (host: host.aliases or [ ]) (lib.attrValues dnsDevices);
-  aliasHostConflicts = lib.intersectLists allAliases (lib.attrNames devices);
-  hostsWithUnknownVlans = lib.attrNames (
-    lib.filterAttrs (_: host: !(lib.hasAttr host.vlan vlans)) devices
+
+  hostIps = lib.mapAttrsToList (_: host: host.ip or null) devices;
+  hostMacs = lib.mapAttrsToList (_: host: lower host.mac) (
+    lib.filterAttrs (_: host: host ? mac) devices
+  );
+  hostClientIds = lib.mapAttrsToList (_: host: lower host.clientId) (
+    lib.filterAttrs (_: host: host ? clientId) devices
   );
 
-  # ── Helpers ────────────────────────────────────────────────────────
-  vlanIf = v: "vlan${toString v.id}";
-  # The interface where DHCP/DNS for a subnet binds. Defaults to the VLAN
-  # sub-interface; a vlan entry can override with `iface` (mgmt → br-mgmt).
-  subnetIface = v: v.iface or (vlanIf v);
-  allVlanIfs = lib.mapAttrsToList (_: vlanIf) vlans;
-  localForwardIfs = allVlanIfs ++ [ "br-mgmt" ];
-  tailscaleRouteFlag = "--advertise-routes=${
-    lib.concatMapStringsSep "," (v: v.cidr) (lib.attrValues vlans)
-  }";
+  hostsMissingIp = lib.attrNames (lib.filterAttrs (_: host: !(host ? ip)) devices);
+  hostsMissingReservationId = lib.attrNames (
+    lib.filterAttrs (_: host: !(host ? mac || host ? clientId)) devices
+  );
+  hostsWithUnknownVlans = lib.attrNames (
+    lib.filterAttrs (_: host: !(host ? vlan) || !(lib.hasAttr host.vlan vlans)) devices
+  );
+  hostsOutsideVlan = lib.attrNames (
+    lib.filterAttrs (
+      _: host: !(host ? ip) || !(lib.hasPrefix "${vlans.${host.vlan}.prefix}." host.ip)
+    ) knownVlanHosts
+  );
 
-  # nftables interface set literal
-  ifSet = ifs: lib.concatMapStringsSep ", " (i: ''"${i}"'') ifs;
+  ipLastOctet =
+    ip:
+    let
+      match = builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+\\.([0-9]+)" ip;
+    in
+    if match == null then null else lib.toInt (builtins.head match);
+
+  ipInDhcpPool =
+    vlan: ip:
+    let
+      octet = ipLastOctet ip;
+      start = ipLastOctet vlan.dhcpPool.start;
+      end = ipLastOctet vlan.dhcpPool.end;
+    in
+    octet != null && start != null && end != null && octet >= start && octet <= end;
+
+  hostsInsideDhcpPools = lib.attrNames (
+    lib.filterAttrs (
+      _: host:
+      host ? ip && host ? vlan && lib.hasAttr host.vlan vlans && ipInDhcpPool vlans.${host.vlan} host.ip
+    ) devices
+  );
+
+  vlanIds = map (vlan: vlan.id) (lib.attrValues vlans);
+  vlansWithBadGateway = lib.attrNames (
+    lib.filterAttrs (_: vlan: !(lib.hasPrefix "${vlan.prefix}." vlan.gateway)) vlans
+  );
+  vlansWithBadDhcpPool = lib.attrNames (
+    lib.filterAttrs (
+      _: vlan:
+      !(lib.hasPrefix "${vlan.prefix}." vlan.dhcpPool.start)
+      || !(lib.hasPrefix "${vlan.prefix}." vlan.dhcpPool.end)
+    ) vlans
+  );
+
+  aliasHostConflicts = lib.intersectLists allAliases (lib.attrNames devices);
+  duplicateAliases = duplicates allAliases;
+  duplicateIps = duplicates (lib.filter (ip: ip != null) hostIps);
+  duplicateMacs = duplicates hostMacs;
+  duplicateClientIds = duplicates hostClientIds;
+
+  ifaceForTarget =
+    target:
+    if target == "wan" then
+      wan
+    else if target == "tailscale" then
+      "tailscale0"
+    else
+      forwardZones.${target}.iface;
+
+  forwardZones = {
+    trusted = {
+      iface = vlanIf vlans.trusted;
+      description = "trusted clients; full routed access";
+      allowAny = true;
+    };
+    iot = {
+      iface = vlanIf vlans.iot;
+      description = "IoT clients; internet only";
+      allow = [ "wan" ];
+    };
+    guest = {
+      iface = vlanIf vlans.guest;
+      description = "guest clients; internet only";
+      allow = [ "wan" ];
+    };
+    mgmt = {
+      iface = "br-mgmt";
+      description = "infrastructure management; no forwarding by default";
+      allow = [ ];
+    };
+  };
+
+  mkForwardRules =
+    zone:
+    if zone.allowAny or false then
+      [ "accept" ]
+    else
+      map (target: ''oifname "${ifaceForTarget target}" accept'') zone.allow;
+
+  indentLines = prefix: lines: lib.concatMapStringsSep "\n" (line: "${prefix}${line}") lines;
+
+  mkZoneChain =
+    name: zone:
+    let
+      rules = mkForwardRules zone;
+    in
+    lib.concatStringsSep "\n" (
+      [
+        "  # ${zone.description}"
+        "  chain from-${name} {"
+      ]
+      ++ map (rule: "    ${rule}") rules
+      ++ [ "  }" ]
+    );
+
+  zoneJumps = indentLines "    " (
+    lib.mapAttrsToList (name: zone: ''iifname "${zone.iface}" jump from-${name}'') forwardZones
+  );
+  zoneChains = lib.concatStringsSep "\n" (lib.mapAttrsToList mkZoneChain forwardZones);
 in
 {
   assertions = [
     {
-      assertion = lib.length allAliases == lib.length (lib.unique allAliases);
-      message = "homelan aliases must be unique";
+      assertion = lib.length vlanIds == lib.length (lib.unique vlanIds);
+      message = "homelan VLAN IDs must be unique";
     }
     {
-      assertion = aliasHostConflicts == [ ];
-      message = "homelan aliases conflict with host names: ${lib.concatStringsSep ", " aliasHostConflicts}";
+      assertion = vlansWithBadGateway == [ ];
+      message = "homelan VLAN gateways must live inside their VLAN prefix: ${lib.concatStringsSep ", " vlansWithBadGateway}";
+    }
+    {
+      assertion = vlansWithBadDhcpPool == [ ];
+      message = "homelan DHCP pools must live inside their VLAN prefix: ${lib.concatStringsSep ", " vlansWithBadDhcpPool}";
+    }
+    {
+      assertion = hostsMissingIp == [ ];
+      message = "homelan hosts must declare ip: ${lib.concatStringsSep ", " hostsMissingIp}";
+    }
+    {
+      assertion = hostsMissingReservationId == [ ];
+      message = "homelan hosts must declare mac or clientId: ${lib.concatStringsSep ", " hostsMissingReservationId}";
     }
     {
       assertion = hostsWithUnknownVlans == [ ];
       message = "homelan hosts reference unknown VLANs: ${lib.concatStringsSep ", " hostsWithUnknownVlans}";
     }
+    {
+      assertion = hostsOutsideVlan == [ ];
+      message = "homelan host IPs must match their VLAN prefix: ${lib.concatStringsSep ", " hostsOutsideVlan}";
+    }
+    {
+      assertion = hostsInsideDhcpPools == [ ];
+      message = "homelan static host reservations must stay outside DHCP pools: ${lib.concatStringsSep ", " hostsInsideDhcpPools}";
+    }
+    {
+      assertion = duplicateIps == [ ];
+      message = "homelan host IPs must be unique: ${lib.concatStringsSep ", " duplicateIps}";
+    }
+    {
+      assertion = duplicateMacs == [ ];
+      message = "homelan host MACs must be unique: ${lib.concatStringsSep ", " duplicateMacs}";
+    }
+    {
+      assertion = duplicateClientIds == [ ];
+      message = "homelan DHCP client IDs must be unique: ${lib.concatStringsSep ", " duplicateClientIds}";
+    }
+    {
+      assertion = duplicateAliases == [ ];
+      message = "homelan aliases must be unique: ${lib.concatStringsSep ", " duplicateAliases}";
+    }
+    {
+      assertion = aliasHostConflicts == [ ];
+      message = "homelan aliases conflict with host names: ${lib.concatStringsSep ", " aliasHostConflicts}";
+    }
   ];
 
-  # ── Override base.nix ──────────────────────────────────────────────
   networking.networkmanager.enable = false;
-
-  # ── systemd-networkd ───────────────────────────────────────────────
-  systemd.network.enable = true;
   networking.useNetworkd = true;
   networking.useDHCP = false;
+  hardware.facter.detected.dhcp.enable = false;
 
   services.tailscale = {
     extraUpFlags = [ tailscaleRouteFlag ];
@@ -97,20 +279,19 @@ in
     useRoutingFeatures = "server";
   };
 
-  # VLAN sub-interfaces on the LAN trunk
+  systemd.network.enable = true;
   systemd.network.netdevs =
     lib.mapAttrs' (
-      _: v:
-      lib.nameValuePair "20-${vlanIf v}" {
+      _: vlan:
+      lib.nameValuePair "20-${vlanIf vlan}" {
         netdevConfig = {
-          Name = vlanIf v;
+          Name = vlanIf vlan;
           Kind = "vlan";
         };
-        vlanConfig.Id = v.id;
+        vlanConfig.Id = vlan.id;
       }
     ) vlans
     // {
-      # Management bridge — merges dedicated mgmt RJ45 + VLAN 99 trunk
       "10-br-mgmt".netdevConfig = {
         Name = "br-mgmt";
         Kind = "bridge";
@@ -118,143 +299,125 @@ in
     };
 
   systemd.network.networks = {
-    # WAN — DHCP from ISP
     "10-wan" = {
       matchConfig.Name = wan;
-      networkConfig.DHCP = "ipv4";
+      networkConfig = noIpv6 // {
+        DHCP = "ipv4";
+      };
       dhcpV4Config.UseDNS = false;
     };
 
-    # LAN — VLAN trunk to nexus
     "20-lan" = {
       matchConfig.Name = lan;
-      networkConfig.VLAN = allVlanIfs;
       linkConfig.RequiredForOnline = "carrier";
+      networkConfig = noIpv6 // {
+        VLAN = trunkVlanIfs;
+      };
     };
 
-    # Dedicated mgmt RJ45 — bridged into br-mgmt (see netdev below)
     "20-mgmt" = {
       matchConfig.Name = mgmt;
-      networkConfig.Bridge = "br-mgmt";
       linkConfig.RequiredForOnline = "no";
+      networkConfig = noIpv6 // {
+        Bridge = "br-mgmt";
+      };
     };
 
-    # VLAN 99 sub-interface — also bridged into br-mgmt
     "20-vlan99-bridge" = {
       matchConfig.Name = vlanIf vlans.mgmt;
-      networkConfig.Bridge = "br-mgmt";
       linkConfig.RequiredForOnline = "no";
+      networkConfig = noIpv6 // {
+        Bridge = "br-mgmt";
+      };
     };
 
-    # Management bridge — nexus (direct RJ45) + axon/WAPs (via VLAN 99)
-    # share one 10.99.0.0/24 subnet
     "30-br-mgmt" = {
       matchConfig.Name = "br-mgmt";
       address = [ "${vlans.mgmt.gateway}/24" ];
       linkConfig.RequiredForOnline = "no";
+      networkConfig = noIpv6;
     };
   }
   // lib.mapAttrs' (
-    _name: v:
-    lib.nameValuePair "30-${vlanIf v}" {
-      matchConfig.Name = vlanIf v;
-      address = [ "${v.gateway}/24" ];
+    _name: vlan:
+    lib.nameValuePair "30-${vlanIf vlan}" {
+      matchConfig.Name = vlanIf vlan;
+      address = [ "${vlan.gateway}/24" ];
       linkConfig.RequiredForOnline = "no";
+      networkConfig = noIpv6;
     }
-  ) (lib.filterAttrs (_: v: !(v ? iface)) vlans);
+  ) routedVlans
+  // lib.listToAttrs (
+    map (iface: {
+      name = "90-spare-${iface}";
+      value = {
+        matchConfig.Name = iface;
+        linkConfig.RequiredForOnline = "no";
+        networkConfig = noIpv6;
+      };
+    }) spareIfs
+  );
 
-  # ── IP forwarding ─────────────────────────────────────────────────
-  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 0;
+  };
 
-  # ── Firewall (nftables) ────────────────────────────────────────────
-  # Per-zone chains — each VLAN gets its own forward chain.
-  # Easy to read, easy to extend. Add rules to from-* chains.
   networking.firewall.enable = false;
   networking.nftables.enable = true;
   networking.nftables.ruleset = ''
-    table inet filter {
+        table inet filter {
+          chain input {
+            type filter hook input priority 0; policy drop;
 
-      # ── Inbound to janus ───────────────────────────────────────────
-      chain input {
-        type filter hook input priority 0; policy drop;
+            ct state established,related accept
+            ct state invalid drop
+            iif lo accept
+            ip protocol icmp accept
 
-        ct state established,related accept
-        ct state invalid drop
-        iif lo accept
-        ip protocol icmp accept
+            # DHCP + DNS for local subnets.
+            iifname { ${ifSet serviceIfs} } udp dport { 53, 67 } accept
+            iifname { ${ifSet serviceIfs} } tcp dport 53 accept
 
-        # DHCP + DNS from all VLANs + mgmt bridge
-        iifname { ${ifSet allVlanIfs}, "br-mgmt" } udp dport { 53, 67 } accept
-        iifname { ${ifSet allVlanIfs}, "br-mgmt" } tcp dport 53 accept
+            # Tailscale direct path from WAN. Tunnel traffic is authenticated by
+            # WireGuard; Tailscale ACLs remain the peer policy boundary.
+            iifname "${wan}" udp dport 41641 accept
 
-        # Tailscale: peer-initiated wireguard from the internet (41641 is
-        # Tailscale's default; without this rule only janus-initiated
-        # direct paths work, via conntrack). Tunnel already authenticated.
-        iifname "${wan}" udp dport 41641 accept
-        iifname "tailscale0" accept
+            # Tailnet is the admin plane for Janus itself.
+            iifname "tailscale0" accept
 
-        # SSH from trusted + management only
-        iifname { "${vlanIf vlans.trusted}", "br-mgmt" } tcp dport 22 accept
-      }
+            # SSH from trusted + management only.
+            iifname { "${vlanIf vlans.trusted}", "br-mgmt" } tcp dport 22 accept
+          }
 
-      # ── Forwarding ─────────────────────────────────────────────────
-      chain forward {
-        type filter hook forward priority 0; policy drop;
+          chain forward {
+            type filter hook forward priority 0; policy drop;
 
-        ct state established,related accept
-        ct state invalid drop
+            ct state established,related accept
+            ct state invalid drop
 
-        # Tailscale subnet routes. Access is controlled by route approval and
-        # Tailscale ACLs; peer 100.x addresses change on re-enrollment.
-        iifname "tailscale0" oifname { ${ifSet localForwardIfs} } accept
+            # Tailscale subnet routes. Route approval and Tailscale ACLs decide
+            # which peers can use these local networks.
+            iifname "tailscale0" oifname { ${ifSet localForwardIfs} } accept
 
-        # Route to per-zone chains
-        iifname "${vlanIf vlans.trusted}" jump from-trusted
-        iifname "${vlanIf vlans.iot}"     jump from-iot
-        iifname "${vlanIf vlans.guest}"   jump from-guest
-        iifname "br-mgmt"                 jump from-mgmt
-      }
+    ${zoneJumps}
+          }
 
-      # ── Zone: trusted ──────────────────────────────────────────────
-      # Full access — internet + all other VLANs
-      chain from-trusted {
-        accept
-      }
+    ${zoneChains}
 
-      # ── Zone: iot ───────────────────────────────────────────────────
-      # Internet only — no lateral movement to other VLANs
-      chain from-iot {
-        oifname "${wan}" accept
-      }
+          chain output {
+            type filter hook output priority 0; policy accept;
+          }
+        }
 
-      # ── Zone: guest ─────────────────────────────────────────────────
-      # Internet only — no local network access
-      chain from-guest {
-        oifname "${wan}" accept
-      }
-
-      # ── Zone: mgmt ─────────────────────────────────────────────────
-      # Infrastructure devices — can reach janus (for DHCP/DNS/API) but
-      # not the internet or other VLANs. Switches don't need internet.
-      chain from-mgmt {
-      }
-
-      chain output {
-        type filter hook output priority 0; policy accept;
-      }
-    }
-
-    table ip nat {
-      chain postrouting {
-        type nat hook postrouting priority 100;
-        oifname "${wan}" masquerade
-      }
-    }
+        table ip nat {
+          chain postrouting {
+            type nat hook postrouting priority 100;
+            oifname "${wan}" masquerade
+          }
+        }
   '';
 
-  # ── DHCP (Kea) + DNS (Unbound) ─────────────────────────────────────
-  # Reservations and .lan records come from `devices` at deploy time;
-  # dynamic clients get IPs but no .lan name.
   services.resolved.enable = false;
   networking.nameservers = [ "127.0.0.1" ];
 
@@ -269,8 +432,6 @@ in
         name = "/var/lib/kea/kea-leases4.csv";
       };
 
-      # lease_cmds: control-socket lease CRUD. stat_cmds: per-subnet
-      # metrics. Both consumed by prometheus-kea-exporter below.
       hooks-libraries = [
         {
           library = "${pkgs.kea}/lib/kea/hooks/libdhcp_lease_cmds.so";
@@ -287,27 +448,24 @@ in
         socket-name = "/run/kea/kea-dhcp4.sock";
       };
 
-      # id = v.id (not a positional index) so subnet-ids stay stable
-      # across renames/additions — Kea persists subnet-id in the lease
-      # CSV and keys stats by it.
       subnet4 = lib.mapAttrsToList (
-        name: v:
+        name: vlan:
         let
-          devicesOnVlan = lib.filterAttrs (_: d: d.vlan == name) devices;
+          devicesOnVlan = lib.filterAttrs (_: device: device.vlan == name) devices;
         in
         {
-          inherit (v) id;
-          subnet = v.cidr;
-          interface = subnetIface v;
-          pools = [ { pool = "${v.dhcpPool.start} - ${v.dhcpPool.end}"; } ];
+          inherit (vlan) id;
+          subnet = vlan.cidr;
+          interface = subnetIface vlan;
+          pools = [ { pool = "${vlan.dhcpPool.start} - ${vlan.dhcpPool.end}"; } ];
           option-data = [
             {
               name = "routers";
-              data = v.gateway;
+              data = vlan.gateway;
             }
             {
               name = "domain-name-servers";
-              data = v.gateway;
+              data = vlan.gateway;
             }
             {
               name = "domain-name";
@@ -315,12 +473,12 @@ in
             }
           ];
           reservations = lib.mapAttrsToList (
-            hostname: d:
+            hostname: device:
             {
-              ip-address = d.ip;
+              ip-address = device.ip;
               inherit hostname;
             }
-            // (if d ? clientId then { client-id = d.clientId; } else { hw-address = d.mac; })
+            // (if device ? clientId then { client-id = device.clientId; } else { hw-address = device.mac; })
           ) devicesOnVlan;
         }
       ) vlans;
@@ -331,34 +489,32 @@ in
     enable = true;
     settings = {
       server = {
-        interface = [ "127.0.0.1" ] ++ map (v: v.gateway) (lib.attrValues vlans);
-        access-control = [
-          "127.0.0.0/8 allow"
-        ]
-        ++ map (v: "${v.cidr} allow") (lib.attrValues vlans);
+        interface = [ "127.0.0.1" ] ++ map (vlan: vlan.gateway) (lib.attrValues vlans);
+        access-control = [ "127.0.0.0/8 allow" ] ++ map (vlan: "${vlan.cidr} allow") (lib.attrValues vlans);
 
-        # static: unknown names → NXDOMAIN, known names with missing
-        # record types → NODATA. domain-insecure skips DNSSEC for local
-        # records with no chain of trust from root.
         local-zone = [
           ''"${homelan.domain}." static''
         ]
         ++ lib.mapAttrsToList (name: _: ''"${name}." static'') dnsRecords;
         local-data =
-          lib.mapAttrsToList (name: d: ''"${name}.${homelan.domain}. A ${d.ip}"'') dnsDevices
+          lib.mapAttrsToList (name: device: ''"${name}.${homelan.domain}. A ${device.ip}"'') dnsDevices
           ++ lib.mapAttrsToList (name: ip: ''"${name}.${homelan.domain}. A ${ip}"'') localAliases
           ++ lib.mapAttrsToList (name: ip: ''"${name}. A ${ip}"'') dnsRecords;
-        local-data-ptr = lib.mapAttrsToList (name: d: ''"${d.ip} ${name}.${homelan.domain}"'') dnsDevices;
+        local-data-ptr = lib.mapAttrsToList (
+          name: device: ''"${device.ip} ${name}.${homelan.domain}"''
+        ) dnsDevices;
         domain-insecure = [ homelan.domain ] ++ lib.attrNames dnsRecords;
 
+        do-ip6 = false;
+        prefer-ip6 = false;
         num-threads = 2;
         msg-cache-size = "16m";
         rrset-cache-size = "32m";
       };
 
-      # janus disables systemd-resolved, so the @adeci/tailscale
-      # dns-delegate path is a no-op here. Alloy needs .ts.net resolution
-      # to push metrics to sequoia.
+      # Janus disables systemd-resolved, so @adeci/tailscale's dns-delegate
+      # path is intentionally unused here. Unbound forwards Tailnet names to
+      # MagicDNS directly for local services such as Alloy.
       forward-zone = [
         {
           name = "ts.net.";
@@ -368,17 +524,24 @@ in
     };
   };
 
-  # DNS up before DHCP so the resolver Kea hands out is already serving.
   systemd.services.kea-dhcp4-server = {
     after = [ "unbound.service" ];
     wants = [ "unbound.service" ];
   };
 
-  # Shares User="kea" + RuntimeDirectory with kea-dhcp4-server, so socket
-  # access is automatic. Scraped via @adeci/monitoring extraScrapeTargets.
   services.prometheus.exporters.kea = {
     enable = true;
     listenAddress = "127.0.0.1";
     targets = [ "/run/kea/kea-dhcp4.sock" ];
+  };
+
+  clan.core.state.kea-dhcp = {
+    folders = [ "/var/lib/kea" ];
+    preRestoreScript = ''
+      ${config.systemd.package}/bin/systemctl stop kea-dhcp4-server.service || true
+    '';
+    postRestoreScript = ''
+      ${config.systemd.package}/bin/systemctl start kea-dhcp4-server.service
+    '';
   };
 }

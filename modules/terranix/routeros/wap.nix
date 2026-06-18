@@ -21,7 +21,7 @@
   ...
 }:
 let
-  inherit (self.resources) routeros;
+  inherit (self.resources) homelan routeros;
 
   # Only devices with wifi (WAPs, not switches)
   waps = lib.filterAttrs (_: d: d ? wifi) routeros;
@@ -38,17 +38,10 @@ let
     ];
   };
 
-  # VLAN name from ID (for resource naming)
-  vlanName =
-    id:
-    {
-      "10" = "trusted";
-      "20" = "iot";
-      "30" = "guest";
-    }
-    .${toString id};
+  vlanId = name: homelan.vlans.${name}.id;
+  vlanInterfaceName = name: "vlan${toString (vlanId name)}";
 
-  # Unique VLAN IDs used by a device's WiFi config
+  # Unique VLAN names used by a device's WiFi config
   deviceVlans = device: lib.unique (lib.mapAttrsToList (_: ssid: ssid.vlan) device.wifi);
 
   # Split SSIDs into primary (bound to physical radios) and secondary (virtual interfaces)
@@ -97,13 +90,13 @@ in
   resource.routeros_interface_vlan = lib.concatMapAttrs (
     name: device:
     lib.listToAttrs (
-      map (vlanId: {
-        name = "${name}_${vlanName vlanId}";
+      map (vlanName: {
+        name = "${name}_${vlanName}";
         value = {
           provider = deviceProvider name;
-          name = "vlan${toString vlanId}";
+          name = vlanInterfaceName vlanName;
           interface = "ether1";
-          vlan_id = vlanId;
+          vlan_id = vlanId vlanName;
         };
       }) (deviceVlans device)
     )
@@ -114,11 +107,11 @@ in
   resource.routeros_interface_bridge = lib.concatMapAttrs (
     name: device:
     lib.listToAttrs (
-      map (vlanId: {
-        name = "${name}_${vlanName vlanId}";
+      map (vlanName: {
+        name = "${name}_${vlanName}";
         value = {
           provider = deviceProvider name;
-          name = "bridge-${vlanName vlanId}";
+          name = "bridge-${vlanName}";
         };
       }) (deviceVlans device)
     )
@@ -129,12 +122,12 @@ in
   resource.routeros_interface_bridge_port = lib.concatMapAttrs (
     name: device:
     lib.listToAttrs (
-      map (vlanId: {
-        name = "${name}_${vlanName vlanId}";
+      map (vlanName: {
+        name = "${name}_${vlanName}";
         value = {
           provider = deviceProvider name;
-          bridge = config.resource.routeros_interface_bridge."${name}_${vlanName vlanId}" "name";
-          interface = config.resource.routeros_interface_vlan."${name}_${vlanName vlanId}" "name";
+          bridge = config.resource.routeros_interface_bridge."${name}_${vlanName}" "name";
+          interface = config.resource.routeros_interface_vlan."${name}_${vlanName}" "name";
         };
       }) (deviceVlans device)
     )
@@ -164,7 +157,7 @@ in
       lib.nameValuePair "${name}_${ssidName}" {
         provider = deviceProvider name;
         name = "${name}-${ssidName}";
-        bridge = config.resource.routeros_interface_bridge."${name}_${vlanName ssidCfg.vlan}" "name";
+        bridge = config.resource.routeros_interface_bridge."${name}_${ssidCfg.vlan}" "name";
       }
     ) device.wifi
   ) waps;

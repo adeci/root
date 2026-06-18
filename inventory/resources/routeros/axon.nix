@@ -9,12 +9,12 @@
   managementPort = "sfp-sfpplus1"; # standalone uplink — VLAN sub-interfaces trunk into bridge
   fallbackPort = "ether1"; # fallback IP goes here for local laptop recovery
 
-  vlans = {
-    trusted = 10;
-    iot = 20;
-    guest = 30;
-    mgmt = 99;
-  };
+  vlans = [
+    "trusted"
+    "iot"
+    "guest"
+    "mgmt"
+  ];
 
   defaultVlan = "trusted";
 
