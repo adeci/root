@@ -48,10 +48,10 @@ in
     proxied = false;
   };
 
-  # Private Grafana endpoint. DNS points at Sequoia's Tailnet IP only.
-  observe = {
+  # Private Atlas endpoint. DNS points at Sequoia's Tailnet IP only.
+  atlas = {
     zone = "decio.us";
-    name = "observe";
+    name = "atlas";
     type = "A";
     content = sequoiaTailnetIp;
     proxied = false;

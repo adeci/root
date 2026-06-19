@@ -394,6 +394,32 @@ in
             default = 168;
             description = "Loki log retention (hours). 168h = 7 days.";
           };
+
+          alertDelivery.ntfy = {
+            enable = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Route critical Alertmanager notifications through alertmanager-ntfy.";
+            };
+
+            baseUrl = lib.mkOption {
+              type = lib.types.str;
+              default = "http://127.0.0.1:2586";
+              description = "Local ntfy server base URL used by alertmanager-ntfy.";
+            };
+
+            topic = lib.mkOption {
+              type = lib.types.str;
+              default = "atlas-alerts";
+              description = "ntfy topic for critical alert notifications.";
+            };
+
+            configGenerator = lib.mkOption {
+              type = lib.types.str;
+              default = "ntfy-alerts";
+              description = "Clan vars generator that provides alertmanager-ntfy.yml.";
+            };
+          };
         };
       };
 
@@ -409,9 +435,26 @@ in
           }:
           let
             prometheusPort = 9090;
+            alertmanagerPort = 9093;
+            alertmanagerNtfyPort = 8000;
             lokiPort = 3100;
             lokiGrpcPort = 9095;
             grafanaPort = 3000;
+            ntfyDelivery = settings.alertDelivery.ntfy;
+            ntfyGenerator = config.clan.core.vars.generators.${ntfyDelivery.configGenerator} or null;
+            ntfyBridgeConfig =
+              if ntfyGenerator == null then
+                throw "@adeci/monitoring: alertDelivery.ntfy requires clan vars generator '${ntfyDelivery.configGenerator}'"
+              else
+                ntfyGenerator.files."alertmanager-ntfy.yml".path;
+
+            dashboards = import ./dashboards { inherit lib; };
+            dashboardPath = pkgs.linkFarm "adeci-grafana-dashboards" (
+              lib.mapAttrsToList (name: dashboard: {
+                name = "${name}.json";
+                path = pkgs.writeText "adeci-grafana-${name}.json" (builtins.toJSON dashboard);
+              }) dashboards
+            );
 
             alertRules = pkgs.writeText "adeci-monitoring-alerts.yml" ''
               groups:
@@ -495,6 +538,224 @@ in
                         severity: critical
                       annotations:
                         summary: "Loki push endpoint is returning 5xx errors"
+
+                - name: router-health
+                  rules:
+                    - alert: JanusDown
+                      expr: |
+                        up{instance="janus",job="integrations/unix"} == 0
+                      for: 3m
+                      labels:
+                        severity: critical
+                      annotations:
+                        summary: "Janus unix exporter scrape is down"
+                        description: "Alloy is still reporting, but Janus' node/unix scrape is failing. Check alloy.service and the local unix exporter on Janus. If Janus is fully offline, HostStale should also fire."
+
+                    - alert: JanusSystemDegraded
+                      expr: |
+                        (max by(instance) (node_systemd_system_running{instance="janus"}) == 0)
+                        or
+                        (sum by(instance) (node_systemd_unit_state{instance="janus",state="failed"} == 1) > 0)
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus systemd is degraded or has failed units"
+                        description: "Run systemctl --failed and systemctl is-system-running on Janus. Core router services have separate critical alerts; this catches other failed units before they become outages."
+
+                    - alert: JanusCoreServiceDown
+                      expr: |
+                        node_systemd_unit_state{instance="janus",name=~"kea-dhcp4-server.service|unbound.service|nftables.service|tailscaled.service",state="active"} == 0
+                      for: 3m
+                      labels:
+                        severity: critical
+                      annotations:
+                        summary: "Janus core unit {{ $labels.name }} is inactive"
+                        description: "A router data-plane or remote-access unit is not active. Check systemctl status {{ $labels.name }} on Janus."
+
+                    - alert: JanusTelemetryUnitDown
+                      expr: |
+                        node_systemd_unit_state{instance="janus",name=~"alloy.service|prometheus-kea-exporter.service|prometheus-mikrotik-exporter.service|prometheus-mikrotik-poe-exporter.service|prometheus-unbound-exporter.service|prometheus-smokeping-exporter.service|janus-network-probe.timer|janus-routeros-health.timer|janus-firewall-counters.timer",state="active"} == 0
+                      for: 5m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus telemetry unit {{ $labels.name }} is inactive"
+                        description: "A dashboard or alerting support unit is not active. Router forwarding may still work, but observability is degraded. Check systemctl status {{ $labels.name }} on Janus."
+
+                    - alert: JanusExporterScrapeDown
+                      expr: |
+                        up{instance="janus",job=~"alloy|kea-dhcp4|mikrotik|mikrotik-poe|unbound|smokeping"} == 0
+                      for: 5m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus exporter scrape {{ $labels.job }} is down"
+                        description: "Prometheus data for a Janus local exporter is unavailable. Check the matching systemd unit and local listener on Janus."
+
+                    - alert: RouterOSDeviceDown
+                      expr: |
+                        janus_network_probe_up{instance="janus",group="routeros"} == 0
+                      for: 5m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "RouterOS device {{ $labels.target }} is unreachable"
+                        description: "Janus cannot ping {{ $labels.target }} at {{ $labels.address }}. Check power, uplink, management VLAN, and the upstream switch path."
+
+                    - alert: RouterOSApiScrapeDown
+                      expr: |
+                        mikrotik_scrape_collector_success{instance="janus",job="mikrotik"} == 0
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "RouterOS API scrape failed for {{ $labels.device }}"
+                        description: "The Mikrotik exporter cannot collect API metrics for {{ $labels.device }}. Check the prometheus API user, RouterOS API service, and management VLAN reachability."
+
+                    - alert: RouterOSHealthScrapeDown
+                      expr: |
+                        janus_routeros_health_scrape_success{instance="janus"} == 0
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "RouterOS health scrape failed for {{ $labels.name }}"
+                        description: "Janus cannot read /system/health from this RouterOS device. Check the prometheus API user, RouterOS API service, and management VLAN reachability."
+
+                    - alert: RouterOSHighTemperature
+                      expr: |
+                        max by(name) (janus_routeros_temperature_celsius{instance="janus"}) > 75
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "RouterOS device {{ $labels.name }} is hot"
+                        description: "A RouterOS board, CPU, or PHY temperature is above 75C. Check rack airflow, PoE load, ambient temperature, and device placement."
+
+                    - alert: RouterOSUplinkErrors
+                      expr: |
+                        (
+                          sum by(name, interface) (
+                            (
+                              rate(mikrotik_interface_rx_error{instance="janus",job="mikrotik",name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[15m])
+                              or rate(mikrotik_interface_rx_error{instance="janus",job="mikrotik",name="axon",interface="sfp-sfpplus1"}[15m])
+                              or rate(mikrotik_interface_rx_error{instance="janus",job="mikrotik",name=~"zephyr|nimbus",interface="ether1"}[15m])
+                            )
+                            +
+                            (
+                              rate(mikrotik_interface_tx_error{instance="janus",job="mikrotik",name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[15m])
+                              or rate(mikrotik_interface_tx_error{instance="janus",job="mikrotik",name="axon",interface="sfp-sfpplus1"}[15m])
+                              or rate(mikrotik_interface_tx_error{instance="janus",job="mikrotik",name=~"zephyr|nimbus",interface="ether1"}[15m])
+                            )
+                          ) > 0.01
+                        )
+                        or
+                        (
+                          sum by(name, interface) (
+                            increase(mikrotik_interface_link_downs{instance="janus",job="mikrotik",name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[15m])
+                            or increase(mikrotik_interface_link_downs{instance="janus",job="mikrotik",name="axon",interface="sfp-sfpplus1"}[15m])
+                            or increase(mikrotik_interface_link_downs{instance="janus",job="mikrotik",name=~"zephyr|nimbus",interface="ether1"}[15m])
+                          ) > 0
+                        )
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "RouterOS uplink {{ $labels.name }} {{ $labels.interface }} has errors"
+                        description: "A switch/AP uplink has sustained RX/TX errors or link-down events. Check cable, SFP, PoE power, port negotiation, and the neighboring switch port."
+
+                    - alert: JanusFirewallCountersStale
+                      expr: |
+                        (time() - max by(instance) (node_systemd_timer_last_trigger_seconds{instance="janus",name="janus-firewall-counters.timer"})) > 120
+                      for: 2m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus firewall counters have not refreshed recently"
+                        description: "The janus-firewall-counters.timer should run every 15 seconds. Check the timer and janus-firewall-counters.service; firewall policy may still work, but firewall dashboards are stale."
+
+                    - alert: JanusInternetDown
+                      expr: |
+                        (max by(instance) (janus_network_probe_up{instance="janus",group="internet"}) == 0)
+                        or
+                        (min by(instance) (janus_network_probe_up{instance="janus",group="wan"}) == 0)
+                        or
+                        (max by(instance) (janus_dns_probe_up{instance="janus"}) == 0)
+                      for: 3m
+                      labels:
+                        severity: critical
+                      annotations:
+                        summary: "Janus WAN, internet, or DNS probe is down"
+                        description: "The WAN gateway, all internet probes, or the local DNS probe has failed for multiple probe cycles. Check WAN link, ISP gateway, Unbound, and upstream DNS reachability."
+
+                    - alert: JanusHighPacketLoss
+                      expr: |
+                        100 * (1 - (
+                          sum by(instance) (rate(smokeping_response_duration_seconds_count{instance="janus",job="smokeping",group="internet"}[10m]))
+                          /
+                          clamp_min(sum by(instance) (rate(smokeping_requests_total{instance="janus",job="smokeping",group="internet"}[10m])), 0.001)
+                        )) > 25
+                      for: 10m
+                      labels:
+                        severity: critical
+                      annotations:
+                        summary: "Janus internet packet loss is high"
+                        description: "Smokeping has seen more than 25% loss to internet targets for 10+ minutes. Check WAN link quality, modem/ONT, ISP status, and upstream packet loss before changing firewall policy."
+
+                    - alert: JanusHighLatency
+                      expr: |
+                        1000 * histogram_quantile(0.95, sum by(instance, le) (rate(smokeping_response_duration_seconds_bucket{instance="janus",job="smokeping",group="internet"}[10m]))) > 150
+                      for: 15m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus internet p95 latency is high"
+                        description: "Internet p95 ICMP latency has stayed above 150 ms. Check WAN congestion, bufferbloat, ISP path changes, and Router System resource panels."
+
+                    - alert: JanusHighTemperature
+                      expr: |
+                        max by(instance, chip) (node_hwmon_temp_celsius{instance="janus",chip=~"platform_coretemp_0|nvme_nvme0"}) > 80
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus temperature is high on {{ $labels.chip }}"
+                        description: "CPU or NVMe temperature is above 80C. Check airflow, dust, fan behavior, and sustained disk or CPU load before thermal throttling affects routing."
+
+                    - alert: JanusRootDiskFull
+                      expr: |
+                        100 * (1 - node_filesystem_avail_bytes{instance="janus",mountpoint="/",fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"} / node_filesystem_size_bytes{instance="janus",mountpoint="/",fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}) > 95
+                      for: 5m
+                      labels:
+                        severity: critical
+                      annotations:
+                        summary: "Janus root filesystem is almost full"
+                        description: "Root filesystem usage is above 95%. Free space before services fail to write state, logs, or Nix profiles."
+
+                    - alert: JanusConntrackPressure
+                      expr: |
+                        100 * node_nf_conntrack_entries{instance="janus"} / node_nf_conntrack_entries_limit{instance="janus"} > 80
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus conntrack table pressure is high"
+                        description: "Conntrack usage is above 80% of the kernel limit. Look for connection floods, P2P bursts, stuck clients, or an undersized nf_conntrack_max."
+
+                    - alert: JanusInterfaceFaults
+                      expr: |
+                        sum by(instance, device) (
+                          rate(node_network_receive_errs_total{instance="janus",device=~"enp5s0|eno1|br-mgmt|vlan10|vlan20|vlan30"}[15m])
+                          +
+                          rate(node_network_transmit_errs_total{instance="janus",device=~"enp5s0|eno1|br-mgmt|vlan10|vlan20|vlan30"}[15m])
+                        ) > 0.05
+                      for: 10m
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "Janus interface {{ $labels.device }} has sustained errors"
+                        description: "A routed Janus interface is seeing sustained RX/TX errors. Firewall drops are intentionally excluded; check cable, switch port, SFP/NIC health, and link negotiation."
             '';
           in
           {
@@ -505,6 +766,9 @@ in
             clan.core.state.monitoring.folders = [
               "/var/lib/${config.services.prometheus.stateDir}"
               config.services.loki.dataDir
+            ]
+            ++ lib.optionals ntfyDelivery.enable [
+              "/var/lib/alertmanager"
             ];
 
             # ── PostgreSQL backend for Grafana ──
@@ -518,9 +782,7 @@ in
             };
 
             # Grafana's NixOS module requires an explicit secret_key as of 26.05.
-            # Used to encrypt credentials in the dashboards DB; with anonymous
-            # Admin + no external datasources there's not much to protect, but
-            # we generate a random one anyway so it's stable across rebuilds.
+            # Generate one so dashboard/datasource secrets stay stable across rebuilds.
             clan.core.vars.generators = lib.optionalAttrs settings.grafana.enable {
               grafana-secret = {
                 files.key = { };
@@ -544,6 +806,13 @@ in
                 scrape_interval = "30s";
                 evaluation_interval = "30s";
               };
+              alertmanagers = lib.optionals ntfyDelivery.enable [
+                {
+                  static_configs = [
+                    { targets = [ "127.0.0.1:${toString alertmanagerPort}" ]; }
+                  ];
+                }
+              ];
               scrapeConfigs = [
                 {
                   job_name = "prometheus";
@@ -559,6 +828,86 @@ in
                 }
               ];
               ruleFiles = [ alertRules ];
+            };
+
+            # ── Alert delivery ──
+            services.prometheus.alertmanager = lib.mkIf ntfyDelivery.enable {
+              enable = true;
+              listenAddress = "127.0.0.1";
+              port = alertmanagerPort;
+              configuration = {
+                global.resolve_timeout = "5m";
+                route = {
+                  receiver = "null";
+                  group_by = [
+                    "alertname"
+                    "instance"
+                    "severity"
+                  ];
+                  group_wait = "30s";
+                  group_interval = "5m";
+                  repeat_interval = "4h";
+                  routes = [
+                    {
+                      receiver = "ntfy-critical";
+                      matchers = [ ''severity="critical"'' ];
+                      continue = false;
+                      repeat_interval = "2h";
+                    }
+                  ];
+                };
+                receivers = [
+                  { name = "null"; }
+                  {
+                    name = "ntfy-critical";
+                    webhook_configs = [
+                      {
+                        url = "http://127.0.0.1:${toString alertmanagerNtfyPort}/hook";
+                        send_resolved = true;
+                      }
+                    ];
+                  }
+                ];
+              };
+            };
+
+            systemd.services.alertmanager-ntfy = lib.mkIf ntfyDelivery.enable {
+              wants = [ "ntfy-sh.service" ];
+              after = [ "ntfy-sh.service" ];
+            };
+
+            services.prometheus.alertmanager-ntfy = lib.mkIf ntfyDelivery.enable {
+              enable = true;
+              extraConfigFiles = [ ntfyBridgeConfig ];
+              settings = {
+                http.addr = "127.0.0.1:${toString alertmanagerNtfyPort}";
+                ntfy = {
+                  baseurl = ntfyDelivery.baseUrl;
+                  async = false;
+                  notification = {
+                    inherit (ntfyDelivery) topic;
+                    priority = ''status == "firing" ? "high" : "default"'';
+                    tags = [
+                      {
+                        tag = "rotating_light";
+                        condition = ''status == "firing"'';
+                      }
+                      {
+                        tag = "white_check_mark";
+                        condition = ''status == "resolved"'';
+                      }
+                    ];
+                    templates = {
+                      title = ''{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ index .Labels "alertname" }}'';
+                      description = ''
+                        {{ index .Annotations "summary" }}
+
+                        {{ index .Annotations "description" }}
+                      '';
+                    };
+                  };
+                };
+              };
             };
 
             # ── Loki ──
@@ -628,7 +977,10 @@ in
                   check_for_updates = false;
                   check_for_plugin_updates = false;
                   feedback_links_enabled = false;
+                  news_feed_enabled = false;
                 };
+
+                dashboards.default_home_dashboard_path = "${dashboardPath}/network.json";
 
                 database = {
                   type = "postgres";
@@ -641,15 +993,28 @@ in
                 public_dashboards.enabled = false;
 
                 # Tailscale-only endpoint: network auth already gates access.
-                # Anonymous Admin lets any tailnet visitor view and edit
-                # dashboards without a second login step.
+                # Anonymous Editor is intentional while the Atlas pages are
+                # being designed. Provisioned dashboards stay read-only; use
+                # Save as in the UI for scratch copies, then promote to git.
                 "auth.anonymous" = {
                   enabled = true;
-                  org_role = "Admin";
+                  org_role = "Editor";
+                  hide_version = true;
                 };
                 "auth".disable_login_form = true;
 
-                security.secret_key = "$__file{/run/credentials/grafana.service/grafana-secret-key}";
+                plugins.preinstall_disabled = true;
+
+                security = {
+                  disable_gravatar = true;
+                  secret_key = "$__file{/run/credentials/grafana.service/grafana-secret-key}";
+                };
+
+                users = {
+                  default_theme = "dark";
+                  home_page = "/d/atlas-network/network-router";
+                  viewers_can_edit = false;
+                };
 
                 server = {
                   http_addr = "127.0.0.1";
@@ -665,9 +1030,6 @@ in
                 };
               };
 
-              # Datasources are provisioned so imported dashboards "just work".
-              # Dashboards themselves are UI-managed (persisted in postgres,
-              # which `clan.core.state.monitoring.folders` already covers).
               provision = {
                 enable = true;
                 datasources.settings.datasources = [
@@ -687,6 +1049,22 @@ in
                     jsonData.manageAlerts = false;
                   }
                 ];
+                dashboards.settings = {
+                  apiVersion = 1;
+                  providers = [
+                    {
+                      name = "atlas";
+                      orgId = 1;
+                      folder = "Atlas";
+                      folderUid = "atlas";
+                      type = "file";
+                      disableDeletion = true;
+                      allowUiUpdates = false;
+                      updateIntervalSeconds = 30;
+                      options.path = dashboardPath;
+                    }
+                  ];
+                };
               };
             };
 

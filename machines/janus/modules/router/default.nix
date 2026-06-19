@@ -24,6 +24,8 @@ in
     ./networkd.nix
     ./firewall.nix
     ./dhcp-dns.nix
+    ./probes.nix
+    ./routeros-metrics.nix
   ];
 
   services.tailscale = {

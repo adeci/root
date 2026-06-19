@@ -4,17 +4,30 @@
   config,
   self,
   self',
+  inputs',
   lib,
   ...
 }:
 let
-  inherit (self.resources) routeros;
+  inherit (self.resources) homelan routeros;
+  inherit (inputs'.clan-core.packages) clan-cli;
+
   deviceProvider = name: "routeros.${name}";
+  routerosExporterUser = "prometheus";
+  routerosExporterSource = "${homelan.vlans.mgmt.gateway}/32";
+  routerosExporterPolicy = [
+    "api"
+    "read"
+  ];
 in
 {
   terraform.required_providers.routeros = {
     source = "terraform-routeros/routeros";
     version = "~> 1.99";
+  };
+
+  terraform.required_providers.random = {
+    source = "hashicorp/random";
   };
 
   data.external.routeros-password = {
@@ -31,6 +44,44 @@ in
     password = config.data.external.routeros-password "result.secret";
     insecure = true;
   }) routeros;
+
+  # ── Prometheus API user ───────────────────────────────────────────
+
+  resource.random_password.routeros_exporter = {
+    length = 32;
+    special = false;
+  };
+
+  resource.routeros_system_user_group = lib.mapAttrs' (
+    name: _:
+    lib.nameValuePair "${name}_${routerosExporterUser}" {
+      provider = deviceProvider name;
+      name = routerosExporterUser;
+      policy = routerosExporterPolicy;
+      comment = "Prometheus read-only API — Managed by Terraform";
+    }
+  ) routeros;
+
+  resource.routeros_system_user = lib.mapAttrs' (
+    name: _:
+    lib.nameValuePair "${name}_${routerosExporterUser}" {
+      provider = deviceProvider name;
+      name = routerosExporterUser;
+      group = config.resource.routeros_system_user_group."${name}_${routerosExporterUser}" "name";
+      password = config.resource.random_password.routeros_exporter "result";
+      address = routerosExporterSource;
+      disabled = false;
+      comment = "Prometheus read-only API — Managed by Terraform";
+    }
+  ) routeros;
+
+  resource.terraform_data.routeros_exporter_password = {
+    input = config.resource.random_password.routeros_exporter "result";
+
+    provisioner.local-exec = {
+      command = "echo \"\${self.input}\" | ${lib.getExe clan-cli} vars set janus routeros-exporter/password";
+    };
+  };
 
   # ── System identity ───────────────────────────────────────────────
 

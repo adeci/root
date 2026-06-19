@@ -94,6 +94,7 @@ in
 
   services.unbound = {
     enable = true;
+    localControlSocketPath = "/run/unbound/unbound.ctl";
     settings = {
       server = {
         interface = [ "127.0.0.1" ] ++ map (vlan: vlan.gateway) (lib.attrValues topology.vlans);
@@ -117,6 +118,7 @@ in
         ) dnsDevices;
         domain-insecure = [ topology.homelan.domain ] ++ lib.attrNames dnsRecords;
 
+        extended-statistics = true;
         do-ip6 = false;
         prefer-ip6 = false;
         num-threads = 2;
@@ -145,6 +147,20 @@ in
     enable = true;
     listenAddress = "127.0.0.1";
     targets = [ "/run/kea/kea-dhcp4.sock" ];
+  };
+
+  services.prometheus.exporters.unbound = {
+    enable = true;
+    listenAddress = "127.0.0.1";
+    port = 9167;
+    user = "unbound";
+    group = "unbound";
+    unbound = {
+      host = "unix://${config.services.unbound.localControlSocketPath}";
+      ca = null;
+      certificate = null;
+      key = null;
+    };
   };
 
   clan.core.state.kea-dhcp = {

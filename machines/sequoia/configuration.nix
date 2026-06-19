@@ -15,7 +15,8 @@
     ./modules/vaultwarden.nix
     ./modules/forgejo.nix
     ./modules/litellm.nix
-    ./modules/observe.nix
+    ./modules/atlas.nix
+    ./modules/ntfy.nix
     # ./modules/opencrow
     ./modules/atuin.nix
     ./modules/paperless.nix

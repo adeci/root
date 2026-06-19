@@ -1,6 +1,6 @@
 { lib, ... }:
 let
-  observeHost = "observe.decio.us";
+  atlasHost = "atlas.decio.us";
   grafanaPort = 3000;
   tailnetCidr = "100.64.0.0/10";
 in
@@ -11,12 +11,12 @@ in
   ];
 
   services.grafana.settings.server = {
-    domain = lib.mkForce observeHost;
-    root_url = lib.mkForce "https://${observeHost}/";
+    domain = lib.mkForce atlasHost;
+    root_url = lib.mkForce "https://${atlasHost}/";
     serve_from_sub_path = lib.mkForce false;
   };
 
-  services.nginx.virtualHosts.${observeHost} = {
+  services.nginx.virtualHosts.${atlasHost} = {
     useACMEHost = "decio.us";
     forceSSL = true;
 
@@ -47,11 +47,11 @@ in
   # off plain HTTP.
   services.nginx.virtualHosts."sequoia.cymric-daggertooth.ts.net".locations = {
     "/grafana/" = lib.mkForce {
-      return = "301 https://${observeHost}/";
+      return = "301 https://${atlasHost}/";
     };
 
     "= /" = lib.mkForce {
-      return = "301 https://${observeHost}/";
+      return = "301 https://${atlasHost}/";
     };
   };
 }
