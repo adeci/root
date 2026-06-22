@@ -107,6 +107,8 @@
     domain = "buildbot.decio.us";
     useHTTPS = true;
     buildSystems = [ "x86_64-linux" ];
+    evalWorkerCount = 32;
+    evalMaxMemorySize = 4096;
     admins = [ "adeci" ];
     workersFile = config.clan.core.vars.generators.buildbot-workers.files."workers.json".path;
     github = {
