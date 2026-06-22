@@ -11,6 +11,7 @@
     ../../modules/nixos/cloudflared.nix
     ../../modules/nixos/acme.nix
 
+    ./modules/tailscale-exit-node.nix
     ./modules/matrix-synapse.nix
     ./modules/vaultwarden.nix
     ./modules/forgejo.nix

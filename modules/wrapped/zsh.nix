@@ -130,6 +130,7 @@ in
       wget = "noglob wget";
       nrb = "noglob nom build --max-jobs 0 --builders @/etc/nix/machines";
       rz = "exec zsh";
+      doxxmebro = "curl -4fsS https://api.ipify.org; echo";
     };
 
     zshrc.content = # zsh

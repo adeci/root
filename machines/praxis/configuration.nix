@@ -15,6 +15,7 @@
 
     ./modules/gpd-hacks.nix
     ./modules/gpd-audio-dsp.nix
+    ./modules/tailscale-travel.nix
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
