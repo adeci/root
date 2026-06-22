@@ -18,7 +18,6 @@
     ./modules/litellm.nix
     ./modules/atlas.nix
     ./modules/ntfy.nix
-    # ./modules/opencrow
     ./modules/atuin.nix
     ./modules/paperless.nix
     ./modules/paperless-xerox-ingest.nix

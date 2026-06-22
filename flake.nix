@@ -47,10 +47,6 @@
     mics-skills.inputs.nixpkgs.follows = "nixpkgs";
     mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
 
-    opencrow.url = "github:pinpox/opencrow";
-    opencrow.inputs.nixpkgs.follows = "nixpkgs";
-    opencrow.inputs.treefmt-nix.follows = "treefmt-nix";
-
     litellm-nix.url = "github:adeci/litellm-nix";
 
     wrapper-modules.url = "github:BirdeeHub/nix-wrapper-modules";
