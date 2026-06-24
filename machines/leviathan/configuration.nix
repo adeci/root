@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   self,
   ...
@@ -52,6 +53,11 @@
       self.users.fmzakari.username
     ];
   };
+
+  # farid's cursed stuff:
+
+  services.guix.enable = true;
+  services.eternal-terminal.enable = true;
 
   # A fuse filesystem that dynamically populates contents of /bin
   # and /usr/bin/ so that it contains all executables from the PATH
