@@ -9,6 +9,7 @@
 {
 
   imports = [
+    inputs.drv-thru.nixosModules.default
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
 
     self.users.alex.nixosModule
@@ -47,6 +48,11 @@
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
   services.teamviewer.enable = true;
+
+  services.drv-thru.client = {
+    enable = true;
+    trustedBuilders.leviathan.publicKey = "drv-thru:sWwwRWpZKjcELSsXXpQFUarBIaM5xPj44WQWYoH75GY=";
+  };
 
   environment.systemPackages = [
     pkgs.bitwarden-desktop
