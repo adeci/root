@@ -37,9 +37,13 @@
     fallback = true;
   };
   programs.direnv.enable = true;
+  documentation.dev.enable = true;
+  documentation.man.cache.enable = true;
   environment.systemPackages = [
     inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
     pkgs.kitty.terminfo
+    pkgs.man-pages
+    pkgs.man-pages-posix
   ];
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
