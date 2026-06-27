@@ -98,7 +98,7 @@ let
 
     litellm_settings = {
       drop_params = true;
-      request_timeout = 600;
+      request_timeout = 3600;
       callbacks = [ "prometheus" ];
       prometheus_initialize_budget_metrics = true;
     };

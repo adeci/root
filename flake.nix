@@ -39,9 +39,9 @@
 
     #llm-agents.url = "github:adeci/llm-agents.nix?ref=adeci";
     llm-agents.url = "github:numtide/llm-agents.nix";
-    llm-agents.inputs.nixpkgs.follows = "nixpkgs";
-    llm-agents.inputs.flake-parts.follows = "flake-parts";
-    llm-agents.inputs.treefmt-nix.follows = "treefmt-nix";
+    # llm-agents.inputs.nixpkgs.follows = "nixpkgs";
+    # llm-agents.inputs.flake-parts.follows = "flake-parts";
+    # llm-agents.inputs.treefmt-nix.follows = "treefmt-nix";
 
     mics-skills.url = "github:Mic92/mics-skills";
     mics-skills.inputs.nixpkgs.follows = "nixpkgs";
