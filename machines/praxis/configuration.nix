@@ -64,6 +64,7 @@
     pkgs.amd-debug-tools
     pkgs.ethtool
     pkgs.displaycal
+    pkgs.android-tools
   ];
 
   # vm building
