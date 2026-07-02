@@ -72,16 +72,22 @@
             ...
           }:
           let
-            # Collect public keys from all clan client machines
-            clientKeys = lib.mapAttrsToList (
-              machineName: _:
-              clanLib.getPublicValue {
-                flake = config.clan.core.settings.directory;
-                machine = machineName;
-                generator = instanceName;
-                file = "id_ed25519.pub";
-              }
-            ) (roles.client.machines or { });
+            # Missing public keys are skipped so new clients can be generated
+            # before servers authorize them on the next deploy.
+            clientKeys = builtins.filter (key: key != "") (
+              lib.mapAttrsToList (
+                machineName: _:
+                lib.strings.trim (
+                  clanLib.getPublicValue {
+                    flake = config.clan.core.settings.directory;
+                    machine = machineName;
+                    generator = instanceName;
+                    file = "id_ed25519.pub";
+                    default = "";
+                  }
+                )
+              ) (roles.client.machines or { })
+            );
           in
           {
             users.users.nix = {
@@ -117,6 +123,10 @@
           }:
           let
             varName = instanceName;
+            machineName = config.clan.core.settings.machine.name;
+            serverMachineNames = builtins.filter (name: name != machineName) (
+              lib.attrNames roles.server.machines
+            );
             inherit (config.clan.core.settings) domain;
             dotDomain = if domain != null then ".${domain}" else "";
           in
@@ -139,12 +149,12 @@
             };
 
             nix.buildMachines = map (
-              machineName:
+              serverMachineName:
               let
-                serverSettings = roles.server.machines.${machineName}.settings;
+                serverSettings = roles.server.machines.${serverMachineName}.settings;
               in
               {
-                hostName = "${machineName}${dotDomain}";
+                hostName = "${serverMachineName}${dotDomain}";
                 inherit (serverSettings)
                   systems
                   maxJobs
@@ -155,12 +165,12 @@
                 sshUser = "nix";
                 sshKey = config.clan.core.vars.generators.${varName}.files.id_ed25519.path;
               }
-            ) (lib.attrNames roles.server.machines);
+            ) serverMachineNames;
 
-            programs.ssh.extraConfig = lib.concatMapStringsSep "\n" (machineName: ''
-              Host ${machineName}${dotDomain}
+            programs.ssh.extraConfig = lib.concatMapStringsSep "\n" (serverMachineName: ''
+              Host ${serverMachineName}${dotDomain}
                 StrictHostKeyChecking accept-new
-            '') (lib.attrNames roles.server.machines);
+            '') serverMachineNames;
           };
       };
   };

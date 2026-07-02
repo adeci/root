@@ -14,7 +14,7 @@ SSH keys from all client machines plus any external keys.
 
 | Setting             | Type          | Default                               | Description                          |
 | ------------------- | ------------- | ------------------------------------- | ------------------------------------ |
-| `system`            | `str`         | `x86_64-linux`                        | System type this builder offers      |
+| `systems`           | `list of str` | `["x86_64-linux"]`                    | System types this builder offers     |
 | `maxJobs`           | `int`         | `4`                                   | Max concurrent build jobs            |
 | `speedFactor`       | `int`         | `1`                                   | Relative speed (higher = preferred)  |
 | `supportedFeatures` | `list of str` | `["nixos-test" "big-parallel" "kvm"]` | Supported build features             |
@@ -23,7 +23,10 @@ SSH keys from all client machines plus any external keys.
 ### client
 
 Generates a per-machine SSH key pair and configures `nix.buildMachines`
-from all servers in the instance. `nix.distributedBuilds` is not set —
+from all other servers in the instance. Self is excluded, so a machine can be
+both a server and a client. Server authorization skips clients whose public key
+has not been generated yet; run `clan vars generate <client>` before deploying
+servers that should trust the new client. `nix.distributedBuilds` is not set —
 use `nrb` or `--builders` to opt in per build.
 
 ## Example

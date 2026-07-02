@@ -23,6 +23,8 @@
     };
     roles.client.machines = {
       aegis = { };
+      bramble = { };
+      leviathan = { };
       praxis = { };
     };
   };
