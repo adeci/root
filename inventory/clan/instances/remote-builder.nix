@@ -4,8 +4,15 @@
       name = "@adeci/remote-builder";
       input = "self";
     };
-    roles.server.machines.leviathan = {
-      settings = {
+    roles.server.machines = {
+      bramble.settings = {
+        systems = [ "aarch64-linux" ];
+        maxJobs = 1;
+        speedFactor = 1;
+        supportedFeatures = [ ];
+      };
+
+      leviathan.settings = {
         systems = [
           "x86_64-linux"
           "i686-linux"
