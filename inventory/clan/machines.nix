@@ -18,6 +18,14 @@
     deploy.targetHost = "root@atropos.cymric-daggertooth.ts.net";
   };
 
+  bramble = {
+    name = "bramble";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@bramble.cymric-daggertooth.ts.net";
+  };
+
   clotho = {
     name = "clotho";
     tags = [
