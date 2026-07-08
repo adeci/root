@@ -7,7 +7,7 @@
     roles.server.machines = {
       bramble.settings = {
         systems = [ "aarch64-linux" ];
-        maxJobs = 1;
+        maxJobs = 2;
         speedFactor = 1;
         supportedFeatures = [ ];
       };
