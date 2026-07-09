@@ -6,12 +6,15 @@ let
 
   conduitEdge = "conduit";
 
-  minecraftA = name: {
+  edgeA = name: {
     zone = "adeci.net";
     inherit name;
     type = "A";
     edge = conduitEdge;
+    proxied = false;
   };
+
+  minecraftA = edgeA;
 
   minecraftSrv = host: stream: {
     zone = "adeci.net";
@@ -74,6 +77,8 @@ in
   mc_hunter = minecraftA "hunter";
   mc_jav = minecraftA "jav";
   mc_usf = minecraftA "usf";
+
+  palworld = edgeA "palworld";
 
   # Minecraft SRV records derive ports from ingress streams.
   srv_rlc = minecraftSrv "rlc" "minecraft-rlc";

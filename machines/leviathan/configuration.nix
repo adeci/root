@@ -19,6 +19,7 @@
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/cloudflared.nix
     ./modules/llm/host.nix
+    ./modules/palworld
     ./modules/v100-compute.nix
   ];
 

@@ -92,5 +92,20 @@
       listen = 24459;
       upstream = "leviathan.cymric-daggertooth.ts.net:24459";
     }
+
+    {
+      name = "palworld";
+      description = "Palworld adeci";
+      protocol = "udp";
+      listen = 8211;
+      upstream = "leviathan.cymric-daggertooth.ts.net:8211";
+    }
+    {
+      name = "palworld-query";
+      description = "Palworld adeci query";
+      protocol = "udp";
+      listen = 27015;
+      upstream = "leviathan.cymric-daggertooth.ts.net:27015";
+    }
   ];
 }
