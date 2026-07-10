@@ -21,6 +21,11 @@ let
       }) (host.aliases or [ ])
     )
   ) dnsDevices;
+
+  routerLanWaitArgs = lib.escapeShellArgs (
+    map (interface: "--interface=${interface}:routable") topology.serviceInterfaces
+    ++ [ "--timeout=30" ]
+  );
 in
 {
   services.resolved.enable = false;
@@ -138,9 +143,39 @@ in
     };
   };
 
+  systemd.services.router-lan-online = {
+    description = "Wait for Janus LAN interfaces";
+    after = [ "systemd-networkd.service" ];
+    requires = [ "systemd-networkd.service" ];
+    before = [ "kea-dhcp4-server.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${config.systemd.package}/lib/systemd/systemd-networkd-wait-online ${routerLanWaitArgs}
+    '';
+  };
+
   systemd.services.kea-dhcp4-server = {
-    after = [ "unbound.service" ];
-    wants = [ "unbound.service" ];
+    after = [
+      "router-lan-online.service"
+      "unbound.service"
+    ];
+    wants = [
+      "router-lan-online.service"
+      "unbound.service"
+    ];
+    serviceConfig.RestartSec = "5s";
+  };
+
+  systemd.services.prometheus-kea-exporter = {
+    after = [ "kea-dhcp4-server.service" ];
+    requires = [ "kea-dhcp4-server.service" ];
+    serviceConfig = {
+      RestartSec = "5s";
+      RuntimeDirectoryMode = "0750";
+    };
   };
 
   services.prometheus.exporters.kea = {
