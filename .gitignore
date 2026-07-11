@@ -8,3 +8,8 @@ result
 
 .pi/
 .claude/
+
+# Emacs lock/backup files
+*~
+#*#
+.#*

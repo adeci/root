@@ -2,8 +2,7 @@
 {
   perSystem =
     {
-      self',
-      pkgs,
+      config,
       lib,
       system,
       ...
@@ -23,23 +22,16 @@
         )
       );
 
-      packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") (
-        lib.filterAttrs (
-          _: pkg:
-          let
-            eval = builtins.tryEval (lib.meta.availableOn pkgs.stdenv.hostPlatform pkg);
-          in
-          eval.success && eval.value
-        ) self'.packages
-      );
-
-      devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self'.devShells;
+      packageChecks = lib.mapAttrs' (
+        n: lib.nameValuePair "package-${n}"
+      ) config.adeci.packageLayer.checkPackages;
+      devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") config.devShells;
     in
     {
       checks =
         lib.mapAttrs (_: machine: machine.config.system.build.toplevel) nixosMachines
         // lib.mapAttrs (_: machine: machine.system) darwinMachines
-        // packages
+        // packageChecks
         // devShells;
     };
 }

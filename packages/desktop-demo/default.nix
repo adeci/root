@@ -2,14 +2,14 @@
   wlib,
   pkgs,
   lib,
-  inputs,
+  self,
   ...
 }:
 let
-  wrappedNiri = inputs.self.wrappers.niri.wrap { inherit pkgs; };
-  wrappedKitty = inputs.self.wrappers.kitty.wrap { inherit pkgs; };
-  wrappedNoctalia = inputs.self.wrappers.noctalia-shell.wrap { inherit pkgs; };
-  wrappedZsh = inputs.self.wrappers.zsh.wrap { inherit pkgs; };
+  wrappedNiri = self.wrappers.niri.wrap { inherit pkgs; };
+  wrappedKitty = self.wrappers.kitty.wrap { inherit pkgs; };
+  wrappedNoctalia = self.wrappers.noctalia-shell.wrap { inherit pkgs; };
+  wrappedZsh = self.wrappers.zsh.wrap { inherit pkgs; };
 in
 {
   imports = [ wlib.modules.default ];

@@ -6,7 +6,8 @@
   ...
 }:
 let
-  zsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap { };
+  inherit (pkgs.stdenv.hostPlatform) system;
+  zsh = self.wrappers.zsh.wrap { inherit pkgs; };
 in
 {
   imports = [
@@ -31,8 +32,8 @@ in
   # Make wrapped tools available system-wide
   environment.systemPackages = [
     zsh
-    self.packages.${pkgs.stdenv.hostPlatform.system}.git
-    self.packages.${pkgs.stdenv.hostPlatform.system}.tmux
-    self.packages.${pkgs.stdenv.hostPlatform.system}.btop
+    self.packages.${system}.git
+    self.packages.${system}.tmux
+    self.packages.${system}.btop
   ];
 }

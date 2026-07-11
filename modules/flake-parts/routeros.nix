@@ -128,17 +128,6 @@
           }
         );
 
-        # ── Netinstall (one-shot device provisioning) ────────────────
-        routeros-netinstall-cap-ax = import ../terranix/routeros/netinstall-cap-ax.nix {
-          inherit pkgs clan-cli;
-        };
-        routeros-netinstall-crs328 = import ../terranix/routeros/netinstall-crs328.nix {
-          inherit pkgs clan-cli;
-        };
-        routeros-netinstall-crs310 = import ../terranix/routeros/netinstall-crs310.nix {
-          inherit pkgs clan-cli;
-        };
-
       };
     };
 }

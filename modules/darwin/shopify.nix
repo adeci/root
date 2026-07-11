@@ -5,7 +5,8 @@
   ...
 }:
 let
-  shopifyZsh = self.packages.${pkgs.stdenv.hostPlatform.system}.zsh.wrap {
+  shopifyZsh = self.wrappers.zsh.wrap {
+    inherit pkgs;
     extraInit = # zsh
       ''
         if [[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]]; then

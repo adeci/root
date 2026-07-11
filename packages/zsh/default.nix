@@ -3,14 +3,14 @@
   wlib,
   pkgs,
   lib,
-  inputs,
+  self,
   ...
 }:
 let
   inherit (pkgs.stdenv) isLinux;
 
-  wrappedGit = inputs.self.wrappers.git.wrap { inherit pkgs; };
-  wrappedTmux = inputs.self.wrappers.tmux.wrap { inherit pkgs; };
+  wrappedGit = self.wrappers.git.wrap { inherit pkgs; };
+  wrappedTmux = self.wrappers.tmux.wrap { inherit pkgs; };
 
   atunConfigDir = pkgs.runCommand "atuin-config" { } ''
     mkdir -p $out
@@ -49,7 +49,7 @@ in
             [
               # Wrapped packages
               wrappedGit
-              inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
+              self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
 
               # Core CLI tools
               pkgs.ripgrep
