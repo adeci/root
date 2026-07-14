@@ -58,17 +58,12 @@
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
 
-    # https://github.com/niri-wm/niri/pull/3474
-    niri.url = "github:adeci/niri?ref=window-rule-on-output";
-    niri.inputs.nixpkgs.follows = "nixpkgs";
-
     devblog.url = "github:adeci/devblog";
     devblog.inputs.nixpkgs.follows = "nixpkgs";
     devblog.inputs.flake-parts.follows = "flake-parts";
 
     drv-thru.url = "github:adeci/drv-thru";
 
-    # aarch64/x86_64-linux remote-builder VM via Virtualization.framework (Rosetta 2 passthrough)
     nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
     nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   };

@@ -28,7 +28,7 @@
   ];
 
   environment.systemPackages = [
-    pkgs.bitwarden-desktop
+    # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
     pkgs.openscad
   ];

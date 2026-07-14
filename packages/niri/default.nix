@@ -2,7 +2,6 @@
   wlib,
   pkgs,
   lib,
-  inputs,
   ...
 }:
 let
@@ -57,8 +56,7 @@ in
 {
   imports = [ wlib.wrapperModules.niri ];
 
-  # Use my fork with on-output window rule support
-  config.package = lib.mkForce inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+  # Use the wrapper module's default package from nixpkgs.
   config."v2-settings" = true;
 
   # ── Theming — baked into the derivation via postBuild ─────────────
@@ -325,43 +323,47 @@ in
     # ── Window Rules ───────────────────────────────────────────────
 
     window-rules = [
-      # Firefox/LibreWolf: 1/3 width on the MSI desktop monitors
-      {
-        matches = [
-          {
-            app-id = "firefox";
-            on-output = msi;
-          }
-          {
-            app-id = "librewolf";
-            on-output = msi;
-          }
-          {
-            app-id = "firefox";
-            on-output = md272qpw;
-          }
-          {
-            app-id = "librewolf";
-            on-output = md272qpw;
-          }
-        ];
-        default-column-width = {
-          proportion = 0.33333;
-        };
-      }
+      # Custom fork only: `on-output` window-rule matcher.
+      # Disabled while using nixpkgs Niri; see https://github.com/niri-wm/niri/pull/3474.
+      /*
+        # Firefox/LibreWolf: 1/3 width on the MSI desktop monitors
+        {
+          matches = [
+            {
+              app-id = "firefox";
+              on-output = msi;
+            }
+            {
+              app-id = "librewolf";
+              on-output = msi;
+            }
+            {
+              app-id = "firefox";
+              on-output = md272qpw;
+            }
+            {
+              app-id = "librewolf";
+              on-output = md272qpw;
+            }
+          ];
+          default-column-width = {
+            proportion = 0.33333;
+          };
+        }
 
-      # Firefox/LibreWolf: open maximized on laptop displays
-      {
-        matches = [
-          { app-id = "firefox"; }
-          { app-id = "librewolf"; }
-        ];
-        excludes = [
-          { on-output = msi; }
-          { on-output = md272qpw; }
-        ];
-        open-maximized = true;
-      }
+        # Firefox/LibreWolf: open maximized on laptop displays
+        {
+          matches = [
+            { app-id = "firefox"; }
+            { app-id = "librewolf"; }
+          ];
+          excludes = [
+            { on-output = msi; }
+            { on-output = md272qpw; }
+          ];
+          open-maximized = true;
+        }
+      */
 
       {
         matches = [
@@ -371,61 +373,65 @@ in
         clip-to-geometry = true;
       }
 
-      # Communication apps: 50% width on the MSI desktop monitors
-      {
-        matches = [
-          {
-            app-id = "^discord$";
-            on-output = msi;
-          }
-          {
-            app-id = "^vesktop$";
-            on-output = msi;
-          }
-          {
-            app-id = "^Element";
-            on-output = msi;
-          }
-          {
-            app-id = "^signal$";
-            on-output = msi;
-          }
-          {
-            app-id = "^discord$";
-            on-output = md272qpw;
-          }
-          {
-            app-id = "^vesktop$";
-            on-output = md272qpw;
-          }
-          {
-            app-id = "^Element";
-            on-output = md272qpw;
-          }
-          {
-            app-id = "^signal$";
-            on-output = md272qpw;
-          }
-        ];
-        default-column-width = {
-          proportion = 0.5;
-        };
-      }
+      # Custom fork only: `on-output` window-rule matcher.
+      # Disabled while using nixpkgs Niri; see https://github.com/niri-wm/niri/pull/3474.
+      /*
+        # Communication apps: 50% width on the MSI desktop monitors
+        {
+          matches = [
+            {
+              app-id = "^discord$";
+              on-output = msi;
+            }
+            {
+              app-id = "^vesktop$";
+              on-output = msi;
+            }
+            {
+              app-id = "^Element";
+              on-output = msi;
+            }
+            {
+              app-id = "^signal$";
+              on-output = msi;
+            }
+            {
+              app-id = "^discord$";
+              on-output = md272qpw;
+            }
+            {
+              app-id = "^vesktop$";
+              on-output = md272qpw;
+            }
+            {
+              app-id = "^Element";
+              on-output = md272qpw;
+            }
+            {
+              app-id = "^signal$";
+              on-output = md272qpw;
+            }
+          ];
+          default-column-width = {
+            proportion = 0.5;
+          };
+        }
 
-      # Communication apps: open maximized on all other displays
-      {
-        matches = [
-          { app-id = "^discord$"; }
-          { app-id = "^vesktop$"; }
-          { app-id = "^Element"; }
-          { app-id = "^signal$"; }
-        ];
-        excludes = [
-          { on-output = msi; }
-          { on-output = md272qpw; }
-        ];
-        open-maximized = true;
-      }
+        # Communication apps: open maximized on all other displays
+        {
+          matches = [
+            { app-id = "^discord$"; }
+            { app-id = "^vesktop$"; }
+            { app-id = "^Element"; }
+            { app-id = "^signal$"; }
+          ];
+          excludes = [
+            { on-output = msi; }
+            { on-output = md272qpw; }
+          ];
+          open-maximized = true;
+        }
+      */
     ];
 
     # ── Binds ──────────────────────────────────────────────────────

@@ -451,28 +451,6 @@
         "type": "github"
       }
     },
-    "niri": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rust-overlay": "rust-overlay_2"
-      },
-      "locked": {
-        "lastModified": 1775932260,
-        "narHash": "sha256-gdNhnle8shSQpgHmz3e43pGpOwpA3hCdyqWMNCCvgPw=",
-        "owner": "adeci",
-        "repo": "niri",
-        "rev": "68bb984d8757cc2a0ab82abcf1fd92f7904c1048",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "ref": "window-rule-on-output",
-        "repo": "niri",
-        "type": "github"
-      }
-    },
     "nix": {
       "flake": false,
       "locked": {
@@ -764,7 +742,6 @@
         "litellm-nix": "litellm-nix",
         "llm-agents": "llm-agents",
         "mics-skills": "mics-skills",
-        "niri": "niri",
         "nix-index-database": "nix-index-database",
         "nix-rosetta-builder": "nix-rosetta-builder",
         "nixos-hardware": "nixos-hardware",
@@ -790,27 +767,6 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "rev": "6604534e44090c917db714faa58d47861657690c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "rust-overlay_2": {
-      "inputs": {
-        "nixpkgs": [
-          "niri",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1757989933,
-        "narHash": "sha256-9cpKYWWPCFhgwQTww8S94rTXgg8Q8ydFv9fXM6I8xQM=",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "8249aa3442fb9b45e615a35f39eca2fe5510d7c3",
         "type": "github"
       },
       "original": {
