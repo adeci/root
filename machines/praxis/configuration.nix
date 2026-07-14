@@ -60,7 +60,7 @@
     pkgs.calibre
     pkgs.modem-manager-gui
     pkgs.linux-wifi-hotspot
-    inputs.sdwire-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
+    self.packages.${pkgs.stdenv.hostPlatform.system}.sdwire-cli
     pkgs.amd-debug-tools
     pkgs.ethtool
     pkgs.displaycal

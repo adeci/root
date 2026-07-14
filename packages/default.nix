@@ -73,6 +73,11 @@
       systems = [ "x86_64-linux" ];
     };
 
+    sdwire-cli = {
+      path = ./sdwire-cli;
+      systems = [ "x86_64-linux" ];
+    };
+
     signal-desktop = {
       path = ./signal-desktop;
       systems = [ "x86_64-linux" ];

@@ -17,15 +17,11 @@
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
 
-    noctalia-shell.url = "github:noctalia-dev/noctalia-shell";
-    noctalia-shell.inputs.nixpkgs.follows = "nixpkgs";
-
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nixvim.inputs.flake-parts.follows = "flake-parts";
 
     buildbot-nix.url = "github:nix-community/buildbot-nix";
-    buildbot-nix.inputs.flake-parts.follows = "flake-parts";
 
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
@@ -53,7 +49,7 @@
     wrapper-modules.inputs.nixpkgs.follows = "nixpkgs";
 
     sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
-    sdwire-cli.inputs.nixpkgs.follows = "nixpkgs";
+    sdwire-cli.flake = false;
 
     grub2-themes.url = "github:vinceliuice/grub2-themes";
     grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
