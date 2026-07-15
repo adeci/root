@@ -5,7 +5,7 @@ in
 {
   environment.systemPackages = with pkgs; [
     blender
-    freecad
+    # freecad # Temporarily disabled: PDAL 2.9.3 fails against current GDAL.
     openscad
     audacity
     # WebKit's gamepad support calls libmanette → hidapi. hid_get_device_info()

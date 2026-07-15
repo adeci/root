@@ -60,6 +60,7 @@
         right = [
           { id = "Tray"; }
           { id = "NotificationHistory"; }
+          { id = "plugin:voxtype"; }
           { id = "VPN"; }
           { id = "Network"; }
           { id = "Battery"; }

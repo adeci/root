@@ -207,7 +207,9 @@ in
         zstyle :prompt:pure:execution_time color yellow
         prompt pure
 
-        prompt_pure_state[username]='%F{#7aa2f7}%n%f%F{#9ece6a}@%m%f'
+        # Pure normally hides user@host for local, non-root shells.
+        # Keep it visible so every prompt identifies the current machine.
+        psvar[13]=1
 
         RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
 

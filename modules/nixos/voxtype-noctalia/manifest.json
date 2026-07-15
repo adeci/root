@@ -1,0 +1,17 @@
+{
+  "id": "voxtype",
+  "name": "Voxtype",
+  "version": "1.0.0",
+  "author": "Alex",
+  "official": false,
+  "license": "MIT",
+  "description": "Shows local voice dictation state in the bar",
+  "tags": ["Bar", "Audio"],
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "dependencies": {
+    "plugins": []
+  }
+}
