@@ -13,6 +13,9 @@
     packages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim ];
   };
   environment.variables.EDITOR = "nvim";
+
+  clan.core.networking.forwardAgent = true;
+
   services.openssh = {
     enable = true;
     settings = {
