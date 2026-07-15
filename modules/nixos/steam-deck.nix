@@ -6,6 +6,14 @@
   self,
   ...
 }:
+let
+  deckyLoader = (pkgs.decky-loader.override { pnpm_9 = pkgs.pnpm_10; }).overridePythonAttrs (old: {
+    # Jovian still pins insecure pnpm 9. Drop this when it moves to pnpm 10.
+    pnpmDeps = old.pnpmDeps.overrideAttrs (_: {
+      outputHash = "sha256-X1L8JYG5hgYMmfg0aa8XhkRU6/oFrYTPiXDIyq77puE=";
+    });
+  });
+in
 {
   imports = [
     inputs.jovian.nixosModules.default
@@ -32,6 +40,7 @@
   # Decky Loader plugin framework for Gaming Mode
   jovian.decky-loader = {
     enable = true;
+    package = deckyLoader;
     user = self.users.alex.username;
   };
 
