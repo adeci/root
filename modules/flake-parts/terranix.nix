@@ -100,9 +100,9 @@ in
               INPUT=$(cat) || true
               PASSPHRASE=$(clan secrets get tf-passphrase)
               if [[ "$INPUT" == "null" ]]; then
-                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64)}}'
+                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64)},"meta":{"external_data":{}}}'
               else
-                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)}}'
+                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)},"meta":{"external_data":{}}}'
               fi
             '';
         };

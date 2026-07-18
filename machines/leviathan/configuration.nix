@@ -72,6 +72,8 @@
   services.guix.enable = true;
   services.eternal-terminal.enable = true;
 
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 25571 ];
+
   # A fuse filesystem that dynamically populates contents of /bin
   # and /usr/bin/ so that it contains all executables from the PATH
   # of the requesting process.

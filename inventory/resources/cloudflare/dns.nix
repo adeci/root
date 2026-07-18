@@ -77,6 +77,7 @@ in
   mc_hunter = minecraftA "hunter";
   mc_jav = minecraftA "jav";
   mc_usf = minecraftA "usf";
+  mc_oscar = minecraftA "oscar";
 
   palworld = edgeA "palworld";
 
@@ -87,4 +88,5 @@ in
   srv_jav = minecraftSrv "jav" "minecraft-jav";
   srv_dj2 = minecraftSrv "dj2" "minecraft-dj2";
   srv_usf = minecraftSrv "usf" "minecraft-usf";
+  srv_oscar = minecraftSrv "oscar" "minecraft-oscar";
 }

@@ -94,6 +94,14 @@
     }
 
     {
+      name = "minecraft-oscar";
+      description = "Minecraft oscar";
+      protocol = "tcp";
+      listen = 25571;
+      upstream = "leviathan.cymric-daggertooth.ts.net:25571";
+    }
+
+    {
       name = "palworld";
       description = "Palworld adeci";
       protocol = "udp";
