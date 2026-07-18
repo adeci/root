@@ -131,6 +131,7 @@ in
         exec ${package}/bin/voxtype --config ${config} daemon
       '';
       Environment = [
+        "RUST_LOG=warn"
         "XDG_RUNTIME_DIR=%t"
         "WAYLAND_DISPLAY=wayland-1"
       ];
