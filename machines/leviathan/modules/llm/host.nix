@@ -77,7 +77,8 @@ let
     dual-v100-split = {
       env = [ "CUDA_VISIBLE_DEVICES=0,1" ];
       splitMode = "layer";
-      tensorSplit = "1,1";
+      # Leave the ratio unset so llama.cpp can reserve memory for KV and CUDA workspaces.
+      tensorSplit = null;
     };
   };
 
@@ -131,7 +132,7 @@ let
           "-m"
           modelPath
           "-ngl"
-          "999"
+          "auto"
         ]
         ++ lib.optionals useJinja [
           "--jinja"
