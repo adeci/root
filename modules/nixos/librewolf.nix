@@ -56,6 +56,10 @@ in
 {
   environment.systemPackages = [ librewolf ];
 
+  systemd.user.tmpfiles.rules = [
+    "L+ %h/.librewolf/native-messaging-hosts/io.thalheim.browser_cli.bridge.json - - - - ${browserCliNativeHost}/lib/mozilla/native-messaging-hosts/io.thalheim.browser_cli.bridge.json"
+  ];
+
   # browser-cli config — tells the CLI where to find LibreWolf
   environment.etc."xdg/browser-cli/config.toml".text = # toml
     ''

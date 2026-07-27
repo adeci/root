@@ -1,11 +1,22 @@
 {
-  pkgs,
-  lib,
+  config,
   inputs,
+  lib,
+  pkgs,
   ...
 }:
 let
   micsSkills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
+
+  browserCliManifest = pkgs.writeText "browser-cli-native-host.json" (
+    builtins.toJSON {
+      name = "io.thalheim.browser_cli.bridge";
+      description = "Browser CLI bridge";
+      path = "${micsSkills.browser-cli}/bin/browser-cli-server";
+      type = "stdio";
+      allowed_extensions = [ "browser-cli-controller@thalheim.io" ];
+    }
+  );
 
   librewolf = pkgs.librewolf.override {
     extraPolicies = {
@@ -54,6 +65,15 @@ in
       app="$src/Applications/LibreWolf.app"
       dest="$targetDir/LibreWolf.app"
       marker="$markerDir/LibreWolf.app"
+
+      for hostDir in \
+        "/Users/${config.system.primaryUser}/Library/Application Support/Mozilla/NativeMessagingHosts" \
+        "/Users/${config.system.primaryUser}/Library/Application Support/LibreWolf/NativeMessagingHosts"
+      do
+        install -d -o ${config.system.primaryUser} -g staff "$hostDir"
+        install -m 0644 -o ${config.system.primaryUser} -g staff \
+          ${browserCliManifest} "$hostDir/io.thalheim.browser_cli.bridge.json"
+      done
 
       if [[ ! -f "$marker" ]] || [[ "$(cat "$marker")" != "$src" ]]; then
         echo "Syncing LibreWolf.app..."

@@ -5,6 +5,7 @@
 
     ../../modules/darwin/base.nix
     ../../modules/darwin/librewolf.nix
+    ../../modules/darwin/llm-tools.nix
     ../../modules/darwin/karabiner.nix
     ../../modules/darwin/mouse.nix
     ../../modules/darwin/aerospace

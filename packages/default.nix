@@ -41,6 +41,10 @@
   };
 
   packages = {
+    agent-browser = {
+      path = ./agent-browser;
+    };
+
     cheat = {
       path = ./cheat;
       systems = [ "x86_64-linux" ];
