@@ -1,5 +1,6 @@
 # Fleet-wide Darwin defaults: nix, shell, fonts, system preferences, common tools.
 {
+  config,
   self,
   pkgs,
   lib,
@@ -93,9 +94,11 @@ in
     dock.wvous-br-corner = 1;
   };
 
-  nix.settings.trusted-users = [
-    "root"
-    self.users.alex.username
-  ];
+  nix.settings = lib.mkIf config.nix.enable {
+    trusted-users = [
+      "root"
+      self.users.alex.username
+    ];
+  };
 
 }

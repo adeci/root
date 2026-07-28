@@ -24,21 +24,18 @@ let
   };
 in
 {
+  # Shopify's Determinate installation owns the Nix daemon and its configuration.
+  nix.enable = lib.mkForce false;
+
+  # Provider integration inherited by isolated personal Pi subagents.
+  environment.variables.PI_SUBAGENT_BOOTSTRAP_EXTENSIONS = "/Users/alex/.pi/agent/extensions/shopify-proxy";
+
+  # Preserve Homebrew packages and taps managed by Shopify tooling.
+  homebrew.onActivation.cleanup = lib.mkForce "none";
+
   # Replace default zsh with shopify variant
   environment.shells = [ shopifyZsh ];
   environment.systemPackages = [ shopifyZsh ];
-
-  nix.extraOptions = ''
-    !include nix.conf.d/shopify.conf
-  '';
-
-  # move aside any externally-managed nix.custom.conf so nix-darwin's sha256 check doesn't abort
-  system.activationScripts.checks.text = lib.mkBefore ''
-    if [[ -e /etc/nix/nix.custom.conf ]] \
-        && /usr/bin/grep -q '^!include' /etc/nix/nix.custom.conf; then
-      /bin/mv /etc/nix/nix.custom.conf /etc/nix/nix.custom.conf.bak
-    fi
-  '';
 
   homebrew = {
     taps = [
