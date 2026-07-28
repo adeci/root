@@ -35,13 +35,12 @@ in
 
   # Replace default zsh with shopify variant
   environment.shells = [ shopifyZsh ];
-  environment.systemPackages = [ shopifyZsh ];
+  environment.systemPackages = [
+    shopifyZsh
+    self.packages.${pkgs.stdenv.hostPlatform.system}.handy
+  ];
 
   homebrew = {
-    taps = [
-      "homebrew/core"
-      "homebrew/cask"
-    ];
     casks = [
       "1password"
       "1password-cli"

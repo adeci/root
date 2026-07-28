@@ -56,6 +56,12 @@
       checks = false;
     };
 
+    handy = {
+      path = ./handy;
+      systems = [ "aarch64-darwin" ];
+      checks = false;
+    };
+
     prusa-slicer = {
       path = ./prusa-slicer;
       systems = [ "x86_64-linux" ];

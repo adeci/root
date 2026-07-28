@@ -19,6 +19,27 @@ let
           complex_modifications = {
             rules = [
               {
+                description = "Keychron Right Alt → Right Command (dictation)";
+                manipulators = [
+                  {
+                    type = "basic";
+                    from.key_code = "right_option";
+                    to = [ { key_code = "right_command"; } ];
+                    conditions = [
+                      {
+                        type = "device_if";
+                        identifiers = [
+                          {
+                            vendor_id = 13364;
+                            product_id = 563;
+                          }
+                        ];
+                      }
+                    ];
+                  }
+                ];
+              }
+              {
                 description = "Caps Lock → Escape (tap) / Control (hold)";
                 manipulators = [
                   {
