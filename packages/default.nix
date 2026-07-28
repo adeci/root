@@ -68,6 +68,10 @@
       checks = false;
     };
 
+    pexpect-cli = {
+      path = ./pexpect-cli;
+    };
+
     routeros-netinstall-cap-ax = {
       path = ./routeros-netinstall/cap-ax;
       systems = [ "x86_64-linux" ];

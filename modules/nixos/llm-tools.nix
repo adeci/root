@@ -13,7 +13,7 @@ let
     self.packages.${system}.agent-browser
     mics-skills.kagi-search
     mics-skills.browser-cli
-    mics-skills.pexpect-cli
+    self.packages.${system}.pexpect-cli
   ];
 
   skills = pkgs.symlinkJoin {
