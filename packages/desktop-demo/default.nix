@@ -10,6 +10,7 @@ let
   wrappedKitty = self.wrappers.kitty.wrap { inherit pkgs; };
   wrappedNoctalia = self.wrappers.noctalia-shell.wrap { inherit pkgs; };
   wrappedZsh = self.wrappers.zsh.wrap { inherit pkgs; };
+  niriDisplay = self.packages.${pkgs.stdenv.hostPlatform.system}.niri-display;
 in
 {
   imports = [ wlib.modules.default ];
@@ -26,6 +27,7 @@ in
           wrappedKitty
           wrappedNoctalia
           wrappedZsh
+          niriDisplay
         ])
       ];
     }

@@ -1,0 +1,19 @@
+{
+  "id": "niri-display",
+  "name": "niri Display",
+  "version": "1.0.0",
+  "author": "Alex",
+  "official": false,
+  "license": "MIT",
+  "description": "niri display placement and wl-mirror controls",
+  "tags": ["Bar", "System", "Display"],
+  "minNoctaliaVersion": "4.7.7",
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "panel": "Panel.qml"
+  },
+  "dependencies": {
+    "plugins": []
+  }
+}

@@ -7,11 +7,6 @@
 let
   package = pkgs.voxtype-vulkan;
   model = "large-v3-turbo";
-  noctaliaPlugin = pkgs.runCommand "noctalia-voxtype-plugin" { } ''
-    mkdir -p "$out"
-    cp -r ${./voxtype-noctalia}/. "$out/"
-  '';
-
   config = (pkgs.formats.toml { }).generate "voxtype-config.toml" {
     engine = "whisper";
     state_file = "auto";
@@ -65,44 +60,13 @@ in
     systemPackages = [ package ];
   };
 
-  systemd.user.services.noctalia-voxtype-plugin = {
-    description = "Install and enable the Voxtype Noctalia plugin";
-    before = [ "noctalia-shell.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = pkgs.writeShellScript "install-noctalia-voxtype-plugin" ''
-        set -euo pipefail
-
-        plugin_dir="$HOME/.config/noctalia/plugins"
-        state_file="$HOME/.config/noctalia/plugins.json"
-        mkdir -p "$plugin_dir"
-        ln -sfn ${noctaliaPlugin} "$plugin_dir/voxtype"
-
-        if [[ -f "$state_file" ]]; then
-          ${pkgs.jq}/bin/jq \
-            '.version = 2 | .sources //= [] | .states //= {} | .states.voxtype = { enabled: true, sourceUrl: "" }' \
-            "$state_file" > "$state_file.tmp"
-        else
-          ${pkgs.jq}/bin/jq -n \
-            '{ version: 2, sources: [], states: { voxtype: { enabled: true, sourceUrl: "" } } }' \
-            > "$state_file.tmp"
-        fi
-        mv "$state_file.tmp" "$state_file"
-      '';
-    };
-    wantedBy = [ "graphical-session.target" ];
-  };
-
   systemd.user.services.voxtype = {
     description = "Local voice-to-text dictation";
     documentation = [ "https://voxtype.io" ];
     partOf = [ "graphical-session.target" ];
-    requires = [ "noctalia-voxtype-plugin.service" ];
     after = [
       "graphical-session.target"
       "network-online.target"
-      "noctalia-voxtype-plugin.service"
       "pipewire.service"
       "pipewire-pulse.service"
     ];

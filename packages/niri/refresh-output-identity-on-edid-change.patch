@@ -1,0 +1,192 @@
+diff --git a/src/backend/tty.rs b/src/backend/tty.rs
+index 5368c7e..488f1fa 100644
+--- a/src/backend/tty.rs
++++ b/src/backend/tty.rs
+@@ -974,0 +975 @@ impl Tty {
++        let mut changed = Vec::new();
+@@ -1016 +1017,9 @@ impl Tty {
+-                    if !device.known_crtcs.contains_key(&crtc) {
++                    if let Some(info) = device.known_crtcs.get(&crtc) {
++                        if output_identity_changed(&info.name, &name) {
++                            // A complete, changed EDID identity is a different physical output.
++                            // Disconnect it normally before replacing its cached identity, so the
++                            // old logical output and ID retire before config matching sees the new
++                            // name.
++                            changed.push((crtc, name));
++                        }
++                    } else {
+@@ -1021,3 +1029,0 @@ impl Tty {
+-
+-                    // We don't actually need to do anything here; on_output_config_changed() will
+-                    // take care of picking a new mode if needed.
+@@ -1029 +1035 @@ impl Tty {
+-        for crtc in &removed {
++        for crtc in removed.iter().chain(changed.iter().map(|(crtc, _)| crtc)) {
+@@ -1074,0 +1081,37 @@ impl Tty {
++        for (crtc, mut name) in changed {
++            // Make/model/serial can match exactly between different physical monitors. This doesn't
++            // happen often, but our Layout does not support such duplicates and will panic.
++            //
++            // As a workaround, search for duplicates, and unname the new connectors if one is
++            // found. Connector names are always unique. Skip the old identity this replacement
++            // will retire.
++            let formatted = name.format_make_model_serial_or_connector();
++            'duplicates: for (&other_node, other_device) in &self.devices {
++                for (&other_crtc, info) in &other_device.known_crtcs {
++                    if other_node == node && other_crtc == crtc {
++                        continue;
++                    }
++                    if info.name.matches(&formatted) {
++                        let connector = mem::take(&mut name.connector);
++                        warn!(
++                            "new connector {connector} duplicates make/model/serial \
++                             of existing connector {}, unnaming",
++                            info.name.connector,
++                        );
++                        name = OutputName {
++                            connector,
++                            make: None,
++                            model: None,
++                            serial: None,
++                        };
++                        break 'duplicates;
++                    }
++                }
++            }
++
++            let device = self.devices.get_mut(&node).unwrap();
++            if replace_changed_crtc(&mut device.known_crtcs, crtc, name).is_none() {
++                error!("changed crtc missing or identity unchanged: {crtc:?}");
++            }
++        }
++
+@@ -3387,0 +3431,37 @@ fn make_output_name(
++fn output_identity_changed(old: &OutputName, new: &OutputName) -> bool {
++    // Changed events may carry a transient empty EDID while a dock initializes. Only a complete
++    // fresh identity replaces an output; once complete, it is compared with OutputName::matches(),
++    // the same case-insensitive make/model/serial semantics used for config matching.
++    let complete =
++        |name: &OutputName| name.make.is_some() && name.model.is_some() && name.serial.is_some();
++
++    complete(new) && (!complete(old) || !old.matches(&new.format_make_model_serial()))
++}
++
++/// Replaces a complete, changed output identity for one CRTC with a fresh output ID.
++///
++/// The caller owns external effects: it disconnects the old logical output first, then the normal
++/// output-config pass reconnects this identity and matches its configuration.
++fn replace_changed_crtc(
++    known_crtcs: &mut HashMap<crtc::Handle, CrtcInfo>,
++    crtc: crtc::Handle,
++    name: OutputName,
++) -> Option<CrtcInfo> {
++    let old = known_crtcs.get(&crtc)?;
++    if !output_identity_changed(&old.name, &name) {
++        return None;
++    }
++
++    Some(
++        known_crtcs
++            .insert(
++                crtc,
++                CrtcInfo {
++                    id: OutputId::next(),
++                    name,
++                },
++            )
++            .expect("known CRTC disappeared during replacement"),
++    )
++}
++
+@@ -3433,0 +3514,2 @@ mod tests {
++    use std::collections::HashMap;
++
+@@ -3435 +3517,2 @@ mod tests {
+-    use niri_config::output::Modeline;
++    use niri_config::output::{Modeline, Output, Outputs};
++    use niri_config::OutputName;
+@@ -3436,0 +3520,15 @@ mod tests {
++    use smithay::reexports::drm::control::{self, crtc};
++
++    use crate::backend::tty::{
++        calculate_drm_mode_from_modeline, calculate_mode_cvt, replace_changed_crtc, CrtcInfo,
++    };
++    use crate::backend::OutputId;
++
++    fn output_name(make: Option<&str>, model: Option<&str>, serial: Option<&str>) -> OutputName {
++        OutputName {
++            connector: "DP-1".into(),
++            make: make.map(str::to_owned),
++            model: model.map(str::to_owned),
++            serial: serial.map(str::to_owned),
++        }
++    }
+@@ -3438 +3536,67 @@ mod tests {
+-    use crate::backend::tty::{calculate_drm_mode_from_modeline, calculate_mode_cvt};
++    fn crtc() -> crtc::Handle {
++        control::from_u32(1).unwrap()
++    }
++
++    #[test]
++    fn test_replace_changed_crtc_lifecycle() {
++        let crtc = crtc();
++        let a = output_name(Some("Visitech AS"), Some("VITURE Beast"), Some("A"));
++        let b = output_name(Some("Microstep"), Some("MSI MAG321CQR"), Some("B"));
++        let configs = Outputs(vec![Output {
++            name: b.format_make_model_serial(),
++            ..Default::default()
++        }]);
++        let a_id = OutputId::next();
++        let mut known_crtcs = HashMap::from([(
++            crtc,
++            CrtcInfo {
++                id: a_id,
++                name: a.clone(),
++            },
++        )]);
++
++        // A complete A -> B Changed event retires A before reconnect/config matching sees B.
++        assert!(configs.find(&a).is_none());
++        let retired = replace_changed_crtc(&mut known_crtcs, crtc, b.clone()).unwrap();
++        let b_info = known_crtcs.get(&crtc).unwrap();
++        assert_eq!(retired.id, a_id);
++        assert_ne!(b_info.id, retired.id);
++        assert_eq!(
++            b_info.name.format_make_model_serial(),
++            b.format_make_model_serial()
++        );
++        assert_eq!(
++            configs.find(&b_info.name).unwrap().name,
++            b.format_make_model_serial()
++        );
++        assert_eq!(known_crtcs.len(), 1);
++        assert!(!known_crtcs.values().any(|info| info.id == retired.id));
++
++        // A Changed event caused only by a mode-list update keeps B's identity and OutputId.
++        let b_id = b_info.id;
++        assert!(replace_changed_crtc(
++            &mut known_crtcs,
++            crtc,
++            output_name(Some("microstep"), Some("msi mag321cqr"), Some("b")),
++        )
++        .is_none());
++        assert_eq!(known_crtcs.get(&crtc).unwrap().id, b_id);
++        assert_eq!(known_crtcs.len(), 1);
++
++        // Incomplete EDID is mode-only. An initially incomplete output becomes B exactly once
++        // when its complete EDID arrives, without leaving a second CRTC/output identity.
++        let incomplete = output_name(Some("Microstep"), Some("MSI MAG321CQR"), None);
++        assert!(replace_changed_crtc(&mut known_crtcs, crtc, incomplete.clone()).is_none());
++        let incomplete_id = OutputId::next();
++        let mut incomplete_known = HashMap::from([(
++            crtc,
++            CrtcInfo {
++                id: incomplete_id,
++                name: incomplete,
++            },
++        )]);
++        let retired = replace_changed_crtc(&mut incomplete_known, crtc, b).unwrap();
++        assert_eq!(retired.id, incomplete_id);
++        assert_ne!(incomplete_known.get(&crtc).unwrap().id, retired.id);
++        assert_eq!(incomplete_known.len(), 1);
++    }

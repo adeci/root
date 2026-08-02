@@ -11,6 +11,7 @@
     desktop-demo = {
       path = ./desktop-demo;
       systems = [ "x86_64-linux" ];
+      checks = false;
     };
 
     git = {
@@ -60,6 +61,21 @@
       path = ./handy;
       systems = [ "aarch64-darwin" ];
       checks = false;
+    };
+
+    niri-display = {
+      path = ./niri-display;
+      systems = [ "x86_64-linux" ];
+    };
+
+    niri-reload = {
+      path = ./niri-reload;
+      systems = [ "x86_64-linux" ];
+    };
+
+    noctalia-shell-plugin-tests = {
+      path = ./noctalia-shell/test.nix;
+      systems = [ "x86_64-linux" ];
     };
 
     prusa-slicer = {

@@ -47,6 +47,7 @@ in
     pkgs.phinger-cursors
     wrapped.kitty
     wrapped.noctalia-shell
+    wrapped.niri-display
     pkgs.nautilus
     pkgs.xwayland-satellite
     pkgs.libnotify
@@ -56,6 +57,7 @@ in
     pkgs.easyeffects
     pkgs.wl-clipboard
     pkgs.wl-clip-persist
+    pkgs.wl-mirror
     pkgs.brightnessctl
     pkgs.jq
     pkgs.xdg-utils

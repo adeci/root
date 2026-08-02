@@ -1,9 +1,41 @@
-{
-  wlib,
-  ...
-}:
+{ wlib, ... }:
 {
   imports = [ wlib.wrapperModules.noctalia-shell ];
+
+  plugins = {
+    version = 2;
+    sources = [
+      {
+        name = "Noctalia Plugins";
+        url = "https://github.com/noctalia-dev/noctalia-plugins";
+        enabled = true;
+      }
+    ];
+  };
+  preInstalledPlugins = {
+    niri-display.src = ./plugins/niri-display;
+    voxtype.src = ./plugins/voxtype;
+  };
+
+  # This is the predefined palette Noctalia normally writes to colors.json.
+  colors = {
+    mPrimary = "#7aa2f7";
+    mOnPrimary = "#16161e";
+    mSecondary = "#bb9af7";
+    mOnSecondary = "#16161e";
+    mTertiary = "#9ece6a";
+    mOnTertiary = "#16161e";
+    mError = "#f7768e";
+    mOnError = "#16161e";
+    mSurface = "#1a1b26";
+    mOnSurface = "#c0caf5";
+    mSurfaceVariant = "#24283b";
+    mOnSurfaceVariant = "#9aa5ce";
+    mOutline = "#353D57";
+    mShadow = "#15161e";
+    mHover = "#9ece6a";
+    mOnHover = "#16161e";
+  };
 
   # To tweak via GUI and capture back to Nix:
   #   1. Temporarily set: outOfStoreConfig = "$HOME/.config/noctalia";
@@ -60,6 +92,7 @@
         right = [
           { id = "Tray"; }
           { id = "NotificationHistory"; }
+          { id = "plugin:niri-display"; }
           { id = "plugin:voxtype"; }
           { id = "VPN"; }
           { id = "Network"; }

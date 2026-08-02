@@ -1,4 +1,5 @@
 {
+  config,
   wlib,
   pkgs,
   lib,
@@ -37,6 +38,25 @@ let
   playerctl = lib.getExe pkgs.playerctl;
   brightnessctl = lib.getExe pkgs.brightnessctl;
   jq = lib.getExe pkgs.jq;
+  niriReloadConfig =
+    lib.replaceStrings
+      [
+        "/bin/bash"
+        "@niri@"
+        "@jq@"
+        "@flock@"
+        "@config@"
+        "@version@"
+      ]
+      [
+        "${pkgs.bash}/bin/bash"
+        (lib.getExe config.package)
+        (lib.getExe pkgs.jq)
+        "${pkgs.util-linux}/bin/flock"
+        config.constructFiles.generatedConfig.path
+        config.package.version
+      ]
+      (builtins.readFile ./niri-reload-config.sh);
 
   msi = "Microstep MSI MAG321CQR KA3H071804955";
   md272qpw = "Microstep MSI MD272QPW PB1H252600064";
@@ -56,7 +76,9 @@ in
 {
   imports = [ wlib.wrapperModules.niri ];
 
-  # Use the wrapper module's default package from nixpkgs.
+  config.package = pkgs.niri.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./refresh-output-identity-on-edid-change.patch ];
+  });
   config."v2-settings" = true;
 
   # ── Theming — baked into the derivation via postBuild ─────────────
@@ -156,6 +178,35 @@ in
       ];
     }
   ];
+
+  config.passthru.tests.niriReloadConfig = pkgs.callPackage ./test.nix {
+    niri = config.wrapper;
+  };
+
+  # Replace the upstream reload command with the config-validating helper.
+  config.buildCommand.niriReloadConfig = lib.mkForce {
+    after = [
+      "constructFiles"
+      "symlinkScript"
+    ];
+    data = ''
+      mkdir -p ${placeholder config.outputName}/bin
+      cat > ${placeholder config.outputName}/bin/niri-reload-config <<'NIRI_RELOAD_CONFIG_EOF'
+      ${niriReloadConfig}
+      NIRI_RELOAD_CONFIG_EOF
+      chmod +x ${placeholder config.outputName}/bin/niri-reload-config
+
+      chmod +w ${placeholder config.outputName}/share/systemd/user/niri.service
+      cat >> ${placeholder config.outputName}/share/systemd/user/niri.service <<EOF
+      [Unit]
+      X-Reload-Triggers=${config.constructFiles.generatedConfig.path}
+      [Service]
+      ExecReload=
+      ExecReload=${placeholder config.outputName}/bin/niri-reload-config
+      X-ReloadIfChanged=true
+      EOF
+    '';
+  };
 
   config.settings = {
 
