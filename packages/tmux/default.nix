@@ -67,7 +67,7 @@
     set -g status-interval 5
 
     # --- Environment forwarding on reattach ---
-    set -g update-environment 'DISPLAY SSH_ASKPASS SSH_AGENT_PID SSH_AUTH_SOCK SSH_CONNECTION SSH_TTY WINDOWID XAUTHORITY TERM'
+    set -g update-environment 'DISPLAY SSH_ASKPASS SSH_AGENT_PID SSH_AUTH_SOCK SSH_CONNECTION SSH_TTY WINDOWID XAUTHORITY TERM COLORTERM'
   '';
 
   configAfter = ''

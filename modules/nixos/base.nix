@@ -21,6 +21,7 @@
     settings = {
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
+      AcceptEnv = [ "COLORTERM" ];
     };
   };
 
@@ -32,6 +33,7 @@
 
     Host *
       AddKeysToAgent yes
+      SendEnv COLORTERM
   '';
   nix.settings = {
     http-connections = 64;
