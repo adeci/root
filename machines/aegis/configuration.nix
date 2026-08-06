@@ -14,7 +14,7 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/desktop.nix
+    (import ../../modules/nixos/desktop.nix { })
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/zram.nix
@@ -33,12 +33,21 @@
     pkgs.openscad
   ];
 
-  # Grant CAP_PERFMON to btop so it can monitor Intel GPU without root
-  security.wrappers.btop = {
-    owner = "root";
-    group = "root";
-    capabilities = "cap_perfmon+ep";
-    source = "${self.packages.${pkgs.stdenv.hostPlatform.system}.btop}/bin/btop";
+  # Sandy Bridge exposes GPU utilization through perf events rather than sysfs.
+  # Grant only CAP_PERFMON to the two read-only monitoring tools that need it.
+  security.wrappers = {
+    btop = {
+      owner = "root";
+      group = "root";
+      capabilities = "cap_perfmon+ep";
+      source = "${self.packages.${pkgs.stdenv.hostPlatform.system}.btop}/bin/btop";
+    };
+    intel_gpu_top = {
+      owner = "root";
+      group = "root";
+      capabilities = "cap_perfmon+ep";
+      source = "${pkgs.intel-gpu-tools}/bin/intel_gpu_top";
+    };
   };
 
   # Enable Intel graphics acceleration for Sandy Bridge

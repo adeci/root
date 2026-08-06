@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Io
+import qs.Services.UI
 import "DisplayState.js" as DisplayState
 
 Item {
@@ -16,7 +17,7 @@ Item {
     property string fetchState: "idle"
     property string refreshError: ""
     property string actionError: ""
-    property string actionMessage: ""
+    property string lastRefreshToastError: ""
     property bool actionRunning: actionProcess.running
 
     function outputModel(activeOnly) {
@@ -33,11 +34,10 @@ Item {
 
     function act(arguments) {
       if (actionProcess.running) {
-        actionError = "A display action is already running. Wait for it to finish.";
+        ToastService.showWarning("Displays", "A display change is already in progress.");
         return;
       }
       actionError = "";
-      actionMessage = "";
       actionProcess.command = ["niri-display"].concat(arguments);
       actionProcess.running = true;
     }
@@ -52,6 +52,10 @@ Item {
       if (exitCode !== 0) {
         displayService.fetchState = "error";
         displayService.refreshError = stderr.text.trim() || ("niri-display exited " + exitCode);
+        if (displayService.refreshError !== displayService.lastRefreshToastError) {
+          ToastService.showError("Displays", displayService.refreshError);
+          displayService.lastRefreshToastError = displayService.refreshError;
+        }
         return;
       }
       try {
@@ -63,9 +67,14 @@ Item {
         displayService.mirror = value.mirror || null;
         displayService.fetchState = "success";
         displayService.refreshError = "";
+        displayService.lastRefreshToastError = "";
       } catch (error) {
         displayService.fetchState = "error";
         displayService.refreshError = "Invalid response from niri-display: " + error;
+        if (displayService.refreshError !== displayService.lastRefreshToastError) {
+          ToastService.showError("Displays", displayService.refreshError);
+          displayService.lastRefreshToastError = displayService.refreshError;
+        }
       }
     }
   }
@@ -77,11 +86,15 @@ Item {
 
     onExited: function(exitCode) {
       if (exitCode === 0) {
-        displayService.actionMessage = stdout.text.trim();
         displayService.actionError = "";
+        ToastService.showNotice(
+          "Displays",
+          stdout.text.trim() || "Display configuration updated.",
+          "device-desktop-check"
+        );
       } else {
-        displayService.actionMessage = "";
         displayService.actionError = stderr.text.trim() || ("niri-display exited " + exitCode);
+        ToastService.showError("Displays", displayService.actionError);
       }
       displayService.refresh();
     }

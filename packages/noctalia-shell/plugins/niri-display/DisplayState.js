@@ -112,16 +112,3 @@ function placeArguments(outputs, source, target, direction) {
     source,
   ];
 }
-
-function statusState(actionRunning, actionError, refreshError, successMessage) {
-  if (actionRunning)
-    return { text: "Applying display change...", isError: false };
-  if (actionError !== "") return { text: actionError, isError: true };
-  if (refreshError !== "") return { text: refreshError, isError: true };
-  if (successMessage !== "") return { text: successMessage, isError: false };
-  return { text: "", isError: false };
-}
-
-function statusSlotHeight(fontSize, margin) {
-  return Math.round(fontSize * 3.6 + margin);
-}

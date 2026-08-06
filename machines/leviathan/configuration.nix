@@ -17,6 +17,7 @@
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
+    ../../modules/nixos/smartd.nix
     ../../modules/nixos/cloudflared.nix
     ./modules/llm/host.nix
     ./modules/palworld

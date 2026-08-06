@@ -1,0 +1,517 @@
+diff -ruN a/Assets/settings-widgets-default.json b/Assets/settings-widgets-default.json
+--- a/Assets/settings-widgets-default.json	2026-08-03 20:31:25.218473445 -0400
++++ b/Assets/settings-widgets-default.json	2026-08-03 20:31:39.815174321 -0400
+@@ -162,6 +162,7 @@
+       "showCpuFreq": false,
+       "showCpuTemp": true,
+       "showGpuTemp": false,
++      "showGpuUsage": true,
+       "showLoadAverage": false,
+       "showMemoryUsage": true,
+       "showMemoryAsPercent": false,
+diff -ruN a/Modules/Bar/Widgets/SystemMonitor.qml b/Modules/Bar/Widgets/SystemMonitor.qml
+--- a/Modules/Bar/Widgets/SystemMonitor.qml	2026-08-03 19:53:45.451463919 -0400
++++ b/Modules/Bar/Widgets/SystemMonitor.qml	2026-08-03 22:28:20.769782467 -0400
+@@ -51,6 +51,7 @@
+   readonly property bool showCpuFreq: (widgetSettings.showCpuFreq !== undefined) ? widgetSettings.showCpuFreq : widgetMetadata.showCpuFreq
+   readonly property bool showCpuTemp: (widgetSettings.showCpuTemp !== undefined) ? widgetSettings.showCpuTemp : widgetMetadata.showCpuTemp
+   readonly property bool showGpuTemp: (widgetSettings.showGpuTemp !== undefined) ? widgetSettings.showGpuTemp : widgetMetadata.showGpuTemp
++  readonly property bool showGpuUsage: (widgetSettings.showGpuUsage !== undefined) ? widgetSettings.showGpuUsage : (widgetMetadata.showGpuUsage ?? false)
+   readonly property bool showMemoryUsage: (widgetSettings.showMemoryUsage !== undefined) ? widgetSettings.showMemoryUsage : widgetMetadata.showMemoryUsage
+   readonly property bool showMemoryAsPercent: (widgetSettings.showMemoryAsPercent !== undefined) ? widgetSettings.showMemoryAsPercent : widgetMetadata.showMemoryAsPercent
+   readonly property bool showSwapUsage: (widgetSettings.showSwapUsage !== undefined) ? widgetSettings.showSwapUsage : widgetMetadata.showSwapUsage
+@@ -62,11 +63,6 @@
+   readonly property string diskPath: (widgetSettings.diskPath !== undefined) ? widgetSettings.diskPath : widgetMetadata.diskPath
+   readonly property string fontFamily: useMonospaceFont ? Settings.data.ui.fontFixed : Settings.data.ui.fontDefault
+
+-  readonly property int paddingPercent: usePadding ? String("100%").length : 0
+-  readonly property int paddingTemp: usePadding ? String("999°").length : 0
+-  readonly property int paddingCpuFreq: usePadding ? String("9.9").length : 0
+-  readonly property int paddingSpeed: usePadding ? String("9999G").length : 0
+-
+   readonly property real iconSize: Style.toOdd(capsuleHeight * 0.48)
+   readonly property real miniGaugeWidth: Math.max(3, Style.toOdd(root.iconSize * 0.25))
+
+@@ -82,6 +78,78 @@
+   implicitWidth: contentWidth
+   implicitHeight: contentHeight
+
++  NText {
++    id: percentWidthReference
++    visible: false
++    text: "100%"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: temperatureWidthReference
++    visible: false
++    text: "999°"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: cpuFreqWidthReference
++    visible: false
++    text: "9.9G"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: loadWidthReference
++    visible: false
++    text: SystemStatService.nproc.toFixed(1)
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: speedWidthReference
++    visible: false
++    text: "9999G"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: memoryWidthReference
++    visible: false
++    text: showMemoryAsPercent ? "100%" : SystemStatService.formatGigabytes(SystemStatService.memTotalGb)
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: swapWidthReference
++    visible: false
++    text: "100%"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: diskWidthReference
++    visible: false
++    text: showDiskUsageAsPercent ? "100%" : SystemStatService.formatGigabytes(SystemStatService.diskSizeGb[diskPath])
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
+   Component.onCompleted: SystemStatService.registerComponent("bar-sysmon:" + (screen?.name || "unknown"))
+   Component.onDestruction: SystemStatService.unregisterComponent("bar-sysmon:" + (screen?.name || "unknown"))
+
+@@ -106,6 +174,9 @@
+     }
+
+     // GPU (if available)
++    if (showGpuUsage && SystemStatService.gpuUsageAvailable) {
++      rows.push(["GPU utilization", `${SystemStatService.gpuUsage}%`]);
++    }
+     if (SystemStatService.gpuAvailable) {
+       rows.push([I18n.tr("system-monitor.gpu-temp"), `${Math.round(SystemStatService.gpuTemp)}°C`]);
+     }
+@@ -261,10 +332,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${Math.round(SystemStatService.cpuUsage)}%`.padStart(paddingPercent, " ")
++            text: `${Math.round(SystemStatService.cpuUsage)}%`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(percentWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -304,6 +376,73 @@
+         }
+       }
+
++      // GPU Usage Component (local patch; Noctalia 4.7.7 only exposes GPU temperature)
++      Item {
++        id: gpuUsageContainer
++        implicitWidth: gpuUsageContent.implicitWidth
++        implicitHeight: gpuUsageContent.implicitHeight
++        Layout.preferredWidth: isVertical ? root.width : implicitWidth
++        Layout.preferredHeight: compactMode ? implicitHeight : capsuleHeight
++        Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
++        visible: showGpuUsage
++
++        GridLayout {
++          id: gpuUsageContent
++          anchors.centerIn: parent
++          flow: (isVertical && !compactMode) ? GridLayout.TopToBottom : GridLayout.LeftToRight
++          rows: (isVertical && !compactMode) ? 2 : 1
++          columns: (isVertical && !compactMode) ? 1 : 2
++          rowSpacing: Style.marginXXS
++          columnSpacing: compactMode ? 3 : Style.marginXS
++
++          Item {
++            Layout.preferredWidth: iconSize
++            Layout.preferredHeight: (compactMode || isVertical) ? iconSize : capsuleHeight
++            Layout.alignment: Qt.AlignCenter
++            Layout.row: (isVertical && !compactMode) ? 1 : 0
++            Layout.column: 0
++
++            NIcon {
++              icon: "cpu-2"
++              pointSize: iconSize
++              applyUiScale: false
++              x: Style.pixelAlignCenter(parent.width, width)
++              y: Style.pixelAlignCenter(parent.height, contentHeight)
++              color: root.iconColor
++            }
++          }
++
++          NText {
++            visible: !compactMode
++            text: SystemStatService.gpuUsageAvailable ? `${SystemStatService.gpuUsage}%` : "--"
++            family: fontFamily
++            pointSize: barFontSize
++            applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(percentWidthReference.implicitWidth) : -1
++            Layout.alignment: Qt.AlignCenter
++            horizontalAlignment: Text.AlignHCenter
++            verticalAlignment: Text.AlignVCenter
++            color: root.textColor
++            Layout.row: isVertical ? 0 : 0
++            Layout.column: isVertical ? 0 : 1
++          }
++
++          Loader {
++            active: compactMode
++            visible: compactMode
++            sourceComponent: miniGaugeComponent
++            Layout.alignment: Qt.AlignCenter
++            Layout.row: 0
++            Layout.column: 1
++
++            onLoaded: {
++              item.ratio = Qt.binding(() => SystemStatService.gpuUsage / 100);
++              item.fillColor = Qt.binding(() => Color.mPrimary);
++            }
++          }
++        }
++      }
++
+       // CPU Frequency Component
+       Item {
+         id: cpuFreqContainer
+@@ -343,10 +482,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: SystemStatService.cpuFreq.replace("Hz", "").replace(" ", "").padStart(paddingCpuFreq, " ")
++            text: SystemStatService.cpuFreq.replace("Hz", "").replace(" ", "")
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(cpuFreqWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -410,10 +550,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${Math.round(SystemStatService.cpuTemp)}°`.padStart(paddingTemp, " ")
++            text: `${Math.round(SystemStatService.cpuTemp)}°`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(temperatureWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -478,10 +619,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${Math.round(SystemStatService.gpuTemp)}°`.padStart(paddingTemp, " ")
++            text: `${Math.round(SystemStatService.gpuTemp)}°`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(temperatureWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -546,10 +688,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${SystemStatService.loadAvg1.toFixed(1)}`.padStart(usePadding ? `${SystemStatService.nproc.toFixed(1)}`.length : 0, " ")
++            text: `${SystemStatService.loadAvg1.toFixed(1)}`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(loadWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -615,11 +758,12 @@
+             visible: !compactMode
+             text: SystemStatService.formatRamDisplay({
+                                                        percent: showMemoryAsPercent,
+-                                                       padding: usePadding
++                                                       padding: false
+                                                      })
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(memoryWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -687,11 +831,12 @@
+             text: SystemStatService.formatRamDisplay({
+                                                        swap: true,
+                                                        percent: true,
+-                                                       padding: usePadding
++                                                       padding: false
+                                                      })
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(swapWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -755,10 +900,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.rxSpeed) : SystemStatService.formatSpeed(SystemStatService.rxSpeed).padStart(paddingSpeed, " ")
++            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.rxSpeed) : SystemStatService.formatSpeed(SystemStatService.rxSpeed)
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(speedWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -821,10 +967,11 @@
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.txSpeed) : SystemStatService.formatSpeed(SystemStatService.txSpeed).padStart(paddingSpeed, " ")
++            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.txSpeed) : SystemStatService.formatSpeed(SystemStatService.txSpeed)
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(speedWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -891,11 +1038,12 @@
+             text: SystemStatService.formatDiskDisplay(diskPath, {
+                                                         percent: showDiskUsageAsPercent,
+                                                         available: showDiskAvailable,
+-                                                        padding: usePadding
++                                                        padding: false
+                                                       })
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(diskWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+diff -ruN a/Modules/Panels/SystemStats/SystemStatsPanel.qml b/Modules/Panels/SystemStats/SystemStatsPanel.qml
+--- a/Modules/Panels/SystemStats/SystemStatsPanel.qml	2026-08-03 20:37:16.978370384 -0400
++++ b/Modules/Panels/SystemStats/SystemStatsPanel.qml	2026-08-03 20:38:45.918189606 -0400
+@@ -144,6 +144,61 @@
+         }
+       }
+
++      // GPU Card
++      NBox {
++        Layout.fillWidth: true
++        Layout.preferredHeight: panelContent.cardHeight
++        visible: SystemStatService.gpuUsageAvailable
++
++        ColumnLayout {
++          anchors.fill: parent
++          anchors.margins: Style.marginS
++          anchors.bottomMargin: Style.radiusM * 0.5
++          spacing: Style.marginXS
++
++          RowLayout {
++            Layout.fillWidth: true
++            spacing: Style.marginXS
++
++            NIcon {
++              icon: "cpu-2"
++              pointSize: Style.fontSizeXS
++              color: Color.mPrimary
++            }
++
++            NText {
++              text: `${Math.round(SystemStatService.gpuUsage)}%`
++              pointSize: Style.fontSizeXS
++              color: Color.mPrimary
++              font.family: Settings.data.ui.fontFixed
++            }
++
++            Item {
++              Layout.fillWidth: true
++            }
++
++            NText {
++              text: "GPU usage"
++              pointSize: Style.fontSizeXS
++              color: Color.mOnSurfaceVariant
++            }
++          }
++
++          NGraph {
++            Layout.fillWidth: true
++            Layout.fillHeight: true
++            values: SystemStatService.gpuUsageHistory
++            minValue: 0
++            maxValue: 100
++            color: Color.mPrimary
++            strokeWidth: Math.max(1, Style.uiScaleRatio)
++            fill: true
++            fillOpacity: 0.15
++            updateInterval: SystemStatService.gpuUsageIntervalMs
++          }
++        }
++      }
++
+       // Memory Card (single-line + optional swap indicator)
+       NBox {
+         Layout.fillWidth: true
+diff -ruN a/Services/System/SystemStatService.qml b/Services/System/SystemStatService.qml
+--- a/Services/System/SystemStatService.qml	2026-08-03 20:37:16.970032309 -0400
++++ b/Services/System/SystemStatService.qml	2026-08-04 14:21:24.758754520 -0400
+@@ -36,6 +36,7 @@
+   readonly property int loadAvgIntervalMs: 10000
+   readonly property int diskIntervalMs: 30000
+   readonly property int gpuIntervalMs: 5000
++  readonly property int gpuUsageIntervalMs: 2000
+
+   // Public values
+   property real cpuUsage: 0
+@@ -46,6 +47,8 @@
+   property real cpuGlobalMaxFreq: 3.5
+   property real gpuTemp: 0
+   property bool gpuAvailable: false
++  property real gpuUsage: 0
++  property bool gpuUsageAvailable: false
+   property string gpuType: "" // "amd", "intel", "nvidia"
+   property real memGb: 0
+   property real memPercent: 0
+@@ -74,6 +77,7 @@
+   // Computed history lengths based on polling intervals
+   readonly property int cpuHistoryLength: Math.ceil(historyDurationMs / cpuUsageIntervalMs)
+   readonly property int gpuHistoryLength: Math.ceil(historyDurationMs / gpuIntervalMs)
++  readonly property int gpuUsageHistoryLength: Math.ceil(historyDurationMs / gpuUsageIntervalMs)
+   readonly property int memHistoryLength: Math.ceil(historyDurationMs / memIntervalMs)
+   readonly property int diskHistoryLength: Math.max(10, Math.ceil(historyDurationMs / diskIntervalMs))
+   readonly property int networkHistoryLength: Math.ceil(historyDurationMs / networkIntervalMs)
+@@ -81,6 +85,7 @@
+   property var cpuHistory: new Array(cpuHistoryLength).fill(0)
+   property var cpuTempHistory: new Array(cpuHistoryLength).fill(40)  // Reasonable default temp
+   property var gpuTempHistory: new Array(gpuHistoryLength).fill(40)  // Reasonable default temp
++  property var gpuUsageHistory: new Array(gpuUsageHistoryLength).fill(0)
+   property var memHistory: new Array(memHistoryLength).fill(0)
+   property var diskHistories: ({}) // Keyed by mount path, initialized on first update
+   property var rxSpeedHistory: new Array(networkHistoryLength).fill(0)
+@@ -133,6 +138,14 @@
+     gpuTempHistory = h;
+   }
+
++  function pushGpuUsageHistory() {
++    let h = gpuUsageHistory.slice();
++    h.push(gpuUsage);
++    if (h.length > gpuUsageHistoryLength)
++      h.shift();
++    gpuUsageHistory = h;
++  }
++
+   function pushMemHistory() {
+     let h = memHistory.slice();
+     h.push(memPercent);
+@@ -418,6 +431,59 @@
+     onTriggered: netDevFile.reload()
+   }
+
++  Process {
++    id: gpuUsageProcess
++    command: [
++      "sh",
++      "-c",
++      "max=; for path in /sys/class/drm/card*/device/gpu_busy_percent; do " +
++        "[ -r \"$path\" ] || continue; read -r value < \"$path\" || continue; " +
++        "case $value in ''|*[!0-9]*) continue;; esac; " +
++        "[ -z \"$max\" ] || [ \"$value\" -le \"$max\" ] || max=$value; " +
++        "[ -n \"$max\" ] || max=$value; done; " +
++        "if command -v nvidia-smi >/dev/null 2>&1; then " +
++        "nvidia=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | " +
++        "awk 'BEGIN { max = -1 } $1 ~ /^[0-9]+$/ && $1 > max { max = $1 } END { if (max >= 0) print max }'); " +
++        "case $nvidia in ''|*[!0-9]*) ;; *) [ -z \"$max\" ] || [ \"$nvidia\" -le \"$max\" ] || max=$nvidia; " +
++        "[ -n \"$max\" ] || max=$nvidia;; esac; fi; " +
++        "if command -v intel_gpu_top >/dev/null 2>&1; then " +
++        "intel=$(intel_gpu_top -J -s 500 -n 2 -o - 2>/dev/null | " +
++        "awk '/\"engines\": \\{/ { in_engines = 1; next } /\"clients\": \\{/ { in_engines = 0 } " +
++        "in_engines && /\"busy\":/ { value = $2; gsub(/,/, \"\", value); " +
++        "if (value ~ /^[0-9]+([.][0-9]+)?$/ && value > max) max = value } " +
++        "END { if (max >= 0) printf \"%.0f\\n\", max }'); " +
++        "case $intel in ''|*[!0-9]*) ;; *) [ -z \"$max\" ] || [ \"$intel\" -le \"$max\" ] || max=$intel; " +
++        "[ -n \"$max\" ] || max=$intel;; esac; fi; " +
++        "printf '%s\\n' \"${max:-unavailable}\""
++    ]
++    stdout: StdioCollector {}
++    stderr: StdioCollector {}
++
++    onExited: function(exitCode) {
++      const value = stdout.text.trim();
++      if (exitCode === 0 && /^\d+$/.test(value)) {
++        root.gpuUsage = Math.max(0, Math.min(100, Number(value)));
++        root.gpuUsageAvailable = true;
++        root.pushGpuUsageHistory();
++      } else {
++        root.gpuUsage = 0;
++        root.gpuUsageAvailable = false;
++      }
++    }
++  }
++
++  Timer {
++    id: gpuUsageTimer
++    interval: root.gpuUsageIntervalMs
++    repeat: true
++    running: root.shouldRun
++    triggeredOnStart: true
++    onTriggered: {
++      if (!gpuUsageProcess.running)
++        gpuUsageProcess.running = true;
++    }
++  }
++
+   // Timer for GPU temperature
+   Timer {
+     id: gpuTempTimer
+diff -ruN a/Services/UI/BarWidgetRegistry.qml b/Services/UI/BarWidgetRegistry.qml
+--- a/Services/UI/BarWidgetRegistry.qml	2026-08-03 20:31:25.214710758 -0400
++++ b/Services/UI/BarWidgetRegistry.qml	2026-08-03 20:31:32.806837974 -0400
+@@ -242,6 +242,7 @@
+                                     "showCpuFreq": false,
+                                     "showCpuTemp": true,
+                                     "showGpuTemp": false,
++                                    "showGpuUsage": true,
+                                     "showLoadAverage": false,
+                                     "showMemoryUsage": true,
+                                     "showMemoryAsPercent": false,

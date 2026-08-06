@@ -37,6 +37,7 @@ in
       ExecStart = "${pkgs.pueue}/bin/pueued";
       Restart = "on-failure";
       RestartSec = 1;
+      UMask = "0077";
     };
   };
 

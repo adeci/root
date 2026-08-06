@@ -1,6 +1,10 @@
-{ wlib, ... }:
+{ pkgs, wlib, ... }:
 {
   imports = [ wlib.wrapperModules.noctalia-shell ];
+
+  package = pkgs.noctalia-shell.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/system-monitor-gpu-usage.patch ];
+  });
 
   plugins = {
     version = 2;
@@ -13,7 +17,25 @@
     ];
   };
   preInstalledPlugins = {
+    mullvad = {
+      src = ./plugins/mullvad;
+      settings = {
+        compactMode = true;
+        showCityName = false;
+        showIp = false;
+        clickAction = "panel";
+      };
+    };
     niri-display.src = ./plugins/niri-display;
+    tailscale = {
+      src = ./plugins/tailscale;
+      settings = {
+        compactMode = true;
+        showIpAddress = false;
+        showPeerCount = false;
+        terminalCommand = "kitty";
+      };
+    };
     voxtype.src = ./plugins/voxtype;
   };
 
@@ -75,33 +97,7 @@
       outerCorners = false;
       exclusive = true;
       floating = false;
-      widgets = {
-        left = [
-          { id = "Launcher"; }
-          {
-            id = "Clock";
-            formatHorizontal = "h:mm AP";
-          }
-          { id = "SystemMonitor"; }
-          { id = "ActiveWindow"; }
-          { id = "MediaMini"; }
-        ];
-        center = [
-          { id = "Workspace"; }
-        ];
-        right = [
-          { id = "Tray"; }
-          { id = "NotificationHistory"; }
-          { id = "plugin:niri-display"; }
-          { id = "plugin:voxtype"; }
-          { id = "VPN"; }
-          { id = "Network"; }
-          { id = "Battery"; }
-          { id = "Volume"; }
-          { id = "Brightness"; }
-          { id = "ControlCenter"; }
-        ];
-      };
+      widgets = import ./bar-widgets.nix { };
     };
     calendar = {
       cards = [

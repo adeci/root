@@ -52,15 +52,4 @@ TestCase {
       ["extend", "HDMI-A-1", "--target-key", "C"]
     );
   }
-
-  function test_status_priority_and_fixed_slot_height() {
-    compare(DisplayState.statusState(true, "action", "refresh", "success").text,
-            "Applying display change...");
-    compare(DisplayState.statusState(false, "action", "refresh", "success").text, "action");
-    compare(DisplayState.statusState(false, "", "refresh", "success").text, "refresh");
-    compare(DisplayState.statusState(false, "", "", "success").text, "success");
-    compare(DisplayState.statusState(false, "", "", "").text, "");
-    compare(DisplayState.statusSlotHeight(12, 8), 51);
-    compare(DisplayState.statusSlotHeight(12, 8), 51);
-  }
 }

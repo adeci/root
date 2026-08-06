@@ -5,9 +5,20 @@
   self,
   ...
 }:
-
+let
+  noctaliaShellPackage = self.wrappers.noctalia-shell.wrap {
+    inherit pkgs;
+    settings.bar.screenOverrides = [
+      {
+        name = "eDP-1";
+        widgets = import ../../packages/noctalia-shell/bar-widgets.nix {
+          compactSystemMonitor = true;
+        };
+      }
+    ];
+  };
+in
 {
-
   imports = [
     inputs.drv-thru.nixosModules.default
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
@@ -24,7 +35,9 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/desktop.nix
+    ../../modules/nixos/auto-pressure-gc.nix
+    ../../modules/nixos/smartd.nix
+    (import ../../modules/nixos/desktop.nix { inherit noctaliaShellPackage; })
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/amd-gpu.nix
@@ -50,6 +63,11 @@
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
   services.teamviewer.enable = true;
+
+  services.smartd.notifications = {
+    systembus-notify.enable = true;
+    wall.enable = false;
+  };
 
   services.drv-thru.client = {
     enable = true;

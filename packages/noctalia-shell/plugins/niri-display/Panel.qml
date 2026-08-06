@@ -9,11 +9,12 @@ Item {
   id: root
 
   property var pluginApi: null
+  readonly property var geometryPlaceholder: panelContainer
+  readonly property bool allowAttach: true
   property var displayService: pluginApi?.mainInstance?.displayService || null
   // Source and target are output.selection_key values, never connector-only identity.
   property string source: ""
   property string target: ""
-  property string transientActionMessage: ""
   property bool selectionsInitialized: false
 
   readonly property var outputs: displayService?.outputs || []
@@ -27,23 +28,20 @@ Item {
   readonly property bool validExtendPair: DisplayState.validExtendPair(outputs, source, target)
   readonly property bool mirrorActive: displayService?.mirror?.active === true
   readonly property bool actionRunning: displayService?.actionRunning === true
-  readonly property string actionError: displayService?.actionError || ""
-  readonly property string refreshError: displayService?.refreshError || ""
-  readonly property var status: DisplayState.statusState(
-      root.actionRunning, root.actionError, root.refreshError, root.transientActionMessage)
-  readonly property string statusText: status.text
-  readonly property bool statusIsError: status.isError
-  readonly property real statusSlotHeight: DisplayState.statusSlotHeight(Style.fontSizeS, Style.margin2M)
   readonly property string mirrorSource: root.mirrorActive ? (displayService.mirror.source || "") : ""
   readonly property string mirrorTarget: root.mirrorActive ? (displayService.mirror.target || "") : ""
 
   // SmartPanel reads these names from the plugin slot.
-  readonly property real contentPreferredWidth: Math.round(600 * Style.uiScaleRatio)
-  readonly property real contentPreferredHeight: Math.min(
-    Math.round(680 * Style.uiScaleRatio), content.implicitHeight + Style.marginL * 2)
+  readonly property real contentPreferredWidth: Math.round(420 * Style.uiScaleRatio)
+  readonly property real contentPreferredHeight: Math.round(680 * Style.uiScaleRatio)
 
-  implicitWidth: contentPreferredWidth
-  implicitHeight: contentPreferredHeight
+  anchors.fill: parent
+
+  Rectangle {
+    id: panelContainer
+    anchors.fill: parent
+    color: "transparent"
+  }
 
   function outputLabel(name) {
     for (var i = 0; i < outputs.length; i++) {
@@ -92,27 +90,11 @@ Item {
   onOutputsChanged: initializeSelections()
   Component.onCompleted: initializeSelections()
 
-  Timer {
-    id: actionMessageTimer
-    interval: 5000
-    onTriggered: root.transientActionMessage = ""
-  }
-
-  Connections {
-    target: root.displayService
-
-    function onActionMessageChanged() {
-      root.transientActionMessage = root.displayService?.actionMessage || "";
-      if (root.transientActionMessage !== "")
-        actionMessageTimer.restart();
-    }
-  }
-
   ColumnLayout {
     id: content
     anchors.fill: parent
     anchors.margins: Style.marginL
-    spacing: Style.marginM
+    spacing: Style.marginL
 
     RowLayout {
       Layout.fillWidth: true
@@ -146,78 +128,21 @@ Item {
       }
     }
 
-    Item {
-      id: statusSlot
-      Layout.fillWidth: true
-      Layout.minimumHeight: root.statusSlotHeight
-      Layout.preferredHeight: root.statusSlotHeight
-      Layout.maximumHeight: root.statusSlotHeight
-      implicitHeight: root.statusSlotHeight
-
-      Rectangle {
-        id: statusCard
-        anchors.fill: parent
-        visible: root.statusText !== ""
-        radius: Style.radiusS
-        color: Color.mSurfaceVariant
-        border.width: Style.borderS
-        border.color: root.statusIsError ? Color.mError : Color.mOutline
-
-        RowLayout {
-          anchors.fill: parent
-          anchors.margins: Style.marginM
-          spacing: Style.marginS
-
-          NIcon {
-            icon: root.actionRunning ? "refresh" : root.statusIsError ? "alert-triangle" : "check"
-            pointSize: Style.fontSizeL
-            color: root.statusIsError ? Color.mError
-                : root.actionRunning ? Color.mPrimary : Color.mOnSurfaceVariant
-          }
-          NText {
-            id: statusMessageLabel
-            Layout.fillWidth: true
-            Layout.maximumHeight: statusCard.height - Style.margin2M
-            text: root.statusText
-            font.bold: root.actionRunning || root.statusIsError
-            color: root.statusIsError ? Color.mError
-                : root.actionRunning ? Color.mPrimary : Color.mOnSurfaceVariant
-            wrapMode: Text.WordWrap
-            maximumLineCount: 3
-            elide: Text.ElideRight
-            clip: true
-          }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          enabled: statusCard.visible
-          hoverEnabled: true
-          ToolTip.visible: containsMouse
-          ToolTip.delay: 500
-          ToolTip.text: root.statusText
-        }
-      }
-    }
-
-    Flickable {
-      id: detailsFlick
+    NScrollView {
+      id: detailsScroll
       Layout.fillWidth: true
       Layout.fillHeight: true
       Layout.minimumHeight: 0
-      Layout.preferredHeight: detailsContent.implicitHeight
-      contentWidth: width
-      contentHeight: detailsContent.implicitHeight
-      boundsBehavior: Flickable.StopAtBounds
-      clip: true
-
-      ScrollBar.vertical: ScrollBar {
-        policy: ScrollBar.AsNeeded
-      }
+      horizontalPolicy: ScrollBar.AlwaysOff
+      verticalPolicy: ScrollBar.AsNeeded
+      reserveScrollbarSpace: false
+      showGradientMasks: false
+      gradientColor: Color.mSurface
 
       ColumnLayout {
         id: detailsContent
-        width: detailsFlick.width
+        x: Style.marginS
+        width: Math.max(0, detailsScroll.availableWidth - Style.margin2S)
         spacing: Style.marginM
 
         RowLayout {
@@ -307,11 +232,10 @@ Item {
               id: sourcePicker
               Layout.fillWidth: true
               label: "Source display"
-              description: "The focused display is selected by default."
               model: root.activeModel
               currentKey: root.source
               placeholder: "Select source"
-              tooltip: "The source must be active."
+              tooltip: "The focused active display is selected by default."
               onSelected: key => root.source = key
             }
           }
@@ -339,12 +263,11 @@ Item {
               id: targetPicker
               Layout.fillWidth: true
               label: "Target display"
-              description: root.targetActive ? "This active display is ready to mirror, extend, or arrange."
-                                            : "Extend turns on this display."
               model: root.allModel
               currentKey: root.target
               placeholder: "Select target"
-              tooltip: "Mirror and placement require an active target."
+              tooltip: root.targetActive ? "Ready to mirror, extend, or arrange."
+                                           : "Extend turns on this display; mirroring and placement require an active target."
               onSelected: key => root.target = key
             }
           }
