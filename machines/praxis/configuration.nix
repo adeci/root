@@ -58,7 +58,7 @@ in
   # gsim module
   networking.modemmanager.enable = true;
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages;
 
   boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
 
