@@ -15,6 +15,7 @@ let
 in
 {
   imports = [
+    ./easyeffects
     ./pipewire.nix
     ./librewolf.nix
   ];
@@ -59,7 +60,6 @@ in
     pkgs.playerctl
     pkgs.pulseaudio
     pkgs.pavucontrol
-    pkgs.easyeffects
     pkgs.wl-clipboard
     pkgs.wl-clip-persist
     pkgs.wl-mirror
@@ -106,19 +106,4 @@ in
     wantedBy = [ "graphical-session.target" ];
   };
 
-  systemd.user.services.easyeffects = {
-    description = "EasyEffects audio processing";
-    partOf = [ "graphical-session.target" ];
-    after = [
-      "graphical-session.target"
-      "pipewire.service"
-    ];
-    requisite = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.easyeffects}/bin/easyeffects --gapplication-service";
-      Restart = "on-failure";
-      RestartSec = 3;
-    };
-    wantedBy = [ "graphical-session.target" ];
-  };
 }
