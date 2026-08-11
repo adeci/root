@@ -8,14 +8,20 @@
 let
   noctaliaShellPackage = self.wrappers.noctalia-shell.wrap {
     inherit pkgs;
-    settings.bar.screenOverrides = [
-      {
-        name = "eDP-1";
-        widgets = import ../../packages/noctalia-shell/bar-widgets.nix {
-          compactSystemMonitor = true;
-        };
-      }
-    ];
+    settings = {
+      # The Ryzen AI 9 HX 370's Radeon 890M iGPU reports its firmware-reserved
+      # UMA allocation as VRAM, so Noctalia misclassifies it as a dGPU and
+      # otherwise suppresses its available hwmon temperature.
+      systemMonitor.enableDgpuMonitoring = true;
+      bar.screenOverrides = [
+        {
+          name = "eDP-1";
+          widgets = import ../../packages/noctalia-shell/bar-widgets.nix {
+            compactSystemMonitor = true;
+          };
+        }
+      ];
+    };
   };
 in
 {

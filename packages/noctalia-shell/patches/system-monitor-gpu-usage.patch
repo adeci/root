@@ -331,11 +331,11 @@ diff -ruN a/Modules/Bar/Widgets/SystemMonitor.qml b/Modules/Bar/Widgets/SystemMo
 diff -ruN a/Modules/Panels/SystemStats/SystemStatsPanel.qml b/Modules/Panels/SystemStats/SystemStatsPanel.qml
 --- a/Modules/Panels/SystemStats/SystemStatsPanel.qml	2026-08-03 20:37:16.978370384 -0400
 +++ b/Modules/Panels/SystemStats/SystemStatsPanel.qml	2026-08-03 20:38:45.918189606 -0400
-@@ -144,6 +144,61 @@
+@@ -144,6 +144,81 @@
          }
        }
 
-+      // GPU Card
++      // GPU Card (dual-line: usage % + temperature °C)
 +      NBox {
 +        Layout.fillWidth: true
 +        Layout.preferredHeight: panelContent.cardHeight
@@ -352,7 +352,7 @@ diff -ruN a/Modules/Panels/SystemStats/SystemStatsPanel.qml b/Modules/Panels/Sys
 +            spacing: Style.marginXS
 +
 +            NIcon {
-+              icon: "cpu-2"
++              icon: "cpu-usage"
 +              pointSize: Style.fontSizeXS
 +              color: Color.mPrimary
 +            }
@@ -362,6 +362,22 @@ diff -ruN a/Modules/Panels/SystemStats/SystemStatsPanel.qml b/Modules/Panels/Sys
 +              pointSize: Style.fontSizeXS
 +              color: Color.mPrimary
 +              font.family: Settings.data.ui.fontFixed
++            }
++
++            NIcon {
++              visible: SystemStatService.gpuAvailable
++              icon: "cpu-temperature"
++              pointSize: Style.fontSizeXS
++              color: Color.mSecondary
++            }
++
++            NText {
++              visible: SystemStatService.gpuAvailable
++              text: `${Math.round(SystemStatService.gpuTemp)}°C`
++              pointSize: Style.fontSizeXS
++              color: Color.mSecondary
++              font.family: Settings.data.ui.fontFixed
++              Layout.rightMargin: Style.marginS
 +            }
 +
 +            Item {
@@ -379,9 +395,13 @@ diff -ruN a/Modules/Panels/SystemStats/SystemStatsPanel.qml b/Modules/Panels/Sys
 +            Layout.fillWidth: true
 +            Layout.fillHeight: true
 +            values: SystemStatService.gpuUsageHistory
++            values2: SystemStatService.gpuAvailable ? SystemStatService.gpuTempHistory : []
 +            minValue: 0
 +            maxValue: 100
++            minValue2: Math.max(SystemStatService.gpuTempHistoryMin - 5, 0)
++            maxValue2: Math.max(SystemStatService.gpuTempHistoryMax + 5, 1)
 +            color: Color.mPrimary
++            color2: Color.mSecondary
 +            strokeWidth: Math.max(1, Style.uiScaleRatio)
 +            fill: true
 +            fillOpacity: 0.15
@@ -400,7 +420,7 @@ diff -ruN a/Services/System/SystemStatService.qml b/Services/System/SystemStatSe
    readonly property int loadAvgIntervalMs: 10000
    readonly property int diskIntervalMs: 30000
    readonly property int gpuIntervalMs: 5000
-+  readonly property int gpuUsageIntervalMs: 2000
++  readonly property int gpuUsageIntervalMs: gpuIntervalMs
 
    // Public values
    property real cpuUsage: 0

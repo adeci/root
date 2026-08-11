@@ -56,7 +56,13 @@ stdenvNoCC.mkDerivation {
     grep -q 'id: gpuUsageContainer' patched-noctalia/Modules/Bar/Widgets/SystemMonitor.qml
     grep -q 'values: SystemStatService.gpuUsageHistory' \
       patched-noctalia/Modules/Panels/SystemStats/SystemStatsPanel.qml
+    grep -q 'values2: SystemStatService.gpuAvailable ? SystemStatService.gpuTempHistory : \[\]' \
+      patched-noctalia/Modules/Panels/SystemStats/SystemStatsPanel.qml
+    grep -q 'text:.*SystemStatService.gpuTemp.*°C' \
+      patched-noctalia/Modules/Panels/SystemStats/SystemStatsPanel.qml
     grep -q 'id: gpuUsageProcess' patched-noctalia/Services/System/SystemStatService.qml
+    grep -q 'gpuUsageIntervalMs: gpuIntervalMs' \
+      patched-noctalia/Services/System/SystemStatService.qml
 
     mkdir -p test-root/plugins/niri-display test-root/plugins/tailscale test-root/tests
     for asset in BarWidget.qml DisplayState.js Main.qml Panel.qml manifest.json; do
