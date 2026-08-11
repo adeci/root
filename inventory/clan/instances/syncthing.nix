@@ -27,6 +27,9 @@
           notes = {
             path = "/home/alex/notes";
           };
+          study = {
+            path = "/home/alex/study";
+          };
         };
 
       };
