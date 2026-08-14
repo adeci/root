@@ -7,7 +7,7 @@ let
     compactMode = compactSystemMonitor;
     showCpuUsage = true;
     showCpuTemp = false;
-    showGpuTemp = true;
+    showGpuTemp = false;
     showGpuUsage = true;
     showMemoryUsage = true;
     showMemoryAsPercent = true;
