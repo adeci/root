@@ -102,6 +102,14 @@
     }
 
     {
+      name = "minecraft-homestead";
+      description = "Minecraft homestead";
+      protocol = "tcp";
+      listen = 25572;
+      upstream = "leviathan.cymric-daggertooth.ts.net:25572";
+    }
+
+    {
       name = "palworld";
       description = "Palworld adeci";
       protocol = "udp";
