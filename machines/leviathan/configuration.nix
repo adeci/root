@@ -27,6 +27,13 @@
 
   time.timeZone = "America/New_York";
 
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 128 * 1024; # MiB
+    }
+  ];
+
   environment.systemPackages = [
     pkgs.numactl
     inputs.drv-thru.packages.${pkgs.stdenv.hostPlatform.system}.default
