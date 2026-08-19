@@ -1,5 +1,6 @@
 {
   bros = {
+    enable = false;
     serverName = "adeci";
     port = 8211;
     queryPort = 27015;
