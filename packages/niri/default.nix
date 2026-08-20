@@ -62,7 +62,7 @@ let
   md272qpw = "Microstep MSI MD272QPW PB1H252600064";
 
   # ── Theming ───────────────────────────────────────────────────────
-  theme-name = "Tokyonight-Dark";
+  theme-name = "adw-gtk3-dark";
   icon-theme-name = "Papirus-Dark";
   cursor-theme = "phinger-cursors-dark";
   cursor-size = "24";
@@ -170,7 +170,7 @@ in
         "XDG_DATA_DIRS"
         ":"
         (lib.concatStringsSep ":" [
-          "${pkgs.tokyonight-gtk-theme}/share"
+          "${pkgs.adw-gtk3}/share"
           "${pkgs.papirus-icon-theme}/share"
           "${pkgs.phinger-cursors}/share"
           "${pkgs.glib}/share"

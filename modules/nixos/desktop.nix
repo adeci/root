@@ -48,7 +48,7 @@ in
   # for portals, login greeters, and apps outside niri.
   # The niri wrapper carries identical settings for the standalone demo.
   environment.systemPackages = [
-    pkgs.tokyonight-gtk-theme
+    pkgs.adw-gtk3
     pkgs.papirus-icon-theme
     pkgs.phinger-cursors
     wrapped.kitty
@@ -72,7 +72,7 @@ in
   environment.sessionVariables = {
     XCURSOR_THEME = "phinger-cursors-dark";
     XCURSOR_SIZE = "24";
-    GTK_THEME = "Tokyonight-Dark";
+    GTK_THEME = "adw-gtk3-dark";
     QT_QPA_PLATFORMTHEME = "gtk3";
   };
 
@@ -82,7 +82,7 @@ in
       {
         settings = {
           "org/gnome/desktop/interface" = {
-            gtk-theme = "Tokyonight-Dark";
+            gtk-theme = "adw-gtk3-dark";
             icon-theme = "Papirus-Dark";
             color-scheme = "prefer-dark";
             cursor-theme = "phinger-cursors-dark";
