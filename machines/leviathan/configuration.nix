@@ -13,6 +13,7 @@
     self.users.brittonr.nixosModule
     self.users.dima.nixosModule
     self.users.fmzakari.nixosModule
+    self.users.jared.nixosModule
     self.users.tymon.nixosModule
 
     ../../modules/nixos/base.nix
