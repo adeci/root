@@ -7,7 +7,7 @@
   ...
 }:
 let
-  inherit (pkgs.stdenv) isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
 
   wrappedGit = self.wrappers.git.wrap { inherit pkgs; };
   wrappedTmux = self.wrappers.tmux.wrap { inherit pkgs; };

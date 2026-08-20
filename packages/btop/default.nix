@@ -7,7 +7,7 @@
 {
   imports = [ wlib.wrapperModules.btop ];
 
-  runShell = lib.optionals pkgs.stdenv.isLinux [
+  runShell = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     ''
       if [ -e /run/opengl-driver/lib/libnvidia-ml.so.1 ]; then
         export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

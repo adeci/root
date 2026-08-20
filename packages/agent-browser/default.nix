@@ -22,7 +22,7 @@ let
     binaries.${stdenv.hostPlatform.system}
       or (throw "agent-browser does not support ${stdenv.hostPlatform.system}");
 
-  browser = if stdenv.isDarwin then google-chrome else chromium;
+  browser = if stdenv.hostPlatform.isDarwin then google-chrome else chromium;
 in
 stdenv.mkDerivation {
   pname = "agent-browser";
@@ -35,7 +35,7 @@ stdenv.mkDerivation {
 
   sourceRoot = "package";
 
-  nativeBuildInputs = [ makeWrapper ] ++ lib.optionals stdenv.isLinux [ patchelf ];
+  nativeBuildInputs = [ makeWrapper ] ++ lib.optionals stdenv.hostPlatform.isLinux [ patchelf ];
 
   dontBuild = true;
   dontPatchELF = true;
@@ -49,7 +49,7 @@ stdenv.mkDerivation {
     cp -R skill-data $out/share/agent-browser/
     cp -R skills/agent-browser $out/share/skills/
 
-    ${lib.optionalString stdenv.isLinux ''
+    ${lib.optionalString stdenv.hostPlatform.isLinux ''
       patchelf \
         --set-interpreter ${stdenv.cc.bintools.dynamicLinker} \
         $out/libexec/agent-browser

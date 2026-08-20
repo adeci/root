@@ -78,7 +78,7 @@
         );
     in
     {
-      packages = lib.optionalAttrs pkgs.stdenv.isLinux {
+      packages = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
         # ── Network Terraform commands ──────────────────────────────
         net-init = netCommand "net-init" "init";
         net-plan = netCommand "net-plan" "plan";
