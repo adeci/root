@@ -6,7 +6,7 @@
 }:
 let
   thresholdPercent = 85;
-  cooldownSeconds = 6 * 60 * 60;
+  cooldownSeconds = 2 * 60 * 60; # 2 hours
 
   pressureGc = pkgs.writeShellApplication {
     name = "auto-pressure-gc";
@@ -35,7 +35,7 @@ let
       fi
 
       if [[ "$last_run" =~ ^[0-9]+$ ]] && (( now - last_run < ${toString cooldownSeconds} )); then
-        echo "Disk utilization is $usage% (threshold: ${toString thresholdPercent}%); garbage collection skipped because the six-hour cooldown is active"
+        echo "Disk utilization is $usage% (threshold: ${toString thresholdPercent}%); garbage collection skipped because the cooldown is active"
         exit 0
       fi
 
