@@ -21,6 +21,7 @@
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/smartd.nix
     ../../modules/nixos/cloudflared.nix
+    ../../modules/nixos/auto-pressure-gc.nix
     ./modules/llm/host.nix
     ./modules/palworld
     ./modules/v100-compute.nix

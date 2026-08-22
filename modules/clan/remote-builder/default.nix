@@ -167,10 +167,17 @@
               }
             ) serverMachineNames;
 
-            programs.ssh.extraConfig = lib.concatMapStringsSep "\n" (serverMachineName: ''
-              Host ${serverMachineName}${dotDomain}
-                StrictHostKeyChecking accept-new
-            '') serverMachineNames;
+            programs.ssh.extraConfig = lib.mkBefore (
+              lib.concatMapStringsSep "\n" (serverMachineName: ''
+                Host ${serverMachineName}${dotDomain}
+                  StrictHostKeyChecking accept-new
+
+                # Nix handles its own SSH connections here, so keep our usual ControlMaster setup out of the way.
+                Match host ${serverMachineName}${dotDomain} user nix
+                  ControlMaster no
+                  ControlPath none
+              '') serverMachineNames
+            );
           };
       };
   };
