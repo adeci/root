@@ -1,0 +1,159 @@
+diff --git a/Assets/settings-widgets-default.json b/Assets/settings-widgets-default.json
+index 996c73b..050653c 100644
+--- a/Assets/settings-widgets-default.json
++++ b/Assets/settings-widgets-default.json
+@@ -162,6 +162,7 @@
+       "showCpuFreq": false,
+       "showCpuTemp": true,
+       "showGpuTemp": false,
++      "showGpuUsage": true,
+       "showLoadAverage": false,
+       "showMemoryUsage": true,
+       "showMemoryAsPercent": false,
+diff --git a/Modules/Bar/Widgets/SystemMonitor.qml b/Modules/Bar/Widgets/SystemMonitor.qml
+index 7bdfa63..6c9991c 100644
+--- a/Modules/Bar/Widgets/SystemMonitor.qml
++++ b/Modules/Bar/Widgets/SystemMonitor.qml
+@@ -51,6 +51,7 @@ Item {
+   readonly property bool showCpuFreq: (widgetSettings.showCpuFreq !== undefined) ? widgetSettings.showCpuFreq : widgetMetadata.showCpuFreq
+   readonly property bool showCpuTemp: (widgetSettings.showCpuTemp !== undefined) ? widgetSettings.showCpuTemp : widgetMetadata.showCpuTemp
+   readonly property bool showGpuTemp: (widgetSettings.showGpuTemp !== undefined) ? widgetSettings.showGpuTemp : widgetMetadata.showGpuTemp
++  readonly property bool showGpuUsage: (widgetSettings.showGpuUsage !== undefined) ? widgetSettings.showGpuUsage : (widgetMetadata.showGpuUsage ?? false)
+   readonly property bool showMemoryUsage: (widgetSettings.showMemoryUsage !== undefined) ? widgetSettings.showMemoryUsage : widgetMetadata.showMemoryUsage
+   readonly property bool showMemoryAsPercent: (widgetSettings.showMemoryAsPercent !== undefined) ? widgetSettings.showMemoryAsPercent : widgetMetadata.showMemoryAsPercent
+   readonly property bool showSwapUsage: (widgetSettings.showSwapUsage !== undefined) ? widgetSettings.showSwapUsage : widgetMetadata.showSwapUsage
+@@ -106,6 +107,9 @@ Item {
+     }
+
+     // GPU (if available)
++    if (showGpuUsage && SystemStatService.gpuUsageAvailable) {
++      rows.push(["GPU utilization", `${SystemStatService.gpuUsage}%`]);
++    }
+     if (SystemStatService.gpuAvailable) {
+       rows.push([I18n.tr("system-monitor.gpu-temp"), `${Math.round(SystemStatService.gpuTemp)}°C`]);
+     }
+@@ -304,6 +308,72 @@ Item {
+         }
+       }
+
++      // GPU Usage Component (local patch; Noctalia 4.7.7 only exposes GPU temperature)
++      Item {
++        id: gpuUsageContainer
++        implicitWidth: gpuUsageContent.implicitWidth
++        implicitHeight: gpuUsageContent.implicitHeight
++        Layout.preferredWidth: isVertical ? root.width : implicitWidth
++        Layout.preferredHeight: compactMode ? implicitHeight : capsuleHeight
++        Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
++        visible: showGpuUsage && SystemStatService.gpuUsageAvailable
++
++        GridLayout {
++          id: gpuUsageContent
++          anchors.centerIn: parent
++          flow: (isVertical && !compactMode) ? GridLayout.TopToBottom : GridLayout.LeftToRight
++          rows: (isVertical && !compactMode) ? 2 : 1
++          columns: (isVertical && !compactMode) ? 1 : 2
++          rowSpacing: Style.marginXXS
++          columnSpacing: compactMode ? 3 : Style.marginXS
++
++          Item {
++            Layout.preferredWidth: iconSize
++            Layout.preferredHeight: (compactMode || isVertical) ? iconSize : capsuleHeight
++            Layout.alignment: Qt.AlignCenter
++            Layout.row: (isVertical && !compactMode) ? 1 : 0
++            Layout.column: 0
++
++            NIcon {
++              icon: "cpu-2"
++              pointSize: iconSize
++              applyUiScale: false
++              x: Style.pixelAlignCenter(parent.width, width)
++              y: Style.pixelAlignCenter(parent.height, contentHeight)
++              color: root.iconColor
++            }
++          }
++
++          NText {
++            visible: !compactMode
++            text: SystemStatService.gpuUsageAvailable ? `${SystemStatService.gpuUsage}%` : "--"
++            family: fontFamily
++            pointSize: barFontSize
++            applyUiScale: false
++            Layout.alignment: Qt.AlignCenter
++            horizontalAlignment: Text.AlignHCenter
++            verticalAlignment: Text.AlignVCenter
++            color: root.textColor
++            Layout.row: isVertical ? 0 : 0
++            Layout.column: isVertical ? 0 : 1
++          }
++
++          Loader {
++            active: compactMode
++            visible: compactMode
++            sourceComponent: miniGaugeComponent
++            Layout.alignment: Qt.AlignCenter
++            Layout.row: 0
++            Layout.column: 1
++
++            onLoaded: {
++              item.ratio = Qt.binding(() => SystemStatService.gpuUsage / 100);
++              item.fillColor = Qt.binding(() => Color.mPrimary);
++            }
++          }
++        }
++      }
++
+       // CPU Frequency Component
+       Item {
+         id: cpuFreqContainer
+diff --git a/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml b/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml
+index 9d4f1e9..7b319b5 100644
+--- a/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml
++++ b/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml
+@@ -30,6 +30,7 @@ ColumnLayout {
+   property bool valueShowCpuFreq: widgetData.showCpuFreq !== undefined ? widgetData.showCpuFreq : widgetMetadata.showCpuFreq
+   property bool valueShowCpuTemp: widgetData.showCpuTemp !== undefined ? widgetData.showCpuTemp : widgetMetadata.showCpuTemp
+   property bool valueShowGpuTemp: widgetData.showGpuTemp !== undefined ? widgetData.showGpuTemp : widgetMetadata.showGpuTemp
++  property bool valueShowGpuUsage: widgetData.showGpuUsage !== undefined ? widgetData.showGpuUsage : (widgetMetadata.showGpuUsage ?? false)
+   property bool valueShowLoadAverage: widgetData.showLoadAverage !== undefined ? widgetData.showLoadAverage : widgetMetadata.showLoadAverage
+   property bool valueShowMemoryUsage: widgetData.showMemoryUsage !== undefined ? widgetData.showMemoryUsage : widgetMetadata.showMemoryUsage
+   property bool valueShowMemoryAsPercent: widgetData.showMemoryAsPercent !== undefined ? widgetData.showMemoryAsPercent : widgetMetadata.showMemoryAsPercent
+@@ -52,6 +53,7 @@ ColumnLayout {
+     settings.showCpuFreq = valueShowCpuFreq;
+     settings.showCpuTemp = valueShowCpuTemp;
+     settings.showGpuTemp = valueShowGpuTemp;
++    settings.showGpuUsage = valueShowGpuUsage;
+     settings.showLoadAverage = valueShowLoadAverage;
+     settings.showMemoryUsage = valueShowMemoryUsage;
+     settings.showMemoryAsPercent = valueShowMemoryAsPercent;
+@@ -207,6 +209,19 @@ ColumnLayout {
+     defaultValue: widgetMetadata.showGpuTemp
+   }
+
++  NToggle {
++    id: showGpuUsage
++    Layout.fillWidth: true
++    label: "GPU usage"
++    description: "Show GPU utilization."
++    checked: valueShowGpuUsage
++    onToggled: checked => {
++                 valueShowGpuUsage = checked;
++                 saveSettings();
++               }
++    defaultValue: widgetMetadata.showGpuUsage ?? false
++  }
++
+   NToggle {
+     id: showMemoryUsage
+     Layout.fillWidth: true
+diff --git a/Services/UI/BarWidgetRegistry.qml b/Services/UI/BarWidgetRegistry.qml
+index 815c820..0fbf578 100644
+--- a/Services/UI/BarWidgetRegistry.qml
++++ b/Services/UI/BarWidgetRegistry.qml
+@@ -242,6 +242,7 @@ Singleton {
+                                     "showCpuFreq": false,
+                                     "showCpuTemp": true,
+                                     "showGpuTemp": false,
++                                    "showGpuUsage": true,
+                                     "showLoadAverage": false,
+                                     "showMemoryUsage": true,
+                                     "showMemoryAsPercent": false,

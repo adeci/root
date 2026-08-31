@@ -539,6 +539,16 @@ in
           "lock"
         ];
       };
+      "Mod+Ctrl+Shift+N" = _: {
+        props.hotkey-overlay-title = "Restart Noctalia Shell";
+        content.spawn = toString (
+          pkgs.writeShellScript "restart-noctalia-shell" ''
+            ${noctaliaBin} kill --any-display || true
+            sleep 1
+            exec ${noctaliaBin}
+          ''
+        );
+      };
 
       # Volume
       "XF86AudioRaiseVolume" = _: {

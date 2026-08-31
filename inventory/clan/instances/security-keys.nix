@@ -18,6 +18,9 @@
       machines.aegis.settings.use = [
         "ember"
       ];
+      machines.modus.settings.use = [
+        "spark"
+      ];
       machines.praxis.settings.use = [
         "spark"
       ];

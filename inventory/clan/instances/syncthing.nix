@@ -6,8 +6,9 @@
     };
     roles.peer = {
       machines = {
-        praxis = { };
         aegis = { };
+        modus = { };
+        praxis = { };
         sequoia = { };
       };
 

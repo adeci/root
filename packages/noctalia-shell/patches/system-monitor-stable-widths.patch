@@ -1,0 +1,236 @@
+diff --git a/Modules/Bar/Widgets/SystemMonitor.qml b/Modules/Bar/Widgets/SystemMonitor.qml
+index 6c9991c..19dd3c2 100644
+--- a/Modules/Bar/Widgets/SystemMonitor.qml
++++ b/Modules/Bar/Widgets/SystemMonitor.qml
+@@ -63,11 +63,6 @@ Item {
+   readonly property string diskPath: (widgetSettings.diskPath !== undefined) ? widgetSettings.diskPath : widgetMetadata.diskPath
+   readonly property string fontFamily: useMonospaceFont ? Settings.data.ui.fontFixed : Settings.data.ui.fontDefault
+
+-  readonly property int paddingPercent: usePadding ? String("100%").length : 0
+-  readonly property int paddingTemp: usePadding ? String("999°").length : 0
+-  readonly property int paddingCpuFreq: usePadding ? String("9.9").length : 0
+-  readonly property int paddingSpeed: usePadding ? String("9999G").length : 0
+-
+   readonly property real iconSize: Style.toOdd(capsuleHeight * 0.48)
+   readonly property real miniGaugeWidth: Math.max(3, Style.toOdd(root.iconSize * 0.25))
+
+@@ -83,6 +78,78 @@ Item {
+   implicitWidth: contentWidth
+   implicitHeight: contentHeight
+
++  NText {
++    id: percentWidthReference
++    visible: false
++    text: "100%"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: temperatureWidthReference
++    visible: false
++    text: "999°"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: cpuFreqWidthReference
++    visible: false
++    text: "9.9G"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: loadWidthReference
++    visible: false
++    text: SystemStatService.nproc.toFixed(1)
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: speedWidthReference
++    visible: false
++    text: "9999G"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: memoryWidthReference
++    visible: false
++    text: showMemoryAsPercent ? "100%" : SystemStatService.formatGigabytes(SystemStatService.memTotalGb)
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: swapWidthReference
++    visible: false
++    text: "100%"
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
++  NText {
++    id: diskWidthReference
++    visible: false
++    text: showDiskUsageAsPercent ? "100%" : SystemStatService.formatGigabytes(SystemStatService.diskSizeGb[diskPath])
++    family: fontFamily
++    pointSize: barFontSize
++    applyUiScale: false
++  }
++
+   Component.onCompleted: SystemStatService.registerComponent("bar-sysmon:" + (screen?.name || "unknown"))
+   Component.onDestruction: SystemStatService.unregisterComponent("bar-sysmon:" + (screen?.name || "unknown"))
+
+@@ -265,10 +332,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${Math.round(SystemStatService.cpuUsage)}%`.padStart(paddingPercent, " ")
++            text: `${Math.round(SystemStatService.cpuUsage)}%`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(percentWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -350,6 +418,7 @@ Item {
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(percentWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -413,10 +482,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: SystemStatService.cpuFreq.replace("Hz", "").replace(" ", "").padStart(paddingCpuFreq, " ")
++            text: SystemStatService.cpuFreq.replace("Hz", "").replace(" ", "")
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(cpuFreqWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -480,10 +550,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${Math.round(SystemStatService.cpuTemp)}°`.padStart(paddingTemp, " ")
++            text: `${Math.round(SystemStatService.cpuTemp)}°`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(temperatureWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -548,10 +619,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${Math.round(SystemStatService.gpuTemp)}°`.padStart(paddingTemp, " ")
++            text: `${Math.round(SystemStatService.gpuTemp)}°`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(temperatureWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -616,10 +688,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: `${SystemStatService.loadAvg1.toFixed(1)}`.padStart(usePadding ? `${SystemStatService.nproc.toFixed(1)}`.length : 0, " ")
++            text: `${SystemStatService.loadAvg1.toFixed(1)}`
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(loadWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -685,11 +758,12 @@ Item {
+             visible: !compactMode
+             text: SystemStatService.formatRamDisplay({
+                                                        percent: showMemoryAsPercent,
+-                                                       padding: usePadding
++                                                       padding: false
+                                                      })
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(memoryWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -757,11 +831,12 @@ Item {
+             text: SystemStatService.formatRamDisplay({
+                                                        swap: true,
+                                                        percent: true,
+-                                                       padding: usePadding
++                                                       padding: false
+                                                      })
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(swapWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -825,10 +900,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.rxSpeed) : SystemStatService.formatSpeed(SystemStatService.rxSpeed).padStart(paddingSpeed, " ")
++            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.rxSpeed) : SystemStatService.formatSpeed(SystemStatService.rxSpeed)
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(speedWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -891,10 +967,11 @@ Item {
+           // Text mode
+           NText {
+             visible: !compactMode
+-            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.txSpeed) : SystemStatService.formatSpeed(SystemStatService.txSpeed).padStart(paddingSpeed, " ")
++            text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.txSpeed) : SystemStatService.formatSpeed(SystemStatService.txSpeed)
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(speedWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter
+@@ -961,11 +1038,12 @@ Item {
+             text: SystemStatService.formatDiskDisplay(diskPath, {
+                                                         percent: showDiskUsageAsPercent,
+                                                         available: showDiskAvailable,
+-                                                        padding: usePadding
++                                                        padding: false
+                                                       })
+             family: fontFamily
+             pointSize: barFontSize
+             applyUiScale: false
++            Layout.preferredWidth: usePadding ? Math.ceil(diskWidthReference.implicitWidth) : -1
+             Layout.alignment: Qt.AlignCenter
+             horizontalAlignment: Text.AlignHCenter
+             verticalAlignment: Text.AlignVCenter

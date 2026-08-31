@@ -1,9 +1,33 @@
-{ pkgs, wlib, ... }:
+{
+  lib,
+  pkgs,
+  wlib,
+  ...
+}:
 {
   imports = [ wlib.wrapperModules.noctalia-shell ];
 
   package = pkgs.noctalia-shell.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./patches/system-monitor-gpu-usage.patch ];
+    patches = (old.patches or [ ]) ++ [
+      ./patches/system-monitor-gpu-telemetry.patch
+      ./patches/system-monitor-bar-gpu-usage.patch
+      ./patches/system-monitor-panel-gpu-card.patch
+      ./patches/system-monitor-stable-widths.patch
+      ./patches/system-monitor-adaptive-compact-mode.patch
+    ];
+
+    # Intel xe has no gpu_busy_percent. The pinned nvtop and jq parser are
+    # substituted into the telemetry command, keeping every executable it uses
+    # in the runtime closure.
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace Services/System/SystemStatService.qml \
+        --replace-fail @intelNvtop@ ${pkgs.nvtopPackages.intel} \
+        --replace-fail @jq@ ${lib.getExe' pkgs.jq "jq"} \
+        --replace-fail @gawk@ ${pkgs.gawk} \
+        --replace-fail @nvidiaSmi@ ${lib.getBin pkgs.linuxPackages.nvidia_x11} \
+        --replace-fail @coreutils@ ${pkgs.coreutils} \
+        --replace-fail @bash@ ${pkgs.bash}
+    '';
   });
 
   plugins = {
@@ -97,7 +121,7 @@
       outerCorners = false;
       exclusive = true;
       floating = false;
-      widgets = import ./bar-widgets.nix { };
+      widgets = import ./bar-widgets.nix;
     };
     calendar = {
       cards = [

@@ -1,10 +1,9 @@
-{
-  compactSystemMonitor ? false,
-}:
 let
   systemMonitor = {
     id = "SystemMonitor";
-    compactMode = compactSystemMonitor;
+    # "auto" is resolved from each output's logical width; true and false
+    # remain explicit per-screen overrides in Noctalia.
+    compactMode = "auto";
     showCpuUsage = true;
     showCpuTemp = false;
     showGpuTemp = false;

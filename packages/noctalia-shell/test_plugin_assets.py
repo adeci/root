@@ -80,13 +80,19 @@ class PluginAssetsTest(unittest.TestCase):
     def test_compact_network_status_widgets(self) -> None:
         config = (PACKAGE_ROOT / "default.nix").read_text()
         bar_widgets = (PACKAGE_ROOT / "bar-widgets.nix").read_text()
-        system_monitor_patch = (
-            PACKAGE_ROOT / "patches" / "system-monitor-gpu-usage.patch"
-        ).read_text()
+        patches = {
+            path.name: path.read_text()
+            for path in (PACKAGE_ROOT / "patches").glob("system-monitor-*.patch")
+        }
+        telemetry_patch = patches["system-monitor-gpu-telemetry.patch"]
+        bar_patch = patches["system-monitor-bar-gpu-usage.patch"]
+        panel_patch = patches["system-monitor-panel-gpu-card.patch"]
+        widths_patch = patches["system-monitor-stable-widths.patch"]
+        compact_patch = patches["system-monitor-adaptive-compact-mode.patch"]
         self.assertIn('id = "plugin:mullvad";', bar_widgets)
         self.assertIn('id = "plugin:tailscale";', bar_widgets)
         self.assertNotIn('id = "VPN";', bar_widgets)
-        self.assertIn("widgets = import ./bar-widgets.nix { };", config)
+        self.assertIn("widgets = import ./bar-widgets.nix;", config)
         self.assertIn("showNetworkStats = true;", bar_widgets)
         self.assertIn("showDiskUsage = true;", bar_widgets)
         self.assertIn("showGpuUsage = true;", bar_widgets)
@@ -94,7 +100,8 @@ class PluginAssetsTest(unittest.TestCase):
         self.assertIn("usePadding = true;", bar_widgets)
         self.assertNotIn('name = "eDP-1";', config)
         self.assertNotIn('id = "plugin:gpu-usage";', bar_widgets)
-        self.assertIn("system-monitor-gpu-usage.patch", config)
+        for patch_name in patches:
+            self.assertIn(patch_name, config)
         self.assertIn('terminalCommand = "kitty";', config)
         self.assertNotIn("showCountryFlag", config)
 
@@ -151,20 +158,25 @@ class PluginAssetsTest(unittest.TestCase):
         self.assertIn("width: relayListView.availableWidth", mullvad_panel)
         self.assertIn("anchors.rightMargin: Style.marginXL", mullvad_panel)
         self.assertNotIn("confirmDisconnectInLockdown", mullvad_main)
-        self.assertIn("id: gpuUsageProcess", system_monitor_patch)
-        self.assertIn("if command -v nvidia-smi", system_monitor_patch)
-        self.assertIn("if command -v intel_gpu_top", system_monitor_patch)
-        self.assertIn("intel_gpu_top -J -s 500 -n 2", system_monitor_patch)
-        self.assertIn(r'printf \"%.0f\\n\", max', system_monitor_patch)
-        self.assertNotIn(r'printf \"%.0f\\\\n\", max', system_monitor_patch)
-        self.assertIn("property var gpuUsageHistory", system_monitor_patch)
-        self.assertIn("values: SystemStatService.gpuUsageHistory", system_monitor_patch)
-        self.assertIn('icon: "cpu-2"', system_monitor_patch)
-        self.assertIn("id: gpuUsageContainer", system_monitor_patch)
-        self.assertIn("text: SystemStatService.gpuUsageAvailable", system_monitor_patch)
-        self.assertIn("id: percentWidthReference", system_monitor_patch)
+        self.assertIn("id: gpuUsageProcess", telemetry_patch)
+        self.assertIn("@intelNvtop@/bin/nvtop", telemetry_patch)
+        self.assertIn('enableDgpuMonitoring', telemetry_patch)
+        self.assertIn("runtime_status", telemetry_patch)
+        self.assertNotIn("intel_gpu_top", telemetry_patch)
+        self.assertIn("property var gpuUsageHistory", telemetry_patch)
+
+        self.assertIn('"showGpuUsage": true', bar_patch)
+        self.assertIn("id: gpuUsageContainer", bar_patch)
+        self.assertIn("text: SystemStatService.gpuUsageAvailable", bar_patch)
+        self.assertLess(
+            bar_patch.index("id: gpuUsageContainer"),
+            bar_patch.index("// CPU Frequency Component"),
+        )
+        self.assertIn("values: SystemStatService.gpuUsageHistory", panel_patch)
+
+        self.assertIn("id: percentWidthReference", widths_patch)
         self.assertGreaterEqual(
-            system_monitor_patch.count(
+            widths_patch.count(
                 "Layout.preferredWidth: usePadding ? Math.ceil(percentWidthReference.implicitWidth) : -1"
             ),
             2,
@@ -178,16 +190,15 @@ class PluginAssetsTest(unittest.TestCase):
             "swapWidthReference",
             "diskWidthReference",
         ):
-            self.assertIn(f"id: {width_reference}", system_monitor_patch)
+            self.assertIn(f"id: {width_reference}", widths_patch)
             self.assertIn(
                 f"Layout.preferredWidth: usePadding ? Math.ceil({width_reference}.implicitWidth) : -1",
-                system_monitor_patch,
+                widths_patch,
             )
-        self.assertIn('"showGpuUsage": true', system_monitor_patch)
-        self.assertLess(
-            system_monitor_patch.index("id: gpuUsageContainer"),
-            system_monitor_patch.index("// CPU Frequency Component"),
-        )
+
+        self.assertIn('compactModeSetting === "auto"', compact_patch)
+        self.assertIn('key: "auto"', compact_patch)
+        self.assertIn('compactMode = "auto";', bar_widgets)
 
 
 if __name__ == "__main__":

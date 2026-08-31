@@ -1,8 +1,5 @@
 # Full desktop: niri compositor, audio, fonts, and common tools.
 {
-  noctaliaShellPackage ? null,
-}:
-{
   lib,
   self,
   pkgs,
@@ -10,8 +7,6 @@
 }:
 let
   wrapped = self.packages.${pkgs.stdenv.hostPlatform.system};
-  noctaliaShell =
-    if noctaliaShellPackage == null then wrapped.noctalia-shell else noctaliaShellPackage;
 in
 {
   imports = [
@@ -52,7 +47,6 @@ in
     pkgs.papirus-icon-theme
     pkgs.phinger-cursors
     wrapped.kitty
-    noctaliaShell
     wrapped.niri-display
     pkgs.nautilus
     pkgs.xwayland-satellite

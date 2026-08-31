@@ -1,0 +1,125 @@
+diff --git a/Modules/Bar/Widgets/SystemMonitor.qml b/Modules/Bar/Widgets/SystemMonitor.qml
+index 19dd3c2..0dbe557 100644
+--- a/Modules/Bar/Widgets/SystemMonitor.qml
++++ b/Modules/Bar/Widgets/SystemMonitor.qml
+@@ -39,7 +39,11 @@ Item {
+   readonly property real capsuleHeight: Style.getCapsuleHeightForScreen(screenName)
+   readonly property real barFontSize: Style.getBarFontSizeForScreen(screenName)
+
+-  readonly property bool compactMode: widgetSettings.compactMode !== undefined ? widgetSettings.compactMode : widgetMetadata.compactMode
++  // true and false remain explicit overrides for existing configurations.
++  // "auto" follows this output's logical width, so mixed-DPI layouts do not
++  // make every System Monitor instance compact.
++  readonly property var compactModeSetting: widgetSettings.compactMode !== undefined ? widgetSettings.compactMode : widgetMetadata.compactMode
++  readonly property bool compactMode: compactModeSetting === "auto" ? (screen && screen.width < 1400) : Boolean(compactModeSetting)
+   readonly property string iconColorKey: widgetSettings.iconColor !== undefined ? widgetSettings.iconColor : widgetMetadata.iconColor
+   readonly property string textColorKey: widgetSettings.textColor !== undefined ? widgetSettings.textColor : widgetMetadata.textColor
+
+diff --git a/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml b/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml
+index 7b319b5..a626a9a 100644
+--- a/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml
++++ b/Modules/Panels/Settings/Bar/WidgetSettings/SystemMonitorSettings.qml
+@@ -19,8 +19,17 @@ ColumnLayout {
+   readonly property string barPosition: Settings.getBarPositionForScreen(screen?.name)
+   readonly property bool isVerticalBar: barPosition === "left" || barPosition === "right"
+
+-  // Local, editable state for checkboxes
+-  property bool valueCompactMode: widgetData.compactMode !== undefined ? widgetData.compactMode : widgetMetadata.compactMode
++  // Legacy booleans are explicit overrides; "auto" follows this screen's
++  // logical width. Keep the serialized booleans for compatibility.
++  function compactModeOption(value) {
++    if (value === "auto")
++      return "auto";
++    return value ? "compact" : "regular";
++  }
++
++  // Local, editable state for widget settings
++  property string valueCompactMode: compactModeOption(widgetData.compactMode !== undefined ? widgetData.compactMode : widgetMetadata.compactMode)
++  readonly property bool compactModeEnabled: valueCompactMode === "compact" || (valueCompactMode === "auto" && screen && screen.width < 1400)
+   property string valueIconColor: widgetData.iconColor !== undefined ? widgetData.iconColor : widgetMetadata.iconColor
+   property string valueTextColor: widgetData.textColor !== undefined ? widgetData.textColor : widgetMetadata.textColor
+   property bool valueUseMonospaceFont: widgetData.useMonospaceFont !== undefined ? widgetData.useMonospaceFont : widgetMetadata.useMonospaceFont
+@@ -43,7 +52,7 @@ ColumnLayout {
+
+   function saveSettings() {
+     var settings = Object.assign({}, widgetData || {});
+-    settings.compactMode = valueCompactMode;
++    settings.compactMode = valueCompactMode === "auto" ? "auto" : valueCompactMode === "compact";
+     settings.iconColor = valueIconColor;
+     settings.textColor = valueTextColor;
+     settings.useMonospaceFont = valueUseMonospaceFont;
+@@ -67,16 +76,30 @@ ColumnLayout {
+     settingsChanged(settings);
+   }
+
+-  NToggle {
++  NComboBox {
+     Layout.fillWidth: true
+     label: I18n.tr("bar.system-monitor.compact-mode-label")
+-    description: I18n.tr("bar.system-monitor.compact-mode-description")
+-    checked: valueCompactMode
+-    onToggled: checked => {
+-                 valueCompactMode = checked;
+-                 saveSettings();
+-               }
+-    defaultValue: widgetMetadata.compactMode
++    description: "Automatic uses this screen's logical width; compact and regular are explicit overrides."
++    model: [
++      {
++        key: "auto",
++        name: "Automatic"
++      },
++      {
++        key: "compact",
++        name: "Always compact"
++      },
++      {
++        key: "regular",
++        name: "Always regular"
++      }
++    ]
++    currentKey: valueCompactMode
++    onSelected: key => {
++                  valueCompactMode = key;
++                  saveSettings();
++                }
++    defaultValue: compactModeOption(widgetMetadata.compactMode)
+   }
+
+   NColorChoice {
+@@ -95,7 +118,7 @@ ColumnLayout {
+                   valueTextColor = key;
+                   saveSettings();
+                 }
+-    visible: !valueCompactMode
++    visible: !compactModeEnabled
+     defaultValue: widgetMetadata.textColor
+   }
+
+@@ -108,7 +131,7 @@ ColumnLayout {
+                  valueUseMonospaceFont = checked;
+                  saveSettings();
+                }
+-    visible: !valueCompactMode
++    visible: !compactModeEnabled
+     defaultValue: widgetMetadata.useMonospaceFont
+   }
+
+@@ -121,7 +144,7 @@ ColumnLayout {
+                  valueUsePadding = checked;
+                  saveSettings();
+                }
+-    visible: !valueCompactMode
++    visible: !compactModeEnabled
+     enabled: !isVerticalBar && valueUseMonospaceFont
+     defaultValue: widgetMetadata.usePadding
+   }
+@@ -153,7 +176,7 @@ ColumnLayout {
+                  valueShowCpuCores = checked;
+                  saveSettings();
+                }
+-    visible: valueCompactMode
++    visible: compactModeEnabled
+   }
+
+   NToggle {

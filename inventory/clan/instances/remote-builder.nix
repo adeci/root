@@ -25,6 +25,7 @@
       aegis = { };
       bramble = { };
       leviathan = { };
+      modus = { };
       praxis = { };
     };
   };

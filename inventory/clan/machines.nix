@@ -94,6 +94,7 @@
     tags = [
       "adeci-net"
       "wifi-preload"
+      "keybearers"
     ];
     deploy.targetHost = "root@modus.cymric-daggertooth.ts.net";
   };

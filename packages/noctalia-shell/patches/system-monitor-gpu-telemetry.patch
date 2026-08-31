@@ -1,0 +1,187 @@
+--- a/Services/System/SystemStatService.qml
++++ b/Services/System/SystemStatService.qml
+@@ -36,6 +36,7 @@
+   readonly property int loadAvgIntervalMs: 10000
+   readonly property int diskIntervalMs: 30000
+   readonly property int gpuIntervalMs: 5000
++  readonly property int gpuUsageIntervalMs: gpuIntervalMs
+
+   // Public values
+   property real cpuUsage: 0
+@@ -46,6 +47,8 @@
+   property real cpuGlobalMaxFreq: 3.5
+   property real gpuTemp: 0
+   property bool gpuAvailable: false
++  property real gpuUsage: 0
++  property bool gpuUsageAvailable: false
+   property string gpuType: "" // "amd", "intel", "nvidia"
+   property real memGb: 0
+   property real memPercent: 0
+@@ -74,6 +77,7 @@
+   // Computed history lengths based on polling intervals
+   readonly property int cpuHistoryLength: Math.ceil(historyDurationMs / cpuUsageIntervalMs)
+   readonly property int gpuHistoryLength: Math.ceil(historyDurationMs / gpuIntervalMs)
++  readonly property int gpuUsageHistoryLength: Math.ceil(historyDurationMs / gpuUsageIntervalMs)
+   readonly property int memHistoryLength: Math.ceil(historyDurationMs / memIntervalMs)
+   readonly property int diskHistoryLength: Math.max(10, Math.ceil(historyDurationMs / diskIntervalMs))
+   readonly property int networkHistoryLength: Math.ceil(historyDurationMs / networkIntervalMs)
+@@ -81,6 +85,7 @@
+   property var cpuHistory: new Array(cpuHistoryLength).fill(0)
+   property var cpuTempHistory: new Array(cpuHistoryLength).fill(40)  // Reasonable default temp
+   property var gpuTempHistory: new Array(gpuHistoryLength).fill(40)  // Reasonable default temp
++  property var gpuUsageHistory: new Array(gpuUsageHistoryLength).fill(0)
+   property var memHistory: new Array(memHistoryLength).fill(0)
+   property var diskHistories: ({}) // Keyed by mount path, initialized on first update
+   property var rxSpeedHistory: new Array(networkHistoryLength).fill(0)
+@@ -133,6 +138,14 @@
+     gpuTempHistory = h;
+   }
+
++  function pushGpuUsageHistory() {
++    let h = gpuUsageHistory.slice();
++    h.push(gpuUsage);
++    if (h.length > gpuUsageHistoryLength)
++      h.shift();
++    gpuUsageHistory = h;
++  }
++
+   function pushMemHistory() {
+     let h = memHistory.slice();
+     h.push(memPercent);
+@@ -310,6 +323,9 @@
+       if (dfShell.running) {
+         dfShell.running = false;
+       }
++      if (gpuUsageProcess.running) {
++        gpuUsageProcess.signal(15);
++      }
+     }
+   }
+
+@@ -418,6 +434,126 @@
+     onTriggered: netDevFile.reload()
+   }
+
++  // GPU utilization is sampled independently from temperature. Sysfs handles
++  // AMD; Intel xe uses nvtop snapshot JSON. Discrete devices are opt-in and
++  // suspended Intel devices block nvtop because it cannot select one card.
++  readonly property string gpuUsageCommand: `
++    drm_root="\${NOCTALIA_DRM_ROOT:-/sys/class/drm}"
++    intel_nvtop="\${NOCTALIA_INTEL_NVTOP:-@intelNvtop@/bin/nvtop}"
++    nvidia_smi="\${NOCTALIA_NVIDIA_SMI:-@nvidiaSmi@/bin/nvidia-smi}"
++    enable_dgpu_monitoring="$1"
++    max=
++    intel_eligible=0
++    intel_blocked=0
++    nvidia_eligible=0
++    for card in "$drm_root"/card[0-9]*; do
++      device="$card/device"
++      [ -r "$device/vendor" ] || continue
++      vendor=$(cat "$device/vendor")
++      status="$device/power/runtime_status"
++      if [ -r "$status" ] && [ "$(cat "$status")" = suspended ]; then
++        [ "$vendor" = 0x8086 ] && intel_blocked=1
++        continue
++      fi
++      case "$vendor" in
++        0x1002)
++          # Match Noctalia's temperature service: dedicated VRAM means AMD dGPU.
++          vram="$device/mem_info_vram_total"
++          if [ -r "$vram" ]; then
++            read -r vram_total < "$vram" || continue
++            case "$vram_total" in ''|*[!0-9]*) continue;; esac
++            [ "$vram_total" -le 0 ] || [ "$enable_dgpu_monitoring" = 1 ] || continue
++          fi
++          path="$device/gpu_busy_percent"
++          [ -r "$path" ] || continue
++          read -r value < "$path" || continue
++          case "$value" in ''|*[!0-9]*) continue;; esac
++          [ -z "$max" ] || [ "$value" -le "$max" ] || max=$value
++          [ -n "$max" ] || max=$value
++          ;;
++        0x8086)
++          # Noctalia v4 treats xe/Intel Arc telemetry devices as discrete.
++          if [ "$enable_dgpu_monitoring" != 1 ]; then
++            intel_blocked=1
++          else
++            intel_eligible=1
++          fi
++          ;;
++        0x10de)
++          # NVIDIA is always discrete; never invoke its global tool without opt-in.
++          [ "$enable_dgpu_monitoring" = 1 ] || continue
++          nvidia_eligible=1
++          ;;
++      esac
++    done
++    if [ "$intel_eligible" = 1 ] && [ "$intel_blocked" = 0 ]; then
++      if ! intel=$("$intel_nvtop" -s -P 2>/dev/null | "@jq@" -r '
++        [.. | objects | .gpu_util? | select(. != null) |
++          if type == "string" then sub("%$"; "") else . end |
++          tonumber? | select(. >= 0 and . <= 100)] as $usage |
++        if ($usage | length) == 0 then "unavailable" else ($usage | max | round) end
++      '); then
++        exit 1
++      fi
++      case "$intel" in ''|unavailable|*[!0-9]*) ;; *)
++        [ -z "$max" ] || [ "$intel" -le "$max" ] || max=$intel
++        [ -n "$max" ] || max=$intel
++        ;;
++      esac
++    fi
++    if [ "$nvidia_eligible" = 1 ]; then
++      nvidia=$("$nvidia_smi" --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null |
++        "@gawk@/bin/awk" 'BEGIN { max=-1 } $1 ~ /^[0-9]+$/ && $1 > max { max=$1 } END { if (max >= 0) print max }')
++      case "$nvidia" in ''|*[!0-9]*) ;; *)
++        [ -z "$max" ] || [ "$nvidia" -le "$max" ] || max=$nvidia
++        [ -n "$max" ] || max=$nvidia
++        ;;
++      esac
++    fi
++    printf '%s\n' "\${max:-unavailable}"
++  `
++
++  Process {
++    id: gpuUsageProcess
++    command: [
++      "@coreutils@/bin/timeout", "-k", "1", "3", "@bash@/bin/sh", "-c",
++      root.gpuUsageCommand, "gpu-usage", Settings.data.systemMonitor.enableDgpuMonitoring ? "1" : "0"
++    ]
++    stdout: StdioCollector {}
++    stderr: StdioCollector {}
++
++    onExited: function(exitCode) {
++      const value = stdout.text.trim();
++      if (exitCode === 0 && /^\d+$/.test(value)) {
++        root.gpuUsage = Math.max(0, Math.min(100, Number(value)));
++        root.gpuUsageAvailable = true;
++        root.pushGpuUsageHistory();
++      } else {
++        root.gpuUsage = 0;
++        root.gpuUsageAvailable = false;
++      }
++    }
++  }
++
++  Timer {
++    id: gpuUsageTimer
++    interval: root.gpuUsageIntervalMs
++    repeat: true
++    running: root.shouldRun
++    triggeredOnStart: true
++    onTriggered: {
++      if (!gpuUsageProcess.running)
++        gpuUsageProcess.running = true;
++    }
++  }
++
++  Timer {
++    id: gpuUsageWatchdog
++    interval: 4000
++    running: gpuUsageProcess.running
++    onTriggered: gpuUsageProcess.signal(9)
++  }
++
+   // Timer for GPU temperature
+   Timer {
+     id: gpuTempTimer

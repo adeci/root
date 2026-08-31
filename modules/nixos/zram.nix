@@ -8,8 +8,8 @@ _: {
   };
   zramSwap = {
     enable = true;
-    algorithm = "lz4";
-    memoryPercent = 87;
+    algorithm = "zstd";
+    memoryPercent = 50;
     priority = 100;
   };
 }

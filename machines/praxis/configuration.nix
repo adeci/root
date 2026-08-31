@@ -13,14 +13,6 @@ let
       # UMA allocation as VRAM, so Noctalia misclassifies it as a dGPU and
       # otherwise suppresses its available hwmon temperature.
       systemMonitor.enableDgpuMonitoring = true;
-      bar.screenOverrides = [
-        {
-          name = "eDP-1";
-          widgets = import ../../packages/noctalia-shell/bar-widgets.nix {
-            compactSystemMonitor = true;
-          };
-        }
-      ];
     };
   };
 in
@@ -34,16 +26,13 @@ in
     ./modules/gpd-hacks.nix
     ./modules/gpd-audio-dsp.nix
     ./modules/viture-beast-audio.nix
-    ./modules/tailscale-travel.nix
-    ./modules/remote-hosts.nix
-
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/smartd.nix
-    (import ../../modules/nixos/desktop.nix { inherit noctaliaShellPackage; })
+    ../../modules/nixos/desktop.nix
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/amd-gpu.nix
@@ -59,6 +48,8 @@ in
     ../../modules/nixos/mullvad.nix
     ../../modules/nixos/rbw.nix
     ../../modules/nixos/cheat.nix
+    ../../modules/nixos/tailscale-travel.nix
+    ../../modules/nixos/remote-hosts.nix
   ];
 
   # gsim module
@@ -70,17 +61,13 @@ in
 
   services.teamviewer.enable = true;
 
-  services.smartd.notifications = {
-    systembus-notify.enable = true;
-    wall.enable = false;
-  };
-
   services.drv-thru.client = {
     enable = true;
     trustedBuilders.leviathan.publicKey = "drv-thru:sWwwRWpZKjcELSsXXpQFUarBIaM5xPj44WQWYoH75GY=";
   };
 
   environment.systemPackages = [
+    noctaliaShellPackage
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
     pkgs.calibre
