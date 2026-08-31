@@ -18,7 +18,7 @@
       "pnp": true,
       "pnp_id": 0,
       "lba_support": false,
-      "low_memory_size": 654336,
+      "low_memory_size": 638976,
       "smbios_version": 768
     },
     "bridge": [
@@ -1012,7 +1012,7 @@
           "srso",
           "ibpb_no_ret"
         ],
-        "bogo": 4890.81,
+        "bogo": 4890.8,
         "cache": 512,
         "units": 2,
         "physical_id": 0,
@@ -1395,7 +1395,7 @@
           {
             "type": "mem",
             "base": 0,
-            "range": 2016256000,
+            "range": 2016251904,
             "enabled": true,
             "access": "read_write",
             "prefetch": "unknown"
