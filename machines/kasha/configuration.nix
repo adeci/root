@@ -14,6 +14,8 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
+    ../../modules/nixos/auto-pressure-gc.nix
+    ../../modules/nixos/zram.nix
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/gnome.nix
     ../../modules/nixos/amd-gpu.nix
