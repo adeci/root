@@ -49,6 +49,9 @@ in
 
   services.paperless.consumptionDirIsPublic = true;
 
+  # vsftpd uses PAM for local logins; without this, PAM's fallback denies them.
+  security.pam.services.vsftpd = { };
+
   services.vsftpd = {
     enable = true;
     anonymousUser = false;
