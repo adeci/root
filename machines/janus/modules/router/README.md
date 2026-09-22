@@ -34,7 +34,8 @@ Tailscale
 
 ## Trust Model
 
-Trusted VLAN has full routed access. IoT and guest can only reach WAN.
+Trusted VLAN has full routed access. IoT can only reach WAN. Guest can reach WAN and
+the trusted printer on TCP ports 515 (LPD), 631 (IPP), and 9100 (JetDirect).
 Management has no forwarding by default; devices there can reach Janus for DHCP/DNS/API.
 
 Tailscale is the admin plane. Janus accepts Tailnet traffic to itself and forwards approved subnet-route traffic into local VLANs. Peer authorization lives in Tailscale route approval and ACLs, not per-peer nftables rules on Janus.

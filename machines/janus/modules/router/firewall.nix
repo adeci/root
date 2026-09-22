@@ -35,11 +35,21 @@ let
     };
     guest = {
       interface = topology.vlanInterface topology.vlans.guest;
-      description = "guest clients; internet only";
+      description = "guest clients; internet plus printing to the trusted printer";
       allow = [
         {
           target = "wan";
           counter = "forward_accept_guest_to_wan";
+        }
+        {
+          target = "trusted";
+          destination = topology.homelan.hosts.printer.ip;
+          tcpPorts = [
+            515 # LPD
+            631 # IPP
+            9100 # JetDirect
+          ];
+          counter = "forward_accept_guest_to_printer";
         }
       ];
     };
@@ -137,6 +147,12 @@ let
     }
     {
       name = "forward_accept_guest_to_wan";
+      chain = "forward";
+      action = "accept";
+      zone = "guest";
+    }
+    {
+      name = "forward_accept_guest_to_printer";
       chain = "forward";
       action = "accept";
       zone = "guest";
@@ -254,7 +270,15 @@ let
       [ "counter name ${zone.counter} accept" ]
     else
       map (
-        allow: ''oifname "${interfaceForTarget allow.target}" counter name ${allow.counter} accept''
+        allow:
+        lib.concatStringsSep " " (
+          [ ''oifname "${interfaceForTarget allow.target}"'' ]
+          ++ lib.optional (allow ? destination) "ip daddr ${allow.destination}"
+          ++
+            lib.optional (allow ? tcpPorts)
+              "tcp dport { ${lib.concatMapStringsSep ", " toString allow.tcpPorts} }"
+          ++ [ "counter name ${allow.counter} accept" ]
+        )
       ) zone.allow;
 
   indentLines = prefix: lines: lib.concatMapStringsSep "\n" (line: "${prefix}${line}") lines;
