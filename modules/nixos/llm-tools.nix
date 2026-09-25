@@ -24,8 +24,9 @@ in
 {
   environment.systemPackages = [
     skills
-    llm-agents.pi
     pkgs.pueue
+    llm-agents.pi
+    llm-agents.omp
     llm-agents.openspec
     llm-agents.workmux
   ];
