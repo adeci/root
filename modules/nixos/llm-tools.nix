@@ -27,6 +27,8 @@ in
     pkgs.pueue
     llm-agents.pi
     llm-agents.omp
+    llm-agents.codex
+    llm-agents.claude-code
     llm-agents.openspec
     llm-agents.workmux
   ];
