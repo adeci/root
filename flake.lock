@@ -607,6 +607,26 @@
         "type": "github"
       }
     },
+    "pelican": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791500473,
+        "narHash": "sha256-Law/PXeg766beaiQFJp2Ha3OosDsimws/f7E9lNmAEw=",
+        "owner": "adeci",
+        "repo": "vencord-pelican",
+        "rev": "f6f444e9fc668e84a8ee8b91ae3409db036851b0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "adeci",
+        "repo": "vencord-pelican",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "buildbot-nix": "buildbot-nix",
@@ -626,6 +646,7 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_6",
         "nixvim": "nixvim",
+        "pelican": "pelican",
         "sdwire-cli": "sdwire-cli",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix_8",

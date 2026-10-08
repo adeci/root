@@ -4,4 +4,9 @@
     region = "us-east-005";
     s3Endpoint = "s3.us-east-005.backblazeb2.com";
   };
+  ziplineShares = {
+    name = "adeci-shares";
+    region = "us-east-005";
+    s3Endpoint = "s3.us-east-005.backblazeb2.com";
+  };
 }
