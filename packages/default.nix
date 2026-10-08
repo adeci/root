@@ -114,8 +114,20 @@
       checks = false;
     };
 
+    vencord = {
+      path = ./vencord;
+      systems = [ "x86_64-linux" ];
+      checks = false;
+    };
+
     vesktop = {
       path = ./vesktop;
+      systems = [ "x86_64-linux" ];
+      checks = false;
+    };
+
+    zipline = {
+      path = ./zipline;
       systems = [ "x86_64-linux" ];
       checks = false;
     };

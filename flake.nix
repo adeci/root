@@ -64,6 +64,9 @@
 
     drv-thru.url = "github:adeci/drv-thru";
 
+    pelican.url = "github:adeci/vencord-pelican";
+    pelican.inputs.nixpkgs.follows = "nixpkgs";
+
     nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
     nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   };

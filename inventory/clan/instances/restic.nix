@@ -6,6 +6,7 @@
     };
 
     roles.client.machines = {
+      conduit = { };
       sequoia = { };
       leviathan = { };
       janus = { };

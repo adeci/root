@@ -32,6 +32,15 @@ let
   };
 in
 {
+  # Self-hosted Zipline endpoint; Cloudflare serves DNS only.
+  shares = {
+    zone = "decio.us";
+    name = "share";
+    type = "A";
+    edge = conduitEdge;
+    proxied = false;
+  };
+
   # Private Paperless endpoint. Public DNS resolves to Sequoia's Tailnet IP;
   # Janus overrides this locally to Sequoia's LAN IP.
   paperless = {

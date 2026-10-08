@@ -1,5 +1,9 @@
 # Social/communication apps.
-{ pkgs, self, ... }:
+{
+  pkgs,
+  self,
+  ...
+}:
 let
   packages = self.packages.${pkgs.stdenv.hostPlatform.system};
 in

@@ -12,6 +12,7 @@
     ../../modules/nixos/public-edge.nix
 
     ./modules/pressroom.nix
+    ./modules/zipline.nix
   ];
 
   time.timeZone = "America/New_York";
