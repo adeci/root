@@ -1,0 +1,111 @@
+--- a/clan_lib/flake/flake.py
++++ b/clan_lib/flake/flake.py
+@@ -12,6 +12,7 @@
+ from pathlib import Path
+ from tempfile import NamedTemporaryFile
+ from typing import TYPE_CHECKING, Any
++from urllib.parse import quote, urlencode
+ 
+ from clan_lib.cmd import Log, RunOpts, run
+ from clan_lib.dirs import clan_tmp_dir, select_source
+@@ -807,6 +808,7 @@
+     _path: Path | None = field(init=False, default=None)
+     _is_local: bool | None = field(init=False, default=None)
+     _cache_miss_stack_traces: list[str] = field(init=False, default_factory=list)
++    _source_dir: str = field(init=False, default="")
+ 
+     @classmethod
+     def from_json(
+@@ -882,6 +884,13 @@
+             raise ClanError(msg)
+         return self._path
+ 
++    @property
++    def source_dir(self) -> str:
++        """Flake directory within its source tree, from the `dir` parameter."""
++        if self._cache is None:
++            self.invalidate_cache()
++        return self._source_dir
++
+     def load_cache(self) -> None:
+         if os.environ.get("CLAN_NO_SELECT_DISK_CACHE") == "1":
+             log.debug("Skipping select cache load (CLAN_NO_SELECT_DISK_CACHE=1)")
+@@ -963,31 +972,34 @@
+         self._cache = FlakeCache()
+         if reset_tracking:
+             self._cache_miss_stack_traces.clear()
++        if "original" not in self.flake_metadata:
++            self.flake_metadata = nix_metadata(self.identifier)
+         if self.hash is None:
+             msg = "Hash cannot be None"
+             raise ClanError(msg)
+-        hashed_hash = sha1(self.hash.encode()).hexdigest()  # noqa: S324 - SHA1 used only for cache directory naming, not security
++        self._source_dir = self.flake_metadata["original"].get("dir", "")
++        cache_key = self.hash
++        if self._source_dir:
++            cache_key += f"?dir={self._source_dir}"
++        hashed_hash = sha1(cache_key.encode()).hexdigest()  # noqa: S324 - cache identity, not security
+         cache_root = os.environ.get("CLAN_TEST_FLAKE_CACHE") or clan_tmp_dir()
+         self.flake_cache_path = Path(cache_root) / "flakes-v2" / hashed_hash
+         self.load_cache()
+ 
+-        if "original" not in self.flake_metadata:
+-            self.flake_metadata = nix_metadata(self.identifier)
+-
+         if self.flake_metadata["original"].get("url", "").startswith("file:"):
+             self._is_local = True
+             path = self.flake_metadata["original"]["url"].removeprefix("file://")
+             path = path.removeprefix("file:")
+-            self._path = Path(path)
++            self._path = Path(path) / self._source_dir
+         elif self.flake_metadata["original"].get("path"):
+             self._is_local = True
+-            self._path = Path(self.flake_metadata["original"]["path"])
++            self._path = Path(self.flake_metadata["original"]["path"]) / self._source_dir
+         else:
+             self._is_local = False
+             if self.store_path is None:
+                 msg = "Store path cannot be None"
+                 raise ClanError(msg)
+-            self._path = Path(self.store_path)
++            self._path = Path(self.store_path) / self._source_dir
+ 
+     def get_from_nix(
+         self,
+@@ -1033,10 +1045,15 @@
+                 raise ClanError(msg)
+             select_hash = select_flake.hash
+ 
++        source_params = {"narHash": self.hash}
++        if self._source_dir:
++            source_params["dir"] = self._source_dir
++        source_ref = f"path:{self.store_path}?{urlencode(source_params, quote_via=quote)}"
++
+         # fmt: off
+         nix_code = f"""
+             let
+-              flake = builtins.getFlake "path:{self.store_path}?narHash={self.hash}";
++              flake = builtins.getFlake {json.dumps(source_ref)};
+               selectLib = (
+                 builtins.getFlake
+                   "path:{select_source()}?narHash={select_hash}"
+--- a/clan_lib/machines/update.py
++++ b/clan_lib/machines/update.py
+@@ -6,6 +6,7 @@
+ import uuid
+ from contextlib import ExitStack
+ from typing import TYPE_CHECKING, Literal, cast
++from urllib.parse import quote, urlencode
+ 
+ from clan_cli.hyperlink import hyperlink_same_text_and_url
+ from clan_cli.vars.upload import upload_secret_vars
+@@ -605,6 +606,9 @@
+         else:
+             flake_url = machine.flake.identifier
+             flake_store_path = nix_metadata(flake_url)["path"]
++        if machine.flake.source_dir:
++            source_params = urlencode({"dir": machine.flake.source_dir}, quote_via=quote)
++            flake_store_path = f"path:{flake_store_path}?{source_params}"
+ 
+         if machine._class_ == "nixos":
+             _update_nixos(
