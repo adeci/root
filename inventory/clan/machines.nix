@@ -82,13 +82,6 @@
     deploy.targetHost = "root@leviathan.cymric-daggertooth.ts.net";
   };
 
-  malum = {
-    name = "malum";
-    tags = [ ];
-    machineClass = "darwin";
-    deploy.targetHost = "root@localhost"; # local only for work
-  };
-
   modus = {
     name = "modus";
     tags = [

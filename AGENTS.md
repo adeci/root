@@ -32,8 +32,8 @@ nix fmt
 # NixOS machine eval
 nix eval .#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
 
-# Darwin machine eval only
-nix eval .#darwinConfigurations.<machine>.config.system.primaryUser
+# Darwin work-machine eval only
+nix eval ./work#darwinConfigurations.<machine>.config.system.primaryUser
 
 # Current-system checks
 nix eval .#checks.x86_64-linux --json
@@ -69,6 +69,12 @@ weights belong under `/var/lib/llm-weights`, not in NixOS toplevels.
 - `modules/clan/`: custom Clan services for coordinated multi-machine config.
 - `modules/terranix/`: Terraform/Terranix logic for external APIs/resources.
 - `machines/<name>/`: host composition and machine-specific modules.
+- `work/`: independent flake-parts/Clan composition for work machines. Shared
+  packages and OS modules remain at the top level; the main flake must not
+  depend on the work flake.
+
+Use `work/.envrc` to scope Clan commands to the work inventory. Without direnv,
+pass `--flake path:./work` from the repo root, or `--flake path:.` inside `work/`.
 
 Use `modules/nixos/` or `modules/darwin/` for reusable capabilities. Use
 `machines/<name>/modules/` only when config is tightly coupled to one host.
@@ -140,6 +146,10 @@ machines that need them.
 ```nix
 imports = [ self.users.alex.nixosModule ];
 ```
+
+Work identities live in `work/inventory/users/` and reuse `root.lib.mkUser`.
+Work hosts import `workUsers.<name>.darwinModule` or `.nixosModule`, rather
+than inheriting the personal identity from the shared `self.users` context.
 
 `self.resources` comes from `inventory/resources/`. Terraform modules and OS
 modules consume shared resource data from there.
