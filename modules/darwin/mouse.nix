@@ -46,8 +46,9 @@ in
 
   system.activationScripts.postActivation.text = # bash
     lib.mkAfter ''
-      # Start Scroll Reverser now after activation; launchd handles future logins.
-      if [[ -d ${lib.escapeShellArg scrollReverserApp} ]]; then
+      # Start Scroll Reverser after first install; launchd handles future logins.
+      # Opening an already-running app shows its settings window.
+      if [[ -d ${lib.escapeShellArg scrollReverserApp} ]] && ! /usr/bin/pgrep -qx "Scroll Reverser"; then
         launchctl asuser "$(/usr/bin/id -u -- ${user})" \
           sudo --user=${user} -- /usr/bin/open -gj -a "Scroll Reverser" || true
       fi
