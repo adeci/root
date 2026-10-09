@@ -1,30 +1,11 @@
+{ self, ... }:
 {
-  inputs,
-  config,
-  lib,
-  self,
-  ...
-}:
-{
-  imports = [
-    inputs.clan-core.nixosModules.installer
-  ];
-
-  clan.core.settings.state-version.enable = false;
-  system.stateVersion = config.system.nixos.release;
+  imports = [ ../../modules/nixos/clan-installer.nix ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
-  users.users.root.initialHashedPassword = lib.mkForce null;
 
-  console.keyMap = "us";
-  services.xserver.xkb.layout = "us";
-  i18n.defaultLocale = "en_US.UTF-8";
-
-  # my SSH key baked in so no need for --ssh-pubkey at flash time
-  users.users.root.openssh.authorizedKeys.keys = self.users.alex.sshKeys;
-
-  # Boot
-  boot.loader.grub.enable = lib.mkDefault true;
-  boot.loader.grub.efiSupport = lib.mkDefault true;
-  boot.loader.grub.efiInstallAsRemovable = lib.mkDefault true;
+  # shopkey lets work machines install from this stick too.
+  users.users.root.openssh.authorizedKeys.keys = self.users.alex.sshKeys ++ [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClADO9vF1WDZmhaCDvvzq43FlbZ9n2y3+QHSs0pnwRq shopkey"
+  ];
 }
