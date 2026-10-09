@@ -1,5 +1,24 @@
-{ lib, ... }:
 {
+  inputs,
+  config,
+  lib,
+  ...
+}:
+{
+  imports = [ inputs.clan-core.nixosModules.installer ];
+
+  clan.core.settings.state-version.enable = false;
+  system.stateVersion = config.system.nixos.release;
+  users.users.root.initialHashedPassword = lib.mkForce null;
+
+  console.keyMap = "us";
+  services.xserver.xkb.layout = "us";
+  i18n.defaultLocale = "en_US.UTF-8";
+
+  boot.loader.grub.enable = lib.mkDefault true;
+  boot.loader.grub.efiSupport = lib.mkDefault true;
+  boot.loader.grub.efiInstallAsRemovable = lib.mkDefault true;
+
   # USB stick partition layout (from clan-core's flash-installer)
   disko.devices.disk.main = {
     type = "disk";
