@@ -13,7 +13,8 @@
     meta.name = "adeci-work";
     meta.domain = "cymric-daggertooth.ts.net";
     inventory = import ../../inventory/clan;
-    # Shared modules consume the parent package/input context, not the work flake.
+    modules."@adeci/tailscale" = import (inputs.root + "/modules/clan/tailscale");
+    # Shared modules see the main flake as self and inputs.
     specialArgs = {
       self = inputs.root;
       inputs = inputs.root.inputs;

@@ -2,7 +2,7 @@
   "nodes": {
     "buildbot-nix": {
       "inputs": {
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": "nixpkgs_2",
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
@@ -186,7 +186,7 @@
     },
     "drv-thru": {
       "inputs": {
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs_3",
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
@@ -315,7 +315,7 @@
     },
     "litellm-nix": {
       "inputs": {
-        "nixpkgs": "nixpkgs_3",
+        "nixpkgs": "nixpkgs_4",
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
@@ -336,7 +336,7 @@
       "inputs": {
         "bun2nix": "bun2nix",
         "flake-parts": "flake-parts_2",
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_5",
         "systems": "systems_2",
         "treefmt-nix": "treefmt-nix_7"
       },
@@ -496,7 +496,26 @@
     },
     "nixos-hardware": {
       "inputs": {
-        "nixpkgs": "nixpkgs_5"
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1787901708,
+        "narHash": "sha256-dPWUVzHl4KHs+T3X2AVxaWfDGphBHKJrzdnIn0syU6g=",
+        "owner": "cooparo",
+        "repo": "nixos-hardware",
+        "rev": "7ea3467315662202a6071092ab653e18a6e38931",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cooparo",
+        "ref": "dell-xps-14-da14260",
+        "repo": "nixos-hardware",
+        "type": "github"
+      }
+    },
+    "nixos-hardware_2": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_6"
       },
       "locked": {
         "lastModified": 1787144466,
@@ -515,6 +534,19 @@
     },
     "nixpkgs": {
       "locked": {
+        "lastModified": 1767892417,
+        "narHash": "sha256-8bW3q88CEg2u4hSP66Vf4lpbLonHz7hqDNBMcCY7E9U=",
+        "rev": "3497aa5c9457a9d88d71fa93a4a8368816fbeeba",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.05pre924538.3497aa5c9457/nixexprs.tar.xz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
         "lastModified": 1783220960,
         "narHash": "sha256-8bCJaPlqwMBvuCs5eUC2nBlbFxXTBR0pmsy5PZUPRCU=",
         "ref": "nixos-unstable-small",
@@ -530,7 +562,7 @@
         "url": "https://github.com/NixOS/nixpkgs"
       }
     },
-    "nixpkgs_2": {
+    "nixpkgs_3": {
       "locked": {
         "lastModified": 1781577229,
         "narHash": "sha256-lrp67w8AulE9Ks53n27I45ADSzbOCn4H+CNW1Ck8B+8=",
@@ -546,7 +578,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1783522502,
         "narHash": "sha256-iffAls3iaNTyJC2faYcUXSI+Gp02cDjYl+MygxKl2GI=",
@@ -562,7 +594,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1790600678,
         "narHash": "sha256-6k3n7X2UsZ6tAlWTz99RimiZab+17tMUrw9sRUcELiA=",
@@ -578,7 +610,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_6": {
       "locked": {
         "lastModified": 1767892417,
         "narHash": "sha256-8bW3q88CEg2u4hSP66Vf4lpbLonHz7hqDNBMcCY7E9U=",
@@ -591,7 +623,7 @@
         "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
       }
     },
-    "nixpkgs_6": {
+    "nixpkgs_7": {
       "locked": {
         "lastModified": 1787070829,
         "narHash": "sha256-vXNVDVtvfiQuXthP0NHPFdNvvMTkGpx0UP8oddIWbNk=",
@@ -668,11 +700,13 @@
           "root",
           "nix-darwin"
         ],
+        "nixos-hardware": "nixos-hardware",
         "nixpkgs": [
           "root",
           "nixpkgs"
         ],
-        "root": "root_2"
+        "root": "root_2",
+        "shopify-framework": "shopify-framework"
       }
     },
     "root_2": {
@@ -691,8 +725,8 @@
         "nix-darwin": "nix-darwin",
         "nix-index-database": "nix-index-database",
         "nix-rosetta-builder": "nix-rosetta-builder",
-        "nixos-hardware": "nixos-hardware",
-        "nixpkgs": "nixpkgs_6",
+        "nixos-hardware": "nixos-hardware_2",
+        "nixpkgs": "nixpkgs_7",
         "nixvim": "nixvim",
         "pelican": "pelican",
         "sdwire-cli": "sdwire-cli",
@@ -746,6 +780,27 @@
         "owner": "Badger-Embedded",
         "repo": "sdwire-cli",
         "type": "github"
+      }
+    },
+    "shopify-framework": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790248181,
+        "narHash": "sha256-3/yPdpvGDk9qp5v4fYJ10NwU6MTu8rux98ScWYmVWGk=",
+        "ref": "surma/main",
+        "rev": "c72a1887f847dcd695dbed5083f9d31abb7f3aa6",
+        "revCount": 64,
+        "type": "git",
+        "url": "ssh://git@github.com/shopify-playground/shopify-framework"
+      },
+      "original": {
+        "ref": "surma/main",
+        "type": "git",
+        "url": "ssh://git@github.com/shopify-playground/shopify-framework"
       }
     },
     "sops-nix": {

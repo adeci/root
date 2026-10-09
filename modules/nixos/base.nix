@@ -1,4 +1,5 @@
 {
+  config,
   self,
   inputs,
   pkgs,
@@ -9,7 +10,9 @@
 
   users.mutableUsers = false;
   users.users.root = {
-    openssh.authorizedKeys.keys = self.users.alex.sshKeys;
+    # Root accepts the same keys as the machine's primary user.
+    openssh.authorizedKeys.keys =
+      config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
     packages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim ];
   };
   environment.variables.EDITOR = "nvim";
