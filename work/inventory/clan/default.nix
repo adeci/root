@@ -1,4 +1,4 @@
 {
   machines = import ./machines.nix;
-  instances = { };
+  instances = import ./instances.nix;
 }

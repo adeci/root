@@ -32,7 +32,8 @@ nix fmt
 # NixOS machine eval
 nix eval .#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
 
-# Darwin work-machine eval only
+# Work-machine eval
+nix eval ./work#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
 nix eval ./work#darwinConfigurations.<machine>.config.system.primaryUser
 
 # Current-system checks
@@ -73,8 +74,9 @@ weights belong under `/var/lib/llm-weights`, not in NixOS toplevels.
   packages and OS modules remain at the top level; the main flake must not
   depend on the work flake.
 
-Use `work/.envrc` to scope Clan commands to the work inventory. Without direnv,
-pass `--flake path:./work` from the repo root, or `--flake path:.` inside `work/`.
+Use `work/.envrc` for the work development shell. Its `.clan-flake` marker
+selects the work inventory without environment overrides. From the repo root,
+pass `--flake ./work` to target the work Clan explicitly.
 
 Use `modules/nixos/` or `modules/darwin/` for reusable capabilities. Use
 `machines/<name>/modules/` only when config is tightly coupled to one host.

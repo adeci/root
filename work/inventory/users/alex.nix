@@ -1,5 +1,6 @@
 {
   description = "Alex Shopify";
+  email = "alex.decious@shopify.com";
   uid = 3801;
   shell = "zsh";
   groups = [

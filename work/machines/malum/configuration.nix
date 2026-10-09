@@ -14,8 +14,16 @@
     (self + "/modules/darwin/linux-rosetta-builder.nix")
   ];
 
-  # SSH remains disabled until the networking step.
-  services.openssh.enable = false;
+  # Only shopkey; Clan deploys as root.
+  users.users.root.openssh.authorizedKeys.keys = workUsers.alex.sshKeys;
+  services.openssh = {
+    enable = true;
+    extraConfig = ''
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      AuthorizedKeysFile none
+    '';
+  };
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 6;
