@@ -15,7 +15,7 @@
 
   disko.devices.disk.main = {
     name = "main-3b63fa9dadf941fcbefbd3028749bcba";
-    device = "/dev/nvme0n1";
+    device = "/dev/disk/by-id/nvme-PC_SN7100S_SanDisk_1024GB_260842802132";
     type = "disk";
 
     content = {

@@ -11,6 +11,7 @@
 
     workUsers.alex.nixosModule
 
+    ../../modules/nixos/apps.nix
     ../../modules/nixos/enrollment.nix
     ../../modules/nixos/shell.nix
 
@@ -29,6 +30,7 @@
     (self + "/modules/nixos/laptop.nix")
     (self + "/modules/nixos/printing.nix")
     (self + "/modules/nixos/yubikey.nix")
+    (self + "/modules/nixos/ssh-tpm-agent.nix")
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";

@@ -521,16 +521,16 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1787901708,
-        "narHash": "sha256-dPWUVzHl4KHs+T3X2AVxaWfDGphBHKJrzdnIn0syU6g=",
-        "owner": "cooparo",
+        "lastModified": 1791738586,
+        "narHash": "sha256-+LZqUTBruiupIUEtzGhO1GyJwlXYzqaIV0CFzfhbCoo=",
+        "owner": "adeci",
         "repo": "nixos-hardware",
-        "rev": "7ea3467315662202a6071092ab653e18a6e38931",
+        "rev": "1cdc144783eb30f0d2c59a030ac95777d4e1609f",
         "type": "github"
       },
       "original": {
-        "owner": "cooparo",
-        "ref": "dell-xps-14-da14260",
+        "owner": "adeci",
+        "ref": "xps14-7.2-fixes",
         "repo": "nixos-hardware",
         "type": "github"
       }
@@ -848,11 +848,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790248181,
-        "narHash": "sha256-3/yPdpvGDk9qp5v4fYJ10NwU6MTu8rux98ScWYmVWGk=",
+        "lastModified": 1791632969,
+        "narHash": "sha256-kiigqz/ZbJp1qeqceKntptuSEr4TWw0AFyUHeFsbtvs=",
         "ref": "surma/main",
-        "rev": "c72a1887f847dcd695dbed5083f9d31abb7f3aa6",
-        "revCount": 64,
+        "rev": "1c5d998f65c8ff11b71a7a0ffa871081844f0673",
+        "revCount": 73,
         "type": "git",
         "url": "ssh://git@github.com/shopify-playground/shopify-framework"
       },
