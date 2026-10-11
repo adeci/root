@@ -31,7 +31,7 @@
 
   environment.systemPackages = with pkgs; [
     firefox
-    rustdesk
+    # rustdesk
   ];
 
   environment.gnome.excludePackages = with pkgs; [
