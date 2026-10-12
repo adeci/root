@@ -1,30 +1,11 @@
-{
-  inputs,
-  pkgs,
-  self,
-  ...
-}:
+{ inputs, pkgs, ... }:
 let
-  system = pkgs.stdenv.hostPlatform.system;
-  llm-agents = inputs.llm-agents.packages.${system};
-  mics-skills = inputs.mics-skills.packages.${system};
-
-  skillPkgs = [
-    self.packages.${system}.agent-browser
-    mics-skills.kagi-search
-    mics-skills.browser-cli
-    self.packages.${system}.pexpect-cli
-  ];
-
-  skills = pkgs.symlinkJoin {
-    name = "pi-skills";
-    paths = skillPkgs;
-  };
+  llm-agents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
+  imports = [ ./llm-config.nix ];
+
   environment.systemPackages = [
-    skills
-    pkgs.pueue
     llm-agents.pi
     llm-agents.omp
     llm-agents.codex
@@ -32,25 +13,4 @@ in
     llm-agents.openspec
     llm-agents.workmux
   ];
-
-  systemd.user.services.pueued = {
-    description = "Pueue task queue daemon";
-    wantedBy = [ "default.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.pueue}/bin/pueued";
-      Restart = "on-failure";
-      RestartSec = 1;
-      UMask = "0077";
-    };
-  };
-
-  systemd.user.tmpfiles.rules = [
-    "d %h/.agents/skills - - - - -"
-  ]
-  ++ map (pkg: "r %h/.pi/agent/skills/${pkg.pname} - - - - -") skillPkgs
-  ++ map (pkg: "r %h/.pi/agent/skills/managed/${pkg.pname} - - - - -") skillPkgs
-  ++ [ "r %h/.pi/agent/skills/managed - - - - -" ]
-  ++ map (
-    pkg: "L+ %h/.agents/skills/${pkg.pname} - - - - ${skills}/share/skills/${pkg.pname}"
-  ) skillPkgs;
 }

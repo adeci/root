@@ -67,6 +67,8 @@
     pelican.url = "github:adeci/vencord-pelican";
     pelican.inputs.nixpkgs.follows = "nixpkgs";
 
+    pi-kit.url = "git+ssh://git@github.com/adeci/pi-kit.git";
+
     nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
     nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   };

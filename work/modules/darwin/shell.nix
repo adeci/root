@@ -1,7 +1,6 @@
 {
   self,
   pkgs,
-  lib,
   ...
 }:
 let
@@ -24,43 +23,13 @@ let
   };
 in
 {
-  # Shopify's Determinate installation owns the Nix daemon and its configuration.
-  nix.enable = lib.mkForce false;
-
-  # Provider integration inherited by isolated personal Pi subagents.
-  environment.variables.PI_SUBAGENT_BOOTSTRAP_EXTENSIONS = "/Users/alex/.pi/agent/extensions/shopify-proxy";
-
-  # Preserve Homebrew packages and taps managed by Shopify tooling.
-  homebrew.onActivation.cleanup = lib.mkForce "none";
-
   # Replace default zsh with shopify variant
   environment.shells = [ shopifyZsh ];
-  environment.systemPackages = [
-    shopifyZsh
-    self.packages.${pkgs.stdenv.hostPlatform.system}.handy
-  ];
-
-  homebrew = {
-    casks = [
-      "1password"
-      "1password-cli"
-      "gcloud-cli"
-      "slack"
-    ];
-  };
-
-  # 1Password SSH agent
-  environment.etc."ssh/ssh_config.d/shopify".text = # ssh_config
-    ''
-      Host *
-        AddKeysToAgent yes
-        IdentityAgent "/Users/alex/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-    '';
-
+  environment.systemPackages = [ shopifyZsh ];
   # Disable WISH aliases (cd->wcd, ls->wls, j->wj)
   system.activationScripts.postActivation.text = # bash
     ''
-        mkdir -p /Users/alex/.config
+      mkdir -p /Users/alex/.config
       cat > /Users/alex/.config/wish.zsh.toml << 'EOF'
       [features]
       "alias.cd" = false

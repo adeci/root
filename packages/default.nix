@@ -46,6 +46,10 @@
       path = ./agent-browser;
     };
 
+    browser-cli = {
+      path = ./browser-cli;
+    };
+
     cheat = {
       path = ./cheat;
       systems = [ "x86_64-linux" ];

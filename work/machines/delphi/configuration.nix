@@ -11,11 +11,12 @@
 
     workUsers.alex.nixosModule
 
-    ../../modules/nixos/shopify.nix
+    ../../modules/nixos/enrollment.nix
+    ../../modules/nixos/shell.nix
 
     (self + "/modules/nixos/base.nix")
     (self + "/modules/nixos/zsh.nix")
-    (self + "/modules/nixos/llm-tools.nix")
+    (self + "/modules/nixos/llm-config.nix")
     (self + "/modules/nixos/auto-timezone.nix")
     (self + "/modules/nixos/auto-pressure-gc.nix")
     (self + "/modules/nixos/btrfs.nix")

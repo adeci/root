@@ -1,12 +1,5 @@
-{
-  pkgs,
-  workInputs,
-  workUsers,
-  ...
-}:
+{ pkgs, ... }:
 let
-  user = workUsers.alex;
-
   # Disable WISH aliases (cd->wcd, ls->wls, j->wj)
   wishConfig = (pkgs.formats.toml { }).generate "wish.zsh.toml" {
     features = {
@@ -20,16 +13,6 @@ let
   };
 in
 {
-  # Run `enroll` once after the first activation.
-  imports = [ workInputs.shopify-framework.nixosModules.default ];
-
-  shopify-framework = {
-    enable = true;
-    user = user.username;
-    idpUsername = user.email;
-    developerTools.enable = true;
-  };
-
   programs.zsh.interactiveShellInit = # zsh
     ''
       # shopify clusters to local kubernetes config

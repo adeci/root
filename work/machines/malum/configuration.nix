@@ -3,11 +3,13 @@
   imports = [
     workUsers.alex.darwinModule
 
-    ../../modules/darwin/shopify.nix
+    ../../modules/darwin/managed-device.nix
+    ../../modules/darwin/apps.nix
+    ../../modules/darwin/shell.nix
 
     (self + "/modules/darwin/base.nix")
     (self + "/modules/darwin/librewolf.nix")
-    (self + "/modules/darwin/llm-tools.nix")
+    (self + "/modules/darwin/llm-config.nix")
     (self + "/modules/darwin/karabiner.nix")
     (self + "/modules/darwin/mouse.nix")
     (self + "/modules/darwin/aerospace")
