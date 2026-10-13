@@ -5,7 +5,7 @@
       input = "self";
     };
     roles.peer.tags = [ "work-net" ];
-    # Work laptops run WARP, which owns DNS.
+    # Leave DNS to the local resolver
     roles.peer.settings.flags = [ "--accept-dns=false" ];
   };
 

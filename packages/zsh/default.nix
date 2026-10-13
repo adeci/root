@@ -9,7 +9,7 @@
 let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
 
-  wrappedGit = self.wrappers.git.wrap { inherit pkgs; };
+  defaultGit = self.wrappers.git.wrap { inherit pkgs; };
   wrappedTmux = self.wrappers.tmux.wrap { inherit pkgs; };
 
   atunConfigDir = pkgs.runCommand "atuin-config" { } ''
@@ -30,6 +30,12 @@ in
     description = "Extra shell init appended to zshrc";
   };
 
+  options.git = lib.mkOption {
+    type = lib.types.nullOr lib.types.package;
+    default = defaultGit;
+    description = "git first on PATH; null leaves git to the system.";
+  };
+
   config = {
     hmSessionVariables = null;
 
@@ -46,9 +52,9 @@ in
           "PATH"
           ":"
           (lib.makeBinPath (
-            [
+            lib.optional (config.git != null) config.git
+            ++ [
               # Wrapped packages
-              wrappedGit
               self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
 
               # Core CLI tools
@@ -168,14 +174,11 @@ in
         setopt no_beep
         setopt pushd_ignore_dups
         setopt complete_in_word
-        setopt auto_name_dirs
         setopt multios
 
-        # ── Vi keybindings ───────────────────────────────────────────────
-        bindkey -v
-        export KEYTIMEOUT=1
+        # ── Keybindings ──────────────────────────────────────────────────
+        bindkey -e
 
-        # Fix paste creating un-editable regions in vi mode
         zle_highlight+=(paste:none)
 
         autoload -Uz add-zle-hook-widget
@@ -194,7 +197,6 @@ in
         PURE_GIT_PULL=0
         PURE_CMD_MAX_EXEC_TIME=4
         PURE_PROMPT_SYMBOL="%(?.%F{green}.%F{red})❯%f"
-        PURE_PROMPT_VICMD_SYMBOL="%F{blue}❯%f"
         zstyle :prompt:pure:path color cyan
         zstyle :prompt:pure:git:branch color magenta
         zstyle :prompt:pure:git:branch:cached color red
@@ -205,11 +207,25 @@ in
         zstyle :prompt:pure:prompt:success color green
         zstyle :prompt:pure:prompt:error color red
         zstyle :prompt:pure:execution_time color yellow
+        zstyle :prompt:pure:custom:suffix color '#ff9e64'
+        zstyle :prompt:pure:environment:nix-shell show no
         prompt pure
 
         # Pure normally hides user@host for local, non-root shells.
         # Keep it visible so every prompt identifies the current machine.
         psvar[13]=1
+
+        # Real hostname, even when $HOST is overridden
+        PROMPT=''${PROMPT//@%m/@''${$(uname -n)%%.*}}
+
+        # Linked worktree name
+        prompt_pure_precustom() {
+          local top=$prompt_pure_vcs_info[top]
+          [[ -n $top && -f $top/.git ]] || return
+          local name=''${top:t}
+          [[ $name == src ]] && name=''${top:h:t}
+          psvar[23]="⎇ $name"
+        }
 
         RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
 

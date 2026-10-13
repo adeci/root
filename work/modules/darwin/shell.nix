@@ -1,32 +1,42 @@
 {
   self,
   pkgs,
+  lib,
   ...
 }:
 let
   shopifyZsh = self.wrappers.zsh.wrap {
     inherit pkgs;
+    git = null;
     extraInit = # zsh
       ''
         if [[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]]; then
           source /opt/homebrew/share/google-cloud-sdk/path.zsh.inc
         fi
 
-        # shopify clusters to local kubernetes config
         export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
 
-        # Shopify tec (includes shadowenv, dev tools, wish, and shell hooks)
+        # Work toolchain shell hooks
         if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
           eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
+        fi
+
+        # No environment banner before each prompt
+        if (( $+functions[__shadowenv_hook] )); then
+          functions -c __shadowenv_hook __shadowenv_hook_verbose
+          __shadowenv_hook() { __shadowenv_hook_verbose preexec; }
         fi
       '';
   };
 in
 {
-  # Replace default zsh with shopify variant
+  # Win sw/bin over base's personal zsh and git
   environment.shells = [ shopifyZsh ];
-  environment.systemPackages = [ shopifyZsh ];
-  # Disable WISH aliases (cd->wcd, ls->wls, j->wj)
+  environment.systemPackages = [
+    (lib.hiPrio shopifyZsh)
+    (lib.hiPrio pkgs.git)
+  ];
+  # Keep cd, ls and j unaliased
   system.activationScripts.postActivation.text = # bash
     ''
       mkdir -p /Users/alex/.config
