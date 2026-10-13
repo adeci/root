@@ -1,12 +1,16 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   self,
   ...
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;
+  profile = self.packages.${system}.pi-profile;
+  user = self.users.alex.username;
+  home = config.users.users.${user}.home;
   mics-skills = inputs.mics-skills.packages.${system};
   searchConfig = (pkgs.formats.json { }).generate "kagi-config.json" {
     password_command = "${pkgs.coreutils}/bin/cat ${config.clan.core.vars.generators.kagi-search.files.session-link.path}";
@@ -46,8 +50,8 @@ in
     share = true;
     files.session-link = {
       secret = true;
-      owner = "alex";
-      group = config.users.users.alex.group;
+      owner = user;
+      group = config.users.users.${user}.group;
       mode = "0400";
     };
     prompts.session-link = {
@@ -58,9 +62,17 @@ in
   };
 
   environment.systemPackages = [
+    profile
     skills
     pkgs.pueue
   ];
+
+  system.activationScripts.pi-profile = {
+    deps = [ "users" ];
+    text = ''
+      ${pkgs.util-linux}/bin/runuser -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"}
+    '';
+  };
 
   systemd.user.services.pueued = {
     description = "Pueue task queue daemon";

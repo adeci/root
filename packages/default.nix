@@ -96,6 +96,10 @@
       path = ./pexpect-cli;
     };
 
+    pi-profile = {
+      path = ./pi-profile;
+    };
+
     routeros-netinstall-cap-ax = {
       path = ./routeros-netinstall/cap-ax;
       systems = [ "x86_64-linux" ];

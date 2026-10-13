@@ -1,14 +1,17 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   self,
   ...
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;
+  profile = self.packages.${system}.pi-profile;
   mics-skills = inputs.mics-skills.packages.${system};
   user = config.system.primaryUser;
+  home = config.users.users.${user}.home;
   searchConfig = (pkgs.formats.json { }).generate "kagi-config.json" {
     password_command = "${pkgs.coreutils}/bin/cat ${config.clan.core.vars.generators.kagi-search.files.session-link.path}";
   };
@@ -59,6 +62,7 @@ in
   };
 
   environment.systemPackages = [
+    profile
     skills
     pkgs.pueue
   ];
@@ -76,14 +80,17 @@ in
 
   system.activationScripts.postActivation.text = # bash
   ''
-    skills_dir="/Users/${user}/.agents/skills"
-    install -d -o ${user} -g staff "$skills_dir"
-    install -d -m 700 -o ${user} -g staff /Users/${user}/.config/kagi
-    ln -sfn ${searchConfig} /Users/${user}/.config/kagi/config.json
+    skills_dir=${lib.escapeShellArg "${home}/.agents/skills"}
+    install -d -o ${lib.escapeShellArg user} -g staff "$skills_dir"
+    install -d -m 700 -o ${lib.escapeShellArg user} -g staff ${lib.escapeShellArg "${home}/.config/kagi"}
+    ln -sfn ${searchConfig} ${lib.escapeShellArg "${home}/.config/kagi/config.json"}
   ''
   + builtins.concatStringsSep "\n" (
     map (pkg: ''
       ln -sfn ${skills}/share/skills/${pkg.pname} "$skills_dir/${pkg.pname}"
     '') skillPkgs
-  );
+  )
+  + ''
+    /usr/bin/sudo -H -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"}
+  '';
 }
