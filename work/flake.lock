@@ -848,11 +848,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791632969,
-        "narHash": "sha256-kiigqz/ZbJp1qeqceKntptuSEr4TWw0AFyUHeFsbtvs=",
+        "lastModified": 1791991586,
+        "narHash": "sha256-CL+kHR0rV25cXIVoK5khh9qHLqA/s2qwqgSK8Tu2ktQ=",
         "ref": "surma/main",
-        "rev": "1c5d998f65c8ff11b71a7a0ffa871081844f0673",
-        "revCount": 73,
+        "rev": "9c51f4d1ce72a0e8f1e79efdcac99cc1b8d1cc86",
+        "revCount": 91,
         "type": "git",
         "url": "ssh://git@github.com/shopify-playground/shopify-framework"
       },

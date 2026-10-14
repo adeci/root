@@ -30,8 +30,6 @@ in
 
   users.users.alex.shell = zsh;
 
-  programs.git.enable = true;
-
   environment.systemPackages = [
     zsh
     self.packages.${system}.tmux
