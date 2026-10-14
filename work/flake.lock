@@ -731,17 +731,17 @@
         "treefmt-nix": "treefmt-nix_8"
       },
       "locked": {
-        "lastModified": 1791959267,
+        "lastModified": 1792005169,
         "narHash": "sha256-eC6SSDp/TtuXP2Fn4E8kh6iFjrqT1Cch2lQs43m6Bp8=",
-        "ref": "refs/heads/main",
-        "rev": "4316d0c9ea35a8382b3c07ee1f8987cdf6cab1ba",
-        "revCount": 38,
-        "type": "git",
-        "url": "ssh://git@github.com/adeci/pi-kit.git"
+        "owner": "adeci",
+        "repo": "pi-kit",
+        "rev": "3b6ae0650ee6f13104ac801dee050f919ae019f8",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/adeci/pi-kit.git"
+        "owner": "adeci",
+        "repo": "pi-kit",
+        "type": "github"
       }
     },
     "root": {
