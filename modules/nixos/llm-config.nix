@@ -74,6 +74,7 @@ in
     '';
   };
 
+  # Default queue for pexpect-cli; pi-kit jobs runs its own isolated daemon
   systemd.user.services.pueued = {
     description = "Pueue task queue daemon";
     wantedBy = [ "default.target" ];

@@ -67,6 +67,7 @@ in
     pkgs.pueue
   ];
 
+  # Default queue for pexpect-cli; pi-kit jobs runs its own isolated daemon
   launchd.user.agents.pueued.serviceConfig = {
     Label = "org.pueue.pueued";
     ProgramArguments = [ "${pkgs.pueue}/bin/pueued" ];
@@ -91,6 +92,7 @@ in
     '') skillPkgs
   )
   + ''
-    /usr/bin/sudo -H -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"}
+    /usr/bin/sudo -H -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"} \
+      || echo "pi-profile: ${home}/.pi/agent left unchanged" >&2
   '';
 }
