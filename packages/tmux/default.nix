@@ -42,6 +42,10 @@
 
     # --- Environment forwarding on reattach ---
     set -g update-environment 'DISPLAY SSH_ASKPASS SSH_AGENT_PID SSH_AUTH_SOCK SSH_CONNECTION SSH_TTY WINDOWID XAUTHORITY'
+
+    # New panes re-read the current system's environment
+    set-environment -gu __NIX_DARWIN_SET_ENVIRONMENT_DONE
+    set-environment -gu __NIXOS_SET_ENVIRONMENT_DONE
   '';
 
   configAfter = ''
