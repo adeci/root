@@ -21,6 +21,18 @@ let
         ) settings
       )
     );
+
+  kittyConf = pkgs.writeText "kitty.conf" (toKittyConf config.settings);
+
+  # Finder, Raycast and LaunchServices start Contents/MacOS/kitty directly,
+  # bypassing bin/kitty. Give the app bundle its own launcher that passes the
+  # same --config. Built separately so the compiler output is code-signed.
+  appLauncher =
+    pkgs.runCommand "kitty-app-launcher" { nativeBuildInputs = [ pkgs.makeBinaryWrapper ]; }
+      ''
+        makeWrapper ${config.package}/Applications/kitty.app/Contents/MacOS/kitty $out \
+          --add-flags "--config ${kittyConf}"
+      '';
 in
 {
   imports = [ wlib.modules.default ];
@@ -41,11 +53,15 @@ in
     description = "kitty.conf settings as an attrset.";
   };
 
-  config.flags."--config" = config.constructFiles.kittyConf.path;
+  config.flags."--config" = "${kittyConf}";
 
-  config.constructFiles.kittyConf = {
-    relPath = "${config.binName}.conf";
-    content = toKittyConf config.settings;
+  config.buildCommand.darwinAppLauncher = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+    after = [ "symlinkScript" ];
+    data = ''
+      launcher=${placeholder config.outputName}/Applications/kitty.app/Contents/MacOS/kitty
+      rm "$launcher"
+      cp ${appLauncher} "$launcher"
+    '';
   };
 
   config.settings = {

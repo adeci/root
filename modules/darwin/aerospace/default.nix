@@ -46,6 +46,10 @@ in
       AEROSPACE_DIR="/Users/${primaryUser}/.config/aerospace"
       mkdir -p "$AEROSPACE_DIR"
       cp ${aerospaceConfig} "$AEROSPACE_DIR/aerospace.toml"
-      /usr/bin/pgrep -qx AeroSpace && /opt/homebrew/bin/aerospace reload-config 2>/dev/null || true
+      # AeroSpace's IPC socket belongs to the user session; root cannot reach it.
+      if /usr/bin/pgrep -qx AeroSpace; then
+        launchctl asuser "$(/usr/bin/id -u -- ${primaryUser})" \
+          sudo --user=${primaryUser} -- /opt/homebrew/bin/aerospace reload-config || true
+      fi
     '';
 }

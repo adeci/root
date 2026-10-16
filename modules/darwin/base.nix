@@ -34,6 +34,7 @@ in
   # Fonts
   fonts.packages = [
     pkgs.nerd-fonts.caskaydia-cove
+    pkgs.nerd-fonts.caskaydia-mono
   ];
 
   # Wrapped shell as login shell
@@ -105,4 +106,16 @@ in
     ];
   };
 
+  # nix-darwin rsyncs changed app bundles into /Applications/Nix Apps. macOS
+  # keeps the old signature in LaunchServices and kills the next Finder or
+  # Raycast launch with "Launch Constraint Violation". Re-register the copies.
+  system.activationScripts.postActivation.text = # bash
+    lib.mkAfter ''
+      if [[ -d "/Applications/Nix Apps" ]]; then
+        launchctl asuser "$(/usr/bin/id -u -- ${config.system.primaryUser})" \
+          sudo --user=${config.system.primaryUser} -- \
+          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+          -f -R "/Applications/Nix Apps" || true
+      fi
+    '';
 }
