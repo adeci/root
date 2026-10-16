@@ -1,0 +1,17 @@
+--- a/src/input/mod.rs
++++ b/src/input/mod.rs
+@@ -3443,9 +3443,11 @@
+             }
+         };
+ 
+-        // Get window-specific scroll factor
+-        let window_scroll_factor = pointer
+-            .current_focus()
++        // Get window-specific scroll factor. Local patch: apply it only to
++        // touchpad-style scrolling so mouse-wheel ticks keep their native size.
++        let window_scroll_factor = matches!(source, AxisSource::Finger | AxisSource::Continuous)
++            .then(|| pointer.current_focus())
++            .flatten()
+             .map(|focused| self.niri.find_root_shell_surface(&focused))
+             .and_then(|root| self.niri.layout.find_window_and_output(&root).unzip().0)
+             .and_then(|window| window.rules().scroll_factor)

@@ -77,7 +77,10 @@ in
   imports = [ wlib.wrapperModules.niri ];
 
   config.package = pkgs.niri.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./refresh-output-identity-on-edid-change.patch ];
+    patches = (old.patches or [ ]) ++ [
+      ./refresh-output-identity-on-edid-change.patch
+      ./window-scroll-factor-touchpad-only.patch
+    ];
   });
   config."v2-settings" = true;
 
@@ -222,6 +225,9 @@ in
       touchpad = {
         tap = emptyNode;
         natural-scroll = emptyNode;
+        # Scales the whole adaptive curve to about 53% of libinput's default.
+        # Tuned on delphi's XPS 14 touchpad. Two-finger scroll is unaffected.
+        accel-speed = -0.25;
       };
       mouse = { };
       trackpoint = {
@@ -422,6 +428,25 @@ in
           { app-id = "librewolf"; }
         ];
         clip-to-geometry = true;
+      }
+
+      # Chromium's Wayland backend multiplies touchpad scroll deltas by 12
+      # (value / 10 * 120). Upstream's WaylandUnscaledTouchpadScrolling
+      # feature replaces this with 2.5, but Chrome 151 and current Electron do
+      # not have it yet. 0.15 was tuned live on delphi; upstream's 2.5 / 12
+      # would be about 0.2. Chromium's kinetic fling relies on the
+      # wl_pointer.axis_stop niri sends when fingers lift.
+      # Drop this once Chromium ships that feature enabled by default.
+      # Steam's CEF runs under xwayland-satellite; its factor is untested.
+      # steam_app_* game windows are deliberately not matched.
+      # window-scroll-factor-touchpad-only.patch keeps mouse wheels native.
+      {
+        matches = [
+          {
+            app-id = "(?i)^(google-chrome|chromium|chromium-browser|brave-browser|slack|discord|vesktop|element|signal|1password|code|cursor|obsidian|bitwarden|spotify|steam)$";
+          }
+        ];
+        scroll-factor = 0.15;
       }
 
       # Custom fork only: `on-output` window-rule matcher.
