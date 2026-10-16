@@ -80,6 +80,7 @@ in
     patches = (old.patches or [ ]) ++ [
       ./refresh-output-identity-on-edid-change.patch
       ./window-scroll-factor-touchpad-only.patch
+      ./cursor-shake-to-find.patch
     ];
   });
   config."v2-settings" = true;
@@ -320,6 +321,9 @@ in
       xcursor-theme = cursor-theme;
       xcursor-size = lib.strings.toInt cursor-size;
       hide-after-inactive-ms = 1000;
+      # Both require cursor-shake-to-find.patch.
+      shake-to-find = emptyNode;
+      shake-to-find-scale = 3.0;
     };
 
     # ── Layout ─────────────────────────────────────────────────────

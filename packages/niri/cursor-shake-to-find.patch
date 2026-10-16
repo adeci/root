@@ -1,0 +1,514 @@
+Shake-to-find: enlarge the cursor while the pointer is shaken.
+
+Local niri patch. Detection follows KWin's shake cursor effect. The normal
+cursor path is unchanged; only an enlarged named cursor is rendered differently.
+Config: `cursor { shake-to-find; shake-to-find-scale 3; }`.
+
+diff --git a/niri-config/src/lib.rs b/niri-config/src/lib.rs
+index 329b766..24fe390 100644
+--- a/niri-config/src/lib.rs
++++ b/niri-config/src/lib.rs
+@@ -829,6 +829,8 @@ mod tests {
+                 xcursor-size 16
+                 hide-when-typing
+                 hide-after-inactive-ms 3000
++                shake-to-find
++                shake-to-find-scale 4
+             }
+ 
+             screenshot-path "~/Screenshots/screenshot.png"
+@@ -1480,6 +1482,8 @@ mod tests {
+                 hide_after_inactive_ms: Some(
+                     3000,
+                 ),
++                shake_to_find: true,
++                shake_to_find_scale: 4.0,
+             },
+             screenshot_path: ScreenshotPath(
+                 Some(
+diff --git a/niri-config/src/misc.rs b/niri-config/src/misc.rs
+index 66a200c..c3cf2f8 100644
+--- a/niri-config/src/misc.rs
++++ b/niri-config/src/misc.rs
+@@ -20,6 +20,8 @@ pub struct Cursor {
+     pub xcursor_size: u8,
+     pub hide_when_typing: bool,
+     pub hide_after_inactive_ms: Option<u32>,
++    pub shake_to_find: bool,
++    pub shake_to_find_scale: f64,
+ }
+ 
+ impl Default for Cursor {
+@@ -29,6 +31,8 @@ impl Default for Cursor {
+             xcursor_size: 24,
+             hide_when_typing: false,
+             hide_after_inactive_ms: None,
++            shake_to_find: false,
++            shake_to_find_scale: 3.,
+         }
+     }
+ }
+@@ -43,16 +47,32 @@ pub struct CursorPart {
+     pub hide_when_typing: Option<Flag>,
+     #[knuffel(child, unwrap(argument))]
+     pub hide_after_inactive_ms: Option<u32>,
++    #[knuffel(child)]
++    pub shake_to_find: Option<Flag>,
++    #[knuffel(child, unwrap(argument))]
++    pub shake_to_find_scale: Option<FloatOrInt<1, 16>>,
+ }
+ 
+ impl MergeWith<CursorPart> for Cursor {
+     fn merge_with(&mut self, part: &CursorPart) {
+         merge_clone!((self, part), xcursor_theme, xcursor_size);
+-        merge!((self, part), hide_when_typing);
++        merge!(
++            (self, part),
++            hide_when_typing,
++            shake_to_find,
++            shake_to_find_scale
++        );
+         merge_clone_opt!((self, part), hide_after_inactive_ms);
+     }
+ }
+ 
++impl Cursor {
++    /// The shake-to-find enlargement, or `None` when disabled.
++    pub fn shake_to_find_scale(&self) -> Option<f64> {
++        self.shake_to_find.then_some(self.shake_to_find_scale)
++    }
++}
++
+ #[derive(knuffel::Decode, Debug, Clone, PartialEq)]
+ pub struct ScreenshotPath(#[knuffel(argument)] pub Option<String>);
+ 
+diff --git a/src/cursor_shake.rs b/src/cursor_shake.rs
+new file mode 100644
+index 0000000..2f900c8
+--- /dev/null
++++ b/src/cursor_shake.rs
+@@ -0,0 +1,236 @@
++//! Shake-to-find: temporarily enlarge the cursor when the pointer is shaken.
++//!
++//! Detection follows KWin's shake cursor effect: keep recent pointer positions, merge
++//! consecutive movements in the same direction, and report a shake when the travelled
++//! distance is much longer than the diagonal of the area it covered.
++
++use std::time::Duration;
++
++use smithay::utils::{Logical, Point};
++
++/// How far back pointer positions are considered.
++const HISTORY_WINDOW: Duration = Duration::from_millis(1000);
++/// Travelled distance divided by the bounding box diagonal needed to count as a shake.
++const SHAKE_FACTOR: f64 = 4.;
++/// Minimum bounding box diagonal, in logical pixels, so that jitter does not count.
++const MIN_DIAGONAL: f64 = 100.;
++/// Deltas within this many logical pixels count as either direction.
++const DIRECTION_TOLERANCE: f64 = 1.;
++/// Duration of growing and shrinking.
++const ANIMATION_DURATION: Duration = Duration::from_millis(200);
++/// How long the cursor stays enlarged after the last detected shake.
++const HOLD_DURATION: Duration = Duration::from_millis(1000);
++
++#[derive(Debug, Default)]
++pub struct CursorShake {
++    history: Vec<(Point<f64, Logical>, Duration)>,
++    magnify: Option<Magnify>,
++}
++
++/// An enlargement: grow from `from` to `to` starting at `start`, then shrink back to 1 at
++/// `shrink_at`.
++#[derive(Debug, Clone, Copy)]
++struct Magnify {
++    from: f64,
++    to: f64,
++    start: Duration,
++    shrink_at: Duration,
++}
++
++impl CursorShake {
++    /// Feeds a new pointer position.
++    ///
++    /// `max_scale` is the configured enlargement, or `None` when the feature is disabled.
++    pub fn on_motion(&mut self, pos: Point<f64, Logical>, now: Duration, max_scale: Option<f64>) {
++        let Some(max_scale) = max_scale else {
++            self.reset();
++            return;
++        };
++
++        if self
++            .magnify
++            .is_some_and(|m| m.shrink_at + ANIMATION_DURATION <= now)
++        {
++            self.magnify = None;
++        }
++
++        if !self.detect(pos, now) {
++            return;
++        }
++
++        self.magnify = Some(match self.magnify {
++            // Still growing or holding: keep the current animation, extend the hold.
++            Some(m) if now < m.shrink_at => Magnify {
++                shrink_at: now + HOLD_DURATION,
++                ..m
++            },
++            // Idle or shrinking: grow from the current scale.
++            _ => Magnify {
++                from: self.scale(now),
++                to: max_scale,
++                start: now,
++                shrink_at: now + HOLD_DURATION,
++            },
++        });
++    }
++
++    /// Forgets the movement history, for example while a button is held.
++    pub fn reset_history(&mut self) {
++        self.history.clear();
++    }
++
++    pub fn reset(&mut self) {
++        self.history.clear();
++        self.magnify = None;
++    }
++
++    /// Returns the cursor scale at `now`; 1 when not enlarged.
++    pub fn scale(&self, now: Duration) -> f64 {
++        let Some(m) = self.magnify else {
++            return 1.;
++        };
++
++        let grown = |t: Duration| animate(m.from, m.to, m.start, t);
++        if now < m.shrink_at {
++            grown(now)
++        } else {
++            animate(grown(m.shrink_at), 1., m.shrink_at, now)
++        }
++    }
++
++    /// Whether the scale is not 1 or may still change, so redraws must continue.
++    pub fn is_active(&self, now: Duration) -> bool {
++        self.magnify
++            .is_some_and(|m| now < m.shrink_at + ANIMATION_DURATION)
++    }
++
++    fn detect(&mut self, pos: Point<f64, Logical>, now: Duration) -> bool {
++        self.history
++            .retain(|(_, time)| now.saturating_sub(*time) < HISTORY_WINDOW);
++
++        if let [.., prev, last] = &mut self.history[..] {
++            let same_direction = same_sign(last.0.x - prev.0.x, pos.x - last.0.x)
++                && same_sign(last.0.y - prev.0.y, pos.y - last.0.y);
++            if same_direction {
++                *last = (pos, now);
++                return false;
++            }
++        }
++
++        self.history.push((pos, now));
++
++        let first = self.history[0].0;
++        let (mut min, mut max) = (first, first);
++        let mut distance = 0.;
++        for pair in self.history.windows(2) {
++            let (a, b) = (pair[0].0, pair[1].0);
++            distance += (b.x - a.x).hypot(b.y - a.y);
++            min = Point::from((min.x.min(b.x), min.y.min(b.y)));
++            max = Point::from((max.x.max(b.x), max.y.max(b.y)));
++        }
++
++        let diagonal = (max.x - min.x).hypot(max.y - min.y);
++        if diagonal < MIN_DIAGONAL || distance / diagonal <= SHAKE_FACTOR {
++            return false;
++        }
++
++        self.history.clear();
++        true
++    }
++}
++
++fn same_sign(a: f64, b: f64) -> bool {
++    (a >= -DIRECTION_TOLERANCE && b >= -DIRECTION_TOLERANCE)
++        || (a <= DIRECTION_TOLERANCE && b <= DIRECTION_TOLERANCE)
++}
++
++/// Ease from `from` to `to` over [`ANIMATION_DURATION`] starting at `start`.
++fn animate(from: f64, to: f64, start: Duration, now: Duration) -> f64 {
++    let t = now.saturating_sub(start).as_secs_f64() / ANIMATION_DURATION.as_secs_f64();
++    let t = t.min(1.);
++    // Cubic ease-in-out.
++    let eased = if t < 0.5 {
++        4. * t * t * t
++    } else {
++        1. - (-2. * t + 2.).powi(3) / 2.
++    };
++    from + (to - from) * eased
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn ms(ms: u64) -> Duration {
++        Duration::from_millis(ms)
++    }
++
++    /// Moves back and forth horizontally by `amplitude`, one reversal every 20 ms.
++    fn shake(shake: &mut CursorShake, start: u64, reversals: u64, amplitude: f64) -> u64 {
++        let mut t = start;
++        for i in 0..reversals {
++            let x = if i % 2 == 0 { amplitude } else { 0. };
++            // Two samples per stroke, so strokes have intermediate motion.
++            shake.on_motion(Point::from((x / 2., 0.)), ms(t), Some(3.));
++            shake.on_motion(Point::from((x, 0.)), ms(t + 10), Some(3.));
++            t += 20;
++        }
++        t
++    }
++
++    #[test]
++    fn straight_motion_does_not_trigger() {
++        let mut s = CursorShake::default();
++        for i in 0..100 {
++            s.on_motion(Point::from((i as f64 * 10., 0.)), ms(i * 5), Some(3.));
++        }
++        assert!(!s.is_active(ms(500)));
++        assert_eq!(s.scale(ms(500)), 1.);
++    }
++
++    #[test]
++    fn small_jitter_does_not_trigger() {
++        let mut s = CursorShake::default();
++        shake(&mut s, 0, 30, 20.);
++        assert!(!s.is_active(ms(600)));
++    }
++
++    #[test]
++    fn shake_grows_holds_and_shrinks() {
++        let mut s = CursorShake::default();
++        let t = shake(&mut s, 0, 12, 150.);
++        assert!(s.is_active(ms(t)));
++
++        // Fully grown after the animation and during the hold.
++        assert_eq!(s.scale(ms(t + 250)), 3.);
++        // Back to normal after hold and shrink.
++        assert_eq!(s.scale(ms(t + 1300)), 1.);
++        assert!(!s.is_active(ms(t + 1300)));
++    }
++
++    #[test]
++    fn disabled_resets() {
++        let mut s = CursorShake::default();
++        let t = shake(&mut s, 0, 12, 150.);
++        assert!(s.is_active(ms(t)));
++        s.on_motion(Point::from((0., 0.)), ms(t), None);
++        assert!(!s.is_active(ms(t)));
++        assert_eq!(s.scale(ms(t)), 1.);
++    }
++
++    #[test]
++    fn scale_is_continuous_when_regrowing_while_shrinking() {
++        let mut s = CursorShake::default();
++        shake(&mut s, 0, 12, 150.);
++        let shrink_at = s.magnify.unwrap().shrink_at;
++
++        // Shake again shortly after shrinking started.
++        shake(&mut s, (shrink_at + ms(50)).as_millis() as u64, 12, 150.);
++        let m = s.magnify.unwrap();
++
++        // Regrowth starts from the partly shrunk scale, not from 1 or the maximum.
++        assert!(m.start > shrink_at);
++        assert!(m.from > 1. && m.from < 3., "{}", m.from);
++        assert_eq!(s.scale(m.start), m.from);
++    }
++}
+diff --git a/src/input/mod.rs b/src/input/mod.rs
+index dc997ab..0db57a5 100644
+--- a/src/input/mod.rs
++++ b/src/input/mod.rs
+@@ -2603,6 +2603,8 @@ impl State {
+ 
+         pointer.frame(self);
+ 
++        self.niri.update_cursor_shake(new_pos);
++
+         // contents_under() will return no surface when the hot corner should trigger, so
+         // pointer.motion() will set the current focus to None.
+         if under.hot_corner && pointer.current_focus().is_none() {
+@@ -2696,6 +2698,8 @@ impl State {
+ 
+         pointer.frame(self);
+ 
++        self.niri.update_cursor_shake(pos);
++
+         // contents_under() will return no surface when the hot corner should trigger, so
+         // pointer.motion() will set the current focus to None.
+         if under.hot_corner && pointer.current_focus().is_none() {
+diff --git a/src/lib.rs b/src/lib.rs
+index d516838..ddae022 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -7,6 +7,7 @@ pub mod animation;
+ pub mod backend;
+ pub mod cli;
+ pub mod cursor;
++pub mod cursor_shake;
+ #[cfg(feature = "dbus")]
+ pub mod dbus;
+ pub mod frame_clock;
+diff --git a/src/niri.rs b/src/niri.rs
+index ec40e01..3818e92 100644
+--- a/src/niri.rs
++++ b/src/niri.rs
+@@ -118,6 +118,7 @@ use crate::animation::Clock;
+ use crate::backend::tty::SurfaceDmabufFeedback;
+ use crate::backend::{Backend, Headless, RenderResult, Tty, Winit};
+ use crate::cursor::{CursorManager, CursorTextureCache, RenderCursor, XCursor};
++use crate::cursor_shake::CursorShake;
+ #[cfg(feature = "dbus")]
+ use crate::dbus::freedesktop_locale1::Locale1ToNiri;
+ #[cfg(feature = "dbus")]
+@@ -339,6 +340,7 @@ pub struct Niri {
+ 
+     pub cursor_manager: CursorManager,
+     pub cursor_texture_cache: CursorTextureCache,
++    pub cursor_shake: CursorShake,
+     pub cursor_shape_manager_state: CursorShapeManagerState,
+     pub dnd_icon: Option<DndIcon>,
+     /// Contents under pointer.
+@@ -1579,6 +1581,10 @@ impl State {
+             cursor_inactivity_timeout_changed = true;
+         }
+ 
++        if config.cursor.shake_to_find_scale() != old_config.cursor.shake_to_find_scale() {
++            self.niri.cursor_shake.reset();
++        }
++
+         if config.debug.keep_laptop_panel_on_when_lid_is_closed
+             != old_config.debug.keep_laptop_panel_on_when_lid_is_closed
+         {
+@@ -2571,6 +2577,7 @@ impl Niri {
+             xkb_from_locale1: None,
+             cursor_manager,
+             cursor_texture_cache: Default::default(),
++            cursor_shake: Default::default(),
+             cursor_shape_manager_state,
+             dnd_icon: None,
+             pointer_contents: PointContents::default(),
+@@ -3721,6 +3728,23 @@ impl Niri {
+                     &mut |elem| push(elem.into()),
+                 );
+             }
++            RenderCursor::Named {
++                icon,
++                scale,
++                cursor,
++            } if self.cursor_shake.scale(self.clock.now_unadjusted()) > 1. => {
++                let element = self.shaken_pointer_element(
++                    renderer,
++                    icon,
++                    scale,
++                    &cursor,
++                    pointer_pos,
++                    output_scale,
++                );
++                if let Some(element) = element {
++                    push(element.into());
++                }
++            }
+             RenderCursor::Named {
+                 icon,
+                 scale,
+@@ -3764,6 +3788,73 @@ impl Niri {
+         }
+     }
+ 
++    /// Returns the named cursor enlarged by shake-to-find.
++    ///
++    /// Loads the icon at a larger size so the cursor stays sharp, then scales it around the
++    /// pointer position, which keeps the hotspot in place.
++    fn shaken_pointer_element<R: NiriRenderer>(
++        &self,
++        renderer: &mut R,
++        icon: CursorIcon,
++        scale: i32,
++        cursor: &XCursor,
++        pointer_pos: Point<f64, Logical>,
++        output_scale: Scale<f64>,
++    ) -> Option<RescaleRenderElement<MemoryRenderBufferRenderElement<R>>> {
++        let shake_scale = self.cursor_shake.scale(self.clock.now_unadjusted());
++        let max_scale = self.config.borrow().cursor.shake_to_find_scale;
++        let large_scale = scale * max_scale.ceil() as i32;
++        let large = self
++            .cursor_manager
++            .get_cursor_with_name(icon, large_scale)
++            .unwrap_or_else(|| self.cursor_manager.get_default_cursor(large_scale));
++
++        let millis = self.start_time.elapsed().as_millis() as u32;
++        let (_, frame) = cursor.frame(millis);
++        let (idx, large_frame) = large.frame(millis);
++
++        // At shake scale 1 this matches the normal cursor's logical size, whichever image
++        // sizes the theme provides.
++        let normal_width = f64::from(frame.width) / f64::from(scale);
++        let large_width = f64::from(large_frame.width) / f64::from(large_scale);
++        let rescale = shake_scale * normal_width / large_width;
++
++        let hotspot = XCursor::hotspot(large_frame).to_logical(large_scale);
++        let pos = (pointer_pos - hotspot.to_f64()).to_physical_precise_round(output_scale);
++        let origin = pointer_pos.to_physical_precise_round(output_scale);
++
++        let texture = self
++            .cursor_texture_cache
++            .get(icon, large_scale, &large, idx);
++        match MemoryRenderBufferRenderElement::from_buffer(
++            renderer,
++            pos,
++            &texture,
++            None,
++            None,
++            None,
++            Kind::Cursor,
++        ) {
++            Ok(element) => Some(RescaleRenderElement::from_element(element, origin, rescale)),
++            Err(err) => {
++                warn!("error importing a cursor texture: {err:?}");
++                None
++            }
++        }
++    }
++
++    pub fn update_cursor_shake(&mut self, pos: Point<f64, Logical>) {
++        // Ignore drags and other grabs.
++        if self.seat.get_pointer().unwrap().is_grabbed() {
++            self.cursor_shake.reset_history();
++            return;
++        }
++
++        let max_scale = self.config.borrow().cursor.shake_to_find_scale();
++        let now = self.clock.now_unadjusted();
++        self.cursor_shake.on_motion(pos, now, max_scale);
++    }
++
+     /// Checks if the pointer should be included on a window cast or screenshot.
+     ///
+     /// Returns `(cursor_global_pos, win_pos)` if the pointer should be included, or `None`
+@@ -4607,6 +4698,8 @@ impl Niri {
+             state.unfinished_animations_remain |= self
+                 .cursor_manager
+                 .is_current_cursor_animated(output.current_scale().integer_scale());
++            state.unfinished_animations_remain |=
++                self.cursor_shake.is_active(self.clock.now_unadjusted());
+ 
+             // Also check layer surfaces.
+             if !state.unfinished_animations_remain {
+@@ -6496,6 +6589,7 @@ niri_render_elements! {
+     PointerRenderElements<R> => {
+         Wayland = WaylandSurfaceRenderElement<R>,
+         NamedPointer = MemoryRenderBufferRenderElement<R>,
++        ShakenNamedPointer = RescaleRenderElement<MemoryRenderBufferRenderElement<R>>,
+     }
+ }
+ 
