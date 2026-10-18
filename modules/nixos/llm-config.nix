@@ -39,6 +39,7 @@ in
     todos.enable = true;
     handoff.enable = true;
     goal.enable = true;
+    claude-billing.enable = true;
     director.enable = true;
     jobs = {
       enable = true;

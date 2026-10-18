@@ -558,6 +558,17 @@ in
           "clipboard"
         ];
       };
+      # The Copilot key sends Super+Shift+F23. Handy cannot register F23 itself,
+      # and its own shortcuts are not global on Wayland.
+      "Mod+Shift+F23" = _: {
+        props.hotkey-overlay-title = "Toggle Dictation";
+        # One press must toggle once; key repeat would start and stop at once.
+        props.repeat = false;
+        content.spawn = [
+          "handy"
+          "--toggle-transcription"
+        ];
+      };
       "Super+Alt+L" = _: {
         props.hotkey-overlay-title = "Lock the Screen";
         content.spawn = [

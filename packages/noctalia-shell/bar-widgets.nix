@@ -37,7 +37,6 @@ in
     { id = "Tray"; }
     { id = "NotificationHistory"; }
     { id = "plugin:niri-display"; }
-    { id = "plugin:voxtype"; }
     { id = "plugin:mullvad"; }
     { id = "plugin:tailscale"; }
     { id = "Network"; }

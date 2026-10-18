@@ -218,12 +218,82 @@ in
         # Real hostname, even when $HOST is overridden
         PROMPT=''${PROMPT//@%m/@''${$(uname -n)%%.*}}
 
+        # Keep long World paths and worktree names from monopolizing the
+        # preprompt. Pure does not expose a path length style, so override the
+        # small renderer hook it calls from precmd. The hard cap wins, but it
+        # also scales down on narrow terminals.
+        PURE_PROMPT_PATH_MAX_COLUMNS=''${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
+        PURE_PROMPT_PATH_MIN_COLUMNS=''${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
+        PURE_PROMPT_PATH_FRACTION=''${PURE_PROMPT_PATH_FRACTION:-45}
+        PURE_PROMPT_WORKTREE_MAX_COLUMNS=''${PURE_PROMPT_WORKTREE_MAX_COLUMNS:-32}
+
+        _prompt_pure_path_max_columns() {
+          emulate -L zsh
+          integer max=''${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
+          integer min=''${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
+          integer fraction=''${PURE_PROMPT_PATH_FRACTION:-45}
+
+          if (( COLUMNS > 0 && fraction > 0 )); then
+            integer from_columns=$(( COLUMNS * fraction / 100 ))
+            (( from_columns < max )) && max=$from_columns
+          fi
+          (( max < min )) && max=$min
+          print -r -- $max
+        }
+
+        _prompt_pure_truncate_left() {
+          emulate -L zsh
+          local value=$1
+          integer max=''${2:-32}
+          (( max <= 0 || ''${#value} <= max )) && { print -r -- $value; return; }
+          print -r -- "…''${value[-$(( max - 1 )),-1]}"
+        }
+
+        _prompt_pure_truncate_middle() {
+          emulate -L zsh
+          local value=$1
+          integer max=''${2:-32}
+          (( max <= 0 || ''${#value} <= max )) && { print -r -- $value; return; }
+          (( max <= 1 )) && { print -r -- …; return; }
+          integer head=$(( (max - 1) / 2 ))
+          integer tail=$(( max - 1 - head ))
+          print -r -- "''${value[1,$head]}…''${value[-$tail,-1]}"
+        }
+
+        prompt_pure_set_path_separator() {
+          typeset -g prompt_pure_path_segment="%F{''${prompt_pure_colors[path]}}%$(_prompt_pure_path_max_columns)<…<%~%<<%f"
+
+          if zstyle -t ':prompt:pure:path:separator' dim; then
+            typeset -g prompt_pure_path_separator_dimmed=1
+          else
+            typeset -g prompt_pure_path_separator_dimmed=
+          fi
+        }
+
+        prompt_pure_render_dimmed_path() {
+          setopt localoptions noshwordsplit
+
+          local current_path=''${1:-''${(%):-%~}}
+          current_path=$(_prompt_pure_truncate_left "$current_path" "$(_prompt_pure_path_max_columns)")
+          current_path=''${current_path//\%/%%}
+
+          local separator=$'%{\e[2m%}/%{\e[22m%}'
+          local prefix=
+          if [[ $current_path == /* ]]; then
+            prefix=/
+            current_path=''${current_path:1}
+          fi
+          print -n -r -- "%F{''${prompt_pure_colors[path]}}''${prefix}''${current_path//\//$separator}%f"
+        }
+        prompt_pure_set_path_separator
+
         # Linked worktree name
         prompt_pure_precustom() {
           local top=$prompt_pure_vcs_info[top]
           [[ -n $top && -f $top/.git ]] || return
           local name=''${top:t}
           [[ $name == src ]] && name=''${top:h:t}
+          name=$(_prompt_pure_truncate_middle "$name" "''${PURE_PROMPT_WORKTREE_MAX_COLUMNS:-32}")
           psvar[23]="⎇ $name"
         }
 

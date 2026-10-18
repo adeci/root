@@ -43,7 +43,6 @@ in
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/creative.nix
     ../../modules/nixos/yubikey.nix
-    ../../modules/nixos/voxtype.nix
     ../../modules/nixos/ssh-tpm-agent.nix
     ../../modules/nixos/mullvad.nix
     ../../modules/nixos/rbw.nix

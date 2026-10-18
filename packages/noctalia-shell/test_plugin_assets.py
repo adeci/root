@@ -18,7 +18,6 @@ class PluginAssetsTest(unittest.TestCase):
                 "Panel.qml",
                 "manifest.json",
             },
-            "voxtype": {"BarWidget.qml", "Main.qml", "manifest.json"},
         }
         for plugin, files in expected_files.items():
             root = PLUGIN_ROOT / plugin

@@ -731,11 +731,11 @@
         "treefmt-nix": "treefmt-nix_8"
       },
       "locked": {
-        "lastModified": 1792005169,
-        "narHash": "sha256-eC6SSDp/TtuXP2Fn4E8kh6iFjrqT1Cch2lQs43m6Bp8=",
+        "lastModified": 1792298343,
+        "narHash": "sha256-xOcE3IOeGwGw0oJE6dfr5iz2xNGzvwId4XPckIBGlF0=",
         "owner": "adeci",
         "repo": "pi-kit",
-        "rev": "3b6ae0650ee6f13104ac801dee050f919ae019f8",
+        "rev": "3ec9ed1dec1d945e6990f810780fb59af2491e79",
         "type": "github"
       },
       "original": {

@@ -27,6 +27,18 @@
         --replace-fail @nvidiaSmi@ ${lib.getBin pkgs.linuxPackages.nvidia_x11} \
         --replace-fail @coreutils@ ${pkgs.coreutils} \
         --replace-fail @bash@ ${pkgs.bash}
+
+      # Tray items without a tooltip fell back to their StatusNotifierItem id,
+      # which Tauri apps such as Handy derive from the PID ("tray-icon tray app
+      # 1234-1"). Prefer the item's title before the id everywhere a tray label
+      # is chosen: bar widget, tray drawer and tray menu (8 places in 4.7.7).
+      grep -rlE '\.tooltipTitle \|\| ' --include='*.qml' Modules \
+        | xargs sed -i -E 's/([A-Za-z0-9_]+\??)\.tooltipTitle \|\| /\1.tooltipTitle || \1.title || /g'
+      patched=$(grep -rhoE '\.tooltipTitle \|\| [A-Za-z0-9_]+\??\.title \|\| ' --include='*.qml' Modules | wc -l)
+      if [ "$patched" -lt 8 ]; then
+        echo "tray title fallback: expected at least 8 label sites, patched $patched" >&2
+        exit 1
+      fi
     '';
   });
 
@@ -60,7 +72,6 @@
         terminalCommand = "kitty";
       };
     };
-    voxtype.src = ./plugins/voxtype;
   };
 
   # This is the predefined palette Noctalia normally writes to colors.json.

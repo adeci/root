@@ -202,7 +202,7 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p "$out/plugins"
-    for plugin in mullvad niri-display tailscale voxtype; do
+    for plugin in mullvad niri-display tailscale; do
       cp -R "plugins/$plugin" "$out/plugins/$plugin"
       diff -qr "plugins/$plugin" "$out/plugins/$plugin"
     done

@@ -12,6 +12,7 @@ in
   imports = [
     ./easyeffects
     ./pipewire.nix
+    ./handy.nix
     ./librewolf.nix
   ];
 

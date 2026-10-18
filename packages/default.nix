@@ -67,7 +67,10 @@
 
     handy = {
       path = ./handy;
-      systems = [ "aarch64-darwin" ];
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
       checks = false;
     };
 
@@ -124,6 +127,10 @@
       path = ./signal-desktop;
       systems = [ "x86_64-linux" ];
       checks = false;
+    };
+
+    update-locks = {
+      path = ./update-locks;
     };
 
     vencord = {
