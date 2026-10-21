@@ -101,6 +101,8 @@
   #   4. Paste the output back here, remove outOfStoreConfig
 
   settings = {
+    # Our telemetry patch reports Intel and APU GPUs only with this on.
+    systemMonitor.enableDgpuMonitoring = true;
     general = {
       terminal = "kitty";
       clockFormat = "h:mm\\nAP";

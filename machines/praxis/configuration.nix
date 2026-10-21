@@ -5,17 +5,6 @@
   self,
   ...
 }:
-let
-  noctaliaShellPackage = self.wrappers.noctalia-shell.wrap {
-    inherit pkgs;
-    settings = {
-      # The Ryzen AI 9 HX 370's Radeon 890M iGPU reports its firmware-reserved
-      # UMA allocation as VRAM, so Noctalia misclassifies it as a dGPU and
-      # otherwise suppresses its available hwmon temperature.
-      systemMonitor.enableDgpuMonitoring = true;
-    };
-  };
-in
 {
   imports = [
     inputs.drv-thru.nixosModules.default
@@ -33,6 +22,7 @@ in
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/smartd.nix
     ../../modules/nixos/desktop.nix
+    ../../modules/nixos/noctalia-shell.nix
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/amd-gpu.nix
@@ -66,7 +56,6 @@ in
   };
 
   environment.systemPackages = [
-    noctaliaShellPackage
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
     pkgs.calibre

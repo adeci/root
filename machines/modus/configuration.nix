@@ -18,6 +18,7 @@
     ../../modules/nixos/btrfs.nix
     ../../modules/nixos/smartd.nix
     ../../modules/nixos/desktop.nix
+    ../../modules/nixos/noctalia-shell.nix
     ../../modules/nixos/niri-autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/zram.nix
@@ -36,10 +37,6 @@
   ];
 
   environment.systemPackages = [
-    (self.wrappers.noctalia-shell.wrap {
-      inherit pkgs;
-      settings.systemMonitor.enableDgpuMonitoring = true;
-    })
     pkgs.mullvad-browser
     pkgs.calibre
     pkgs.ethtool
