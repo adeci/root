@@ -32,9 +32,9 @@ nix fmt
 # NixOS machine eval
 nix eval .#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
 
-# Work-machine eval
-nix eval ./work#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
-nix eval ./work#darwinConfigurations.<machine>.config.system.primaryUser
+# Work-machine eval (needs SSH access to the private input)
+nix eval .#nixosConfigurations.delphi.config.system.build.toplevel.drvPath
+nix eval .#darwinConfigurations.malum.config.system.primaryUser
 
 # Current-system checks
 nix eval .#checks.x86_64-linux --json
@@ -70,13 +70,9 @@ weights belong under `/var/lib/llm-weights`, not in NixOS toplevels.
 - `modules/clan/`: custom Clan services for coordinated multi-machine config.
 - `modules/terranix/`: Terraform/Terranix logic for external APIs/resources.
 - `machines/<name>/`: host composition and machine-specific modules.
-- `work/`: independent flake-parts/Clan composition for work machines. Shared
-  packages and OS modules remain at the top level; the main flake must not
-  depend on the work flake.
-
-Use `work/.envrc` for the work development shell. Its `.clan-flake` marker
-selects the work inventory without environment overrides. From the repo root,
-pass `--flake ./work` to target the work Clan explicitly.
+- Work machines (delphi, malum) are tagged `work` in
+  `inventory/clan/machines.nix` and import the private `shopify-framework`
+  input, so checks skip them; their modules live in `modules/{nixos,darwin}/work/`.
 
 Use `modules/nixos/` or `modules/darwin/` for reusable capabilities. Use
 `machines/<name>/modules/` only when config is tightly coupled to one host.
@@ -149,9 +145,10 @@ machines that need them.
 imports = [ self.users.alex.nixosModule ];
 ```
 
-Work identities live in `work/inventory/users/` and reuse `root.lib.mkUser`.
-Work hosts import `workUsers.<name>.darwinModule` or `.nixosModule`, rather
-than inheriting the personal identity from the shared `self.users` context.
+The work identity is `inventory/users/alex-work.nix` (account name `alex`).
+Work hosts import `self.users.alex-work.*Module`, never `self.users.alex`.
+Work secrets are encrypted for `alex-work` only; the Kagi link and the
+Tailscale auth key are shared with personal machines.
 
 `self.resources` comes from `inventory/resources/`. Terraform modules and OS
 modules consume shared resource data from there.

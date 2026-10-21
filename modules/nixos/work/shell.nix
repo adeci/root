@@ -1,4 +1,4 @@
-{ pkgs, workUsers, ... }:
+{ pkgs, self, ... }:
 let
   # Keep cd, ls and j unaliased
   wishConfig = (pkgs.formats.toml { }).generate "wish.zsh.toml" {
@@ -15,7 +15,7 @@ let
   gitConfig = (pkgs.formats.gitIni { }).generate "git-config" {
     user = {
       name = "Alex Decious";
-      inherit (workUsers.alex) email;
+      inherit (self.users.alex-work) email;
     };
     init.defaultBranch = "main";
     pull.rebase = true;

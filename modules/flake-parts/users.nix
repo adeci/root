@@ -12,9 +12,12 @@ let
 
   mkUser =
     name: attrs:
+    let
+      username = attrs.username or name;
+    in
     attrs
     // {
-      username = name;
+      inherit username;
 
       nixosModule =
         {
@@ -24,11 +27,11 @@ let
           ...
         }:
         {
-          users.users.${name} = {
+          users.users.${username} = {
             inherit (attrs) uid description;
             isNormalUser = true;
             createHome = true;
-            home = "/home/${name}";
+            home = "/home/${username}";
             shell = lib.mkIf (attrs.shell != "bash") (lib.mkDefault pkgs.${attrs.shell});
             extraGroups = attrs.groups;
             openssh.authorizedKeys.keys = attrs.sshKeys;
@@ -77,10 +80,10 @@ let
         };
 
       darwinModule = _: {
-        users.users.${name} = {
-          inherit name;
+        users.users.${username} = {
+          name = username;
           inherit (attrs) uid description;
-          home = "/Users/${name}";
+          home = "/Users/${username}";
           openssh.authorizedKeys.keys = attrs.sshKeys;
         };
       };

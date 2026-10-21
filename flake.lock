@@ -510,6 +510,25 @@
         "type": "github"
       }
     },
+    "nixos-hardware-xps14": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_6"
+      },
+      "locked": {
+        "lastModified": 1791738586,
+        "narHash": "sha256-+LZqUTBruiupIUEtzGhO1GyJwlXYzqaIV0CFzfhbCoo=",
+        "owner": "adeci",
+        "repo": "nixos-hardware",
+        "rev": "1cdc144783eb30f0d2c59a030ac95777d4e1609f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "adeci",
+        "ref": "xps14-7.2-fixes",
+        "repo": "nixos-hardware",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1783220960,
@@ -590,6 +609,19 @@
     },
     "nixpkgs_6": {
       "locked": {
+        "lastModified": 1767892417,
+        "narHash": "sha256-8bW3q88CEg2u4hSP66Vf4lpbLonHz7hqDNBMcCY7E9U=",
+        "rev": "3497aa5c9457a9d88d71fa93a4a8368816fbeeba",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.05pre924538.3497aa5c9457/nixexprs.tar.xz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
+      }
+    },
+    "nixpkgs_7": {
+      "locked": {
         "lastModified": 1787070829,
         "narHash": "sha256-vXNVDVtvfiQuXthP0NHPFdNvvMTkGpx0UP8oddIWbNk=",
         "owner": "nixos",
@@ -604,7 +636,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_7": {
+    "nixpkgs_8": {
       "locked": {
         "lastModified": 1790769526,
         "narHash": "sha256-5AIVFLRcx8YAwbFTVPTs7YhwJH7JyHfAQsvXmpovcXI=",
@@ -667,7 +699,7 @@
     "pi-kit": {
       "inputs": {
         "flake-parts": "flake-parts_3",
-        "nixpkgs": "nixpkgs_7",
+        "nixpkgs": "nixpkgs_8",
         "treefmt-nix": "treefmt-nix_8"
       },
       "locked": {
@@ -701,11 +733,13 @@
         "nix-index-database": "nix-index-database",
         "nix-rosetta-builder": "nix-rosetta-builder",
         "nixos-hardware": "nixos-hardware",
-        "nixpkgs": "nixpkgs_6",
+        "nixos-hardware-xps14": "nixos-hardware-xps14",
+        "nixpkgs": "nixpkgs_7",
         "nixvim": "nixvim",
         "pelican": "pelican",
         "pi-kit": "pi-kit",
         "sdwire-cli": "sdwire-cli",
+        "shopify-framework": "shopify-framework",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix_9",
         "wrapper-modules": "wrapper-modules"
@@ -746,6 +780,27 @@
         "owner": "Badger-Embedded",
         "repo": "sdwire-cli",
         "type": "github"
+      }
+    },
+    "shopify-framework": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791991586,
+        "narHash": "sha256-CL+kHR0rV25cXIVoK5khh9qHLqA/s2qwqgSK8Tu2ktQ=",
+        "ref": "surma/main",
+        "rev": "9c51f4d1ce72a0e8f1e79efdcac99cc1b8d1cc86",
+        "revCount": 91,
+        "type": "git",
+        "url": "ssh://git@github.com/shopify-playground/shopify-framework"
+      },
+      "original": {
+        "ref": "surma/main",
+        "type": "git",
+        "url": "ssh://git@github.com/shopify-playground/shopify-framework"
       }
     },
     "sops-nix": {
