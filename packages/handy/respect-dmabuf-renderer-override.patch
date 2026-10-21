@@ -1,0 +1,32 @@
+From 48a3d8e9ee456c1c6a3b7223779271c457890b4d Mon Sep 17 00:00:00 2001
+From: CJ Pais <cj@cjpais.com>
+Date: Sat, 10 Oct 2026 10:41:21 +0800
+Subject: [PATCH] fix(linux): allow renderer opt-out without dropping crash
+ protection (#2249)
+
+Keep DMA-BUF rendering disabled by default, but preserve explicit environment values so users affected by overlay flickering can opt out. Make the Nix wrapper respect the same precedence and document restart and autostart requirements.
+
+Refs #2166
+---
+ src-tauri/src/main.rs | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src-tauri/src/main.rs b/src-tauri/src/main.rs
+index db50206..025a42b 100644
+--- a/src-tauri/src/main.rs
++++ b/src-tauri/src/main.rs
+@@ -9,7 +9,10 @@ fn main() {
+     {
+         // DMABUF renderer causes crashes on various GPU/display server configurations
+         // See: https://github.com/tauri-apps/tauri/issues/9394
+-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
++        // Preserve explicit overrides so affected users can opt out with =0 (#2166).
++        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
++            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
++        }
+     }
+ 
+     #[cfg(target_os = "windows")]
+-- 
+2.55.0-shop-414e4310
+
