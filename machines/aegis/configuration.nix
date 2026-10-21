@@ -15,6 +15,7 @@
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/auto-timezone.nix
+    ../../modules/nixos/smartd.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/noctalia-shell.nix
     ../../modules/nixos/niri-autologin.nix
