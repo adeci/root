@@ -18,7 +18,6 @@ let
 
   skillPkgs = [
     mics-skills.kagi-search
-    self.packages.${system}.browser-cli
     self.packages.${system}.pexpect-cli
   ];
 
@@ -28,24 +27,6 @@ let
   };
 in
 {
-  imports = [ inputs.pi-kit.darwinModules.default ];
-
-  pi-kit = {
-    status.enable = true;
-    usage.enable = true;
-    ask.enable = true;
-    agents.enable = true;
-    events.enable = true;
-    todos.enable = true;
-    handoff.enable = true;
-    goal.enable = true;
-    director.enable = true;
-    jobs = {
-      enable = true;
-      daemon.enable = true;
-    };
-  };
-
   clan.core.vars.generators.kagi-search = {
     share = true;
     files.session-link = {
@@ -67,7 +48,7 @@ in
     pkgs.pueue
   ];
 
-  # Default queue for pexpect-cli; pi-kit jobs runs its own isolated daemon
+  # Default queue for pexpect-cli
   launchd.user.agents.pueued.serviceConfig = {
     Label = "org.pueue.pueued";
     ProgramArguments = [ "${pkgs.pueue}/bin/pueued" ];

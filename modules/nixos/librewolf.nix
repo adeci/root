@@ -1,40 +1,10 @@
-# LibreWolf with policies, preferences, and browser-cli baked in.
-# No runtime file writes — everything is in the package or /etc.
-{
-  pkgs,
-  inputs,
-  ...
-}:
+# LibreWolf with policies and preferences baked in.
+# No runtime file writes — everything is in the package.
+{ pkgs, ... }:
 let
-  micsSkills = inputs.mics-skills.packages.${pkgs.stdenv.hostPlatform.system};
-
-  # Native messaging host for browser-cli extension
-  browserCliNativeHost = pkgs.runCommand "browser-cli-native-host" { } ''
-    mkdir -p $out/lib/mozilla/native-messaging-hosts
-    cat > $out/lib/mozilla/native-messaging-hosts/io.thalheim.browser_cli.bridge.json <<EOF
-    {
-      "name": "io.thalheim.browser_cli.bridge",
-      "description": "Browser CLI bridge",
-      "path": "${micsSkills.browser-cli}/bin/browser-cli-server",
-      "type": "stdio",
-      "allowed_extensions": ["browser-cli-controller@thalheim.io"]
-    }
-    EOF
-  '';
-
   librewolf = pkgs.librewolf.override {
-    extraPolicies = {
-      ExtensionSettings = {
-        "browser-cli-controller@thalheim.io" = {
-          installation_mode = "force_installed";
-          install_url = "file://${micsSkills.browser-cli-extension}/browser-cli-extension.xpi";
-        };
-      };
-    };
     extraPrefs = ''
       pref("identity.fxaccounts.enabled", true);
-      pref("xpinstall.signatures.required", false);
-      pref("extensions.enabledScopes", 7);
       pref("sidebar.revamp", true);
       pref("sidebar.verticalTabs", true);
       pref("privacy.resistFingerprinting", false);
@@ -50,19 +20,8 @@ let
       pref("privacy.clearOnShutdown.cookies", false);
       pref("privacy.clearOnShutdown.sessions", false);
     '';
-    nativeMessagingHosts = [ browserCliNativeHost ];
   };
 in
 {
   environment.systemPackages = [ librewolf ];
-
-  systemd.user.tmpfiles.rules = [
-    "L+ %h/.librewolf/native-messaging-hosts/io.thalheim.browser_cli.bridge.json - - - - ${browserCliNativeHost}/lib/mozilla/native-messaging-hosts/io.thalheim.browser_cli.bridge.json"
-  ];
-
-  # browser-cli config — tells the CLI where to find LibreWolf
-  environment.etc."xdg/browser-cli/config.toml".text = # toml
-    ''
-      firefox_path = "${librewolf}/bin/librewolf"
-    '';
 }

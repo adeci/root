@@ -18,7 +18,6 @@ let
 
   skillPkgs = [
     mics-skills.kagi-search
-    self.packages.${system}.browser-cli
     self.packages.${system}.pexpect-cli
   ];
 
@@ -28,25 +27,6 @@ let
   };
 in
 {
-  imports = [ inputs.pi-kit.nixosModules.default ];
-
-  pi-kit = {
-    status.enable = true;
-    usage.enable = true;
-    ask.enable = true;
-    agents.enable = true;
-    events.enable = true;
-    todos.enable = true;
-    handoff.enable = true;
-    goal.enable = true;
-    claude-billing.enable = true;
-    director.enable = true;
-    jobs = {
-      enable = true;
-      daemon.enable = true;
-    };
-  };
-
   clan.core.vars.generators.kagi-search = {
     share = true;
     files.session-link = {
@@ -75,7 +55,7 @@ in
     '';
   };
 
-  # Default queue for pexpect-cli; pi-kit jobs runs its own isolated daemon
+  # Default queue for pexpect-cli
   systemd.user.services.pueued = {
     description = "Pueue task queue daemon";
     wantedBy = [ "default.target" ];

@@ -49,9 +49,7 @@ Other useful sources:
 
 ## Browser Automation
 
-Do not launch or control a browser unless I explicitly request browser automation for the current task, for example with `/skill:browser-cli`. A general request to research, inspect, or test a website is not permission. Use Kagi or direct HTTP for ordinary public research.
-
-Prefer browser-cli when I opt in. Do not switch to agent-browser, Playwright, or another browser driver as an implicit fallback. Carry this restriction into worker briefs; delegation does not grant browser permission. Leave unrelated tabs and the user's browser/bridge processes alone.
+Do not launch or control a browser unless I explicitly request browser automation for the current task. A general request to research, inspect, or test a website is not permission. Use Kagi or direct HTTP for ordinary public research. Carry this restriction into worker briefs; delegation does not grant browser permission.
 
 ## Local State
 

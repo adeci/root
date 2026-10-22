@@ -231,27 +231,6 @@
         "type": "github"
       }
     },
-    "flake-parts_3": {
-      "inputs": {
-        "nixpkgs-lib": [
-          "pi-kit",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1790898470,
-        "narHash": "sha256-zTwuwezD0w3hpga6a6P8emidzAZFyWqlNeRBlpWOOl8=",
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "rev": "024633cd702b10285db5cb19b40ad48d2399ba60",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "type": "github"
-      }
-    },
     "grub2-themes": {
       "inputs": {
         "nixpkgs": [
@@ -636,22 +615,6 @@
         "type": "github"
       }
     },
-    "nixpkgs_8": {
-      "locked": {
-        "lastModified": 1790769526,
-        "narHash": "sha256-5AIVFLRcx8YAwbFTVPTs7YhwJH7JyHfAQsvXmpovcXI=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "c9fe7d12cd78d1adcd12dd15e24432dde5b155a0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixvim": {
       "inputs": {
         "flake-parts": [
@@ -696,26 +659,6 @@
         "type": "github"
       }
     },
-    "pi-kit": {
-      "inputs": {
-        "flake-parts": "flake-parts_3",
-        "nixpkgs": "nixpkgs_8",
-        "treefmt-nix": "treefmt-nix_8"
-      },
-      "locked": {
-        "lastModified": 1792348156,
-        "narHash": "sha256-u1HDUwvEoY4V8vZVL+y3wcbyDYvwzhwDG0lziRS7YzU=",
-        "owner": "adeci",
-        "repo": "pi-kit",
-        "rev": "82d96f1d8cd91c69115cc8d83907a3e0595fb485",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "repo": "pi-kit",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "buildbot-nix": "buildbot-nix",
@@ -737,11 +680,10 @@
         "nixpkgs": "nixpkgs_7",
         "nixvim": "nixvim",
         "pelican": "pelican",
-        "pi-kit": "pi-kit",
         "sdwire-cli": "sdwire-cli",
         "shopify-framework": "shopify-framework",
         "terranix": "terranix",
-        "treefmt-nix": "treefmt-nix_9",
+        "treefmt-nix": "treefmt-nix_8",
         "wrapper-modules": "wrapper-modules"
       }
     },
@@ -1058,27 +1000,6 @@
       }
     },
     "treefmt-nix_8": {
-      "inputs": {
-        "nixpkgs": [
-          "pi-kit",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1786901030,
-        "narHash": "sha256-WSFCsDSE5ffgD2MqzkM2CYjeFiKhRF/dJUN8uedb6YE=",
-        "owner": "numtide",
-        "repo": "treefmt-nix",
-        "rev": "27b3b12a8e6375f28ebe122f07d230ca5459bbfa",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "treefmt-nix",
-        "type": "github"
-      }
-    },
-    "treefmt-nix_9": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
