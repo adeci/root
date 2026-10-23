@@ -48,6 +48,10 @@ in
   environment.pathsToLink = [ "/share/zsh" ];
   environment.shells = lib.mkDefault [ wrapped.zsh ];
 
+  # macOS sshd sets no locale; without this, ssh sessions (and tmux started
+  # from them) run in the C locale and mangle non-ASCII/Nerd Font glyphs.
+  environment.variables.LANG = "en_US.UTF-8";
+
   # Wrapped tools available system-wide
   environment.systemPackages = [
     wrapped.zsh
