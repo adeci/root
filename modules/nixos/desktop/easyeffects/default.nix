@@ -1,4 +1,3 @@
-# EasyEffects service and system-wide presets.
 { pkgs, ... }:
 let
   presets = pkgs.runCommand "easyeffects-presets" { } ''

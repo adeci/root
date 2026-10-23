@@ -44,8 +44,6 @@ layout {
     }
 }
 
-spawn-at-startup "noctalia-shell"
-
 hotkey-overlay {
     skip-at-startup
     hide-not-bound
@@ -81,7 +79,6 @@ binds {
     Mod+Alt+V hotkey-overlay-title="Clipboard History" { spawn "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
     // Mod+Space is Handy's dictation hotkey; keyd consumes it.
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
-    Mod+Ctrl+Shift+N hotkey-overlay-title="Restart Noctalia Shell" { spawn "restart-noctalia-shell"; }
 
     XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }

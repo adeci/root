@@ -17,9 +17,10 @@
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/btrfs.nix
     ../../modules/nixos/smartd.nix
-    ../../modules/nixos/desktop.nix
+    ../../modules/nixos/desktop
+    ../../modules/nixos/niri
     ../../modules/nixos/noctalia-shell.nix
-    ../../modules/nixos/niri-autologin.nix
+    ../../modules/nixos/niri/autologin.nix
     ../../modules/nixos/keyd.nix
     ../../modules/nixos/zram.nix
     ../../modules/nixos/laptop.nix

@@ -8,7 +8,8 @@
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/desktop.nix
+    ../../modules/nixos/desktop
+    ../../modules/nixos/niri
     ../../modules/nixos/noctalia-shell.nix
     ../../modules/nixos/amd-gpu.nix
     ../../modules/nixos/zram.nix

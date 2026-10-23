@@ -1,5 +1,12 @@
-# Audio via PipeWire with ALSA and PulseAudio compatibility.
-_: {
+{ pkgs, ... }:
+{
+  imports = [ ./easyeffects ];
+
+  environment.systemPackages = [
+    pkgs.pavucontrol
+    pkgs.pulseaudio
+  ];
+
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;

@@ -20,11 +20,6 @@ let
       fi
       exec kitty
     '')
-    (pkgs.writeShellScriptBin "restart-noctalia-shell" ''
-      noctalia-shell kill --any-display || true
-      sleep 1
-      exec noctalia-shell
-    '')
   ];
 in
 {
