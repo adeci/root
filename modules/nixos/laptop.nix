@@ -24,5 +24,4 @@
     HandleLidSwitchExternalPower = "suspend";
     HandlePowerKey = "poweroff";
   };
-  services.xserver.xkb.layout = "us";
 }

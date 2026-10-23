@@ -36,6 +36,8 @@
     ../../modules/nixos/remote-hosts.nix
   ];
 
+  thaw.apps.niri.files."machine.kdl" = ./niri.kdl;
+
   environment.systemPackages = [
     pkgs.mullvad-browser
     pkgs.calibre

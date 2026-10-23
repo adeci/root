@@ -62,7 +62,6 @@
         clickAction = "panel";
       };
     };
-    niri-display.src = ./plugins/niri-display;
     tailscale = {
       src = ./plugins/tailscale;
       settings = {
@@ -213,7 +212,7 @@
       location = "top_right";
     };
     wallpaper = {
-      enabled = false; # handled by swaybg in niri wrapper
+      enabled = false;
     };
     desktopWidgets = {
       enabled = false;

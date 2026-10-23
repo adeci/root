@@ -10,23 +10,6 @@ PLUGIN_ROOT = PACKAGE_ROOT / "plugins"
 
 class PluginAssetsTest(unittest.TestCase):
     def test_plugin_assets_and_manifest_entry_points(self) -> None:
-        expected_files = {
-            "niri-display": {
-                "BarWidget.qml",
-                "DisplayState.js",
-                "Main.qml",
-                "Panel.qml",
-                "manifest.json",
-            },
-        }
-        for plugin, files in expected_files.items():
-            root = PLUGIN_ROOT / plugin
-            self.assertEqual({path.name for path in root.iterdir()}, files)
-            manifest = json.loads((root / "manifest.json").read_text())
-            self.assertEqual(manifest["id"], plugin)
-            for entry_point in manifest["entryPoints"].values():
-                self.assertIn(entry_point, files)
-
         vendored_files = {
             "mullvad": {
                 "BarWidget.qml",
@@ -61,20 +44,6 @@ class PluginAssetsTest(unittest.TestCase):
             self.assertEqual(manifest["id"], plugin)
             for entry_point in manifest["entryPoints"].values():
                 self.assertIn(entry_point, files)
-
-    def test_niri_display_uses_toasts_without_reserved_status_space(self) -> None:
-        main = (PLUGIN_ROOT / "niri-display" / "Main.qml").read_text()
-        panel = (PLUGIN_ROOT / "niri-display" / "Panel.qml").read_text()
-        display_state = (PLUGIN_ROOT / "niri-display" / "DisplayState.js").read_text()
-
-        self.assertIn("ToastService.showNotice", main)
-        self.assertIn("ToastService.showError", main)
-        self.assertIn("lastRefreshToastError", main)
-        self.assertIn("NScrollView", panel)
-        self.assertIn("geometryPlaceholder: panelContainer", panel)
-        self.assertNotIn("statusSlot", panel)
-        self.assertNotIn("statusState", display_state)
-        self.assertNotIn("statusSlotHeight", display_state)
 
     def test_compact_network_status_widgets(self) -> None:
         config = (PACKAGE_ROOT / "default.nix").read_text()

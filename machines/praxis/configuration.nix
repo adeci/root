@@ -41,6 +41,8 @@
     ../../modules/nixos/remote-hosts.nix
   ];
 
+  thaw.apps.niri.files."machine.kdl" = ./niri.kdl;
+
   # gsim module
   networking.modemmanager.enable = true;
 

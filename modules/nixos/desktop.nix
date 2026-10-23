@@ -1,5 +1,6 @@
 # Full desktop: niri compositor, audio, fonts, and common tools.
 {
+  config,
   lib,
   self,
   pkgs,
@@ -7,6 +8,7 @@
 }:
 let
   wrapped = self.packages.${pkgs.stdenv.hostPlatform.system};
+  machineKdl = config.thaw.apps.niri.files."machine.kdl" or null;
 in
 {
   imports = [
@@ -21,9 +23,18 @@ in
   networking.networkmanager.enable = true;
   networking.useNetworkd = false;
 
-  # Niri compositor with baked-in config
   programs.niri.enable = true;
   programs.niri.package = wrapped.niri;
+
+  # Validate the shared config with this machine's file beside it, as niri sees them.
+  system.checks = lib.optional (machineKdl != null) (
+    pkgs.runCommand "niri-machine-config" { } ''
+      cp ${../../packages/niri/config.kdl} config.kdl
+      cp ${machineKdl} machine.kdl
+      ${lib.getExe config.programs.niri.package} validate -c config.kdl
+      touch $out
+    ''
+  );
 
   fonts.packages = with pkgs; [
     nerd-fonts.caskaydia-mono
@@ -42,13 +53,11 @@ in
 
   # Theme packages needed at the system level so the cursor/icons resolve
   # for portals, login greeters, and apps outside niri.
-  # The niri wrapper carries identical settings for the standalone demo.
   environment.systemPackages = [
     pkgs.adw-gtk3
     pkgs.papirus-icon-theme
     pkgs.phinger-cursors
     wrapped.kitty
-    wrapped.niri-display
     pkgs.nautilus
     pkgs.xwayland-satellite
     pkgs.libnotify

@@ -32,6 +32,8 @@
     ../../modules/nixos/ssh-tpm-agent.nix
   ];
 
+  thaw.apps.niri.files."machine.kdl" = ./niri.kdl;
+
   nixpkgs.hostPlatform = "x86_64-linux";
 
   # Newest kernel confirmed on the DA14260 with this profile. The pinned

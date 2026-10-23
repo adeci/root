@@ -37,7 +37,7 @@ stdenvNoCC.mkDerivation {
   checkPhase = ''
     runHook preCheck
     ${lib.getExe python3} -m unittest -v test_plugin_assets.py
-    for qml in plugins/mullvad/*.qml plugins/niri-display/*.qml plugins/tailscale/*.qml; do
+    for qml in plugins/mullvad/*.qml plugins/tailscale/*.qml; do
       ${lib.getExe' qt6.qtdeclarative "qmlformat"} "$qml" >/dev/null
     done
 
@@ -182,14 +182,10 @@ stdenvNoCC.mkDerivation {
     grep -q 'values: SystemStatService.gpuUsageHistory' \
       patched-noctalia/Modules/Panels/SystemStats/SystemStatsPanel.qml
 
-    mkdir -p test-root/plugins/niri-display test-root/plugins/tailscale test-root/tests
-    for asset in BarWidget.qml DisplayState.js Main.qml Panel.qml manifest.json; do
-      cp "plugins/niri-display/$asset" "test-root/plugins/niri-display/$asset"
-      cmp "plugins/niri-display/$asset" "test-root/plugins/niri-display/$asset"
-    done
+    mkdir -p test-root/plugins/tailscale test-root/tests
     cp plugins/tailscale/PeerState.js test-root/plugins/tailscale/
     cmp plugins/tailscale/PeerState.js test-root/plugins/tailscale/PeerState.js
-    for test in tst_DisplayState.qml tst_PeerState.qml; do
+    for test in tst_PeerState.qml; do
       cp "tests/$test" "test-root/tests/$test"
       cmp "tests/$test" "test-root/tests/$test"
     done
@@ -202,7 +198,7 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p "$out/plugins"
-    for plugin in mullvad niri-display tailscale; do
+    for plugin in mullvad tailscale; do
       cp -R "plugins/$plugin" "$out/plugins/$plugin"
       diff -qr "plugins/$plugin" "$out/plugins/$plugin"
     done

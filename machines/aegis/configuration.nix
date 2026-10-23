@@ -30,6 +30,8 @@
     ../../modules/nixos/cheat.nix
   ];
 
+  thaw.apps.niri.files."machine.kdl" = ./niri.kdl;
+
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
