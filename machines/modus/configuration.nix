@@ -18,6 +18,7 @@
     ../../modules/nixos/btrfs.nix
     ../../modules/nixos/smartd.nix
     ../../modules/nixos/desktop
+    ../../modules/nixos/desktop/unlock.nix
     ../../modules/nixos/niri
     ../../modules/nixos/noctalia-shell.nix
     ../../modules/nixos/niri/autologin.nix
