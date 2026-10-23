@@ -29,6 +29,10 @@ in
       Restart = "always";
       RestartSec = 1;
       Slice = "app-graphical.slice";
+      # Unlocking must not touch the keyring; `login` would create it from the user password.
+      Environment = "NOCTALIA_PAM_SERVICE=noctalia-lock";
     };
   };
+
+  security.pam.services.noctalia-lock = { };
 }
