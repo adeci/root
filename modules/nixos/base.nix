@@ -6,6 +6,8 @@
   ...
 }:
 {
+  imports = [ ./thaw.nix ];
+
   nixpkgs.config.allowUnfree = true;
 
   users.mutableUsers = false;

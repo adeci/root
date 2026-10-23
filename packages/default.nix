@@ -62,6 +62,10 @@
       checks = false;
     };
 
+    thaw = {
+      path = ./thaw;
+    };
+
     niri-display = {
       path = ./niri-display;
       systems = [ "x86_64-linux" ];
