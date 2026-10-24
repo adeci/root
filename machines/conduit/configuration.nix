@@ -16,8 +16,6 @@
 
   time.timeZone = "America/New_York";
 
-  services.journald.extraConfig = ''
-    SystemMaxUse=200M
-  '';
+  services.journald.settings.Journal.SystemMaxUse = "200M";
 
 }

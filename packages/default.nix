@@ -21,11 +21,6 @@
       systems = [ "x86_64-linux" ];
     };
 
-    noctalia-shell = {
-      path = ./noctalia-shell;
-      systems = [ "x86_64-linux" ];
-    };
-
     tmux = {
       path = ./tmux;
     };
@@ -38,6 +33,11 @@
   packages = {
     cheat = {
       path = ./cheat;
+      systems = [ "x86_64-linux" ];
+    };
+
+    noctalia = {
+      path = ./noctalia;
       systems = [ "x86_64-linux" ];
     };
 
@@ -58,11 +58,6 @@
 
     thaw = {
       path = ./thaw;
-    };
-
-    noctalia-shell-plugin-tests = {
-      path = ./noctalia-shell/test.nix;
-      systems = [ "x86_64-linux" ];
     };
 
     prusa-slicer = {

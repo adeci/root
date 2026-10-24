@@ -10,7 +10,7 @@
     ../../modules/nixos/auto-timezone.nix
     ../../modules/nixos/desktop
     ../../modules/nixos/niri
-    ../../modules/nixos/noctalia-shell.nix
+    ../../modules/nixos/noctalia.nix
     ../../modules/nixos/amd-gpu.nix
     ../../modules/nixos/zram.nix
     ../../modules/nixos/keyd.nix

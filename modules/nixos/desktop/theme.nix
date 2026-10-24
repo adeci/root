@@ -17,8 +17,6 @@ in
     XCURSOR_SIZE = toString cursorSize;
     GTK_THEME = gtk;
     QT_QPA_PLATFORMTHEME = "gtk3";
-    # Quickshell (Noctalia v4) gets no icon theme from Qt on Wayland.
-    QS_ICON_THEME = icons;
   };
 
   programs.dconf = {
