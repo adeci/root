@@ -23,6 +23,7 @@
     ../../modules/nixos/smartd.nix
     ../../modules/nixos/desktop
     ../../modules/nixos/desktop/unlock.nix
+    ../../modules/nixos/desktop/keyring-tpm
     ../../modules/nixos/niri
     ../../modules/nixos/noctalia.nix
     ../../modules/nixos/niri/autologin.nix

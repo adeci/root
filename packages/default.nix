@@ -36,11 +36,6 @@
       systems = [ "x86_64-linux" ];
     };
 
-    noctalia = {
-      path = ./noctalia;
-      systems = [ "x86_64-linux" ];
-    };
-
     element-desktop = {
       path = ./element-desktop;
       systems = [ "x86_64-linux" ];

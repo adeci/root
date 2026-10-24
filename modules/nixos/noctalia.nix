@@ -1,13 +1,7 @@
-{
-  lib,
-  pkgs,
-  self,
-  ...
-}:
+{ lib, ... }:
 {
   programs.noctalia = {
     enable = true;
-    package = self.packages.${pkgs.stdenv.hostPlatform.system}.noctalia;
     systemd.enable = true;
   };
 
@@ -25,10 +19,6 @@
       Restart = lib.mkForce "always";
       RestartSec = 1;
       Slice = "app-graphical.slice";
-      # Unlocking must not touch the keyring; `login` would create it from the user password.
-      Environment = "NOCTALIA_PAM_SERVICE=noctalia-lock";
     };
   };
-
-  security.pam.services.noctalia-lock = { };
 }
