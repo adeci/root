@@ -64,13 +64,6 @@ in
               target = "127.0.0.1:9400";
             }
           ];
-
-          sequoia.settings.extraScrapeTargets = [
-            {
-              job = "litellm";
-              target = "127.0.0.1:4000";
-            }
-          ];
         };
       };
       server.machines.sequoia.settings = {

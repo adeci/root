@@ -15,8 +15,6 @@
     ./modules/tailscale-exit-node.nix
     ./modules/matrix-synapse.nix
     ./modules/vaultwarden.nix
-    ./modules/forgejo.nix
-    ./modules/litellm.nix
     ./modules/atlas.nix
     ./modules/ntfy.nix
     ./modules/atuin.nix

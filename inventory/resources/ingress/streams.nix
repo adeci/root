@@ -3,14 +3,6 @@
 {
   conduit = [
     {
-      name = "forgejo-ssh";
-      description = "Forgejo Git SSH";
-      protocol = "tcp";
-      listen = 2222;
-      upstream = "sequoia.cymric-daggertooth.ts.net:2222";
-    }
-
-    {
       name = "minecraft-rlc";
       description = "Minecraft rats rlc";
       protocol = "tcp";

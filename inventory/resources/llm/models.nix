@@ -22,30 +22,6 @@ let
   };
 in
 {
-  "gpt-5.5" = {
-    displayName = "GPT-5.5";
-    backend = {
-      type = "litellm";
-      model = "chatgpt/gpt-5.5";
-    };
-    mode = "responses";
-    pricing = {
-      source = "litellm";
-      model = "gpt-5.5";
-      fields = [
-        "max_input_tokens"
-        "max_output_tokens"
-        "max_tokens"
-        "input_cost_per_token"
-        "input_cost_per_token_above_272k_tokens"
-        "output_cost_per_token"
-        "output_cost_per_token_above_272k_tokens"
-        "cache_read_input_token_cost"
-        "cache_read_input_token_cost_above_272k_tokens"
-      ];
-    };
-  };
-
   vibethinker-3b-bf16-gpu0 = mkLocal {
     displayName = "VibeThinker 3B BF16 GPU 0";
     backend = {

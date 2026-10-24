@@ -51,15 +51,6 @@ in
     proxied = false;
   };
 
-  # Private LiteLLM admin endpoint. DNS points at Sequoia's Tailnet IP only.
-  litellm = {
-    zone = "decio.us";
-    name = "litellm";
-    type = "A";
-    content = sequoiaTailnetIp;
-    proxied = false;
-  };
-
   # Private Atlas endpoint. DNS points at Sequoia's Tailnet IP only.
   atlas = {
     zone = "decio.us";
@@ -67,15 +58,6 @@ in
     type = "A";
     content = sequoiaTailnetIp;
     proxied = false;
-  };
-
-  # Forgejo Git SSH on conduit (Hetzner).
-  git_ssh = {
-    zone = "decio.us";
-    name = "git-ssh";
-    type = "A";
-    proxied = false;
-    edge = conduitEdge;
   };
 
   # Minecraft A records point at the public edge.
