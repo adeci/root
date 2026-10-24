@@ -55,13 +55,6 @@
     sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
     sdwire-cli.flake = false;
 
-    grub2-themes.url = "github:vinceliuice/grub2-themes";
-    grub2-themes.inputs.nixpkgs.follows = "nixpkgs";
-
-    devblog.url = "github:adeci/devblog";
-    devblog.inputs.nixpkgs.follows = "nixpkgs";
-    devblog.inputs.flake-parts.follows = "flake-parts";
-
     drv-thru.url = "github:adeci/drv-thru";
 
     pelican.url = "github:adeci/vencord-pelican";

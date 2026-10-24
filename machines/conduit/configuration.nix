@@ -8,7 +8,6 @@
     ../../modules/nixos/zsh.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/zram.nix
-    ../../modules/nixos/cloudflared.nix
     ../../modules/nixos/public-edge.nix
 
     ./modules/pressroom.nix
