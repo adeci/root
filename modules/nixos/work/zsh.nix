@@ -1,4 +1,4 @@
-# modules/nixos/zsh.nix without the personal git wrapper
+# modules/nixos/zsh.nix without the personal git wrapper or Atuin sync
 {
   self,
   pkgs,
@@ -10,6 +10,7 @@ let
   zsh = self.wrappers.zsh.wrap {
     inherit pkgs;
     git = null;
+    atuinSync = false;
   };
 in
 {

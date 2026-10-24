@@ -12,6 +12,7 @@
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/zsh.nix
+    ../../modules/nixos/atuin-login.nix
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/auto-timezone.nix

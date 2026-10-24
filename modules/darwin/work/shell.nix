@@ -8,6 +8,7 @@ let
   shopifyZsh = self.wrappers.zsh.wrap {
     inherit pkgs;
     git = null;
+    atuinSync = false;
     extraInit = # zsh
       ''
         if [[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]]; then

@@ -12,14 +12,22 @@ let
   defaultGit = self.wrappers.git.wrap { inherit pkgs; };
   wrappedTmux = self.wrappers.tmux.wrap { inherit pkgs; };
 
-  atunConfigDir = pkgs.runCommand "atuin-config" { } ''
-    mkdir -p $out
-    cat > $out/config.toml <<'EOF'
-    enter_accept = false
-    sync_address = "http://sequoia:8888"
-    auto_sync = true
-    EOF
-  '';
+  atunConfigDir = pkgs.writeTextDir "config.toml" (
+    ''
+      enter_accept = false
+    ''
+    + (
+      if config.atuinSync then
+        ''
+          sync_address = "http://sequoia.cymric-daggertooth.ts.net:8888"
+          auto_sync = true
+        ''
+      else
+        ''
+          auto_sync = false
+        ''
+    )
+  );
 in
 {
   imports = [ wlib.wrapperModules.zsh ];
@@ -34,6 +42,12 @@ in
     type = lib.types.nullOr lib.types.package;
     default = defaultGit;
     description = "git first on PATH; null leaves git to the system.";
+  };
+
+  options.atuinSync = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Sync shell history through sequoia's Atuin server.";
   };
 
   config = {
