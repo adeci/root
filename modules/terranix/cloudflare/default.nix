@@ -6,5 +6,6 @@
     ./tunnels.nix
     ./dns.nix
     ./rulesets.nix
+    ./zone-settings.nix
   ];
 }

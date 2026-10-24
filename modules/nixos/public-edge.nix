@@ -53,49 +53,58 @@ let
     '';
 in
 {
-  config = lib.mkIf (streams != [ ]) {
-    assertions = [
-      {
-        assertion = invalidProtocols == [ ];
-        message = "public-edge ${config.networking.hostName}: protocols must be tcp or udp.";
-      }
-      {
-        assertion = invalidListenPorts == [ ];
-        message = "public-edge ${config.networking.hostName}: listen ports must be integers from 1 to 65535.";
-      }
-      {
-        assertion = invalidUpstreams == [ ];
-        message = "public-edge ${config.networking.hostName}: upstreams must be host:port strings.";
-      }
-      {
-        assertion = names == lib.unique names;
-        message = "public-edge ${config.networking.hostName}: stream names must be unique.";
-      }
-      {
-        assertion = listenerKeys == lib.unique listenerKeys;
-        message = "public-edge ${config.networking.hostName}: only one stream may bind each protocol/listen port.";
-      }
-    ];
-
-    services.nginx = {
-      enable = true;
-      streamConfig = lib.mkAfter ''
-        # Variable-backed proxy_pass makes nginx reload independent from
-        # current Tailnet DNS availability. Quad100 resolves MagicDNS names.
-        resolver 100.100.100.100 valid=30s ipv6=off;
-
-        ${lib.concatMapStringsSep "\n" mkServer streams}
+  config = lib.mkMerge [
+    {
+      # Every public vhost; a vhost or location with its own add_header must repeat it.
+      # Starts at one day; raise to a year once it's proven.
+      services.nginx.commonHttpConfig = ''
+        add_header Strict-Transport-Security "max-age=86400" always;
       '';
-    };
+    }
+    (lib.mkIf (streams != [ ]) {
+      assertions = [
+        {
+          assertion = invalidProtocols == [ ];
+          message = "public-edge ${config.networking.hostName}: protocols must be tcp or udp.";
+        }
+        {
+          assertion = invalidListenPorts == [ ];
+          message = "public-edge ${config.networking.hostName}: listen ports must be integers from 1 to 65535.";
+        }
+        {
+          assertion = invalidUpstreams == [ ];
+          message = "public-edge ${config.networking.hostName}: upstreams must be host:port strings.";
+        }
+        {
+          assertion = names == lib.unique names;
+          message = "public-edge ${config.networking.hostName}: stream names must be unique.";
+        }
+        {
+          assertion = listenerKeys == lib.unique listenerKeys;
+          message = "public-edge ${config.networking.hostName}: only one stream may bind each protocol/listen port.";
+        }
+      ];
 
-    systemd.services.nginx = {
-      after = [ "tailscaled.service" ];
-      wants = [ "tailscaled.service" ];
-    };
+      services.nginx = {
+        enable = true;
+        streamConfig = lib.mkAfter ''
+          # Variable-backed proxy_pass makes nginx reload independent from
+          # current Tailnet DNS availability. Quad100 resolves MagicDNS names.
+          resolver 100.100.100.100 valid=30s ipv6=off;
 
-    networking.firewall = {
-      allowedTCPPorts = publicPortsFor "tcp";
-      allowedUDPPorts = publicPortsFor "udp";
-    };
-  };
+          ${lib.concatMapStringsSep "\n" mkServer streams}
+        '';
+      };
+
+      systemd.services.nginx = {
+        after = [ "tailscaled.service" ];
+        wants = [ "tailscaled.service" ];
+      };
+
+      networking.firewall = {
+        allowedTCPPorts = publicPortsFor "tcp";
+        allowedUDPPorts = publicPortsFor "udp";
+      };
+    })
+  ];
 }

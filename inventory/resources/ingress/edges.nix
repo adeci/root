@@ -9,12 +9,12 @@
           port = 22;
         }
         {
-          description = "Pressroom HTTP";
+          description = "HTTP (Zipline)";
           protocol = "tcp";
           port = 80;
         }
         {
-          description = "Pressroom HTTPS";
+          description = "HTTPS (Zipline)";
           protocol = "tcp";
           port = 443;
         }

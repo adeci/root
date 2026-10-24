@@ -10,7 +10,6 @@
     ../../modules/nixos/zram.nix
     ../../modules/nixos/public-edge.nix
 
-    ./modules/pressroom.nix
     ./modules/zipline.nix
   ];
 

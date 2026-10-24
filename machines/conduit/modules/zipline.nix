@@ -111,17 +111,30 @@ in
     '';
   };
 
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "alex@decio.us";
+  };
+
   services.nginx = {
     enable = true;
+    recommendedGzipSettings = true;
+    recommendedOptimisation = true;
     recommendedProxySettings = true;
+    recommendedTlsSettings = true;
     commonHttpConfig = ''
       limit_conn_zone $server_name zone=zipline_uploads:1m;
     '';
     virtualHosts.${origin} = {
       enableACME = true;
       forceSSL = true;
-      # Slightly above the file limit to allow multipart headers.
       extraConfig = ''
+        # Slightly above the file limit to allow multipart headers.
         client_max_body_size 2049M;
         client_body_timeout 120s;
       '';
