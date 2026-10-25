@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  config,
   self,
   ...
 }:
@@ -48,9 +47,7 @@
   # gsim module
   networking.modemmanager.enable = true;
 
-  boot.kernelPackages = pkgs.linuxPackages;
-
-  boot.extraModulePackages = [ config.boot.kernelPackages.acpi_call ];
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   services.teamviewer.enable = true;
 
@@ -66,7 +63,6 @@
     pkgs.modem-manager-gui
     pkgs.linux-wifi-hotspot
     self.packages.${pkgs.stdenv.hostPlatform.system}.sdwire-cli
-    pkgs.amd-debug-tools
     pkgs.ethtool
     pkgs.displaycal
     pkgs.android-tools
