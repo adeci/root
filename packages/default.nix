@@ -21,6 +21,14 @@
       systems = [ "x86_64-linux" ];
     };
 
+    nvim = {
+      path = ./nvim;
+    };
+
+    nvim-dev = {
+      path = ./nvim-dev;
+    };
+
     tmux = {
       path = ./tmux;
     };

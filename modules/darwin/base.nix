@@ -59,7 +59,7 @@ in
     wrapped.kitty
     wrapped.tmux
     wrapped.btop
-    self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
+    self.packages.${pkgs.stdenv.hostPlatform.system}.nvim-dev
     inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
   ];
 

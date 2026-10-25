@@ -71,8 +71,6 @@ in
           (lib.makeBinPath (
             lib.optional (config.git != null) config.git
             ++ [
-              # Wrapped packages
-              self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim
 
               # Core CLI tools
               pkgs.ripgrep

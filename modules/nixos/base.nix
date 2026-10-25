@@ -15,7 +15,6 @@
     # Root accepts the same keys as the machine's primary user.
     openssh.authorizedKeys.keys =
       config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
-    packages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.nixvim ];
   };
   environment.variables.EDITOR = "nvim";
 
@@ -55,6 +54,7 @@
   documentation.man.cache.enable = true;
   environment.systemPackages = [
     inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+    self.packages.${pkgs.stdenv.hostPlatform.system}.nvim
     pkgs.kitty.terminfo
     pkgs.man-pages
     pkgs.man-pages-posix
