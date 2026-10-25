@@ -69,7 +69,9 @@ in
             zone_id = zoneRef parts.zone;
             inherit (parts) name;
             type = "CNAME";
-            content = "${config.resource.cloudflare_tunnel.${machine} "id"}.cfargotunnel.com";
+            content = "${
+              config.resource.cloudflare_zero_trust_tunnel_cloudflared.${machine} "id"
+            }.cfargotunnel.com";
             proxied = true;
           }
         ) ingress

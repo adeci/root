@@ -37,6 +37,7 @@ in
     clan.core.vars.generators.cloudflare-tunnel-token = {
       files.token = {
         secret = true;
+        restartUnits = [ "cloudflared-tunnel-${machineName}.service" ];
       };
     };
   };
