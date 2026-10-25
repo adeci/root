@@ -50,7 +50,6 @@
 
   # Silent boot for clean splash → Gaming Mode transition
   boot.consoleLogLevel = 0;
-  boot.initrd.verbose = false;
   boot.kernelParams = [ "quiet" ];
   boot.loader.timeout = 1;
   boot.loader.grub.timeoutStyle = "hidden";
