@@ -30,7 +30,7 @@ in
     files = lib.mkOption {
       type = lib.types.attrsOf lib.types.path;
       default = { };
-      description = "Config files the app reads, by name: raw files in this repo.";
+      description = "Config files or directories the app reads, by name: raw paths in this repo.";
     };
     optional = lib.mkOption {
       type = lib.types.listOf lib.types.str;

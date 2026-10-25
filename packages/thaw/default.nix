@@ -123,7 +123,7 @@ let
             mkdir -p "$scratch"
             while IFS=$'\t' read -r name pure _; do
               if [ "$fresh" = 1 ] || [ ! -e "$scratch/$name" ]; then
-                cp -L --no-preserve=mode "$pure" "$scratch/$name" 2>/dev/null || : > "$scratch/$name"
+                cp -rL --no-preserve=mode "$pure" "$scratch/$name" 2>/dev/null || : > "$scratch/$name"
               fi
               point "$dir/$name" "$scratch/$name"
             done < <(files "$manifest")
@@ -153,7 +153,11 @@ let
             edited=$(readlink "$dir/$name" 2>/dev/null || true)
             [ -n "$edited" ] && [ "$edited" != "$pure" ] || continue
             label=''${rel:-$app/$name}
-            diff -u --label "a/$label" --label "b/$label" "$pure" "$edited" || true
+            if [ -d "$pure" ]; then
+              diff -ru "$pure" "$edited" | sed "s|$pure|a/$label|; s|$edited|b/$label|" || true
+            else
+              diff -u --label "a/$label" --label "b/$label" "$pure" "$edited" || true
+            fi
           done < <(files "$manifest")
           ;;
       esac

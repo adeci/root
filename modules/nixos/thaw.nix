@@ -45,7 +45,11 @@ let
         message = "thaw: ${name}'s \"${file}\" must be a file in this repo (e.g. ./${file}), got ${toString source}.";
       }) app.files
       ++ lib.mapAttrsToList (file: source: {
-        assertion = repoPath source == null || !lib.hasInfix "/nix/store/" (builtins.readFile source);
+        assertion =
+          repoPath source == null
+          || !lib.any (f: lib.hasInfix "/nix/store/" (builtins.readFile f)) (
+            if lib.pathIsDirectory source then lib.filesystem.listFilesRecursive source else [ source ]
+          );
         message = "thaw: ${name}'s \"${file}\" contains a /nix/store path; pass it from Nix instead (the file is edited when thawed).";
       }) app.files
     ) apps
