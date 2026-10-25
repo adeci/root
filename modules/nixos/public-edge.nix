@@ -56,9 +56,8 @@ in
   config = lib.mkMerge [
     {
       # Every public vhost; a vhost or location with its own add_header must repeat it.
-      # Starts at one day; raise to a year once it's proven.
       services.nginx.commonHttpConfig = ''
-        add_header Strict-Transport-Security "max-age=86400" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
       '';
     }
     (lib.mkIf (streams != [ ]) {

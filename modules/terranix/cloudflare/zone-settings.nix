@@ -18,9 +18,9 @@ in
         zone_id = config.data.cloudflare_zone.${safeName zone} "id";
         settings.security_header = {
           enabled = true;
-          # Starts at one day; raise to a year once it's proven.
-          max_age = 86400;
-          include_subdomains = false;
+          max_age = 31536000;
+          include_subdomains = true;
+          preload = true;
           nosniff = true;
         };
       };
