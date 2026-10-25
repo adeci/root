@@ -2,8 +2,6 @@
 # Cloudflare owns DNS. Records may reference public edge/stream data, but the
 # Cloudflare module decides how those references materialize.
 let
-  sequoiaTailnetIp = "100.116.83.84";
-
   conduitEdge = "conduit";
 
   edgeA = name: {
@@ -38,25 +36,6 @@ in
     name = "share";
     type = "A";
     edge = conduitEdge;
-    proxied = false;
-  };
-
-  # Private Paperless endpoint. Public DNS resolves to Sequoia's Tailnet IP;
-  # Janus overrides this locally to Sequoia's LAN IP.
-  paperless = {
-    zone = "decio.us";
-    name = "paperless";
-    type = "A";
-    content = sequoiaTailnetIp;
-    proxied = false;
-  };
-
-  # Private Atlas endpoint. DNS points at Sequoia's Tailnet IP only.
-  atlas = {
-    zone = "decio.us";
-    name = "atlas";
-    type = "A";
-    content = sequoiaTailnetIp;
     proxied = false;
   };
 

@@ -6,9 +6,8 @@
 }:
 let
   inherit (self.resources) homelan;
-  paperlessDns = self.resources.cloudflare.dns.paperless;
 
-  paperlessHost = "${paperlessDns.name}.${paperlessDns.zone}";
+  paperlessHost = "paperless.decio.us";
   tailnetCidr = "100.64.0.0/10";
 
   dataDir = "/srv/paperless";
@@ -73,7 +72,7 @@ in
     serverTokens = false;
 
     virtualHosts.${paperlessHost} = {
-      useACMEHost = paperlessDns.zone;
+      useACMEHost = "decio.us";
       extraConfig = ''
         allow ${homelan.vlans.trusted.cidr};
         allow ${tailnetCidr};

@@ -11,6 +11,7 @@ let
   devices = topology.homelan.hosts;
   dnsRecords = topology.homelan.dns.records;
   dnsDevices = lib.filterAttrs (_: host: host.publishDns or true) devices;
+  tailnetCidr = "100.64.0.0/10";
 
   localAliases = lib.concatMapAttrs (
     _hostName: host:
@@ -105,6 +106,8 @@ in
         interface = [ "127.0.0.1" ] ++ map (vlan: vlan.gateway) (lib.attrValues topology.vlans);
         access-control = [
           "127.0.0.0/8 allow"
+          # Tailscale split DNS sends the private names here
+          "${tailnetCidr} allow"
         ]
         ++ map (vlan: "${vlan.cidr} allow") (lib.attrValues topology.vlans);
 
