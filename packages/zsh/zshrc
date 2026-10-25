@@ -1,0 +1,286 @@
+# Interactive zsh config. Store paths come from $zsh_pkgs, set in default.nix.
+
+# ── Aliases ──────────────────────────────────────────────────────
+alias -- ..='cd ..'
+alias -- ...='cd ../..'
+alias -- ....='cd ../../..'
+alias c='clear'
+alias cp='cp -i'
+alias curl='noglob curl'
+alias doxxmebro='curl -4fsS https://api.ipify.org; echo'
+alias gaa='git add -A'
+alias gb='git branch'
+alias gc='git commit'
+alias gco='git checkout'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gf='git fetch'
+alias gll='git pull'
+alias glog='git log --oneline --graph'
+alias gp='git push'
+alias gs='git status'
+alias l='eza --icons --smart-group --time-style relative'
+alias la='eza --icons --smart-group --time-style relative -a'
+alias lg='lazygit'
+alias ll='eza --icons --smart-group --time-style relative -la'
+alias ls='eza --icons --smart-group --time-style relative'
+alias md='mkdir -p'
+alias mv='mv -i'
+alias nix='noglob nix'
+alias nom='noglob nom'
+alias nrb='noglob nom build --max-jobs 0 --builders @/etc/nix/machines'
+alias rm='rm -i'
+alias rz='exec zsh'
+alias tree='eza --tree --icons'
+alias vi='nvim'
+alias vim='nvim'
+alias wget='noglob wget'
+
+# ── History ──────────────────────────────────────────────────────
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt EXTENDED_HISTORY
+setopt SHARE_HISTORY
+
+# ── Completions ──────────────────────────────────────────────────
+fpath+=($zsh_pkgs[completions]/share/zsh/site-functions)
+autoload -Uz compinit && compinit
+
+# ── Plugins ──────────────────────────────────────────────────────
+source $zsh_pkgs[autosuggestions]/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=242"
+
+source $zsh_pkgs[fzf-tab]/share/fzf-tab/fzf-tab.plugin.zsh
+
+source $zsh_pkgs[autopair]/share/zsh/zsh-autopair/autopair.zsh
+autopair-init
+
+# ── Shell integrations ─────────────────────────────────────────
+eval "$($zsh_pkgs[zoxide]/bin/zoxide init zsh)"
+eval "$($zsh_pkgs[direnv]/bin/direnv hook zsh)"
+eval "$($zsh_pkgs[atuin]/bin/atuin init zsh)"
+
+# ── Shell options ────────────────────────────────────────────────
+setopt auto_cd
+setopt no_beep
+setopt pushd_ignore_dups
+setopt complete_in_word
+setopt multios
+
+# ── Keybindings ──────────────────────────────────────────────────
+bindkey -e
+
+zle_highlight+=(paste:none)
+
+autoload -Uz add-zle-hook-widget
+_cursor_block() { print -n '\e[1 q' > /dev/tty; }
+add-zle-hook-widget zle-line-init _cursor_block
+
+autoload edit-command-line
+zle -N edit-command-line
+bindkey '^X^e' edit-command-line
+bindkey '^[[3~' delete-char
+
+# ── Pure prompt ──────────────────────────────────────────────────
+fpath+=($zsh_pkgs[pure]/share/zsh/site-functions)
+autoload -U promptinit; promptinit
+PURE_GIT_UNTRACKED_DIRTY=0
+PURE_GIT_PULL=0
+PURE_CMD_MAX_EXEC_TIME=4
+zstyle :prompt:pure:path color cyan
+zstyle :prompt:pure:git:branch color magenta
+zstyle :prompt:pure:git:branch:cached color red
+zstyle :prompt:pure:git:dirty color yellow
+zstyle :prompt:pure:git:arrow color cyan
+zstyle :prompt:pure:user color '#7aa2f7'
+zstyle :prompt:pure:host color '#9ece6a'
+zstyle :prompt:pure:prompt:success color green
+zstyle :prompt:pure:prompt:error color red
+zstyle :prompt:pure:execution_time color yellow
+zstyle :prompt:pure:custom:suffix color '#ff9e64'
+zstyle :prompt:pure:environment:nix-shell show no
+prompt pure
+
+# Pure normally hides user@host for local, non-root shells.
+# Keep it visible so every prompt identifies the current machine.
+psvar[13]=1
+
+# Real hostname, even when $HOST is overridden
+PROMPT=${PROMPT//@%m/@${$(uname -n)%%.*}}
+
+# Keep long World paths and worktree names from monopolizing the
+# preprompt. Pure does not expose a path length style, so override the
+# small renderer hook it calls from precmd. The hard cap wins, but it
+# also scales down on narrow terminals.
+PURE_PROMPT_PATH_MAX_COLUMNS=${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
+PURE_PROMPT_PATH_MIN_COLUMNS=${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
+PURE_PROMPT_PATH_FRACTION=${PURE_PROMPT_PATH_FRACTION:-45}
+PURE_PROMPT_WORKTREE_MAX_COLUMNS=${PURE_PROMPT_WORKTREE_MAX_COLUMNS:-32}
+
+_prompt_pure_path_max_columns() {
+  emulate -L zsh
+  integer max=${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
+  integer min=${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
+  integer fraction=${PURE_PROMPT_PATH_FRACTION:-45}
+
+  if (( COLUMNS > 0 && fraction > 0 )); then
+    integer from_columns=$(( COLUMNS * fraction / 100 ))
+    (( from_columns < max )) && max=$from_columns
+  fi
+  (( max < min )) && max=$min
+  print -r -- $max
+}
+
+_prompt_pure_truncate_left() {
+  emulate -L zsh
+  local value=$1
+  integer max=${2:-32}
+  (( max <= 0 || ${#value} <= max )) && { print -r -- $value; return; }
+  print -r -- "…${value[-$(( max - 1 )),-1]}"
+}
+
+_prompt_pure_truncate_middle() {
+  emulate -L zsh
+  local value=$1
+  integer max=${2:-32}
+  (( max <= 0 || ${#value} <= max )) && { print -r -- $value; return; }
+  (( max <= 1 )) && { print -r -- …; return; }
+  integer head=$(( (max - 1) / 2 ))
+  integer tail=$(( max - 1 - head ))
+  print -r -- "${value[1,$head]}…${value[-$tail,-1]}"
+}
+
+prompt_pure_set_path_separator() {
+  typeset -g prompt_pure_path_segment="%F{${prompt_pure_colors[path]}}%$(_prompt_pure_path_max_columns)<…<%~%<<%f"
+
+  if zstyle -t ':prompt:pure:path:separator' dim; then
+    typeset -g prompt_pure_path_separator_dimmed=1
+  else
+    typeset -g prompt_pure_path_separator_dimmed=
+  fi
+}
+
+prompt_pure_render_dimmed_path() {
+  setopt localoptions noshwordsplit
+
+  local current_path=${1:-${(%):-%~}}
+  current_path=$(_prompt_pure_truncate_left "$current_path" "$(_prompt_pure_path_max_columns)")
+  current_path=${current_path//\%/%%}
+
+  local separator=$'%{\e[2m%}/%{\e[22m%}'
+  local prefix=
+  if [[ $current_path == /* ]]; then
+    prefix=/
+    current_path=${current_path:1}
+  fi
+  print -n -r -- "%F{${prompt_pure_colors[path]}}${prefix}${current_path//\//$separator}%f"
+}
+prompt_pure_set_path_separator
+
+# Linked worktree name
+prompt_pure_precustom() {
+  local top=$prompt_pure_vcs_info[top]
+  [[ -n $top && -f $top/.git ]] || return
+  local name=${top:t}
+  [[ $name == src ]] && name=${top:h:t}
+  name=$(_prompt_pure_truncate_middle "$name" "${PURE_PROMPT_WORKTREE_MAX_COLUMNS:-32}")
+  psvar[23]="⎇ $name"
+}
+
+RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
+
+# OSC 133 marks — broken in tmux with multi-line prompts (pure prompt
+# triggers CSI 0 J which wipes the marks). Kept for kitty without tmux.
+_osc133_prompt() { print -Pn "\e]133;A\e\\"; }
+_osc133_command() { print -Pn "\e]133;C\e\\"; }
+precmd_functions+=(_osc133_prompt)
+preexec_functions+=(_osc133_command)
+
+# ── fzf-tab configuration ────────────────────────────────────────
+if (( $+commands[tmux] )); then
+  zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+fi
+zstyle ':completion:*:git-checkout:*' sort false
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls -1 --color=always $realpath'
+zstyle ':fzf-tab:*' switch-group '<' '>'
+
+# ── Functions ────────────────────────────────────────────────────
+mkcd() { mkdir -p "$1" && cd "$1"; }
+
+yy() {
+  if [[ "$(uname)" == "Darwin" ]]; then
+    cat "$1" | pbcopy
+  else
+    cat "$1" | wl-copy
+  fi
+}
+
+ekh() {
+  if [[ $# -eq 0 ]]; then
+    nvim ~/.ssh/known_hosts
+  else
+    local kh=~/.ssh/known_hosts
+    for pattern in "$@"; do
+      local matches=$(grep -c "$pattern" "$kh" 2>/dev/null)
+      if (( matches > 0 )); then
+        grep --color=always "$pattern" "$kh"
+        sed -i "/$pattern/d" "$kh"
+        echo "Removed $matches entry(s) matching '$pattern'"
+      else
+        echo "No entries matching '$pattern'"
+      fi
+    done
+  fi
+}
+
+levtop() { ssh leviathan -t htop; }
+
+update-claude-code() {
+  nix-shell maintainers/scripts/update.nix \
+    --argstr commit true \
+    --arg predicate '(path: pkg: builtins.elem path [["claude-code"] ["claude-code-bin"] ["vscode-extensions" "anthropic" "claude-code"]])'
+}
+
+# ── Tmux integration ─────────────────────────────────────────────
+if (( $+commands[tmux] )); then
+  tms() {
+    if [[ -z "$1" ]]; then
+      if [[ -n "$TMUX" ]]; then
+        tmux choose-tree -s
+      elif tmux list-sessions &>/dev/null; then
+        tmux attach-session
+      else
+        tmux new-session
+      fi
+    else
+      if [[ -n "$TMUX" ]]; then
+        tmux new-session -d -s "$1" &>/dev/null
+        tmux switch-client -t "$1"
+      else
+        tmux new-session -A -s "$1"
+      fi
+    fi
+  }
+
+  term-notify() {
+    local title="$1" message="$2"
+    if [[ -n "$TMUX" ]]; then
+      printf "\x1bPtmux;\x1b\x1b]777;notify;%s;%s\a\x1b\\" "$title" "$message"
+    else
+      printf "\x1b]777;notify;%s;%s\a" "$title" "$message"
+    fi
+  }
+
+  if [[ -n "$TMUX" ]] && (( $+commands[tput] )); then
+    if TERM=tmux-256color tput longname &>/dev/null; then
+      export TERM=tmux-256color
+    fi
+  fi
+fi
