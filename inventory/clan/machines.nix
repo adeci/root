@@ -50,15 +50,6 @@
     deploy.targetHost = "root@conduit.cymric-daggertooth.ts.net";
   };
 
-  delphi = {
-    name = "delphi";
-    tags = [
-      "work"
-      "adeci-net-work"
-    ];
-    deploy.targetHost = "root@delphi.cymric-daggertooth.ts.net";
-  };
-
   janus = {
     name = "janus";
     tags = [
@@ -89,16 +80,6 @@
       "adeci-net"
     ];
     deploy.targetHost = "root@leviathan.cymric-daggertooth.ts.net";
-  };
-
-  malum = {
-    name = "malum";
-    tags = [
-      "work"
-      "adeci-net-work"
-    ];
-    machineClass = "darwin";
-    deploy.targetHost = "root@malum.cymric-daggertooth.ts.net";
   };
 
   modus = {

@@ -4,8 +4,7 @@
       name = "@adeci/tailscale";
       input = "self";
     };
-    roles.peer.tags.adeci-net = { };
-    roles.peer.tags.adeci-net-work.settings.flags = [ "--accept-dns=false" ];
+    roles.peer.tags = [ "adeci-net" ];
   };
 
   "adeci-net-ephemeral" = {

@@ -60,14 +60,6 @@
 
     nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
     nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
-
-    shopify-framework = {
-      url = "git+ssh://git@github.com/shopify-playground/shopify-framework?ref=surma/main";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # nixos-hardware#1912 plus kernel 7.2 fixes; drop once merged.
-    nixos-hardware-xps14.url = "github:adeci/nixos-hardware/xps14-7.2-fixes";
   };
 
   outputs =

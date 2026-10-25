@@ -32,9 +32,9 @@ nix fmt
 # NixOS machine eval
 nix eval .#nixosConfigurations.<machine>.config.system.build.toplevel.drvPath
 
-# Work-machine eval (needs SSH access to the private input)
-nix eval .#nixosConfigurations.delphi.config.system.build.toplevel.drvPath
-nix eval .#darwinConfigurations.malum.config.system.primaryUser
+# Work-machine eval (needs access to the private shopify-framework input)
+nix eval ./work#nixosConfigurations.delphi.config.system.build.toplevel.drvPath
+nix eval ./work#darwinConfigurations.malum.config.system.primaryUser
 
 # Current-system checks
 nix eval .#checks.x86_64-linux --json
@@ -51,8 +51,9 @@ manual decision.
 
 Do not touch these unless explicitly asked:
 
-- `sops/` and `vars/`: encrypted secrets.
-- `flake.lock`: input updates.
+- `sops/` and `vars/` (also under `work/`): encrypted secrets.
+- `flake.lock` and `work/flake.lock`: input updates. `update-locks` updates
+  root and re-syncs `work/`.
 - `facter.json`: generated hardware facts.
 
 Keep large runtime state out of the system closure. Leviathan's local LLM
@@ -70,9 +71,14 @@ weights belong under `/var/lib/llm-weights`, not in NixOS toplevels.
 - `modules/clan/`: custom Clan services for coordinated multi-machine config.
 - `modules/terranix/`: Terraform/Terranix logic for external APIs/resources.
 - `machines/<name>/`: host composition and machine-specific modules.
-- Work machines (delphi, malum) are tagged `work` in
-  `inventory/clan/machines.nix` and import the private `shopify-framework`
-  input, so checks skip them; their modules live in `modules/{nixos,darwin}/work/`.
+- `work/`: separate flake-parts/Clan composition for the work machines
+  (delphi, malum) and the private `shopify-framework` input. It reuses root's
+  modules, packages and users through its `root` input; the main flake must
+  not depend on it, so personal deploys never fetch the private input.
+
+Use `work/.envrc` for the work development shell. Its `.clan-flake` marker
+selects the work Clan; the patched `clan-cli` in the dev shell keeps the
+`work/` directory. From the repo root, pass `--flake ./work`.
 
 Use `modules/nixos/` or `modules/darwin/` for reusable capabilities. Use
 `machines/<name>/modules/` only when config is tightly coupled to one host.
@@ -147,8 +153,9 @@ imports = [ self.users.alex.nixosModule ];
 
 The work identity is `inventory/users/alex-work.nix` (account name `alex`).
 Work hosts import `self.users.alex-work.*Module`, never `self.users.alex`.
-Work secrets are encrypted for `alex-work` only; the Kagi link and the
-Tailscale auth key are shared with personal machines.
+Work-only inputs reach work modules as `workInputs`. Work secrets live in
+`work/sops/` and `work/vars/`; the Kagi link and the Tailscale auth key are
+separate copies there.
 
 `self.resources` comes from `inventory/resources/`. Terraform modules and OS
 modules consume shared resource data from there.

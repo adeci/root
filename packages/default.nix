@@ -36,6 +36,10 @@
       systems = [ "x86_64-linux" ];
     };
 
+    clan-cli = {
+      path = ./clan-cli;
+    };
+
     element-desktop = {
       path = ./element-desktop;
       systems = [ "x86_64-linux" ];
@@ -93,6 +97,10 @@
       path = ./signal-desktop;
       systems = [ "x86_64-linux" ];
       checks = false;
+    };
+
+    update-locks = {
+      path = ./update-locks;
     };
 
     vencord = {

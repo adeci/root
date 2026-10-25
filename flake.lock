@@ -460,25 +460,6 @@
         "type": "github"
       }
     },
-    "nixos-hardware-xps14": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_5"
-      },
-      "locked": {
-        "lastModified": 1792790924,
-        "narHash": "sha256-lpBJG8TBO2pP5GuEzhqSNIPaATf8LgFBQHovsVVQh34=",
-        "owner": "adeci",
-        "repo": "nixos-hardware",
-        "rev": "a9c5baeaab7ea84d53bcbde9b7fbad06a95da763",
-        "type": "github"
-      },
-      "original": {
-        "owner": "adeci",
-        "ref": "xps14-7.2-fixes",
-        "repo": "nixos-hardware",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1783220960,
@@ -542,19 +523,6 @@
       }
     },
     "nixpkgs_5": {
-      "locked": {
-        "lastModified": 1767892417,
-        "narHash": "sha256-8bW3q88CEg2u4hSP66Vf4lpbLonHz7hqDNBMcCY7E9U=",
-        "rev": "3497aa5c9457a9d88d71fa93a4a8368816fbeeba",
-        "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.05pre924538.3497aa5c9457/nixexprs.tar.xz"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
-      }
-    },
-    "nixpkgs_6": {
       "locked": {
         "lastModified": 1792502884,
         "narHash": "sha256-IoNisKcGbUjdd45qCqywGMCYmZ5EnkxezvLII0FWwNA=",
@@ -628,12 +596,10 @@
         "nix-index-database": "nix-index-database",
         "nix-rosetta-builder": "nix-rosetta-builder",
         "nixos-hardware": "nixos-hardware",
-        "nixos-hardware-xps14": "nixos-hardware-xps14",
-        "nixpkgs": "nixpkgs_6",
+        "nixpkgs": "nixpkgs_5",
         "nixvim": "nixvim",
         "pelican": "pelican",
         "sdwire-cli": "sdwire-cli",
-        "shopify-framework": "shopify-framework",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix_5",
         "wrapper-modules": "wrapper-modules"
@@ -653,27 +619,6 @@
         "owner": "Badger-Embedded",
         "repo": "sdwire-cli",
         "type": "github"
-      }
-    },
-    "shopify-framework": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792153811,
-        "narHash": "sha256-snN2xpJBAWPeKMZlfUMK4zyxui7PFf7M7QkdLYmbyvo=",
-        "ref": "surma/main",
-        "rev": "ff095a8643f2e129c649ea25d580614f5db3ce25",
-        "revCount": 94,
-        "type": "git",
-        "url": "ssh://git@github.com/shopify-playground/shopify-framework"
-      },
-      "original": {
-        "ref": "surma/main",
-        "type": "git",
-        "url": "ssh://git@github.com/shopify-playground/shopify-framework"
       }
     },
     "sops-nix": {

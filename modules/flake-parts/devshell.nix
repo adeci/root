@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ self, ... }:
 {
   perSystem =
     {
@@ -8,7 +8,7 @@
     {
       devShells.default = pkgs.mkShell {
         packages = [
-          inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+          self.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
           pkgs.opentofu
         ];
       };

@@ -1,11 +1,11 @@
 {
-  inputs,
   self,
+  workInputs,
   ...
 }:
 {
   # Run `enroll` once after the first activation.
-  imports = [ inputs.shopify-framework.nixosModules.default ];
+  imports = [ workInputs.shopify-framework.nixosModules.default ];
 
   shopify-framework = {
     enable = true;

@@ -14,12 +14,14 @@ let
       builtins.filter (p: p ? passthru.thaw) config.environment.systemPackages
     )
   );
+  # Through work/'s relative `root` input, self is <source>/work/..
+  repoRoot = toString (/. + builtins.unsafeDiscardStringContext "${self}");
   repoPath =
     path:
     let
       p = toString path;
     in
-    if lib.hasPrefix "${self}/" p then lib.removePrefix "${self}/" p else null;
+    if lib.hasPrefix "${repoRoot}/" p then lib.removePrefix "${repoRoot}/" p else null;
 
   apps = lib.mapAttrs (name: app: {
     inherit (app) reload optional;

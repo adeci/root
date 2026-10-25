@@ -16,6 +16,7 @@ _: {
         "*.gitignore"
         ".vscode/*"
         "*.toml"
+        "*.clan-flake"
         "*.code-workspace"
         "*.pub"
         "*.typed"
