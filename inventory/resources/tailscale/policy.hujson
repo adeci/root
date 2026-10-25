@@ -1,0 +1,8 @@
+{
+	"acls":      [{"action": "accept", "dst": ["*:*"], "src": ["*"]}],
+	"nodeAttrs": [{"target": ["*"], "ipPool": ["100.64.0.0/11"]}],
+	"tagOwners": {
+		"tag:adeci-installer": ["autogroup:admin"],
+		"tag:adeci-net":       ["autogroup:admin"]
+	}
+}

@@ -10,5 +10,6 @@
     ingress = import ../../inventory/resources/ingress;
     llm = import ../../inventory/resources/llm;
     routeros = import ../../inventory/resources/routeros;
+    tailscale = import ../../inventory/resources/tailscale;
   };
 }
