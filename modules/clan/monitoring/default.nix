@@ -969,6 +969,11 @@ in
             # ── Grafana ──
             services.grafana = lib.mkIf settings.grafana.enable {
               enable = true;
+              # Grafana 13.2 ships these data sources as separate plugins.
+              declarativePlugins = with pkgs.grafanaPlugins; [
+                prometheus
+                loki
+              ];
 
               settings = {
                 analytics = {
@@ -1002,8 +1007,6 @@ in
                   hide_version = true;
                 };
                 "auth".disable_login_form = true;
-
-                plugins.preinstall_disabled = true;
 
                 security = {
                   disable_gravatar = true;
