@@ -48,8 +48,6 @@
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  services.teamviewer.enable = true;
-
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
