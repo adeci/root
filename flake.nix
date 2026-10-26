@@ -10,7 +10,8 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
-    clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
+    # clan-core#8285 (drops the Nix 2.31 pin nixpkgs removed); back to main once merged.
+    clan-core.url = "https://git.clan.lol/clan/clan-core/archive/868c070a4a6e801ec4a69656000da150fdf68b9b.tar.gz";
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
     clan-core.inputs.flake-parts.follows = "flake-parts";
     clan-core.inputs.nix-darwin.follows = "nix-darwin";
