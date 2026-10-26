@@ -21,6 +21,10 @@
 
   clan.core.networking.forwardAgent = true;
 
+  # Secrets go in through a systemd unit that restarts consumers itself;
+  # restarts requested from the activation script are deprecated.
+  sops.useSystemdActivation = true;
+
   services.openssh = {
     enable = true;
     settings = {
