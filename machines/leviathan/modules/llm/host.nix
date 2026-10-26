@@ -14,8 +14,9 @@ let
   localWeightIds = lib.unique (map (model: model.backend.weight) (builtins.attrValues localModels));
   localWeights = lib.genAttrs localWeightIds (id: weights.${id});
 
-  cudaPackages = pkgs.cudaPackages // {
-    flags = pkgs.cudaPackages.flags // {
+  # CUDA 13 dropped Volta (sm_70).
+  cudaPackages = pkgs.cudaPackages_12 // {
+    flags = pkgs.cudaPackages_12.flags // {
       cmakeCudaArchitecturesString = "70";
     };
   };
