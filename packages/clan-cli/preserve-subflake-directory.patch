@@ -109,4 +109,3 @@
  
          if machine._class_ == "nixos":
              _update_nixos(
-Only in b/clan_lib/machines: update.py.rej
