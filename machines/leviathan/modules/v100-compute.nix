@@ -81,7 +81,6 @@ in
       pkgs.nvtopPackages.nvidia
       pkgs.pciutils
       cuda.cudatoolkit
-      cuda.cudnn
       cuda.nccl
     ];
 
@@ -96,7 +95,6 @@ in
   programs.nix-ld.libraries = [
     nvidiaPackage
     cuda.cudatoolkit
-    cuda.cudnn
     cuda.nccl
   ];
 
