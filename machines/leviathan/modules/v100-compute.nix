@@ -11,9 +11,13 @@ let
   cuda = pkgs.pkgsForCudaArch.sm_70.cudaPackages_12;
 
   dcgm = pkgs.dcgm.overrideAttrs (old: {
-    # Nixpkgs already tries to skip this but the actual CTest name has the "Scenario:" prefix
     disabledTests = (old.disabledTests or [ ]) ++ [
+      # Nixpkgs already tries to skip this but the actual CTest name has the "Scenario:" prefix
       "Scenario: GetPluginCudalessDir returns cudaless directory in plugin directory"
+      # Diag ignore-error-code parsing fails since the Oct 2026 nixpkgs update; we
+      # only use the hostengine and exporter. Drop with nixpkgs#567739 (dcgm 4.6.1).
+      "Ignore error codes validation tests"
+      "PluginLib::SetIgnoreErrorCodesParam"
     ];
   });
 
