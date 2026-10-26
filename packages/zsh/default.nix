@@ -210,7 +210,6 @@ in
         PURE_GIT_UNTRACKED_DIRTY=0
         PURE_GIT_PULL=0
         PURE_CMD_MAX_EXEC_TIME=4
-        PURE_PROMPT_SYMBOL="%(?.%F{green}.%F{red})❯%f"
         zstyle :prompt:pure:path color cyan
         zstyle :prompt:pure:git:branch color magenta
         zstyle :prompt:pure:git:branch:cached color red
