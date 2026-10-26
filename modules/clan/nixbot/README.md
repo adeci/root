@@ -24,20 +24,19 @@ its `@adeci/remote-builder` machines.
 
 ```nix
 {
-  buildbot = {
+  nixbot = {
     module = {
       name = "@adeci/nixbot";
       input = "self";
     };
 
     roles.server.machines.leviathan.settings = {
-      domain = "buildbot.decio.us";
+      domain = "nixbot.decio.us";
       buildSystems = [
         "aarch64-linux"
         "x86_64-linux"
       ];
       admins = [ "github:adeci" ];
-      statusContextPrefix = "buildbot";
       github = {
         appId = 3002742;
         oauthId = "Iv23...";

@@ -8,6 +8,6 @@
   };
 
   leviathan = {
-    "buildbot.decio.us" = "http://localhost:80";
+    "nixbot.decio.us" = "http://localhost:80";
   };
 }

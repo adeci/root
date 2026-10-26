@@ -51,12 +51,6 @@ _: {
             description = "Provider-qualified admins, e.g. github:<login>";
           };
 
-          statusContextPrefix = lib.mkOption {
-            type = lib.types.str;
-            default = "nixbot";
-            description = "Prefix of check-run names; \"buildbot\" keeps buildbot-era branch protection working";
-          };
-
           github.appId = lib.mkOption {
             type = lib.types.int;
             description = "GitHub App ID";
@@ -163,7 +157,6 @@ _: {
                 domain
                 evalMaxMemorySize
                 evalWorkerCount
-                statusContextPrefix
                 useHTTPS
                 ;
               github = {
