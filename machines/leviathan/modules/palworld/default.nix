@@ -22,10 +22,7 @@ let
   palworldInstances = import ./instances.nix;
   instances = lib.mapAttrs (_: instance: defaultInstance // instance) palworldInstances;
   enabledInstances = lib.filterAttrs (_: instance: instance.enable) instances;
-  disabledInstances = lib.filterAttrs (_: instance: !instance.enable) instances;
   instanceNames = lib.attrNames instances;
-  enabledInstanceNames = lib.attrNames enabledInstances;
-  disabledInstanceNames = lib.attrNames disabledInstances;
 
   stateDir = name: "/var/lib/palworld/${name}";
   serverDir = name: "${stateDir name}/server";
@@ -33,7 +30,6 @@ let
   savedDir = name: "${serverDir name}/Pal/Saved";
   settingsFile = name: "${savedDir name}/Config/LinuxServer/PalWorldSettings.ini";
   generatorName = name: "palworld-${name}";
-  systemctl = "${config.systemd.package}/bin/systemctl";
   publicPort = instance: if instance.publicPort == null then instance.port else instance.publicPort;
 
   mkArgs =
@@ -111,6 +107,9 @@ let
     name: instance:
     pkgs.writeShellScript "palworld-${name}-start" ''
       set -euo pipefail
+      # Updating here rather than in ExecStartPre keeps the start job short,
+      # so deploys don't wait on steamcmd.
+      ${mkUpdateScript name}
       ${mkCommunitySetup instance}
       install -D -m 0600 \
         ${lib.escapeShellArg (defaultSettingsFile name)} \
@@ -136,6 +135,7 @@ let
       description = "Palworld dedicated server (${name})";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
 
       restartIfChanged = false;
       stopIfChanged = false;
@@ -159,11 +159,9 @@ let
           "admin-password:${vars.files.admin-password.path}"
           "server-password:${vars.files.server-password.path}"
         ];
-        ExecStartPre = mkUpdateScript name;
         ExecStart = mkStartScript name instance;
         Restart = "on-failure";
         RestartSec = "30s";
-        TimeoutStartSec = "30min";
         KillSignal = "SIGINT";
         SuccessExitStatus = [
           0
@@ -225,24 +223,6 @@ in
   systemd.services = lib.mapAttrs' (
     name: instance: lib.nameValuePair "palworld-${name}" (mkService name instance)
   ) enabledInstances;
-
-  system.activationScripts.managePalworld =
-    lib.stringAfter
-      [
-        "etc"
-        "setupSecrets"
-      ]
-      ''
-        ${systemctl} daemon-reload
-        ${lib.concatMapStringsSep "\n" (name: ''
-          ${systemctl} stop --no-block palworld-${name}.service 2>/dev/null || true
-        '') disabledInstanceNames}
-        ${lib.concatMapStringsSep "\n" (name: ''
-          if ! ${systemctl} is-active --quiet palworld-${name}.service; then
-            ${systemctl} start --no-block palworld-${name}.service
-          fi
-        '') enabledInstanceNames}
-      '';
 
   networking.firewall.allowedUDPPorts = lib.concatMap (
     instance:
