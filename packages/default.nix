@@ -63,8 +63,13 @@
       checks = false;
     };
 
+    # Uses systemd user units.
     thaw = {
       path = ./thaw;
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
     };
 
     prusa-slicer = {
