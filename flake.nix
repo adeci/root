@@ -56,8 +56,6 @@
     sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
     sdwire-cli.flake = false;
 
-    drv-thru.url = "github:adeci/drv-thru";
-
     pelican.url = "github:adeci/vencord-pelican";
     pelican.inputs.nixpkgs.follows = "nixpkgs";
 

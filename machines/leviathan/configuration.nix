@@ -1,5 +1,4 @@
 {
-  inputs,
   pkgs,
   self,
   ...
@@ -7,8 +6,6 @@
 {
 
   imports = [
-    inputs.drv-thru.nixosModules.default
-
     self.users.alex.nixosModule
     self.users.brittonr.nixosModule
     self.users.dima.nixosModule
@@ -50,19 +47,8 @@
 
   environment.systemPackages = [
     pkgs.numactl
-    inputs.drv-thru.packages.${pkgs.stdenv.hostPlatform.system}.default
     self.packages.${pkgs.stdenv.hostPlatform.system}.big-htop
   ];
-
-  services.drv-thru.server = {
-    enable = true;
-    maxConcurrentBuilds = 3;
-    trustedClients.alex = {
-      publicKey = "4e898d570a913f2d7234d0fa3a101b418f1182cedd57a851b664177f1c2a4a28";
-      maxBuildTime = "1h";
-      maxUploadBytes = "20G";
-    };
-  };
 
   # Transparent Huge Pages configuration for ZGC
   boot.kernelParams = [ "transparent_hugepage=madvise" ];
