@@ -15,8 +15,8 @@
       evalMaxMemorySize = 4096;
       admins = [ "github:adeci" ];
       github = {
-        appId = 3002742;
-        oauthId = "Iv23li39kVxcYTCXYahY";
+        appId = 5474567;
+        oauthId = "Iv23liPuk6XhuDT6Owtz";
         topic = "build-with-buildbot";
       };
     };

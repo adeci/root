@@ -38,7 +38,7 @@ its `@adeci/remote-builder` machines.
       ];
       admins = [ "github:adeci" ];
       github = {
-        appId = 3002742;
+        appId = 5474567;
         oauthId = "Iv23...";
         topic = "build-with-buildbot";
       };
