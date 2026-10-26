@@ -45,6 +45,12 @@ _: {
             description = "Maximum memory per evaluation worker, in MiB";
           };
 
+          buildConcurrency = lib.mkOption {
+            type = lib.types.nullOr lib.types.int;
+            default = null;
+            description = "Cap on concurrent attribute builds; null means the CPU count";
+          };
+
           admins = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [ ];
@@ -153,6 +159,7 @@ _: {
               enable = true;
               inherit (settings)
                 admins
+                buildConcurrency
                 buildSystems
                 domain
                 evalMaxMemorySize
