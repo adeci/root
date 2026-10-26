@@ -19,7 +19,6 @@
       github = {
         appId = 5474567;
         oauthId = "Iv23liPuk6XhuDT6Owtz";
-        topic = "build-with-buildbot";
       };
     };
   };

@@ -66,11 +66,6 @@ _: {
             type = lib.types.str;
             description = "GitHub App OAuth client ID";
           };
-
-          github.topic = lib.mkOption {
-            type = lib.types.str;
-            description = "GitHub topic imported as enabled projects on first start";
-          };
         };
       };
 
@@ -168,7 +163,9 @@ _: {
                 ;
               github = {
                 enable = true;
-                inherit (settings.github) appId oauthId topic;
+                inherit (settings.github) appId oauthId;
+                # Projects are enabled in the web UI, not by topic.
+                topic = null;
                 appSecretKeyFile = generators."${instanceName}-github".files.app-secret-key.path;
                 webhookSecretFile = generators."${instanceName}-webhook-secret".files.webhook-secret.path;
                 oauthSecretFile = generators."${instanceName}-github".files.oauth-secret.path;

@@ -40,7 +40,6 @@ its `@adeci/remote-builder` machines.
       github = {
         appId = 5474567;
         oauthId = "Iv23...";
-        topic = "build-with-buildbot";
       };
     };
   };
