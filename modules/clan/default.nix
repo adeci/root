@@ -7,5 +7,5 @@
   "@adeci/security-keys" = import ./security-keys;
   "@adeci/monitoring" = import ./monitoring;
   "@adeci/restic" = import ./restic;
-  "@adeci/buildbot" = import ./buildbot { inherit inputs; };
+  "@adeci/nixbot" = import ./nixbot { inherit inputs; };
 }

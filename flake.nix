@@ -26,7 +26,9 @@
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nixvim.inputs.flake-parts.follows = "flake-parts";
 
-    buildbot-nix.url = "github:nix-community/buildbot-nix";
+    nixbot.url = "github:Mic92/nixbot";
+    nixbot.inputs.nixpkgs.follows = "nixpkgs";
+    nixbot.inputs.treefmt-nix.follows = "treefmt-nix";
 
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
