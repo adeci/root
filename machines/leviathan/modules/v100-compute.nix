@@ -7,8 +7,8 @@
 let
   # V100 support moved to the 580 legacy branch
   nvidiaPackage = config.boot.kernelPackages.nvidiaPackages.legacy_580;
-  # CUDA 13 dropped Volta (sm_70); the 580 driver tops out at CUDA 13.0 anyway.
-  cuda = pkgs.cudaPackages_12;
+  # V100s only (sm_70); CUDA 13 dropped Volta, and the 580 driver tops out at CUDA 13.0.
+  cuda = pkgs.pkgsForCudaArch.sm_70.cudaPackages_12;
 
   dcgm = pkgs.dcgm.overrideAttrs (old: {
     # Nixpkgs already tries to skip this but the actual CTest name has the "Scenario:" prefix

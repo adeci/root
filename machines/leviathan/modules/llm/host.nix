@@ -14,16 +14,10 @@ let
   localWeightIds = lib.unique (map (model: model.backend.weight) (builtins.attrValues localModels));
   localWeights = lib.genAttrs localWeightIds (id: weights.${id});
 
-  # CUDA 13 dropped Volta (sm_70).
-  cudaPackages = pkgs.cudaPackages_12 // {
-    flags = pkgs.cudaPackages_12.flags // {
-      cmakeCudaArchitecturesString = "70";
-    };
-  };
-
+  # V100s only (sm_70); CUDA 13 dropped Volta.
   llamaCpp = pkgs.llama-cpp.override {
     cudaSupport = true;
-    inherit cudaPackages;
+    cudaPackages = pkgs.pkgsForCudaArch.sm_70.cudaPackages_12;
   };
 
   prepareCommand = pkgs.callPackage ./weights { };
