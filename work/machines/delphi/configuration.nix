@@ -40,12 +40,5 @@
   nixpkgs.hostPlatform = "x86_64-linux";
 
   # Newest series confirmed on the DA14260.
-  boot.kernelPackages = pkgs.linuxPackages_7_2.extend (
-    _: prev: {
-      # Depmod collision; drop once nixos-unstable has nixpkgs#575861.
-      v4l2loopback = prev.v4l2loopback.overrideAttrs (old: {
-        installFlags = (old.installFlags or [ ]) ++ [ "DEPMOD=true" ];
-      });
-    }
-  );
+  boot.kernelPackages = pkgs.linuxPackages_7_2;
 }
