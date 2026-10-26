@@ -243,7 +243,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
       # Only x86_64-linux is built from source here (darwin uses the DMG).
       outputHash =
         {
-          "x86_64-linux" = "sha256-dLZCIWxldgbkYSt5ECQ7yWPF5i+xNsxIzkqjAi1LaNw=";
+          "x86_64-linux" = "sha256-mJ5qcQLvAPSJJleSk6Bpn0FkvAtpLVisTzFwf2QinqQ=";
         }
         .${stdenv.hostPlatform.system};
 
