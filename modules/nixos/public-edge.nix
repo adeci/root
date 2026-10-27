@@ -59,6 +59,11 @@ in
       services.nginx.commonHttpConfig = ''
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
       '';
+
+      # SSH only over the tailnet; the public interface never exposes it.
+      # Out-of-band fallback: Hetzner web console, log in as the primary user.
+      services.openssh.openFirewall = false;
+      networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ];
     }
     (lib.mkIf (streams != [ ]) {
       assertions = [

@@ -2,12 +2,9 @@
   conduit = {
     provider = "hcloud";
     firewall = {
+      # SSH is Tailscale-only (see modules/nixos/public-edge.nix). For Hetzner
+      # rescue, temporarily add tcp/22 here and apply.
       staticRules = [
-        {
-          description = "SSH";
-          protocol = "tcp";
-          port = 22;
-        }
         {
           description = "HTTP (Zipline)";
           protocol = "tcp";

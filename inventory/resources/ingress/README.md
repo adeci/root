@@ -22,7 +22,7 @@ Each stream entry is consumed by:
 - `modules/nixos/public-edge.nix` for the edge machine's NixOS firewall.
 - `modules/terranix/hcloud/default.nix` for Hetzner Cloud firewalls on `hcloud` edges.
 
-`edges.nix` owns edge-machine metadata and static cloud firewall rules, such as SSH, HTTP/HTTPS, and Tailscale UDP.
+`edges.nix` owns edge-machine metadata and static cloud firewall rules, such as HTTP/HTTPS and Tailscale UDP. SSH is deliberately absent: `public-edge.nix` only allows it on `tailscale0`.
 
 ## What This Does Not Own
 
