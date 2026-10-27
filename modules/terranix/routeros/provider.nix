@@ -28,6 +28,12 @@ in
 
   terraform.required_providers.random = {
     source = "hashicorp/random";
+    version = "~> 3.9";
+  };
+
+  terraform.required_providers.external = {
+    source = "registry.opentofu.org/hashicorp/external";
+    version = "~> 2.0";
   };
 
   data.external.routeros-password = {

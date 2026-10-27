@@ -1,10 +1,10 @@
 result
 .direnv/
 
-# Terraform working directories (providers, config, cache)
-# Lock files are tracked (provider version pins)
-.terraform/*/
-!.terraform/*.lock.hcl
+# Terraform working directories (providers, lock files, config, cache).
+# State lives encrypted in B2; provider versions are pinned in the Terranix
+# required_providers blocks, not by committed lock files.
+.terraform/
 
 .pi/
 .claude/

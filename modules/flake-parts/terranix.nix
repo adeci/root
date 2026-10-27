@@ -113,6 +113,7 @@ in
             "tf-init"
             "tf-plan"
             "tf-apply"
+            "tf-output"
             "tf-state"
             "tf-destroy"
           ]
