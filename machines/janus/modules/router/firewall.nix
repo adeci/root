@@ -341,9 +341,8 @@ in
             ct state established,related counter name forward_accept_established_related accept
             ct state invalid counter name forward_drop_invalid drop
 
-            # Tailscale subnet routes. Route approval and Tailscale ACLs decide
-            # which peers can use these local networks.
-            iifname "tailscale0" oifname { ${topology.interfaceSet topology.localForwardInterfaces} } counter name forward_accept_tailscale_to_local accept
+            # Tailscale subnet routes; the tailnet policy decides who may use them.
+            iifname "tailscale0" oifname { ${topology.interfaceSet topology.tailnetInterfaces} } counter name forward_accept_tailscale_to_local accept
 
     ${zoneJumps}
 

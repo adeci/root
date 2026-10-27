@@ -23,8 +23,11 @@ let
 
   interfaceSet = interfaces: lib.concatMapStringsSep ", " (interface: ''"${interface}"'') interfaces;
 
+  tailnetVlans = lib.filterAttrs (_: vlan: vlan.tailnet or false) vlans;
+  tailnetInterfaces = lib.mapAttrsToList (_: subnetInterface) tailnetVlans;
+
   tailscaleRouteFlag = "--advertise-routes=${
-    lib.concatMapStringsSep "," (vlan: vlan.cidr) (lib.attrValues vlans)
+    lib.concatMapStringsSep "," (vlan: vlan.cidr) (lib.attrValues tailnetVlans)
   }";
 in
 {
@@ -42,11 +45,11 @@ in
     serviceInterfaces
     noIpv6
     interfaceSet
+    tailnetInterfaces
     tailscaleRouteFlag
     ;
 
   trunkVlanInterfaces = lib.mapAttrsToList (_: vlanInterface) vlans;
-  localForwardInterfaces = serviceInterfaces;
   physicalInterfaces = lib.attrValues ports;
   spareInterfaces = lib.subtractLists [
     wan

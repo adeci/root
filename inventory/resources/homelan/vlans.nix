@@ -4,6 +4,7 @@
     prefix = "10.10.0";
     cidr = "10.10.0.0/24";
     gateway = "10.10.0.1";
+    tailnet = true;
     dhcpPool = {
       start = "10.10.0.100";
       end = "10.10.0.250";

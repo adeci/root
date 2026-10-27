@@ -24,6 +24,8 @@ in
   # Same set janus advertises (machines/janus/modules/router/topology.nix).
   resource.tailscale_device_subnet_routes.janus = {
     device_id = config.data.tailscale_device.janus "node_id";
-    routes = map (vlan: vlan.cidr) (lib.attrValues homelan.vlans);
+    routes = map (vlan: vlan.cidr) (
+      lib.attrValues (lib.filterAttrs (_: vlan: vlan.tailnet or false) homelan.vlans)
+    );
   };
 }

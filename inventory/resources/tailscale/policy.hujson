@@ -1,8 +1,27 @@
 {
-	"acls":      [{"action": "accept", "dst": ["*:*"], "src": ["*"]}],
+	"grants": [
+		{"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
+		{"src": ["autogroup:member"], "dst": ["10.10.0.0/24"], "ip": ["*"]},
+		{"src": ["autogroup:member"], "dst": ["autogroup:internet"], "ip": ["*"]},
+		{"src": ["tag:work"], "dst": ["tag:work"], "ip": ["*"]},
+		{"src": ["autogroup:member", "tag:work"], "dst": ["tag:adeci-installer"], "ip": ["*"]},
+	],
+	// Keeps tailnet addresses out of Cloudflare WARP's range.
 	"nodeAttrs": [{"target": ["*"], "ipPool": ["100.64.0.0/11"]}],
 	"tagOwners": {
 		"tag:adeci-installer": ["autogroup:admin"],
-		"tag:adeci-net":       ["autogroup:admin"]
-	}
+		"tag:work":            ["autogroup:admin"],
+	},
+	"tests": [
+		{
+			"src":    "alex.decious@gmail.com",
+			"accept": ["10.10.0.21:443", "10.10.0.10:443", "tag:adeci-installer:22"],
+			"deny":   ["tag:work:22", "10.20.0.1:80", "10.99.0.2:80"],
+		},
+		{
+			"src":    "tag:work",
+			"accept": ["tag:work:22", "tag:adeci-installer:22"],
+			"deny":   ["alex.decious@gmail.com:22", "10.10.0.10:443", "10.10.0.21:443"],
+		},
+	],
 }
