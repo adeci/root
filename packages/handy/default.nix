@@ -1,6 +1,7 @@
 # Handy 0.9.8 on Linux (source.nix) and macOS (signed DMG), with Nix-owned
-# settings: bin/handy merges `declaredSettings` into Handy's store before it
-# starts; every other setting stays editable in the GUI.
+# settings and model: bin/handy merges `declaredSettings` into Handy's store
+# and links the declared model into its models dir before it starts; every
+# other setting stays editable in the GUI.
 {
   lib,
   pkgs,
@@ -16,13 +17,27 @@ let
   version = "0.9.8";
   inherit (stdenvNoCC.hostPlatform) isLinux isDarwin;
 
+  # Handy's catalog default for English, pinned to the revision its catalog
+  # uses. Handy counts `<models dir>/<filename>` as downloaded, so nothing is
+  # fetched at runtime and the selection below survives the first start.
+  model = rec {
+    repo = "handy-computer/parakeet-unified-en-0.6b-gguf";
+    revision = "7e948f21b7bdbac698d3318db9d350f1096f3b6c";
+    filename = "parakeet-unified-en-0.6b-Q8_0.gguf";
+    file = fetchurl {
+      url = "https://huggingface.co/${repo}/resolve/${revision}/${filename}";
+      hash = "sha256-S1C23YYr9uNGkpqvT16qzsADv6P1ZGLWyHS0HvLzh5U=";
+    };
+  };
+  declaredModels = pkgs.linkFarm "handy-declared-models" { ${model.filename} = model.file; };
+
   # Keys follow Handy 0.9.8's AppSettings schema.
   declaredSettings.settings = {
     overlay_style = "live";
     paste_method = "direct";
     update_checks_enabled = false; # can't self-update in /nix/store
     autostart_enabled = false; # systemd/launchd start it
-    selected_model = "handy-computer/parakeet-unified-en-0.6b-gguf/parakeet-unified-en-0.6b-Q8_0.gguf";
+    selected_model = "${model.repo}/${model.filename}";
     shortcut_activation = "hold_or_toggle";
     model_unload_timeout = "never"; # a reload costs ~0.4 s on the next dictation
   }
@@ -36,20 +51,28 @@ let
     typing_tool = "wtype";
     # An on-demand mic opens with ~125 ms of silence and clips the first word.
     always_on_microphone = true;
-    # The GUI shows the real hotkey, and Ctrl+Space (tmux) stays free.
-    bindings.transcribe.current_binding = "super+space";
+    # The GUI shows the real hotkey, and Ctrl+Space (tmux) stays free. Handy
+    # drops a binding missing any field, and the first start copies this file
+    # verbatim, so spell out the whole ShortcutBinding.
+    bindings.transcribe = {
+      id = "transcribe";
+      name = "Transcribe";
+      description = "Converts your speech into text.";
+      default_binding = "ctrl+space";
+      current_binding = "super+space";
+    };
   };
   declaredSettingsFile = pkgs.writeText "handy-declared-settings.json" (
     builtins.toJSON declaredSettings
   );
 
-  mergeSettings = writeShellApplication {
-    name = "handy-merge-settings";
+  setup = writeShellApplication {
+    name = "handy-setup";
     runtimeInputs = [
       pkgs.jq
       pkgs.coreutils
     ];
-    text = builtins.readFile ./merge-settings.sh;
+    text = builtins.readFile ./setup.sh;
   };
 
   trigger = writers.writePython3Bin "handy-trigger" {
@@ -134,7 +157,7 @@ stdenvNoCC.mkDerivation {
     lndir ${base} $out
     rm -f $out/bin/handy
     makeShellWrapper ${handyExe} $out/bin/handy \
-      --run "${lib.getExe mergeSettings} ${declaredSettingsFile} || true" \
+      --run "${lib.getExe setup} ${declaredSettingsFile} ${declaredModels} || true" \
       --set HANDY_DISABLE_UPDATER 1 \
       ${lib.escapeShellArgs linuxWrapperArgs}
   ''
@@ -146,7 +169,7 @@ stdenvNoCC.mkDerivation {
 
   passthru = {
     unwrapped = base;
-    inherit mergeSettings declaredSettingsFile;
+    inherit setup declaredSettingsFile declaredModels;
   }
   // lib.optionalAttrs isLinux { inherit trigger; };
 
