@@ -51,7 +51,8 @@ in
   system.activationScripts.pi-profile = {
     deps = [ "users" ];
     text = ''
-      ${pkgs.util-linux}/bin/runuser -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"}
+      ${pkgs.util-linux}/bin/runuser -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"} \
+        || echo "pi-profile: ${home}/.pi/agent left unchanged" >&2
     '';
   };
 

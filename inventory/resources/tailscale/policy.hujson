@@ -1,10 +1,13 @@
 {
+	"hosts": {"leviathan": "100.90.108.13"},
 	"grants": [
 		{"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
 		{"src": ["autogroup:member"], "dst": ["10.10.0.0/24"], "ip": ["*"]},
 		{"src": ["autogroup:member"], "dst": ["autogroup:internet"], "ip": ["*"]},
 		{"src": ["tag:work"], "dst": ["tag:work"], "ip": ["*"]},
 		{"src": ["autogroup:member", "tag:work"], "dst": ["tag:adeci-installer"], "ip": ["*"]},
+		// Users a node is shared with; list each shared-out node in dst.
+		{"src": ["autogroup:shared"], "dst": ["leviathan"], "ip": ["*"]},
 	],
 	// Keeps tailnet addresses out of Cloudflare WARP's range.
 	"nodeAttrs": [{"target": ["*"], "ipPool": ["100.64.0.0/11"]}],
