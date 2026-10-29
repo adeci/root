@@ -1,6 +1,6 @@
 # `thaw` for every installed package built with packages/thaw/wrapper.nix:
-# system copies in /etc/thaw/<app>/, a manifest for the `thaw` command, and
-# the per-session links, made at login.
+# system copies in /etc/thaw/<app>/, a manifest for the `thaw` command, the
+# per-session links, made at login, and a reload of running apps after a switch.
 {
   config,
   lib,
@@ -71,6 +71,21 @@ in
 
   config = {
     environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.thaw ];
+
+    # Runs as each logged-in user after every switch (and at login, where the
+    # apps aren't up yet and the reloads fail quietly). Reloads only re-read
+    # config; nothing is restarted.
+    system.userActivationScripts.thaw-reload = ''
+      export PATH=/run/current-system/sw/bin:$PATH
+      ${lib.concatStrings (
+        lib.mapAttrsToList (
+          name: app:
+          lib.optionalString (app.reload != null) ''
+            thaw reload ${lib.escapeShellArg name} >/dev/null 2>&1 || true
+          ''
+        ) apps
+      )}
+    '';
 
     assertions =
       checks

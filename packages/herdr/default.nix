@@ -12,7 +12,9 @@
 
   package = pkgs.herdr;
   thaw.files."config.toml" = ./config.toml;
-  thaw.reload = "herdr status server >/dev/null 2>&1 && herdr server reload-config";
+  # Re-reads config in the server and attached clients; panes keep running.
+  # Fails (and does nothing) when no server is up.
+  thaw.reload = "herdr server reload-config >/dev/null";
 
   # Only the config moves; herdr keeps session.json, logs and sockets in
   # ~/.config/herdr. The server is spawned by the client and inherits this.
