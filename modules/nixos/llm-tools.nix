@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  self,
+  ...
+}:
 let
   llm-agents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
 in
@@ -12,5 +17,6 @@ in
     llm-agents.claude-code
     llm-agents.openspec
     llm-agents.workmux
+    self.packages.${pkgs.stdenv.hostPlatform.system}.herdr
   ];
 }

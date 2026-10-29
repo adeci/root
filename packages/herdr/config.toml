@@ -1,0 +1,70 @@
+# Read through $THAW_HERDR (see default.nix); state, logs and sockets stay in
+# ~/.config/herdr. Keys mirror packages/tmux/tmux.conf where herdr has an
+# equivalent action; prefix+? lists everything that is bound.
+onboarding = false
+
+[theme]
+name = "tokyo-night"
+
+[update]
+# Nix owns the binary; `herdr update` is disabled for Nix installs anyway.
+version_check = false
+
+[keys]
+prefix = "ctrl+space"
+
+# tmux: new-session prompt; workspaces are herdr's sessions. `(`/`)` walk
+# them like tmux sessions; shift+1..9 jumps like 1..9 does for tabs.
+new_workspace = ["prefix+shift+n", "prefix+shift+s"]
+previous_workspace = "prefix+("
+next_workspace = "prefix+)"
+switch_workspace = "prefix+shift+1..9"
+
+# tmux H/L walk windows (herdr tabs).
+previous_tab = ["prefix+p", "prefix+shift+h"]
+next_tab = ["prefix+n", "prefix+shift+l"]
+close_tab = ["prefix+shift+x", "prefix+shift+k"]
+
+# Shift+h/j/k/l went to tabs above, so swapping moves to alt.
+swap_pane_left = "prefix+alt+h"
+swap_pane_down = "prefix+alt+j"
+swap_pane_up = "prefix+alt+k"
+swap_pane_right = "prefix+alt+l"
+
+# Tab toggles back to the previous pane anywhere (tmux switch-client -l
+# muscle memory); tmux `o` cycles panes, so the notification jump moves to O.
+last_pane = "prefix+tab"
+cycle_pane_next = "prefix+o"
+open_notification_target = "prefix+shift+o"
+
+# tmux `-` stacks, `|` sits side by side; `"` and `%` kept as muscle memory.
+split_horizontal = ["prefix+minus", "prefix+\""]
+split_vertical = ["prefix+|", "prefix+%"]
+
+# tmux `v` enters copy mode, so `[`/`]` walk agents instead.
+copy_mode = "prefix+v"
+previous_agent = "prefix+["
+next_agent = "prefix+]"
+focus_agent = "prefix+alt+1..9"
+
+clear_pane = "prefix+ctrl+k"
+
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "exec \"${SHELL:-sh}\""
+description = "scratch shell"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit"
+width = "90%"
+height = "90%"
+
+[ui]
+# tmux `c` opens a window without asking for a name.
+prompt_new_tab_name = false

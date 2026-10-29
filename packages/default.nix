@@ -29,6 +29,10 @@
       path = ./nvim-dev;
     };
 
+    herdr = {
+      path = ./herdr;
+    };
+
     tmux = {
       path = ./tmux;
     };
