@@ -20,6 +20,11 @@ its `@adeci/remote-builder` machines.
   contents/metadata/commit statuses)
 - Events: push, pull request, check run, check suite
 
+A public App lets anyone install it, and GitHub repo admins can enable their
+own repos in nixbot. Set `github.userAllowlist` to bound which owners get
+built, and `prApproval.enable` so fork PRs from authors without a merged
+commit wait for a repo writer's "Approve CI" click.
+
 ## Inventory
 
 ```nix
@@ -37,9 +42,11 @@ its `@adeci/remote-builder` machines.
         "x86_64-linux"
       ];
       admins = [ "github:adeci" ];
+      prApproval.enable = true;
       github = {
         appId = 5474567;
         oauthId = "Iv23...";
+        userAllowlist = [ "adeci" ];
       };
     };
   };

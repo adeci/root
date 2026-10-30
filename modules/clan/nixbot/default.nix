@@ -57,6 +57,12 @@ _: {
             description = "Provider-qualified admins, e.g. github:<login>";
           };
 
+          prApproval.enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Hold pull requests from outside contributors until a repo writer approves CI";
+          };
+
           github.appId = lib.mkOption {
             type = lib.types.int;
             description = "GitHub App ID";
@@ -65,6 +71,12 @@ _: {
           github.oauthId = lib.mkOption {
             type = lib.types.str;
             description = "GitHub App OAuth client ID";
+          };
+
+          github.userAllowlist = lib.mkOption {
+            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+            default = null;
+            description = "If non-null, only repositories owned by these GitHub users/organizations are built";
           };
         };
       };
@@ -161,9 +173,10 @@ _: {
                 evalWorkerCount
                 useHTTPS
                 ;
+              prApproval.enable = settings.prApproval.enable;
               github = {
                 enable = true;
-                inherit (settings.github) appId oauthId;
+                inherit (settings.github) appId oauthId userAllowlist;
                 # Projects are enabled in the web UI, not by topic.
                 topic = null;
                 appSecretKeyFile = generators."${instanceName}-github".files.app-secret-key.path;
