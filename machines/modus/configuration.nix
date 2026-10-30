@@ -9,6 +9,7 @@
     inputs.nixos-hardware.nixosModules.framework-intel-core-ultra-series3
 
     self.users.alex.nixosModule
+    self.users.fmzakari.nixosModule
 
     ../../modules/nixos/base.nix
     ../../modules/nixos/nvim-dev.nix
