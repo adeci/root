@@ -153,6 +153,31 @@
         "type": "github"
       }
     },
+    "emacs-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "root",
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": [
+          "root",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793565851,
+        "narHash": "sha256-+SX9Lkj8/KPeyM+TyfEY1qHKhMzACyo9RsIoMOPtOAA=",
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "rev": "cb8a674380568a5998ee411dd601a540a8cd5c61",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -693,6 +718,7 @@
     "root_2": {
       "inputs": {
         "clan-core": "clan-core",
+        "emacs-overlay": "emacs-overlay",
         "flake-parts": "flake-parts",
         "harmonia": "harmonia",
         "jovian": "jovian",

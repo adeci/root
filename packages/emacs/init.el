@@ -2,9 +2,10 @@
 
 ;;; Commentary:
 
-;; Loaded by the init packages/emacs/default.nix generates.  `thaw emacs'
-;; points it at this file in the checkout; M-x eval-buffer applies edits.
-;; Packages come from Nix (emacsPackages there), not package.el.
+;; Built into Emacs as default.el by packages/emacs/default.nix.  Nix
+;; installs every package a `use-package' form below names; built-in
+;; features are switched on with plain calls instead.  To try a change
+;; before deploying, edit this file in the checkout and M-x eval-buffer.
 ;;
 ;; New to Emacs?  C-h t is the built-in tutorial, C-h k KEY says what a key
 ;; does, and C-g cancels whatever is half-typed.
@@ -13,20 +14,23 @@
 
 ;;;; Files Emacs writes
 
-;; The generated init is read-only, so M-x customize saves here instead.
+;; This file is read-only once built, so M-x customize saves here instead.
 (setq custom-file (locate-user-emacs-file "custom.el"))
 (load custom-file 'noerror 'nomessage)
 
 ;;;; Look
 
-(set-face-attribute 'default nil
-                    :family "CaskaydiaMono Nerd Font Mono"
-                    :height 110
-                    :weight 'semibold)
+;; One monospace font everywhere.  fixed-pitch and variable-pitch would
+;; otherwise fall back to other fonts in the tab bar, help and manuals.
+(dolist (face '(default fixed-pitch variable-pitch))
+  (set-face-attribute face nil :family "CaskaydiaMono Nerd Font Mono"))
+(set-face-attribute 'default nil :height 110 :weight 'semibold)
 
-(load-theme 'doom-tokyo-night t)
-(dolist (face '(default fringe line-number line-number-current-line))
-  (set-face-attribute face nil :background "#000000"))
+(use-package doom-themes
+  :config
+  (load-theme 'doom-tokyo-night t)
+  (dolist (face '(default fringe line-number line-number-current-line))
+    (set-face-attribute face nil :background "#000000")))
 
 (menu-bar-mode -1)
 (tool-bar-mode -1)
@@ -55,11 +59,17 @@
 ;;
 ;;   C-x b  buffers, recent files, bookmarks   M-s l  lines in this buffer
 ;;   M-s r  ripgrep in the project
-(vertico-mode 1)
-(marginalia-mode 1)
-(setq completion-styles '(orderless basic)
-      completion-category-defaults nil
-      completion-category-overrides '((file (styles partial-completion))))
+(use-package vertico
+  :config (vertico-mode 1))
+
+(use-package marginalia
+  :config (marginalia-mode 1))
+
+(use-package orderless
+  :config
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
 
 (use-package consult
   :bind (("C-x b" . consult-buffer)
