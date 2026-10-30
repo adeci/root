@@ -1,9 +1,19 @@
 {
   inputs,
+  lib,
   pkgs,
   self,
   ...
 }:
+let
+  inherit (pkgs.stdenv.hostPlatform) system;
+
+  # security.wrappers needs an ELF; the configured btop script execs this.
+  btopPerfmon = pkgs.runCommandLocal "btop-perfmon" { meta.mainProgram = "btop"; } ''
+    mkdir -p $out/bin
+    ln -s /run/wrappers/bin/btop-perfmon $out/bin/btop
+  '';
+in
 {
   imports = [
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x220
@@ -39,16 +49,35 @@
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
     pkgs.openscad
+    (lib.hiPrio (self.packages.${system}.btop.wrap { package = btopPerfmon; }))
   ];
+
+  # tp_smapi lacks .ko.cer files; drop once NixOS/nixpkgs#578004 lands.
+  boot.kernelPackages = pkgs.linuxPackages.extend (
+    kfinal: kprev: {
+      tp_smapi = kprev.tp_smapi.overrideAttrs {
+        installPhase = ''
+          runHook preInstall
+          mv hdaps.ko hdapsd.ko
+          sed -i 's/^hdaps\.o$/hdapsd.o/' modules.order
+          make -C ${kfinal.kernel.dev}/lib/modules/${kfinal.kernel.modDirVersion}/build \
+            M="$PWD" ${lib.escapeShellArgs kfinal.kernelModuleMakeFlags} \
+            INSTALL_MOD_PATH="$out" INSTALL_MOD_DIR=kernel/drivers/firmware DEPMOD=true \
+            modules_install
+          runHook postInstall
+        '';
+      };
+    }
+  );
 
   # Sandy Bridge exposes GPU utilization through perf events rather than sysfs.
   # Grant only CAP_PERFMON to the two read-only monitoring tools that need it.
   security.wrappers = {
-    btop = {
+    btop-perfmon = {
       owner = "root";
       group = "root";
       capabilities = "cap_perfmon+ep";
-      source = "${self.packages.${pkgs.stdenv.hostPlatform.system}.btop}/bin/btop";
+      source = lib.getExe pkgs.btop;
     };
     intel_gpu_top = {
       owner = "root";

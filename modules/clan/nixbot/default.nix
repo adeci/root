@@ -63,6 +63,17 @@ _: {
             description = "Hold pull requests from outside contributors until a repo writer approves CI";
           };
 
+          prApproval.trustedAssociations = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [
+              "OWNER"
+              "MEMBER"
+              "COLLABORATOR"
+              "CONTRIBUTOR"
+            ];
+            description = "GitHub author_association values that build without approval";
+          };
+
           github.appId = lib.mkOption {
             type = lib.types.int;
             description = "GitHub App ID";
@@ -95,7 +106,10 @@ _: {
             generators = config.clan.core.vars.generators;
           in
           {
-            imports = [ inputs.nixbot.nixosModules.nixbot ];
+            imports = [
+              inputs.nixbot.nixosModules.nixbot
+              ./build-egress.nix
+            ];
 
             clan.core.vars.generators = {
               "${instanceName}-webhook-secret" = {
@@ -173,7 +187,7 @@ _: {
                 evalWorkerCount
                 useHTTPS
                 ;
-              prApproval.enable = settings.prApproval.enable;
+              prApproval = { inherit (settings.prApproval) enable trustedAssociations; };
               github = {
                 enable = true;
                 inherit (settings.github) appId oauthId userAllowlist;

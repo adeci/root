@@ -11,6 +11,9 @@ buildbot-nix.
 Builds go through the server's nix daemon. Systems it can't build itself go to
 its `@adeci/remote-builder` machines.
 
+The server rejects `nixbld` traffic to loopback, private ranges and the
+tailnet, so fixed-output CI builds only reach DNS and the internet.
+
 ## GitHub App
 
 - Callback URL: `https://<domain>/auth/github/callback`
