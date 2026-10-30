@@ -89,6 +89,15 @@ _: {
             default = null;
             description = "If non-null, only repositories owned by these GitHub users/organizations are built";
           };
+
+          effectSecrets = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.listOf (lib.types.strMatching "[A-Za-z_][A-Za-z0-9_]*"));
+            default = { };
+            example = {
+              "github:owner/repo" = [ "cachix" ];
+            };
+            description = "Prompted effect secrets per repo; effects read each with `readSecretString <name> .token`";
+          };
         };
       };
 
@@ -104,6 +113,8 @@ _: {
           }:
           let
             generators = config.clan.core.vars.generators;
+            effectSecretsGenerator =
+              repo: "${instanceName}-effects-${lib.replaceStrings [ ":" "/" ] [ "-" "-" ] repo}";
           in
           {
             imports = [
@@ -145,7 +156,27 @@ _: {
                     cat "$prompts"/oauth-secret > "$out"/oauth-secret
                   '';
               };
-            };
+            }
+            // lib.mapAttrs' (
+              repo: names:
+              lib.nameValuePair (effectSecretsGenerator repo) {
+                files.secrets = { };
+                prompts = lib.genAttrs names (name: {
+                  description = "${repo} effect secret `${name}`";
+                  type = "hidden";
+                  persist = true;
+                });
+                runtimeInputs = [ pkgs.jq ];
+                script = # bash
+                  ''
+                    json='{}'
+                    ${lib.concatMapStrings (name: ''
+                      json=$(jq --rawfile v "$prompts"/${name} '.${name}.data.token = ($v | rtrimstr("\n"))' <<<"$json")
+                    '') names}
+                    printf '%s' "$json" > "$out"/secrets
+                  '';
+              }
+            ) settings.effectSecrets;
 
             clan.core.state.nixbot = {
               folders = [ "/var/lib/nixbot" ];
@@ -197,6 +228,9 @@ _: {
                 webhookSecretFile = generators."${instanceName}-webhook-secret".files.webhook-secret.path;
                 oauthSecretFile = generators."${instanceName}-github".files.oauth-secret.path;
               };
+              effects.perRepoSecretFiles = lib.mapAttrs (
+                repo: _: generators.${effectSecretsGenerator repo}.files.secrets.path
+              ) settings.effectSecrets;
             };
 
             # Builds go through this machine's nix daemon; other systems use

@@ -34,6 +34,7 @@
           "fzakaria"
         ];
       };
+      effectSecrets."github:fzakaria/rewindvm" = [ "cachix" ];
     };
   };
 }

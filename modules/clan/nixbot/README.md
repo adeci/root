@@ -14,6 +14,9 @@ its `@adeci/remote-builder` machines.
 The server rejects `nixbld` traffic to loopback, private ranges and the
 tailnet, so fixed-output CI builds only reach DNS and the internet.
 
+`effectSecrets."github:owner/repo" = [ "cachix" ];` adds a prompted var per
+repo; effects read it with `readSecretString cachix .token`.
+
 ## GitHub App
 
 - Callback URL: `https://<domain>/auth/github/callback`
