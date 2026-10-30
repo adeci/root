@@ -8,6 +8,11 @@
       path = ./btop;
     };
 
+    emacs = {
+      path = ./emacs;
+      checks = false;
+    };
+
     git = {
       path = ./git;
     };

@@ -193,12 +193,18 @@ prompt_pure_precustom() {
 
 RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
 
-# OSC 133 marks — broken in tmux with multi-line prompts (pure prompt
-# triggers CSI 0 J which wipes the marks). Kept for kitty without tmux.
-_osc133_prompt() { print -Pn "\e]133;A\e\\"; }
-_osc133_command() { print -Pn "\e]133;C\e\\"; }
-precmd_functions+=(_osc133_prompt)
-preexec_functions+=(_osc133_command)
+if [[ ${${INSIDE_EMACS-}%%,*} == ghostel && -r ${EMACS_GHOSTEL_PATH-}/etc/shell/ghostel.zsh ]]; then
+  # Emacs ghostel: the wrapper pins ZDOTDIR, which skips ghostel's
+  # auto-injection. Its script reports the cwd (OSC 7) and its own marks.
+  source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.zsh"
+else
+  # OSC 133 marks — broken in tmux with multi-line prompts (pure prompt
+  # triggers CSI 0 J which wipes the marks). Kept for kitty without tmux.
+  _osc133_prompt() { print -Pn "\e]133;A\e\\"; }
+  _osc133_command() { print -Pn "\e]133;C\e\\"; }
+  precmd_functions+=(_osc133_prompt)
+  preexec_functions+=(_osc133_command)
+fi
 
 # ── fzf-tab configuration ────────────────────────────────────────
 if (( $+commands[tmux] )); then
