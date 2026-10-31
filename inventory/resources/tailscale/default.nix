@@ -1,8 +1,10 @@
 let
   workMachines = import ../../../work/inventory/clan/machines.nix;
+  addresses = import ./addresses.nix;
 in
 {
-  policy = ./policy.hujson;
+  inherit addresses;
+  policy = import ./policy.nix { inherit addresses; };
 
   deviceTags = builtins.listToAttrs (
     map

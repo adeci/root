@@ -1,0 +1,109 @@
+{ addresses }:
+{
+  hosts = {
+    inherit (addresses) leviathan modus lachesis;
+  };
+
+  grants = [
+    {
+      src = [ "autogroup:member" ];
+      dst = [ "autogroup:member" ];
+      ip = [ "*" ];
+    }
+    {
+      src = [ "autogroup:member" ];
+      dst = [ "10.10.0.0/24" ];
+      ip = [ "*" ];
+    }
+    {
+      src = [ "autogroup:member" ];
+      dst = [ "autogroup:internet" ];
+      ip = [ "*" ];
+    }
+    {
+      src = [ "tag:work" ];
+      dst = [ "tag:work" ];
+      ip = [ "*" ];
+    }
+    {
+      src = [
+        "autogroup:member"
+        "tag:work"
+      ];
+      dst = [ "tag:adeci-installer" ];
+      ip = [ "*" ];
+    }
+    # Users a node is shared with; list each shared-out node in dst.
+    {
+      src = [ "autogroup:shared" ];
+      dst = [ "leviathan" ];
+      ip = [ "*" ];
+    }
+    {
+      src = [ "autogroup:shared" ];
+      dst = [ "modus" ];
+      ip = [ "tcp:22" ];
+    }
+    # Agent machine: only the mandate gateway on lachesis, never its console.
+    {
+      src = [ "tag:grokbot" ];
+      dst = [ "lachesis" ];
+      ip = [ "tcp:8780" ];
+    }
+  ];
+
+  # Keeps tailnet addresses out of Cloudflare WARP's range.
+  nodeAttrs = [
+    {
+      target = [ "*" ];
+      ipPool = [ "100.64.0.0/11" ];
+    }
+  ];
+
+  tagOwners = {
+    "tag:adeci-installer" = [ "autogroup:admin" ];
+    "tag:work" = [ "autogroup:admin" ];
+    "tag:grokbot" = [ "autogroup:admin" ];
+  };
+
+  tests = [
+    {
+      src = "alex.decious@gmail.com";
+      accept = [
+        "10.10.0.21:443"
+        "10.10.0.10:443"
+        "tag:adeci-installer:22"
+        "lachesis:443"
+      ];
+      deny = [
+        "tag:work:22"
+        "10.20.0.1:80"
+        "10.99.0.2:80"
+      ];
+    }
+    {
+      src = "tag:work";
+      accept = [
+        "tag:work:22"
+        "tag:adeci-installer:22"
+      ];
+      deny = [
+        "alex.decious@gmail.com:22"
+        "10.10.0.10:443"
+        "10.10.0.21:443"
+      ];
+    }
+    {
+      src = "tag:grokbot";
+      accept = [ "lachesis:8780" ];
+      deny = [
+        "lachesis:22"
+        "lachesis:443"
+        "leviathan:22"
+        "leviathan:11435"
+        "10.10.0.10:443"
+        "tag:work:22"
+      ];
+    }
+  ];
+}
