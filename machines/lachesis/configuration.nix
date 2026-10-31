@@ -10,7 +10,11 @@
     ../../modules/nixos/llm-tools.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ../../modules/nixos/zram.nix
+    ../../modules/nixos/secure-boot-luks.nix
   ];
+
+  # Onboard Intel NIC, needed in the initrd for SSH unlock.
+  boot.initrd.availableKernelModules = [ "e1000e" ];
 
   time.timeZone = "America/New_York";
 }
