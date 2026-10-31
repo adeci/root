@@ -57,6 +57,12 @@
 
     nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
     nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
+
+    lanzaboote.url = "github:nix-community/lanzaboote/v1.2.0";
+    lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
+
+    mandate.url = "github:adeci/mandate";
+    mandate.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
