@@ -114,7 +114,7 @@ in
         local-zone = [
           ''"${topology.homelan.domain}." static''
         ]
-        ++ lib.mapAttrsToList (name: _: ''"${name}." static'') dnsRecords;
+        ++ lib.mapAttrsToList (name: _: ''"${name}." transparent'') dnsRecords;
         local-data =
           lib.mapAttrsToList (
             name: device: ''"${name}.${topology.homelan.domain}. A ${device.ip}"''
