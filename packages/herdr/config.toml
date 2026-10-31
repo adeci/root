@@ -68,3 +68,8 @@ height = "90%"
 [ui]
 # tmux `c` opens a window without asking for a name.
 prompt_new_tab_name = false
+
+# Desktop notification (notify-send) when an agent finishes or needs input.
+# Off by default; "terminal" would go through kitty, which filters them.
+[ui.toast]
+delivery = "system"
