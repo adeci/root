@@ -31,6 +31,7 @@
     defaults = {
       dnsProvider = "cloudflare";
       environmentFile = config.clan.core.vars.generators.cloudflare-acme-decio-us.files.env.path;
+      extraLegoFlags = [ "--dns.propagation.disable-rns" ];
     };
   };
 }
