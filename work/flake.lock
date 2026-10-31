@@ -328,11 +328,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793429327,
-        "narHash": "sha256-zkLlysISFZo2o0oFmnOdgBgdtuZ1HsZBLIWbXcvG+lY=",
+        "lastModified": 1793509853,
+        "narHash": "sha256-vc/ottltUIzT7ifQJ6eue7LCXXLKoshODeDt+mLXsNQ=",
         "owner": "adeci",
         "repo": "mandate",
-        "rev": "f514adfcdc239eeafd25937b27753c688b703565",
+        "rev": "b00f3994e49b0a27e221c82ea341542721d30b71",
         "type": "github"
       },
       "original": {
