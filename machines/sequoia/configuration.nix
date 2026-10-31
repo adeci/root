@@ -12,6 +12,7 @@
     ../../modules/nixos/cloudflared.nix
     ../../modules/nixos/acme.nix
 
+    ./modules/wildcard-cert.nix
     ./modules/tailscale-exit-node.nix
     ./modules/matrix-synapse.nix
     ./modules/vaultwarden.nix

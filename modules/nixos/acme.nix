@@ -1,9 +1,11 @@
 { config, pkgs, ... }:
 {
-  # Fleet ACME certificates. Service modules attach nginx vhosts with
-  # `useACMEHost = <cert-name>` and keep certificate/provider plumbing here.
+  # Cloudflare DNS-01 for decio.us names. Hosts declare their own
+  # security.acme.certs; the provider plumbing lives here.
 
+  # Shared: a separate token per host would carry the same zone-wide power.
   clan.core.vars.generators.cloudflare-acme-decio-us = {
+    share = true;
     files.env.secret = true;
 
     prompts.dns-api-token = {
@@ -12,7 +14,7 @@
         label = "Cloudflare DNS API token";
         required = true;
       };
-      description = "Cloudflare token with Zone:Read and DNS:Edit for decio.us wildcard ACME";
+      description = "Cloudflare token with Zone:Read and DNS:Edit for decio.us ACME";
       type = "hidden";
       persist = true;
     };
@@ -26,13 +28,9 @@
 
   security.acme = {
     acceptTerms = true;
-
-    certs."decio.us" = {
-      extraDomainNames = [ "*.decio.us" ];
+    defaults = {
       dnsProvider = "cloudflare";
       environmentFile = config.clan.core.vars.generators.cloudflare-acme-decio-us.files.env.path;
-      group = "nginx";
-      reloadServices = [ "nginx.service" ];
     };
   };
 }
