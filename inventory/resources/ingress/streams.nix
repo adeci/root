@@ -102,6 +102,21 @@
     }
 
     {
+      name = "minecraft-gab";
+      description = "Minecraft bros gab";
+      protocol = "tcp";
+      listen = 25573;
+      upstream = "leviathan.cymric-daggertooth.ts.net:25573";
+    }
+    {
+      name = "minecraft-gab-voice";
+      description = "Minecraft bros gab voice";
+      protocol = "udp";
+      listen = 24460;
+      upstream = "leviathan.cymric-daggertooth.ts.net:24460";
+    }
+
+    {
       name = "palworld";
       description = "Palworld adeci";
       protocol = "udp";

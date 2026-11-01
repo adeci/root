@@ -49,6 +49,7 @@ in
   mc_usf = minecraftA "usf";
   mc_oscar = minecraftA "oscar";
   mc_homestead = minecraftA "homestead";
+  mc_gab = minecraftA "gab";
 
   palworld = edgeA "palworld";
 
@@ -61,4 +62,5 @@ in
   srv_usf = minecraftSrv "usf" "minecraft-usf";
   srv_oscar = minecraftSrv "oscar" "minecraft-oscar";
   srv_homestead = minecraftSrv "homestead" "minecraft-homestead";
+  srv_gab = minecraftSrv "gab" "minecraft-gab";
 }
