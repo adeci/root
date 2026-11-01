@@ -11,6 +11,7 @@
     ../../modules/nixos/zram.nix
     ../../modules/nixos/secure-boot-luks.nix
     ./modules/mandate.nix
+    ./modules/ssh.nix
   ];
 
   # Onboard Intel NIC, needed in the initrd for SSH unlock.

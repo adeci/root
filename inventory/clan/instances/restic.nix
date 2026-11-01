@@ -9,6 +9,7 @@
       conduit = { };
       sequoia = { };
       leviathan = { };
+      lachesis = { };
       janus = { };
     };
   };

@@ -39,6 +39,11 @@
       ControlPersist 10m
       ControlPath ~/.ssh/cm-%C
 
+    # lachesis takes only YubiKey keys.
+    Host lachesis lachesis.cymric-daggertooth.ts.net
+      IdentityFile ~/.ssh/id_ed25519_sk_spark
+      IdentityFile ~/.ssh/id_ed25519_sk_ember
+
     Host *
       AddKeysToAgent yes
       SendEnv COLORTERM

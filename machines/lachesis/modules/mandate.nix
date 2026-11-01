@@ -53,19 +53,29 @@ in
       discord = { };
       signal = { };
       matrix = { };
+      gmessages = { };
+      fastmail = { };
     };
   };
 
   # Consistent snapshots of the message databases, the console's proposals and
-  # keys, and exposure.toml; not the sessions in private/.
+  # keys, and exposure.toml; not the sessions in private/. Media references
+  # are dropped from the copies: some hold per-file keys that fetch from the
+  # services' CDNs without the account.
   clan.core.state.mandate = {
     folders = [ backupDir ];
     preBackupScript = # bash
       ''
+        umask 0077
         ${pkgs.coreutils}/bin/install -d -m 0700 ${backupDir}
+        ${pkgs.coreutils}/bin/rm -f ${backupDir}/*
         for db in /var/lib/mandate-*/data.db /var/lib/mandate-console/console.db; do
           if [ -f "$db" ]; then
-            ${pkgs.sqlite}/bin/sqlite3 "$db" ".backup ${backupDir}/$(basename "$(dirname "$db")").db"
+            out=${backupDir}/$(basename "$(dirname "$db")").db
+            ${pkgs.sqlite}/bin/sqlite3 "$db" ".backup $out"
+            if [ -n "$(${pkgs.sqlite}/bin/sqlite3 "$out" "SELECT 1 FROM sqlite_master WHERE name = 'media'")" ]; then
+              ${pkgs.sqlite}/bin/sqlite3 "$out" "UPDATE media SET ref = NULL; VACUUM;"
+            fi
           fi
         done
         for f in /var/lib/mandate-console/keys.json /var/lib/mandate-gateway/exposure.toml; do
