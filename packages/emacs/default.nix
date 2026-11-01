@@ -4,6 +4,7 @@
 # To try edits before a deploy, open this checkout's init.el and run
 # M-x eval-buffer.
 {
+  config,
   inputs,
   pkgs,
   wlib,
@@ -62,4 +63,27 @@ in
     pkgs.ripgrep
     pkgs.zmx
   ];
+
+  # The launcher shows only the client, as "Emacs": it reaches the daemon
+  # and starts one if none is running. Its "New Instance" action still opens
+  # a standalone Emacs. share/applications arrives as one symlink into the
+  # emacs package, so filesToExclude can't drop entries; rebuild the directory.
+  buildCommand.launcherEntries = {
+    after = [ "symlinkScript" ];
+    data = ''
+      apps=${placeholder config.outputName}/share/applications
+      src=$(readlink -f "$apps")
+      rm "$apps"
+      mkdir "$apps"
+      for f in "$src"/*.desktop; do
+        case "''${f##*/}" in
+          emacs.desktop | emacs-mail.desktop) ;;
+          emacsclient.desktop)
+            ${pkgs.gnused}/bin/sed 's/^Name=Emacs (Client)$/Name=Emacs/' "$f" > "$apps/emacsclient.desktop"
+            ;;
+          *) ln -s "$f" "$apps/" ;;
+        esac
+      done
+    '';
+  };
 }
