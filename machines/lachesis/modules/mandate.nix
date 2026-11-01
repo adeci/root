@@ -51,6 +51,8 @@ in
     connectors = {
       whatsapp = { };
       discord = { };
+      signal = { };
+      matrix = { };
     };
   };
 
