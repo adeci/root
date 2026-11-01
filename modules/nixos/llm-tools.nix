@@ -15,8 +15,9 @@ in
     llm-agents.omp
     llm-agents.codex
     llm-agents.claude-code
+    llm-agents.grok
+    llm-agents.grok-bot
     llm-agents.openspec
-    llm-agents.workmux
     self.packages.${pkgs.stdenv.hostPlatform.system}.herdr
   ];
 }
