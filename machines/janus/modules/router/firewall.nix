@@ -53,6 +53,16 @@ let
         }
       ];
     };
+    vault = {
+      interface = topology.vlanInterface topology.vlans.vault;
+      description = "lachesis, which holds the messaging logins; internet only";
+      allow = [
+        {
+          target = "wan";
+          counter = "forward_accept_vault_to_wan";
+        }
+      ];
+    };
     mgmt = {
       interface = "br-mgmt";
       description = "infrastructure management; no forwarding by default";
@@ -156,6 +166,12 @@ let
       chain = "forward";
       action = "accept";
       zone = "guest";
+    }
+    {
+      name = "forward_accept_vault_to_wan";
+      chain = "forward";
+      action = "accept";
+      zone = "vault";
     }
     {
       name = "forward_drop_default";
@@ -301,8 +317,18 @@ let
     lib.mapAttrsToList (name: zone: ''iifname "${zone.interface}" jump from-${name}'') forwardZones
   );
   zoneChains = lib.concatStringsSep "\n" (lib.mapAttrsToList mkZoneChain forwardZones);
+  vlansWithoutZone = lib.subtractLists (lib.mapAttrsToList (_: zone: zone.interface) forwardZones) (
+    lib.mapAttrsToList (_: topology.subnetInterface) topology.vlans
+  );
 in
 {
+  assertions = [
+    {
+      assertion = vlansWithoutZone == [ ];
+      message = "janus firewall has no forward zone for: ${lib.concatStringsSep ", " vlansWithoutZone}";
+    }
+  ];
+
   networking.firewall.enable = false;
   networking.nftables.enable = true;
   networking.nftables.ruleset = ''

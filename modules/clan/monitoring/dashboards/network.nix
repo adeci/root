@@ -746,8 +746,8 @@ let
           "trusted forward"
         )
         (ui.target "B"
-          ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter=~"forward_accept_iot_to_wan|forward_accept_guest_to_wan"}[$__rate_interval])) or on() vector(0)''
-          "iot/guest wan"
+          ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter=~"forward_accept_(iot|guest|vault)_to_wan"}[$__rate_interval])) or on() vector(0)''
+          "internet-only wan"
         )
         (ui.target "C"
           ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter="input_accept_dhcp_dns"}[$__rate_interval])) or on() vector(0)''
@@ -764,7 +764,7 @@ let
       ];
       overrides = [
         (ui.colorOverride "trusted forward" "green")
-        (ui.colorOverride "iot/guest wan" "yellow")
+        (ui.colorOverride "internet-only wan" "yellow")
         (ui.colorOverride "local dns/dhcp" "blue")
         (ui.colorOverride "admin/tailscale" "purple")
         (ui.colorOverride "dropped" "red")

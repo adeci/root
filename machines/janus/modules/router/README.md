@@ -11,6 +11,7 @@ nexus sfp-sfpplus1
      -> vlan10 trusted 10.10.0.0/24
      -> vlan20 iot     10.20.0.0/24
      -> vlan30 guest   10.30.0.0/24
+     -> vlan40 vault   10.40.0.0/24
      -> vlan99 mgmt    bridged into br-mgmt
 
 nexus ether1
@@ -28,15 +29,22 @@ Tailscale
 - `topology.nix` derives WAN/LAN/mgmt roles, VLAN interface names, and shared interface sets.
 - `validation.nix` asserts that homelan inventory is coherent.
 - `networkd.nix` owns all physical/VLAN/bridge interfaces.
-- `firewall.nix` owns nftables forwarding/NAT policy, named counters, counter export, and rate-limited drop logging.
+- `firewall.nix` owns nftables forwarding/NAT policy, named counters, counter export, and rate-limited drop logging; it asserts that every VLAN has a forward zone.
 - `dhcp-dns.nix` owns Kea DHCP, Unbound DNS, local Kea/Unbound metrics, and Kea state.
 - `probes.nix` owns Janus-local active probes plus Smokeping-style high-frequency internet quality probing.
 
 ## Trust Model
 
-Trusted VLAN has full routed access. IoT can only reach WAN. Guest can reach WAN and
-the trusted printer on TCP ports 515 (LPD), 631 (IPP), and 9100 (JetDirect).
-Management has no forwarding by default; devices there can reach Janus for DHCP/DNS/API.
+Trusted VLAN has full routed access, including into vault. IoT can only reach WAN.
+Guest can reach WAN and the trusted printer on TCP ports 515 (LPD), 631 (IPP), and 9100
+(JetDirect). Management has no forwarding by default; devices there can reach Janus for
+DHCP/DNS/API.
+
+Vault (lachesis, which runs mandate and holds the messaging logins) can only reach WAN,
+plus Janus for DHCP/DNS. It is its own VLAN because hosts sharing a VLAN reach each other
+at L2, past Janus. It is not advertised as a Tailscale subnet route; lachesis is a tailnet
+node itself, so the Tailscale policy governs who reaches it over the tailnet. Initrd SSH
+unlock reaches it from trusted.
 
 Tailscale is the admin plane. Janus accepts Tailnet traffic to itself and forwards approved subnet-route traffic into local VLANs. Peer authorization lives in Tailscale route approval and ACLs, not per-peer nftables rules on Janus.
 
