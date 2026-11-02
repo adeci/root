@@ -40,14 +40,14 @@
 
   clotho = {
     mac = "6c:4b:90:1a:87:8f";
-    clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:1e:c6:9a:94:b1:70:1d:25"; # systemd-networkd
+    clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:66:3c:b9:3c:ea:ef:3e:fa"; # systemd-networkd
     ip = "10.10.0.61";
     vlan = "trusted";
   };
 
   lachesis = {
     mac = "6c:4b:90:18:da:ca";
-    clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:bf:19:5c:d4:35:a7:60:ae"; # systemd-networkd
+    clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:73:db:fa:94:7e:19:65:ef"; # systemd-networkd
     ip = "10.40.0.62";
     vlan = "vault";
   };
