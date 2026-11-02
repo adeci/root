@@ -12,6 +12,7 @@
     "trusted"
     "iot"
     "guest"
+    "vault"
     "mgmt"
   ];
 
@@ -31,6 +32,7 @@
         "trusted"
         "iot"
         "guest"
+        "vault"
       ];
       comment = "Uplink — axon (10G SFP+)";
     };

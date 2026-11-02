@@ -13,6 +13,7 @@
     "trusted"
     "iot"
     "guest"
+    "vault"
     "mgmt"
   ];
 
@@ -22,6 +23,10 @@
     "sfp-sfpplus1" = {
       trunk = true;
       comment = "Downlink — nexus (10G SFP+)";
+    };
+    "ether1" = {
+      vlan = "vault";
+      comment = "Server — lachesis";
     };
     "ether4" = {
       vlan = "guest";
