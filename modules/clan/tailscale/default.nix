@@ -66,6 +66,11 @@ _: {
               extraUpFlags = settings.flags;
               extraSetFlags = lib.mkDefault ([ "--accept-routes=false" ] ++ settings.flags);
             };
+            # Stay active after the one-shot run, so a deploy that changes the
+            # flags restarts the unit and applies them.
+            systemd.services.tailscaled-set = lib.mkIf (config.services.tailscale.extraSetFlags != [ ]) {
+              serviceConfig.RemainAfterExit = true;
+            };
           };
         darwinModule =
           { config, lib, ... }:
