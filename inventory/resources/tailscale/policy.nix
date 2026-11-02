@@ -1,7 +1,12 @@
 { addresses }:
 {
   hosts = {
-    inherit (addresses) leviathan modus lachesis;
+    inherit (addresses)
+      leviathan
+      modus
+      lachesis
+      sequoia
+      ;
   };
 
   grants = [
@@ -74,6 +79,7 @@
         "10.10.0.10:443"
         "tag:adeci-installer:22"
         "lachesis:443"
+        "sequoia:2586"
       ];
       deny = [
         "tag:work:22"
@@ -101,6 +107,7 @@
         "lachesis:443"
         "leviathan:22"
         "leviathan:11435"
+        "sequoia:2586"
         "10.10.0.10:443"
         "tag:work:22"
       ];

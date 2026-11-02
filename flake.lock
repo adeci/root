@@ -334,15 +334,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1793588407,
-        "narHash": "sha256-3kDnnAqRQzLmx7Sfo+b92T7zoGbFGlPBA6brqL0So+g=",
+        "lastModified": 1793659655,
+        "narHash": "sha256-OKaUwWwWPW8Sglxe3FTO0tUpMtd2PM1dCpJ1UjhGRwI=",
         "owner": "adeci",
         "repo": "mandate",
-        "rev": "31884637034be447edb85aa5d828ed9f3f1b5f1f",
+        "rev": "10cbd6dfd5bcbff4f22f3d809590dc8c12705253",
         "type": "github"
       },
       "original": {
         "owner": "adeci",
+        "ref": "access",
         "repo": "mandate",
         "type": "github"
       }

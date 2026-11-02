@@ -66,7 +66,7 @@
     lanzaboote.url = "github:nix-community/lanzaboote/v1.2.0";
     lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
 
-    mandate.url = "github:adeci/mandate";
+    mandate.url = "github:adeci/mandate/access";
     mandate.inputs.nixpkgs.follows = "nixpkgs";
   };
 

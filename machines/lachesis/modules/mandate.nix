@@ -13,15 +13,8 @@ in
   imports = [
     inputs.mandate.nixosModules.default
     ../../../modules/nixos/acme.nix
+    ../../../modules/nixos/mandate-ntfy.nix
   ];
-
-  clan.core.vars.generators.mandate = {
-    files.token = { };
-    runtimeInputs = [ pkgs.openssl ];
-    script = ''
-      openssl rand -hex 32 > "$out"/token
-    '';
-  };
 
   clan.core.vars.generators.mandate-console = {
     files.admin_password_plaintext = {
@@ -46,7 +39,11 @@ in
     enable = true;
     inherit hostname;
     useACMEHost = hostname;
-    tokenFile = vars.mandate.files.token.path;
+    gatewayUrl = "http://lachesis.cymric-daggertooth.ts.net:8780";
+    notify.ntfy = {
+      url = "http://sequoia.cymric-daggertooth.ts.net:2586/mandate";
+      tokenFile = vars.mandate-ntfy.files.token.path;
+    };
     adminPasswordHashFile = vars.mandate-console.files.admin_password_hash.path;
     connectors = {
       whatsapp = { };
@@ -58,10 +55,11 @@ in
     };
   };
 
-  # Consistent snapshots of the message databases, the console's proposals and
-  # keys, and exposure.toml; not the sessions in private/. Media references
-  # are dropped from the copies: some hold per-file keys that fetch from the
-  # services' CDNs without the account.
+  # Consistent snapshots of the message databases, the console's proposals,
+  # agents and keys, the gateway's key log and remembered revocations, and
+  # exposure.toml; not the sessions in private/. Media references are dropped
+  # from the copies: some hold per-file keys that fetch from the services'
+  # CDNs without the account.
   clan.core.state.mandate = {
     folders = [ backupDir ];
     preBackupScript = # bash
@@ -78,9 +76,9 @@ in
             fi
           fi
         done
-        for f in /var/lib/mandate-console/keys.json /var/lib/mandate-gateway/exposure.toml; do
+        for f in /var/lib/mandate-console/keys.json /var/lib/mandate-gateway/{exposure.toml,keys.json,access.json}; do
           if [ -f "$f" ]; then
-            ${pkgs.coreutils}/bin/cp "$f" ${backupDir}/
+            ${pkgs.coreutils}/bin/cp "$f" ${backupDir}/$(basename "$(dirname "$f")")-$(basename "$f")
           fi
         done
       '';

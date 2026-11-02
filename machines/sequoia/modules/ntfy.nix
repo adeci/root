@@ -10,6 +10,7 @@ let
 
   topics = {
     atlas = "atlas-alerts";
+    mandate = "mandate";
   };
 
   # Add phone subscribers
@@ -17,6 +18,7 @@ let
     {
       name = "alex";
       topics.${topics.atlas} = "ro";
+      topics.${topics.mandate} = "ro";
     }
   ];
 
@@ -26,6 +28,13 @@ let
       name = "alertmanager";
       tokenLabel = "Alertmanager";
       topics.${topics.atlas} = "wo";
+    }
+    {
+      name = "mandate";
+      tokenLabel = "Mandate";
+      topics.${topics.mandate} = "wo";
+      # Its console on lachesis holds the same token.
+      sharedToken = "mandate-ntfy";
     }
   ];
 
@@ -48,9 +57,14 @@ let
     let
       var = safeShellName publisher.name;
     in
-    ''
-      ${var}_token="$(ntfy token generate | tr -d '\n')"
-    '';
+    if publisher ? sharedToken then
+      ''
+        ${var}_token="$(tr -d '\n' < "$in"/${publisher.sharedToken}/token)"
+      ''
+    else
+      ''
+        ${var}_token="$(ntfy token generate | tr -d '\n')"
+      '';
 
   subscriberPasswordFile = subscriber: "${subscriber.name}-password";
 
@@ -81,7 +95,10 @@ let
   );
 in
 {
+  imports = [ ../../../modules/nixos/mandate-ntfy.nix ];
+
   clan.core.vars.generators.ntfy-alerts = {
+    dependencies = [ "mandate-ntfy" ];
     files = subscriberPasswordFiles // {
       "ntfy.env".secret = true;
       "alertmanager-ntfy.yml".secret = true;
@@ -124,7 +141,9 @@ in
     environmentFile = config.clan.core.vars.generators.ntfy-alerts.files."ntfy.env".path;
     settings = {
       base-url = "https://${ntfyHost}";
-      listen-http = "127.0.0.1:${toString ntfyPort}";
+      # Cloudflare's tunnel reaches it on localhost; mandate on lachesis over
+      # the tailnet, the only interface the port is open on.
+      listen-http = ":${toString ntfyPort}";
       behind-proxy = true;
       auth-default-access = "deny-all";
       enable-login = true;
@@ -132,4 +151,6 @@ in
       web-root = "disable";
     };
   };
+
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ ntfyPort ];
 }
