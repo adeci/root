@@ -94,16 +94,14 @@ in
             pkgs.jq
             clan-cli
           ];
+          # The decryption key is returned even without stored metadata: a
+          # state written before the metadata existed still needs it.
           text = # bash
             ''
               echo '{"magic":"OpenTofu-External-Key-Provider","version":1}'
-              INPUT=$(cat) || true
+              cat >/dev/null || true
               PASSPHRASE=$(clan secrets get tf-passphrase)
-              if [[ "$INPUT" == "null" ]]; then
-                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64)},"meta":{"external_data":{}}}'
-              else
-                jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)},"meta":{"external_data":{}}}'
-              fi
+              jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)},"meta":{"external_data":{}}}'
             '';
         };
       }
