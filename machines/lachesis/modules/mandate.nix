@@ -39,7 +39,6 @@ in
     enable = true;
     inherit hostname;
     useACMEHost = hostname;
-    gatewayUrl = "http://lachesis.cymric-daggertooth.ts.net:8780";
     notify.ntfy = {
       url = "http://sequoia.cymric-daggertooth.ts.net:2586/mandate";
       tokenFile = vars.mandate-ntfy.files.token.path;
