@@ -40,27 +40,10 @@ in
   };
 
   # Minecraft A records point at the public edge.
-  mc_rlc = minecraftA "rlc";
-  mc_rats = minecraftA "rats";
   mc_dj2 = minecraftA "dj2";
-  mc_bruh = minecraftA "bruh";
-  mc_hunter = minecraftA "hunter";
-  mc_jav = minecraftA "jav";
-  mc_usf = minecraftA "usf";
-  mc_oscar = minecraftA "oscar";
-  mc_homestead = minecraftA "homestead";
   mc_gab = minecraftA "gab";
 
-  palworld = edgeA "palworld";
-
   # Minecraft SRV records derive ports from ingress streams.
-  srv_rlc = minecraftSrv "rlc" "minecraft-rlc";
-  srv_rats = minecraftSrv "rats" "minecraft-rats";
-  srv_hunter = minecraftSrv "hunter" "minecraft-hunter";
-  srv_jav = minecraftSrv "jav" "minecraft-jav";
   srv_dj2 = minecraftSrv "dj2" "minecraft-dj2";
-  srv_usf = minecraftSrv "usf" "minecraft-usf";
-  srv_oscar = minecraftSrv "oscar" "minecraft-oscar";
-  srv_homestead = minecraftSrv "homestead" "minecraft-homestead";
   srv_gab = minecraftSrv "gab" "minecraft-gab";
 }

@@ -8,11 +8,11 @@ Public L4 ingress data for edge machines.
 
 ```nix
 {
-  name = "minecraft-hunter";
-  description = "Minecraft hunter server";
+  name = "minecraft-gab";
+  description = "Minecraft bros gab";
   protocol = "tcp";
-  listen = 25567;
-  upstream = "lazarus.tail0e36b8.ts.net:25565";
+  listen = 25573;
+  upstream = "leviathan.cymric-daggertooth.ts.net:25573";
 }
 ```
 
@@ -38,8 +38,8 @@ Nginx resolves static `proxy_pass host:port` targets during config test/reload. 
 
 ```nginx
 resolver 100.100.100.100 valid=30s ipv6=off;
-set $upstream_minecraft_hunter_tcp_25567 "lazarus.tail0e36b8.ts.net:25565";
-proxy_pass $upstream_minecraft_hunter_tcp_25567;
+set $upstream_minecraft_gab_tcp_25573 "leviathan.cymric-daggertooth.ts.net:25573";
+proxy_pass $upstream_minecraft_gab_tcp_25573;
 ```
 
 This keeps Nginx reloads independent from current MagicDNS availability while still resolving the upstream at connection time.
