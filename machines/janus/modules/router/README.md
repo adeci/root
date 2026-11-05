@@ -12,6 +12,7 @@ nexus sfp-sfpplus1
      -> vlan20 iot     10.20.0.0/24
      -> vlan30 guest   10.30.0.0/24
      -> vlan40 vault   10.40.0.0/24
+     -> vlan50 tenant  10.50.0.0/24
      -> vlan99 mgmt    bridged into br-mgmt
 
 nexus ether1
@@ -45,6 +46,12 @@ plus Janus for DHCP/DNS. It is its own VLAN because hosts sharing a VLAN reach e
 at L2, past Janus. It is not advertised as a Tailscale subnet route; lachesis is a tailnet
 node itself, so the Tailscale policy governs who reaches it over the tailnet. Initrd SSH
 unlock reaches it from trusted.
+
+Tenant (microVMs on leviathan, see `machines/leviathan/vms`) can only reach WAN,
+plus Janus for DHCP/DNS; trusted reaches in, so Moonlight works from home. Leviathan
+bridges the VLAN to its tenants without an address of its own, and isolates the tenant
+ports from each other, so tenants do not reach each other at L2 either. Like vault, it
+is not advertised as a Tailscale subnet route; tenants join the tailnet with tagged keys.
 
 Tailscale is the admin plane. Janus accepts Tailnet traffic to itself and forwards approved subnet-route traffic into local VLANs. Peer authorization lives in Tailscale route approval and ACLs, not per-peer nftables rules on Janus.
 

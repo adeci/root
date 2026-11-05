@@ -13,6 +13,7 @@
     "iot"
     "guest"
     "vault"
+    "tenant"
     "mgmt"
   ];
 
@@ -40,7 +41,8 @@
       comment = "Server — leviathan trusted (10G SFP+)";
     };
     "sfp-sfpplus4" = {
-      comment = "Server — leviathan future microVM uplink, trusted for now (10G SFP+)";
+      vlan = "tenant";
+      comment = "Server — leviathan microVM tenants (10G SFP+)";
     };
     "ether2" = {
       hybrid = true;

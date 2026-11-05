@@ -63,6 +63,16 @@ let
         }
       ];
     };
+    tenant = {
+      interface = topology.vlanInterface topology.vlans.tenant;
+      description = "microVM tenants hosted on leviathan; internet only";
+      allow = [
+        {
+          target = "wan";
+          counter = "forward_accept_tenant_to_wan";
+        }
+      ];
+    };
     mgmt = {
       interface = "br-mgmt";
       description = "infrastructure management; no forwarding by default";
@@ -172,6 +182,12 @@ let
       chain = "forward";
       action = "accept";
       zone = "vault";
+    }
+    {
+      name = "forward_accept_tenant_to_wan";
+      chain = "forward";
+      action = "accept";
+      zone = "tenant";
     }
     {
       name = "forward_drop_default";

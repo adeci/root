@@ -746,7 +746,7 @@ let
           "trusted forward"
         )
         (ui.target "B"
-          ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter=~"forward_accept_(iot|guest|vault)_to_wan"}[$__rate_interval])) or on() vector(0)''
+          ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter=~"forward_accept_(iot|guest|vault|tenant)_to_wan"}[$__rate_interval])) or on() vector(0)''
           "internet-only wan"
         )
         (ui.target "C"

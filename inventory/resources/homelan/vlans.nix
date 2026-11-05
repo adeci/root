@@ -44,6 +44,18 @@
     };
   };
 
+  # MicroVMs (machines/<host>/vms): internet only.
+  tenant = {
+    id = 50;
+    prefix = "10.50.0";
+    cidr = "10.50.0.0/24";
+    gateway = "10.50.0.1";
+    dhcpPool = {
+      start = "10.50.0.100";
+      end = "10.50.0.250";
+    };
+  };
+
   mgmt = {
     id = 99;
     prefix = "10.99.0";
