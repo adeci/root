@@ -5,7 +5,6 @@
       leviathan
       modus
       lachesis
-      sequoia
       ;
   };
 
@@ -49,11 +48,12 @@
       dst = [ "modus" ];
       ip = [ "tcp:22" ];
     }
-    # Agent machine: only the mandate gateway on lachesis, never its console.
+    # Agent machines, e.g. Grok Bot: only mandate's agent port on lachesis,
+    # never the owner side.
     {
-      src = [ "tag:grokbot" ];
+      src = [ "tag:agent" ];
       dst = [ "lachesis" ];
-      ip = [ "tcp:8780" ];
+      ip = [ "tcp:8443" ];
     }
   ];
 
@@ -68,7 +68,7 @@
   tagOwners = {
     "tag:adeci-installer" = [ "autogroup:admin" ];
     "tag:work" = [ "autogroup:admin" ];
-    "tag:grokbot" = [ "autogroup:admin" ];
+    "tag:agent" = [ "autogroup:admin" ];
   };
 
   tests = [
@@ -79,7 +79,6 @@
         "10.10.0.10:443"
         "tag:adeci-installer:22"
         "lachesis:443"
-        "sequoia:2586"
       ];
       deny = [
         "tag:work:22"
@@ -100,14 +99,13 @@
       ];
     }
     {
-      src = "tag:grokbot";
-      accept = [ "lachesis:8780" ];
+      src = "tag:agent";
+      accept = [ "lachesis:8443" ];
       deny = [
         "lachesis:22"
         "lachesis:443"
         "leviathan:22"
         "leviathan:11435"
-        "sequoia:2586"
         "10.10.0.10:443"
         "tag:work:22"
       ];

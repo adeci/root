@@ -60,6 +60,7 @@
     pkgs.ethtool
     pkgs.displaycal
     pkgs.android-tools
+    inputs.mandate.packages.${pkgs.stdenv.hostPlatform.system}.mandate
   ];
 
   # vm building
