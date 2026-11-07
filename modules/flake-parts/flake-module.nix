@@ -8,6 +8,7 @@
     ./resources.nix
     ./routeros.nix
     ./terranix.nix
+    ./tests.nix
     ./users.nix
   ];
 }

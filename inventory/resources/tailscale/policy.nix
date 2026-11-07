@@ -55,14 +55,13 @@
       dst = [ "lachesis" ];
       ip = [ "tcp:8443" ];
     }
-    # MicroVM tenants enroll with keys pre-tagged tag:tenant plus their role tag,
-    # so a tenant gets nothing from the tailnet beyond these grants.
+    # MicroVMs: tag:tenant plus a role tag, reachable only as granted here.
     {
       src = [ "autogroup:member" ];
       dst = [ "tag:tenant" ];
       ip = [ "tcp:22" ];
     }
-    # Moonlight to the gaming seats, for members and for whoever a seat is shared with.
+    # Moonlight, also for users a seat is shared with.
     {
       src = [
         "autogroup:member"

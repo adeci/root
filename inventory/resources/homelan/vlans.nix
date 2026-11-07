@@ -44,7 +44,6 @@
     };
   };
 
-  # MicroVMs (machines/<host>/vms): internet only.
   tenant = {
     id = 50;
     prefix = "10.50.0";

@@ -1,0 +1,14 @@
+--- a/moonshine-core/src/webserver/mod.rs
++++ b/moonshine-core/src/webserver/mod.rs
+@@ -574,7 +574,10 @@
+ 		response += &format!("<uniqueid>{}</uniqueid>", self.unique_id);
+ 		response += &format!("<HttpsPort>{}</HttpsPort>", self.webserver_config.port_https);
+ 		response += &format!("<ExternalPort>{}</ExternalPort>", self.webserver_config.port);
+-		response += &format!("<mac>{}</mac>", mac_address.unwrap_or("".to_string()));
++		response += &format!(
++			"<mac>{}</mac>",
++			mac_address.filter(|mac| !mac.is_empty()).unwrap_or("00:00:00:00:00:00".to_string())
++		);
+ 		response += "<MaxLumaPixelsHEVC>1869449984</MaxLumaPixelsHEVC>"; // TODO: Check if HEVC is supported, set this to 0 if it is not.
+ 		response += &format!("<LocalIP>{}</LocalIP>", escape_xml(local_ip));
+ 		let server_codec_mode_support = self.supported_codecs;

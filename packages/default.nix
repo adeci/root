@@ -72,6 +72,11 @@
       checks = false;
     };
 
+    moonshine = {
+      path = ./moonshine;
+      systems = [ "x86_64-linux" ];
+    };
+
     # Uses systemd user units.
     thaw = {
       path = ./thaw;

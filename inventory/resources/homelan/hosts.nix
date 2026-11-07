@@ -76,4 +76,17 @@
     ip = "10.10.0.10";
     vlan = "trusted";
   };
+
+  # Tenant network (VLAN 50), microVMs on leviathan
+  scylla = {
+    mac = "02:00:00:32:00:0a";
+    ip = "10.50.0.10";
+    vlan = "tenant";
+  };
+
+  charybdis = {
+    mac = "02:00:00:32:00:0b";
+    ip = "10.50.0.11";
+    vlan = "tenant";
+  };
 }

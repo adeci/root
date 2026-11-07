@@ -47,11 +47,9 @@ at L2, past Janus. It is not advertised as a Tailscale subnet route; lachesis is
 node itself, so the Tailscale policy governs who reaches it over the tailnet. Initrd SSH
 unlock reaches it from trusted.
 
-Tenant (microVMs on leviathan, see `machines/leviathan/vms`) can only reach WAN,
-plus Janus for DHCP/DNS; trusted reaches in, so Moonlight works from home. Leviathan
-bridges the VLAN to its tenants without an address of its own, and isolates the tenant
-ports from each other, so tenants do not reach each other at L2 either. Like vault, it
-is not advertised as a Tailscale subnet route; tenants join the tailnet with tagged keys.
+Tenant (microVMs on leviathan) can only reach WAN, plus Janus for DHCP/DNS; trusted
+reaches in. Leviathan isolates the VMs' bridge ports, so they do not reach each other at
+L2 either. Like vault, it is not advertised as a Tailscale subnet route.
 
 Tailscale is the admin plane. Janus accepts Tailnet traffic to itself and forwards approved subnet-route traffic into local VLANs. Peer authorization lives in Tailscale route approval and ACLs, not per-peer nftables rules on Janus.
 

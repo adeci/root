@@ -20,23 +20,12 @@
     ../../modules/nixos/cloudflared.nix
     ../../modules/nixos/auto-pressure-gc.nix
     ./modules/llm/host.nix
+    ./modules/microvms.nix
     ./modules/palworld
     ./modules/v100-compute.nix
   ];
 
   time.timeZone = "America/New_York";
-
-  # Reserve the second 10G port for a future MicroVM bridge. Do not let the
-  # host acquire a competing address or route on the trusted LAN.
-  networking.interfaces.eno12409np1.useDHCP = false;
-  systemd.network.networks."10-microvm-uplink" = {
-    matchConfig.Name = "eno12409np1";
-    networkConfig = {
-      DHCP = "no";
-      LinkLocalAddressing = "no";
-      IPv6AcceptRA = false;
-    };
-  };
 
   swapDevices = [
     {
