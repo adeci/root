@@ -55,6 +55,27 @@
       dst = [ "lachesis" ];
       ip = [ "tcp:8443" ];
     }
+    # MicroVM tenants enroll with keys pre-tagged tag:tenant plus their role tag,
+    # so a tenant gets nothing from the tailnet beyond these grants.
+    {
+      src = [ "autogroup:member" ];
+      dst = [ "tag:tenant" ];
+      ip = [ "tcp:22" ];
+    }
+    # Moonlight to the gaming seats, for members and for whoever a seat is shared with.
+    {
+      src = [
+        "autogroup:member"
+        "autogroup:shared"
+      ];
+      dst = [ "tag:gaming" ];
+      ip = [
+        "tcp:47984"
+        "tcp:47989"
+        "tcp:48010"
+        "udp:47998-48000"
+      ];
+    }
   ];
 
   # Keeps tailnet addresses out of Cloudflare WARP's range.
@@ -69,6 +90,8 @@
     "tag:adeci-installer" = [ "autogroup:admin" ];
     "tag:work" = [ "autogroup:admin" ];
     "tag:agent" = [ "autogroup:admin" ];
+    "tag:tenant" = [ "autogroup:admin" ];
+    "tag:gaming" = [ "autogroup:admin" ];
   };
 
   tests = [
@@ -108,6 +131,25 @@
         "leviathan:11435"
         "10.10.0.10:443"
         "tag:work:22"
+      ];
+    }
+    {
+      src = "alex.decious@gmail.com";
+      accept = [
+        "tag:tenant:22"
+        "tag:gaming:47989"
+      ];
+    }
+    {
+      src = "tag:gaming";
+      deny = [
+        "tag:tenant:22"
+        "leviathan:22"
+        "lachesis:443"
+        "lachesis:8443"
+        "10.10.0.10:443"
+        "10.10.0.21:443"
+        "alex.decious@gmail.com:22"
       ];
     }
   ];
