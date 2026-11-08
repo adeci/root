@@ -16,11 +16,12 @@ let
       uid = 1000;
       # Moonshine runs each Moonlight app as this unit in the gamer's manager.
       stream = "/sys/fs/cgroup/user.slice/user-${toString uid}.slice/user@${toString uid}.service/moonshine.slice/moonshine-session.service";
+      inherit (pkgs.stdenv.hostPlatform) system;
     in
     {
       options.gamingSeat.idleMinutes = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 30;
+        default = 15;
       };
 
       config = {
@@ -50,7 +51,14 @@ let
           graphics.enable32Bit = true;
         };
 
-        programs.steam.enable = true;
+        programs.steam = {
+          enable = true;
+          extraCompatPackages = [ pkgs.proton-ge-bin ];
+        };
+
+        environment.systemPackages = [
+          self.packages.${system}.btop
+        ];
 
         services = {
           xserver.videoDrivers = [ "nvidia" ];
@@ -75,6 +83,8 @@ let
             settings = {
               name = config.networking.hostName;
               inhibit_sleep = false;
+              # A disconnected game keeps running this long, to resume into.
+              stream.timeout = 30 * 60;
               application = [
                 {
                   title = "Steam";
