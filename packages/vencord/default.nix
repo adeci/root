@@ -1,41 +1,79 @@
+# Vencord from upstream, pinned here instead of following nixpkgs: Discord's
+# 2026-11-04 rspack update broke 1.15.11 (black window, "i.A is not a
+# constructor"). Recipe from nixpkgs' pkgs/by-name/ve/vencord; to bump, change
+# version and both hashes.
 {
-  pkgs,
   lib,
+  stdenv,
+  fetchFromGitHub,
+  git,
+  nodejs,
+  pnpm_11,
+  fetchPnpmDeps,
+  pnpmConfigHook,
+  applyPatches,
   inputs,
-  plugins ? import ./plugins.nix { inherit inputs; },
+  plugins ? import ./plugins.nix { inherit inputs applyPatches; },
   ...
 }:
-pkgs.vencord.overrideAttrs (
-  oldAttrs:
-  {
-    # Vencord compiles desktop userplugins and their native helpers together.
-    preBuild =
-      (oldAttrs.preBuild or "")
-      + "\n"
-      + lib.concatStringsSep "\n" (
-        lib.mapAttrsToList (name: source: ''
-          mkdir -p ${lib.escapeShellArg "src/userplugins/${name}"}
-          cp -R ${lib.escapeShellArg "${source}/."} ${lib.escapeShellArg "src/userplugins/${name}/"}
-        '') plugins
-      );
-  }
-  // lib.optionalAttrs (oldAttrs.version == "1.15.1") {
-    # Discord removed the named modal exports used by Vencord 1.15.1.
-    # Backport upstream's shared fix rather than replacing plugin settings UI.
-    src =
-      (pkgs.applyPatches {
-        name = "vencord-modal-compatible-source";
-        inherit (oldAttrs) src;
-        patches = [
-          (pkgs.fetchurl {
-            url = "https://github.com/Vendicated/Vencord/commit/90aea0ddbbfbee16ce052b2c7ab610ffe957b4ca.patch";
-            hash = "sha256-fldDGIClghkJdOD1FbiKvxTCK1qqKMq5zDNcVvC1Ilk=";
-          })
-        ];
-      })
-      // {
-        # nixpkgs derives VENCORD_REMOTE from the source's GitHub metadata.
-        inherit (oldAttrs.src) owner repo;
-      };
-  }
-)
+stdenv.mkDerivation (finalAttrs: {
+  pname = "vencord";
+  version = "1.15.16";
+
+  src = fetchFromGitHub {
+    owner = "Vendicated";
+    repo = "Vencord";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-aUJubLJpyLAZWiOezqFxPY6oVPgWVPQpajFqrJvrO9U=";
+  };
+
+  pnpmDeps = fetchPnpmDeps {
+    inherit (finalAttrs) pname src;
+    pnpm = pnpm_11;
+    fetcherVersion = 4;
+    hash = "sha256-HS8uZNepvDefjrsG3buVLFCVv7sHvazcwdpcT3EQ/78=";
+  };
+
+  nativeBuildInputs = [
+    git
+    nodejs
+    pnpmConfigHook
+    pnpm_11
+  ];
+
+  env = {
+    VENCORD_REMOTE = "${finalAttrs.src.owner}/${finalAttrs.src.repo}";
+    VENCORD_HASH = finalAttrs.version;
+  };
+
+  # Vencord compiles desktop userplugins and their native helpers together.
+  preBuild = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (name: source: ''
+      mkdir -p ${lib.escapeShellArg "src/userplugins/${name}"}
+      cp -R ${lib.escapeShellArg "${source}/."} ${lib.escapeShellArg "src/userplugins/${name}/"}
+    '') plugins
+  );
+
+  buildPhase = ''
+    runHook preBuild
+
+    pnpm run build -- --standalone --disable-updater
+
+    runHook postBuild
+  '';
+
+  installPhase = ''
+    runHook preInstall
+
+    cp -r dist $out
+    cp package.json $out # Presence is checked by Vesktop.
+
+    runHook postInstall
+  '';
+
+  meta = {
+    description = "Cutest Discord client mod";
+    homepage = "https://github.com/Vendicated/Vencord";
+    license = lib.licenses.gpl3Only;
+  };
+})

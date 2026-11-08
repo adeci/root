@@ -1,0 +1,140 @@
+--- a/index.tsx
++++ b/index.tsx
+@@ -1,6 +1,7 @@
+ import { ChatBarButton } from "@api/ChatButtons";
+ import type { ChatBarButtonFactory } from "@api/ChatButtons";
+ import { Button } from "@components/Button";
++import { Paragraph } from "@components/Paragraph";
+ import type { ReactNode } from "react";
+ import { copyToClipboard } from "@utils/clipboard";
+ import definePlugin from "@utils/types";
+@@ -8,7 +9,6 @@
+ import type { RenderModalProps } from "@vencord/discord-types";
+ import { findByPropsLazy, findStoreLazy } from "@webpack";
+ import {
+-  Forms,
+   Modal,
+   openModal,
+   SelectedChannelStore,
+@@ -146,17 +146,17 @@
+       size="md"
+     >
+       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+-        <Forms.FormText>
++        <Paragraph>
+           <span style={{ display: "block", overflowWrap: "anywhere" }}>
+             Upload to {props.batch.serverUrl || "your Zipline server"}
+           </span>
+           <span style={{ color: "var(--text-muted)", fontSize: 14 }}>
+             Anyone with the link can view.
+           </span>
+-        </Forms.FormText>
++        </Paragraph>
+         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+           {props.batch.files.map(({ file }, index) => (
+-            <Forms.FormText key={index}>
++            <Paragraph key={index}>
+               <span
+                 style={{
+                   display: "flex",
+@@ -173,7 +173,7 @@
+                   {(file.size / 1048576).toFixed(1)} MiB
+                 </span>
+               </span>
+-            </Forms.FormText>
++            </Paragraph>
+           ))}
+         </div>
+         <DialogActions>
+@@ -292,24 +292,24 @@
+     <Modal {...props} title={owned ? statusTitle(batch) : "Pelican"} size="md">
+       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+         {!batch && (
+-          <Forms.FormText>Attach a file to get started.</Forms.FormText>
++          <Paragraph>Attach a file to get started.</Paragraph>
+         )}
+         {batch && !owned ? (
+-          <Forms.FormText>
++          <Paragraph>
+             Return to the original account to view this upload.
+-          </Forms.FormText>
++          </Paragraph>
+         ) : (
+           <>
+             {batch && active && (
+               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+-                <Forms.FormText>
++                <Paragraph>
+                   <span style={{ display: "block", overflowWrap: "anywhere" }}>
+                     {batch.state?.file ?? file?.name}
+                   </span>
+                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>
+                     File {fileIndex} of {batch.files.length}
+                   </span>
+-                </Forms.FormText>
++                </Paragraph>
+                 <progress
+                   aria-label="Current file upload progress"
+                   value={sent}
+@@ -322,20 +322,20 @@
+                     userSelect: "none",
+                   }}
+                 />
+-                <Forms.FormText>
++                <Paragraph>
+                   {(sent / 1048576).toFixed(1)} / {(size / 1048576).toFixed(1)}{" "}
+                   MiB
+-                </Forms.FormText>
++                </Paragraph>
+               </div>
+             )}
+-            {batch?.error && <Forms.FormText>{batch.error}</Forms.FormText>}
++            {batch?.error && <Paragraph>{batch.error}</Paragraph>}
+             {batch?.insertionNotice && (
+-              <Forms.FormText>{batch.insertionNotice}</Forms.FormText>
++              <Paragraph>{batch.insertionNotice}</Paragraph>
+             )}
+             {!!batch?.state?.urls.length && (
+               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                 {batch.state.urls.map((url, index) => (
+-                  <Forms.FormText key={index}>
++                  <Paragraph key={index}>
+                     <a
+                       href={url}
+                       target="_blank"
+@@ -349,21 +349,21 @@
+                     >
+                       {batch.files[index]?.file.name || url}
+                     </a>
+-                  </Forms.FormText>
++                  </Paragraph>
+                 ))}
+                 {copyStatus === "failed" && (
+-                  <Forms.FormText role="alert">
++                  <Paragraph role="alert">
+                     Could not copy. Copy the link manually.
+-                  </Forms.FormText>
++                  </Paragraph>
+                 )}
+               </div>
+             )}
+             {batch &&
+               (batch.phase === "failed" || batch.phase === "cancelled") && (
+-                <Forms.FormText>
++                <Paragraph>
+                   Check Zipline before retrying; uploaded files may still be
+                   stored.
+-                </Forms.FormText>
++                </Paragraph>
+               )}
+           </>
+         )}
+@@ -528,7 +528,7 @@
+       replacement: [
+         {
+           match:
+-            /(async function \i\(\i,(\i),(\i)\)\{let\{filesMetadata:\i,requireConfirm:(\i)=!0,isThumbnail:(\i)=!1,origin:\i\}=arguments\.length>3&&void 0!==arguments\[3\]\?arguments\[3\]:\{\};)/,
++            /(async function(?: \i)?\(\i,(\i),(\i)\)\{let\{filesMetadata:\i,requireConfirm:(\i)=!0,isThumbnail:(\i)=!1,origin:\i\}=arguments\.length>3&&void 0!==arguments\[3\]\?arguments\[3\]:\{\};)/,
+           replace:
+             "$1const __pelicanContext={channel:$2,draftType:$3,requireConfirm:$4,isThumbnail:$5};",
+         },
