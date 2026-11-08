@@ -48,7 +48,12 @@
   # gsim module
   networking.modemmanager.enable = true;
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot = {
+    kernelPackages = pkgs.linuxPackages_latest;
+    kernelParams = [
+      "pcie_ports=native"
+    ];
+  };
 
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
