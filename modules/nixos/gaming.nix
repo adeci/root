@@ -4,6 +4,7 @@
     prismlauncher
     steam-tui
     gamescope
+    moonlight-qt
   ];
   programs.steam.enable = true;
   programs.steam.gamescopeSession.enable = true;
