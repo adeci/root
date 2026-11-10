@@ -16,9 +16,10 @@ let
       uid = 1000;
       # Moonshine runs each Moonlight app as this unit in the gamer's manager.
       stream = "/sys/fs/cgroup/user.slice/user-${toString uid}.slice/user@${toString uid}.service/moonshine.slice/moonshine-session.service";
-      inherit (pkgs.stdenv.hostPlatform) system;
     in
     {
+      imports = [ self.modules.nixos.wrappers ];
+
       options.gamingSeat.idleMinutes = lib.mkOption {
         type = lib.types.ints.positive;
         default = 15;
@@ -56,9 +57,7 @@ let
           extraCompatPackages = [ pkgs.proton-ge-bin ];
         };
 
-        environment.systemPackages = [
-          self.packages.${system}.btop
-        ];
+        wrappers.btop.enable = true;
 
         services = {
           xserver.videoDrivers = [ "nvidia" ];

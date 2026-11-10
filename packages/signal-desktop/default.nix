@@ -7,4 +7,7 @@ pkgs.signal-desktop.overrideAttrs (oldAttrs: {
     wrapProgram $out/bin/signal-desktop \
       --add-flags "--password-store=gnome-libsecret"
   '';
+  meta = oldAttrs.meta // {
+    platforms = [ "x86_64-linux" ];
+  };
 })

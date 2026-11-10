@@ -6,7 +6,6 @@
   ...
 }:
 let
-  inherit (pkgs.stdenv.hostPlatform) system;
 
   # security.wrappers needs an ELF; the configured btop script execs this.
   btopPerfmon = pkgs.runCommandLocal "btop-perfmon" { meta.mainProgram = "btop"; } ''
@@ -43,14 +42,28 @@ in
     cheat
   ];
 
-  thaw.apps.niri.files."machine.kdl" = ./niri.kdl;
+  wrappers.niri.machineConfig = # kdl
+    ''
+      output "LG Display 0x02D8 Unknown" {
+          mode "1366x768@60.019"
+          scale 1
+          transform "normal"
+      }
+
+      input {
+          trackpoint {
+              accel-speed -0.25
+              accel-profile "flat"
+          }
+      }
+    '';
 
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.mullvad-browser
     pkgs.openscad
-    (lib.hiPrio (self.packages.${system}.btop.wrap { package = btopPerfmon; }))
   ];
+  wrappers.btop.package = btopPerfmon;
 
   # tp_smapi lacks .ko.cer files; drop once NixOS/nixpkgs#578004 lands.
   boot.kernelPackages = pkgs.linuxPackages.extend (

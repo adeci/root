@@ -30,10 +30,7 @@ let
   );
 in
 {
-  imports = [
-    wlib.wrapperModules.zsh
-    ../thaw/wrapper.nix
-  ];
+  imports = [ wlib.wrapperModules.zsh ];
 
   options.extraInit = lib.mkOption {
     type = lib.types.lines;
@@ -117,8 +114,6 @@ in
       }
     ];
 
-    thaw.files.zshrc = ./zshrc;
-
     zshrc.content = # zsh
       ''
         typeset -gA zsh_pkgs=(
@@ -131,7 +126,7 @@ in
           direnv ${pkgs.direnv}
           atuin ${pkgs.atuin}
         )
-        source "''$${config.thaw.var}/zshrc"
+        source ${./zshrc}
 
         ${lib.optionalString (config.extraInit != "") ''
           # ── Extra init ───────────────────────────────────────────────────

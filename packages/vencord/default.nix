@@ -75,5 +75,6 @@ stdenv.mkDerivation (finalAttrs: {
     description = "Cutest Discord client mod";
     homepage = "https://github.com/Vendicated/Vencord";
     license = lib.licenses.gpl3Only;
+    platforms = [ "x86_64-linux" ];
   };
 })

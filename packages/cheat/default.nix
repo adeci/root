@@ -46,4 +46,5 @@ pkgs.writeShellApplication {
 
       echo "$response" | jq -r '.content[0].text'
     '';
+  meta.platforms = [ "x86_64-linux" ];
 }

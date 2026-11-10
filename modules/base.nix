@@ -8,7 +8,7 @@
       ...
     }:
     {
-      imports = [ self.modules.nixos.thaw ];
+      imports = [ self.modules.nixos.wrappers ];
 
       nixpkgs.config.allowUnfree = true;
 
@@ -61,11 +61,11 @@
       documentation.man.cache.enable = true;
       environment.systemPackages = [
         inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
-        self.packages.${pkgs.stdenv.hostPlatform.system}.nvim
         pkgs.kitty.terminfo
         pkgs.man-pages
         pkgs.man-pages-posix
       ];
+      wrappers.nvim.enable = true;
       i18n.defaultLocale = "en_US.UTF-8";
       i18n.extraLocaleSettings = {
         LC_ADDRESS = "en_US.UTF-8";
@@ -90,11 +90,9 @@
       inputs,
       ...
     }:
-    let
-      wrapped = self.packages.${pkgs.stdenv.hostPlatform.system};
-    in
     {
       imports = [
+        self.modules.darwin.wrappers
         inputs.nix-index-database.darwinModules.nix-index
       ];
 
@@ -129,20 +127,20 @@
           SendEnv COLORTERM
       '';
       environment.pathsToLink = [ "/share/zsh" ];
-      environment.shells = lib.mkDefault [ wrapped.zsh ];
+      environment.shells = lib.mkDefault [ config.wrappers.zsh.wrapper ];
 
       # macOS sshd sets no locale; without this, ssh sessions (and tmux started
       # from them) run in the C locale and mangle non-ASCII/Nerd Font glyphs.
       environment.variables.LANG = "en_US.UTF-8";
 
       # Wrapped tools available system-wide
+      wrappers.zsh.enable = true;
+      wrappers.git.enable = true;
+      wrappers.kitty.enable = true;
+      wrappers.tmux.enable = true;
+      wrappers.btop.enable = true;
+      wrappers.nvim-dev.enable = true;
       environment.systemPackages = [
-        wrapped.zsh
-        wrapped.git
-        wrapped.kitty
-        wrapped.tmux
-        wrapped.btop
-        self.packages.${pkgs.stdenv.hostPlatform.system}.nvim-dev
         inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
       ];
 

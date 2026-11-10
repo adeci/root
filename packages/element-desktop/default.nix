@@ -7,4 +7,7 @@ pkgs.element-desktop.overrideAttrs (oldAttrs: {
     wrapProgram $out/bin/element-desktop \
       --add-flags "--password-store=gnome-libsecret"
   '';
+  meta = oldAttrs.meta // {
+    platforms = [ "x86_64-linux" ];
+  };
 })

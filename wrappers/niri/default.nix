@@ -7,7 +7,7 @@
 }:
 let
   jq = lib.getExe pkgs.jq;
-  # Called by name from config.kdl, so a thawed config needs no store paths.
+  # On PATH for config.kdl's spawn binds, which call them by name.
   commands = [
     pkgs.wireplumber
     pkgs.playerctl
@@ -23,10 +23,16 @@ let
   ];
 in
 {
-  imports = [
-    wlib.wrapperModules.niri
-    ../thaw/wrapper.nix
-  ];
+  options.machineConfig = lib.mkOption {
+    type = lib.types.lines;
+    default = "";
+    description = ''
+      This machine's niri config (outputs, input, extra binds). Written next to
+      config.kdl as machine.kdl, which config.kdl includes; validated with it.
+    '';
+  };
+
+  imports = [ wlib.wrapperModules.niri ];
 
   config.package = pkgs.niri.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [
@@ -36,14 +42,12 @@ in
     ];
   });
   config."config.kdl".content = builtins.readFile ./config.kdl;
-  config.thaw.files."config.kdl" = ./config.kdl;
-  config.thaw.optional = [ "machine.kdl" ];
-  config.env.NIRI_CONFIG = lib.mkForce {
-    data = "${config.thaw.dir}/config.kdl";
-    esc-fn = wlib.escapeShellArgWithEnv;
+  config.constructFiles.machineConfig = lib.mkIf (config.machineConfig != "") {
+    relPath = "machine.kdl";
+    content = config.machineConfig;
   };
-  # niri watches its config, so the /etc flip of a rebuild reloads it.
-  config.disableConfigHotReload = true;
+  # Exported for x86_64-linux only, like before; niri itself runs on any Linux.
+  config.drv.meta.platforms = [ "x86_64-linux" ];
   config.prefixVar = [
     {
       data = [

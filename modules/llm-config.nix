@@ -35,11 +35,13 @@
       herdrIntegrations = pkgs.runCommand "herdr-integrations" { } ''
         export HOME=$out
         mkdir -p $HOME/.omp/agent/extensions $HOME/.pi/agent/extensions
-        ${self.packages.${system}.herdr}/bin/herdr integration install omp
-        ${self.packages.${system}.herdr}/bin/herdr integration install pi
+        ${config.wrappers.herdr.wrapper}/bin/herdr integration install omp
+        ${config.wrappers.herdr.wrapper}/bin/herdr integration install pi
       '';
     in
     {
+      imports = [ self.modules.nixos.wrappers ];
+
       clan.core.vars.generators.kagi-search = {
         share = true;
         files.session-link = {

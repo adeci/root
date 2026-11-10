@@ -12,6 +12,8 @@
     {
       imports = [ self.modules.nixos.llm-config ];
 
+      wrappers.herdr.enable = true;
+
       environment.systemPackages = [
         llm-agents.pi
         llm-agents.omp
@@ -20,7 +22,6 @@
         llm-agents.grok
         llm-agents.grok-bot
         llm-agents.openspec
-        self.packages.${pkgs.stdenv.hostPlatform.system}.herdr
       ];
     };
 
@@ -37,11 +38,12 @@
     {
       imports = [ self.modules.darwin.llm-config ];
 
+      wrappers.herdr.enable = true;
+
       environment.systemPackages = [
         llm-agents.pi
         llm-agents.openspec
         llm-agents.workmux
-        self.packages.${pkgs.stdenv.hostPlatform.system}.herdr
       ];
     };
 }

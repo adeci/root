@@ -1,42 +1,14 @@
 {
-  # Root's zsh feature without the personal git wrapper or Atuin sync
+  # Root's zsh feature without the personal git wrapper or Atuin sync.
   nixos =
+    { lib, self, ... }:
     {
-      self,
-      pkgs,
-      inputs,
-      ...
-    }:
-    let
-      inherit (pkgs.stdenv.hostPlatform) system;
-      zsh = self.wrappers.zsh.wrap {
-        inherit pkgs;
+      imports = [ self.modules.nixos.zsh ];
+
+      wrappers.zsh = {
         git = null;
         atuinSync = false;
       };
-    in
-    {
-      imports = [
-        inputs.nix-index-database.nixosModules.nix-index
-      ];
-
-      programs.zsh = {
-        enable = true;
-        enableCompletion = true;
-        enableGlobalCompInit = false;
-        enableLsColors = false;
-        promptInit = "";
-      };
-      environment.pathsToLink = [ "/share/zsh" ];
-
-      programs.nix-index-database.comma.enable = true;
-
-      users.users.alex.shell = zsh;
-
-      environment.systemPackages = [
-        zsh
-        self.packages.${system}.tmux
-        self.packages.${system}.btop
-      ];
+      wrappers.git.enable = lib.mkForce false;
     };
 }

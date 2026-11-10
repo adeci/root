@@ -49,15 +49,11 @@
     };
 
   darwin =
+    { lib, pkgs, ... }:
     {
-      self,
-      pkgs,
-      lib,
-      ...
-    }:
-    let
-      shopifyZsh = self.wrappers.zsh.wrap {
-        inherit pkgs;
+      # Work zsh: base's wrapped zsh without the personal git or Atuin sync,
+      # plus the work toolchain hooks; plain git instead of the personal one.
+      wrappers.zsh = {
         git = null;
         atuinSync = false;
         extraInit = # zsh
@@ -80,14 +76,8 @@
             fi
           '';
       };
-    in
-    {
-      # Win sw/bin over base's personal zsh and git
-      environment.shells = [ shopifyZsh ];
-      environment.systemPackages = [
-        (lib.hiPrio shopifyZsh)
-        (lib.hiPrio pkgs.git)
-      ];
+      wrappers.git.enable = lib.mkForce false;
+      environment.systemPackages = [ pkgs.git ];
       # Keep cd, ls and j unaliased
       system.activationScripts.postActivation.text = # bash
         ''

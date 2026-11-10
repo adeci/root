@@ -36,7 +36,18 @@
     ssh-tpm-agent
   ];
 
-  thaw.apps.niri.files."machine.kdl" = ./niri.kdl;
+  wrappers.niri.machineConfig = # kdl
+    ''
+      input {
+          // Replaces the shared touchpad section, which niri does not merge.
+          touchpad {
+              tap
+              natural-scroll
+              // About 53% of libinput's default curve; tuned on this XPS 14.
+              accel-speed -0.25
+          }
+      }
+    '';
 
   nixpkgs.hostPlatform = "x86_64-linux";
 

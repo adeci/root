@@ -1,34 +1,24 @@
 # Packages
 
-My buildable configured outputs. These consist of [wrappers](https://github.com/BirdeeHub/nix-wrapper-modules), patched apps and overrides, helper tools, and some executable utilities/scripts.
+Patched apps, overrides, helper tools and scripts. Configured programs live in
+[`../wrappers`](../wrappers) instead.
 
-`./default.nix` is a registry for all these outputs consumed by the [flake-parts packages module](../flake/packages.nix).
-
-Registry entries are grouped by implementation type:
+[`flake/packages.nix`](../flake/packages.nix) finds every `<name>/default.nix`
+here and calls it with `callPackage`, so adding a package is just adding its
+folder. It is exported as `self.packages.<system>.<name>` on the systems its
+`meta.platforms` allows; a package limited to one system says so there:
 
 ```nix
-{
-  wrappers = {
-    foo = {
-      path = ./foo;
-    };
-  };
-
-  packages = {
-    bar = {
-      path = ./bar;
-      systems = [ "x86_64-linux" ];
-      checks = false;
-    };
-  };
-}
+meta.platforms = [ "x86_64-linux" ];
 ```
 
-Defaults:
+A folder can also return a set of packages, exported as `<name>-<key>`:
+`routeros-netinstall/` gives `routeros-netinstall-cap-ax`,
+`routeros-netinstall-crs310` and `routeros-netinstall-crs328`.
 
-- `systems = null` means all flake systems.
-- `checks = true` means include in package checks.
+Every package is also a flake check, except the heavy GUI builds listed in
+`skipChecks` in `flake/packages.nix`.
 
-`packages.<name>.path` entries are called with `pkgs.callPackage`. `wrappers.<name>.path` entries are exported through upstream `nix-wrapper-modules`, which provides both `self.wrappers.<name>.wrap` and `self.packages.${system}.<name>`.
-
-System modules can install these with `self.packages.${system}.<name>`, and they are available as flake outputs for anyone to consume with `.#packages`!
+Machines install packages with `self.packages.${pkgs.stdenv.hostPlatform.system}.<name>`.
+Wrappers are turned on and tweaked per machine through `wrappers.<name>`
+options instead (`modules/wrappers.nix`).

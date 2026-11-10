@@ -126,6 +126,6 @@ stdenv.mkDerivation (finalAttrs: {
     changelog = "https://github.com/diced/zipline/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.mit;
     mainProgram = "zipline";
-    platforms = lib.platforms.linux;
+    platforms = [ "x86_64-linux" ];
   };
 })

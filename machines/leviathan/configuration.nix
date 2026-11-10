@@ -34,10 +34,8 @@
     }
   ];
 
-  environment.systemPackages = [
-    pkgs.numactl
-    self.packages.${pkgs.stdenv.hostPlatform.system}.big-htop
-  ];
+  environment.systemPackages = [ pkgs.numactl ];
+  wrappers.big-htop.enable = true;
 
   # Transparent Huge Pages configuration for ZGC
   boot.kernelParams = [ "transparent_hugepage=madvise" ];

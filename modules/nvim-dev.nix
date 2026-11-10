@@ -1,15 +1,11 @@
 {
-  # nvim with the small language servers, over base.nix's plain nvim.
+  # nvim with the small language servers, instead of base's plain nvim.
   nixos =
+    { lib, self, ... }:
     {
-      lib,
-      pkgs,
-      self,
-      ...
-    }:
-    {
-      environment.systemPackages = [
-        (lib.hiPrio self.packages.${pkgs.stdenv.hostPlatform.system}.nvim-dev)
-      ];
+      imports = [ self.modules.nixos.wrappers ];
+
+      wrappers.nvim-dev.enable = true;
+      wrappers.nvim.enable = lib.mkForce false;
     };
 }

@@ -1,12 +1,10 @@
 { inputs, ... }:
 {
+  # Machines use the same nixpkgs instance as the packages (flake/packages.nix).
   perSystem =
-    { system, ... }:
+    { pkgs, ... }:
     {
-      clan.pkgs = import inputs.nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
+      clan.pkgs = pkgs;
     };
 
   clan = {

@@ -20,12 +20,14 @@
     in
     {
       imports = [
+        self.modules.nixos.wrappers
         self.modules.nixos.handy
         self.modules.nixos.librewolf
       ];
 
+      wrappers.kitty.enable = true;
+
       environment.systemPackages = [
-        self.packages.${pkgs.stdenv.hostPlatform.system}.kitty
         pkgs.nautilus
         pkgs.libnotify
         pkgs.jq

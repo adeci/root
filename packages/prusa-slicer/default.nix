@@ -29,4 +29,5 @@ pkgs.symlinkJoin {
     wrapProgram $out/bin/prusa-slicer \
       --set LD_PRELOAD ${hidapi-fix}/lib/hidapi-fix.so
   '';
+  meta.platforms = [ "x86_64-linux" ];
 }

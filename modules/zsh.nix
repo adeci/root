@@ -2,17 +2,14 @@
   # Wrapped zsh as the system login shell with all CLI tools baked in.
   nixos =
     {
+      config,
       self,
-      pkgs,
       inputs,
       ...
     }:
-    let
-      inherit (pkgs.stdenv.hostPlatform) system;
-      zsh = self.wrappers.zsh.wrap { inherit pkgs; };
-    in
     {
       imports = [
+        self.modules.nixos.wrappers
         inputs.nix-index-database.nixosModules.nix-index
       ];
 
@@ -29,14 +26,12 @@
       programs.nix-index-database.comma.enable = true;
 
       # Override the login shell to our wrapped zsh (mkUser sets pkgs.zsh by default)
-      users.users.alex.shell = zsh;
+      users.users.alex.shell = config.wrappers.zsh.wrapper;
 
       # Make wrapped tools available system-wide
-      environment.systemPackages = [
-        zsh
-        self.packages.${system}.git
-        self.packages.${system}.tmux
-        self.packages.${system}.btop
-      ];
+      wrappers.zsh.enable = true;
+      wrappers.git.enable = true;
+      wrappers.tmux.enable = true;
+      wrappers.btop.enable = true;
     };
 }

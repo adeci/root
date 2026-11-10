@@ -1,6 +1,4 @@
 {
-  config,
-  lib,
   pkgs,
   wlib,
   ...
@@ -33,24 +31,9 @@ let
   ];
 in
 {
-  imports = [
-    wlib.wrapperModules.neovim
-    ../thaw/wrapper.nix
-  ];
+  imports = [ wlib.wrapperModules.neovim ];
 
-  thaw.files.config = ./config;
-
-  # The thaw link, or the store copy if it's missing. "${./config}" keeps the
-  # store path's context, so the config stays in the closure.
-  settings.config_directory = lib.generators.mkLuaInline ''
-    (function()
-      local thawed = (os.getenv("${config.thaw.var}") or "") .. "/config"
-      if vim.fn.filereadable(thawed .. "/init.lua") == 1 then
-        return thawed
-      end
-      return "${./config}"
-    end)()
-  '';
+  settings.config_directory = "${./config}";
 
   # No plugin needs a remote host; the node one alone is ~180 MiB.
   hosts = {
