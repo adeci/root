@@ -115,7 +115,7 @@
           data="$home/Library/Application Support/com.pais.handy"
           state() { /sbin/md5 -q "$data/settings_store.json" 2>/dev/null; /bin/ls -l "$data/models" 2>/dev/null; }
           before=$(state || true)
-          launchctl asuser "$uid" sudo --user=${user} -- \
+          launchctl asuser "$uid" sudo -H --user=${user} -- \
             ${lib.getExe handy.setup} ${handy.declaredSettingsFile} ${handy.declaredModels} || true
           after=$(state || true)
           running=$(/bin/ps -o comm= -p "$(/usr/bin/pgrep -x -u "$uid" handy | /usr/bin/head -n 1)" 2>/dev/null || true)

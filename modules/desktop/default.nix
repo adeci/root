@@ -190,7 +190,7 @@
         lib.mkAfter ''
           if [[ -d "/Applications/Nix Apps" ]]; then
             launchctl asuser "$(/usr/bin/id -u -- ${config.system.primaryUser})" \
-              sudo --user=${config.system.primaryUser} -- \
+              sudo -H --user=${config.system.primaryUser} -- \
               /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
               -f -R "/Applications/Nix Apps" || true
           fi

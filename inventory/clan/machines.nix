@@ -58,6 +58,15 @@
     deploy.targetHost = "root@janus.cymric-daggertooth.ts.net";
   };
 
+  icarus = {
+    name = "icarus";
+    machineClass = "darwin";
+    tags = [
+      "adeci-net"
+    ];
+    deploy.targetHost = "root@icarus.cymric-daggertooth.ts.net";
+  };
+
   kasha = {
     name = "kasha";
     tags = [

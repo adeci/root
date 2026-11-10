@@ -1,0 +1,25 @@
+{ self, ... }:
+{
+  imports = with self.modules.darwin; [
+    self.users.alex.darwinModule
+
+    base
+    zsh
+    desktop
+    nvim-dev
+    librewolf
+    llm-config
+    llm-tools
+    handy
+    karabiner
+    mouse
+    aerospace
+    secretive
+  ];
+
+  networking.hostName = "icarus";
+  networking.computerName = "icarus";
+
+  nixpkgs.hostPlatform = "aarch64-darwin";
+  system.stateVersion = 7;
+}
