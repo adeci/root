@@ -51,10 +51,6 @@
     llm-agents.inputs.treefmt-nix.follows = "treefmt-nix";
     llm-agents.inputs.systems.follows = "systems";
 
-    mics-skills.url = "github:Mic92/mics-skills";
-    mics-skills.inputs.nixpkgs.follows = "nixpkgs";
-    mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
-
     wrapper-modules.url = "github:BirdeeHub/nix-wrapper-modules";
     wrapper-modules.inputs.nixpkgs.follows = "nixpkgs";
 

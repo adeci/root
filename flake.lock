@@ -359,29 +359,6 @@
         "type": "github"
       }
     },
-    "mics-skills": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "treefmt-nix": [
-          "treefmt-nix"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792655179,
-        "narHash": "sha256-4BwVZVGirkBz79r5RaQoqgn0NndmlP2+w/m2UlpaDro=",
-        "owner": "Mic92",
-        "repo": "mics-skills",
-        "rev": "2628f05791da98c9e8a014c277a0bc1d91065e68",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Mic92",
-        "repo": "mics-skills",
-        "type": "github"
-      }
-    },
     "nix": {
       "flake": false,
       "locked": {
@@ -637,7 +614,6 @@
         "llm-agents": "llm-agents",
         "mandate": "mandate",
         "microvm": "microvm",
-        "mics-skills": "mics-skills",
         "nix-darwin": "nix-darwin_2",
         "nix-index-database": "nix-index-database",
         "nix-rosetta-builder": "nix-rosetta-builder",
