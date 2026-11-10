@@ -1,11 +1,3 @@
-# User definitions available flake-wide via self.users.*
-#
-# Each user gets:
-#   self.users.<name>.sshKeys / .uid / .username / etc. — pure data
-#   self.users.<name>.nixosModule — import this to create the user on a NixOS machine
-#   self.users.<name>.darwinModule — import this to create the user on a Darwin machine
-#
-# User data lives in inventory/users/. This module wraps it with mkUser.
 { lib, ... }:
 let
   rawUsers = import ../inventory/users;

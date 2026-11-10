@@ -1,5 +1,4 @@
 {
-  # Unlocks gnome-keyring at login with a TPM-sealed password; no PAM stack touches it.
   nixos =
     { lib, pkgs, ... }:
     let

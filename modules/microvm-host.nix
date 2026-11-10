@@ -61,7 +61,6 @@
           ''}
         '';
 
-      # Gives the GPU back to the host driver unless it never left it.
       reclaimGpu =
         name: gpu:
         pkgs.writeShellScript "microvm-${name}-reclaim-gpu" ''
@@ -82,7 +81,6 @@
         lib.mapAttrs' (name: vm: lib.nameValuePair (lib.toLower vm.mac) name) cfg.vms
       );
 
-      # Starts the VM whose MAC a magic packet (6 x 0xff, then the MAC 16 times) names.
       wake =
         pkgs.writers.writePython3 "microvm-wake"
           {

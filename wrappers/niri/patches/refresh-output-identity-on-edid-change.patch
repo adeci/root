@@ -1,3 +1,11 @@
+Treat a changed EDID on the same connector as a new output.
+
+When a KVM or dock swaps the monitor behind a connector, niri only sees a
+Changed event and keeps the old make/model/serial, so the new monitor never
+gets its own output config. Once a complete EDID arrives, retire the old
+output and reconnect under the new identity; transient empty EDIDs while a
+dock initializes are ignored.
+
 diff --git a/src/backend/tty.rs b/src/backend/tty.rs
 index 5368c7e..488f1fa 100644
 --- a/src/backend/tty.rs

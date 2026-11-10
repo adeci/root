@@ -1,14 +1,3 @@
-# Packages and wrappers, found automatically.
-#
-# packages/<name>/default.nix is called with callPackage. It returns a package,
-# or a set of packages exported as <name>-<key> (routeros-netinstall-cap-ax).
-# wrappers/<name>/default.nix is a nix-wrapper-modules module, published as
-# self.wrappers.<name> (machines import its `.install`) and built as a package.
-# Both are exported as self.packages.<system>.<name> where their
-# meta.platforms allows, and checked unless listed in skipChecks.
-#
-# Everything here, and every machine (flake/clan.nix), uses the one nixpkgs
-# instance set below.
 { inputs, lib, ... }:
 let
   featureDirs =
@@ -90,6 +79,7 @@ in
       );
     in
     {
+      # Machines use this instance too (flake/clan.nix).
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;

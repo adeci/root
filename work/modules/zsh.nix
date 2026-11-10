@@ -1,5 +1,4 @@
 {
-  # Root's zsh feature without the personal git wrapper or Atuin sync.
   nixos =
     { lib, self, ... }:
     {

@@ -1,10 +1,8 @@
 let
-  # Linux and Mac alike: wish.zsh.toml and the work git identity.
   shared =
     { pkgs, self, ... }:
     {
       home.links = {
-        # Keep cd, ls and j unaliased
         ".config/wish.zsh.toml" = (pkgs.formats.toml { }).generate "wish.zsh.toml" {
           features = {
             "alias.cd" = false;
@@ -36,7 +34,6 @@ in
       ''
         export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
 
-        # Work toolchain shell hooks
         if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
           eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
         fi
@@ -55,8 +52,6 @@ in
     {
       imports = [ shared ];
 
-      # Work zsh: base's wrapped zsh without the personal git or Atuin sync,
-      # plus the work toolchain hooks; plain git instead of the personal one.
       wrappers.zsh = {
         git = null;
         atuinSync = false;
@@ -65,7 +60,6 @@ in
             # gcloud (google-cloud-sdk) comes from the work apps feature.
             export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
 
-            # Work toolchain shell hooks
             if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
               eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
             fi

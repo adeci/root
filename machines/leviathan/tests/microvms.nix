@@ -117,7 +117,6 @@ pkgs.testers.runNixOSTest {
         wakeOnLan = lib.mkForce [ "eth2" ];
       };
 
-      # Logs the driver of each stand-in GPU every time it starts.
       systemd.services.fake-gpu-holder = {
         wantedBy = [ "multi-user.target" ];
         script = ''

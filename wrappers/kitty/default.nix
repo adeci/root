@@ -6,8 +6,6 @@
   ...
 }:
 let
-  # Generate kitty.conf from an attrset.
-  # Handles flat "key value" lines and lists for "map" directives.
   toKittyConf =
     settings:
     lib.concatStringsSep "\n" (
@@ -65,23 +63,18 @@ in
   };
 
   config.settings = {
-    # Shell — use the login shell (wrapped zsh via system packages)
-
-    # Font
     font_family = "CaskaydiaMono Nerd Font Mono";
     bold_font = "auto";
     italic_font = "auto";
     bold_italic_font = "auto";
     font_size = if pkgs.stdenv.hostPlatform.isDarwin then "12.0" else "10.0";
 
-    # Cursor
     cursor_shape = "block";
     cursor_blink_interval = "0.5";
     cursor_stop_blinking_after = "0";
     cursor_trail = "3";
     cursor_trail_decay = "0.1 0.4";
 
-    # Behavior
     enable_audio_bell = "no";
     copy_on_select = "yes";
     confirm_os_window_close = "0";
@@ -92,7 +85,6 @@ in
     enabled_layouts = "tall";
     shell_integration = "enabled";
 
-    # Keybindings
     map = [
       "alt+1 goto_tab 1"
       "alt+2 goto_tab 2"

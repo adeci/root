@@ -46,7 +46,6 @@ in
     relPath = "machine.kdl";
     content = config.machineConfig;
   };
-  # Exported for x86_64-linux only, like before; niri itself runs on any Linux.
   config.drv.meta.platforms = [ "x86_64-linux" ];
   config.prefixVar = [
     {

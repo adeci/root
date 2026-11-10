@@ -1,5 +1,4 @@
 {
-  # Runs cloudflared in connector mode when this machine has a tunnel defined in self.resources.tunnels. The tunnel token is provided by terraform via clan vars.
   nixos =
     {
       config,
@@ -36,6 +35,7 @@
           };
         };
 
+        # Terraform writes the token with `clan vars set`.
         clan.core.vars.generators.cloudflare-tunnel-token = {
           files.token = {
             secret = true;

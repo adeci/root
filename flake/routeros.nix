@@ -1,6 +1,3 @@
-# RouterOS network infrastructure — separate Terraform workspace
-# Bootstrap + deploy tools for MikroTik devices.
-# Linux-only (RouterOS provider + networking tools).
 {
   inputs,
   lib,
@@ -18,7 +15,6 @@
     let
       inherit (inputs'.clan-core.packages) clan-cli;
 
-      # Network workspace uses the same B2 backend but a separate state key
       netTfConfig = inputs.terranix.lib.terranixConfiguration {
         inherit system;
         modules = [
@@ -50,84 +46,68 @@
           install -m644 ${netTfConfig} config.tf.json
         '';
 
-      linuxOnly =
-        pkg:
-        pkg
-        // {
-          meta = (pkg.meta or { }) // {
-            platforms = lib.platforms.linux;
-          };
-        };
-
       netCommand =
         name: cmd:
-        linuxOnly (
-          pkgs.writeShellApplication {
-            inherit name;
-            runtimeInputs = [
-              pkgs.gitMinimal
-              pkgs.opentofu
-              clan-cli
-            ];
-            text = # bash
-              ''
-                ${netTfSetup}
-                tofu ${cmd} "$@"
-              '';
-          }
-        );
+        pkgs.writeShellApplication {
+          inherit name;
+          runtimeInputs = [
+            pkgs.gitMinimal
+            pkgs.opentofu
+            clan-cli
+          ];
+          text = # bash
+            ''
+              ${netTfSetup}
+              tofu ${cmd} "$@"
+            '';
+        };
     in
     {
-      packages = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-        # ── Network Terraform commands ──────────────────────────────
+      packages = {
         net-init = netCommand "net-init" "init";
         net-plan = netCommand "net-plan" "plan";
         net-apply = netCommand "net-apply" "apply";
         net-destroy = netCommand "net-destroy" "destroy";
         net-state = netCommand "net-state" "state";
 
-        # Remove all terraform resources for a device in one session
-        net-state-rm-device = linuxOnly (
-          pkgs.writeShellApplication {
-            name = "net-state-rm-device";
-            runtimeInputs = [
-              pkgs.gitMinimal
-              pkgs.opentofu
-              clan-cli
-            ];
-            text = # bash
-              ''
-                ${netTfSetup}
-                if [[ $# -eq 0 ]]; then
-                  echo "Usage: net-state-rm-device <device-name> [device-name ...]"
-                  exit 1
-                fi
-                all_state="$(tofu state list 2>/dev/null)"
-                resources=()
-                for device in "$@"; do
-                  mapfile -t matched < <(echo "$all_state" | grep "$device")
-                  resources+=("''${matched[@]}")
-                done
-                if [[ ''${#resources[@]} -eq 0 ]]; then
-                  echo "No resources found matching: $*"
-                  exit 0
-                fi
-                echo "Removing ''${#resources[@]} resources matching: $*"
-                for r in "''${resources[@]}"; do
-                  echo "  $r"
-                done
-                echo ""
-                read -rp "Continue? [y/N] " confirm
-                if [[ "$confirm" != "y" ]]; then
-                  echo "Aborted."
-                  exit 0
-                fi
-                tofu state rm "''${resources[@]}"
-                echo "Done."
-              '';
-          }
-        );
-
+        net-state-rm-device = pkgs.writeShellApplication {
+          name = "net-state-rm-device";
+          runtimeInputs = [
+            pkgs.gitMinimal
+            pkgs.opentofu
+            clan-cli
+          ];
+          text = # bash
+            ''
+              ${netTfSetup}
+              if [[ $# -eq 0 ]]; then
+                echo "Usage: net-state-rm-device <device-name> [device-name ...]"
+                exit 1
+              fi
+              all_state="$(tofu state list 2>/dev/null)"
+              resources=()
+              for device in "$@"; do
+                mapfile -t matched < <(echo "$all_state" | grep "$device")
+                resources+=("''${matched[@]}")
+              done
+              if [[ ''${#resources[@]} -eq 0 ]]; then
+                echo "No resources found matching: $*"
+                exit 0
+              fi
+              echo "Removing ''${#resources[@]} resources matching: $*"
+              for r in "''${resources[@]}"; do
+                echo "  $r"
+              done
+              echo ""
+              read -rp "Continue? [y/N] " confirm
+              if [[ "$confirm" != "y" ]]; then
+                echo "Aborted."
+                exit 0
+              fi
+              tofu state rm "''${resources[@]}"
+              echo "Done."
+            '';
+        };
       };
     };
 }

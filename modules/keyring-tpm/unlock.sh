@@ -7,7 +7,7 @@ if [[ ! -e $cred ]]; then
     echo "keyring-tpm: $keyring has no sealed password yet; run keyring-tpm-setup" >&2
     exit 2
   fi
-  # Fresh home: seal a random password; the daemon creates the keyring with it.
+  # Fresh home: the daemon creates the keyring with the sealed password.
   mkdir -p "$(dirname "$cred")"
   head -c 32 /dev/urandom | base64 -w0 |
     systemd-creds encrypt --user --name=keyring-tpm - "$cred"

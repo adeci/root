@@ -1,13 +1,12 @@
 # Inputs this flake inherits through `root` are pinned in work/flake.lock, not
 # in root's lock. Return a message for each inherited input whose pin differs
 # from root's flake.lock, so evaluation can fail instead of silently building
-# stale inputs. `nix flake update root` (from work/) re-syncs all of them.
+# stale inputs.
 root:
 let
   workLock = builtins.fromJSON (builtins.readFile ./flake.lock);
   rootLock = builtins.fromJSON (builtins.readFile (root + "/flake.lock"));
 
-  # Follow an input path such as [ "root" "pi-kit" ] from a lock's root node.
   # Lock references are node names, or `follows` paths from the lock's root.
   resolve =
     lock: path:

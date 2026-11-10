@@ -1,7 +1,6 @@
-# Vencord from upstream, pinned here instead of following nixpkgs: Discord's
-# 2026-11-04 rspack update broke 1.15.11 (black window, "i.A is not a
-# constructor"). Recipe from nixpkgs' pkgs/by-name/ve/vencord; to bump, change
-# version and both hashes.
+# Pinned here instead of following nixpkgs: Discord's 2026-11-04 rspack update
+# broke 1.15.11 (black window, "i.A is not a constructor"). Recipe from nixpkgs'
+# pkgs/by-name/ve/vencord.
 {
   lib,
   stdenv,

@@ -1,11 +1,7 @@
 {
-  # Encrypted root for unattended servers: LUKS unlocked by the TPM, Secure Boot
-  # via Lanzaboote with keys generated and enrolled on first boot, and initrd
-  # SSH for typing the recovery passphrase when the TPM won't unlock.
-  #
   # The machine sets disko.devices.disk.main.device and loads its NIC driver in
-  # the initrd; the initrd address comes from its homelan host entry. Once
-  # Secure Boot is on, seal the disk to its state (PCR 7) by hand:
+  # the initrd. Once Secure Boot is on, seal the disk to its state (PCR 7) by
+  # hand:
   #   systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/disk/by-partlabel/disk-<host>-root
   nixos =
     {
@@ -84,8 +80,8 @@
       boot.loader.systemd-boot.enable = lib.mkForce false;
       boot.loader.efi.canTouchEfiVariables = true;
 
-      # First boot: generate keys, stage them on the ESP and reboot; systemd-boot
-      # then enrolls them if the firmware is in Secure Boot setup mode.
+      # systemd-boot enrolls the generated keys only if the firmware is in Secure
+      # Boot setup mode.
       boot.lanzaboote = {
         enable = true;
         pkiBundle = "/var/lib/sbctl";

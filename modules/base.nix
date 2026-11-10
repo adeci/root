@@ -1,5 +1,4 @@
 let
-  # Every machine, Linux or Mac: SSH client, root's keys, editor, clan-cli.
   shared =
     {
       config,
@@ -10,9 +9,7 @@ let
       ...
     }:
     {
-      # Symlinks into the primary user's home, the one thing home-manager did
-      # that features still need. Linux makes them with user tmpfiles, macOS at
-      # activation. Stale links stay behind when an entry goes away.
+      # Stale links stay behind when an entry goes away.
       options.home.links = lib.mkOption {
         type = lib.types.attrsOf lib.types.pathInStore;
         default = { };
@@ -23,7 +20,6 @@ let
       config = {
         nixpkgs.config.allowUnfree = true;
 
-        # Root accepts the same keys as the machine's primary user.
         users.users.root.openssh.authorizedKeys.keys =
           config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
 
@@ -123,8 +119,6 @@ in
       };
     };
 
-  # Every Mac, desktop or headless: nix, accounts, sshd, shell. Desktop
-  # settings live in the desktop feature.
   darwin =
     {
       config,
@@ -154,7 +148,6 @@ in
         }
       );
 
-      # nix-index with pre-built database: command-not-found handler + comma
       programs.nix-index-database.comma.enable = true;
 
       # nix-darwin owns the primary account, so it sets the login shell (no
@@ -166,7 +159,7 @@ in
         shell = config.wrappers.zsh.wrapper;
       };
 
-      # Keys only, and only the ones declared here (users.users.*.openssh).
+      # Only the keys declared in users.users.*.openssh.
       services.openssh = {
         enable = true;
         extraConfig = ''
@@ -177,7 +170,6 @@ in
         '';
       };
 
-      # Wrapped shell and tools
       programs.zsh.enable = true;
       environment.pathsToLink = [ "/share/zsh" ];
       environment.shells = lib.mkDefault [ config.wrappers.zsh.wrapper ];
@@ -204,7 +196,6 @@ in
           mkdir -p /nix/.fseventsd
           touch /nix/.fseventsd/no_log
 
-          # home.links, made as the user. A real file in the way stays put.
           home_link() {
             if [[ -e "$2" && ! -L "$2" ]]; then
               echo "home.links: $2 is not a symlink; left alone" >&2

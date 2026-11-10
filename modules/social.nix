@@ -1,5 +1,4 @@
 {
-  # Social/communication apps.
   nixos =
     {
       pkgs,

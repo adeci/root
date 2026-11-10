@@ -12,7 +12,6 @@ let
     atlas = "atlas-alerts";
   };
 
-  # Add phone subscribers
   subscribers = [
     {
       name = "alex";
@@ -20,7 +19,6 @@ let
     }
   ];
 
-  # Add publishing integrations
   publishers = [
     {
       name = "alertmanager";

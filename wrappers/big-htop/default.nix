@@ -1,4 +1,4 @@
-# Htop configured for high-core-count servers (256 cores).
+# Sized for 256-core servers.
 {
   wlib,
   ...

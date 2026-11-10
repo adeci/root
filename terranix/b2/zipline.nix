@@ -47,8 +47,6 @@ in
     ];
   };
 
-  # Like Restic, external provisioning writes only the service-scoped key into
-  # encrypted Clan vars. B2 admin credentials never reach the service host.
   resource.terraform_data.zipline_b2_credentials_conduit = {
     input = {
       application_key_id = key "application_key_id";

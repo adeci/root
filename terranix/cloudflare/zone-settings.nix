@@ -1,5 +1,5 @@
-# Per-zone settings. HSTS covers every proxied hostname (tunnels); DNS-only
-# records such as share.decio.us bypass Cloudflare and set it in nginx.
+# HSTS covers every proxied hostname (tunnels); DNS-only records such as
+# share.decio.us bypass Cloudflare and set it in nginx.
 {
   config,
   self,

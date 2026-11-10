@@ -1,4 +1,4 @@
-# Machine tests: built on demand (nix build .#<name> -L), never flake checks.
+# Built on demand, never as flake checks.
 {
   inputs,
   lib,

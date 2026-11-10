@@ -112,7 +112,6 @@
     inputs.mandate.packages.${pkgs.stdenv.hostPlatform.system}.mandate
   ];
 
-  # vm building
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 

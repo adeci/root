@@ -1,5 +1,4 @@
 {
-  # Logs the shared Atuin account in whenever this machine has no session.
   nixos =
     {
       config,

@@ -1,5 +1,4 @@
 {
-  # Wrapped zsh as the system login shell with all CLI tools baked in.
   nixos =
     {
       config,
@@ -22,13 +21,11 @@
       };
       environment.pathsToLink = [ "/share/zsh" ];
 
-      # nix-index with pre-built database: command-not-found handler + comma
       programs.nix-index-database.comma.enable = true;
 
-      # Override the login shell to our wrapped zsh (mkUser sets pkgs.zsh by default)
+      # mkUser's default is the unwrapped pkgs.zsh.
       users.users.alex.shell = config.wrappers.zsh.wrapper;
 
-      # Make wrapped tools available system-wide
       wrappers.zsh.enable = true;
       wrappers.git.enable = true;
       wrappers.tmux.enable = true;

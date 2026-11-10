@@ -1,8 +1,3 @@
-# Emacs with init.el built in as default.el. Nix installs every package a
-# `(use-package NAME ...)` form in init.el names (emacs-overlay's
-# emacsWithPackagesFromUsePackage), so adding one there is enough.
-# To try edits before a deploy, open this checkout's init.el and run
-# M-x eval-buffer.
 {
   config,
   inputs,
@@ -43,7 +38,7 @@ in
         }
       );
 
-      # Opens zmx sessions in ghostel. Not on MELPA.
+      # Not on MELPA.
       term-sessions = final.melpaBuild {
         pname = "term-sessions";
         version = "0.1.0-unstable-2026-10-20";

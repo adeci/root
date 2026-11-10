@@ -1,4 +1,3 @@
-# Cloudflare edge policy by hostname.
 {
   hosts = {
     "vault.decio.us".customRules = [

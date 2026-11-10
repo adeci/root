@@ -1,4 +1,4 @@
-# Electron's safeStorage auto-detection doesn't work on tiling WMs (niri, sway, etc.) so force gnome-libsecret as the password store backend.
+# Electron's safeStorage auto-detection doesn't work on tiling WMs (niri, sway, etc.).
 { pkgs, ... }:
 pkgs.element-desktop.overrideAttrs (oldAttrs: {
   nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];

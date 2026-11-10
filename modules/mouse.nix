@@ -1,7 +1,4 @@
 {
-  # External mouse behavior for macOS.
-  # Keep the trackpad on natural scrolling, but make mouse wheels non-natural via
-  # Scroll Reverser. Also raises external mouse tracking speed.
   darwin =
     { pkgs, ... }:
     {
@@ -11,7 +8,6 @@
         # Trackpad stays natural. Scroll Reverser flips only physical mouse wheels.
         NSGlobalDomain."com.apple.swipescrolldirection" = true;
 
-        # Mouse tracking speed. macOS stores this separately from trackpad speed.
         # 2.0 is what macOS wrote when the Mouse tracking speed slider was set to
         # 8/10 in System Settings on malum.
         ".GlobalPreferences"."com.apple.mouse.scaling" = 2.0;
@@ -33,8 +29,6 @@
         };
       };
 
-      # launchd starts it (RunAtLoad also covers the first switch after install)
-      # and restarts it if it crashes.
       launchd.user.agents.scroll-reverser.serviceConfig = {
         Label = "org.nixos.scroll-reverser";
         ProgramArguments = [ "/Applications/Nix Apps/Scroll Reverser.app/Contents/MacOS/Scroll Reverser" ];

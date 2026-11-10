@@ -1,4 +1,4 @@
-# MikroTik CRS328-24P-4S+RM — main rack switch
+# Main rack
 {
   model = "CRS328-24P-4S+RM";
   host = "10.99.0.2";
@@ -17,10 +17,8 @@
     "mgmt"
   ];
 
-  # Ports not listed here default to access ports on this VLAN
   defaultVlan = "trusted";
 
-  # Port overrides — only list what differs from the default
   ports = {
     "sfp-sfpplus1" = {
       trunk = true;
@@ -66,9 +64,7 @@
       poe = "auto-on";
       comment = "WAP — nimbus (PoE+)";
     };
-    # "ether5" = { vlan = "iot"; comment = "Blink camera"; };
   };
 
-  # Static fallback IP on management port (reachable if DHCP fails)
   fallbackAddress = "172.16.0.2/24";
 }

@@ -1,5 +1,4 @@
 {
-  # aarch64-linux + x86_64-linux (via Rosetta 2) under vfkit/Virtualization.framework.
   darwin =
     { inputs, ... }:
     {
@@ -8,7 +7,7 @@
       nix-rosetta-builder.onDemand = true;
 
       # Determinate Nix owns nix.conf where installed and reads this standard
-      # builders file. The Rosetta module continues to own the VM and launchd job.
+      # builders file.
       environment.etc."nix/machines".text = ''
         ssh-ng://rosetta-builder aarch64-linux,x86_64-linux - 8 1 benchmark,big-parallel,kvm,nixos-test - -
       '';

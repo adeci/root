@@ -1,8 +1,4 @@
 # shellcheck shell=bash
-# Prepare Handy's data dir: deep-merge the declared settings ($1) into its
-# settings store (declared keys win, the GUI keeps every other key, an
-# unparseable store is left alone) and link each declared model file ($2/*)
-# into its models dir, dropping links to models no longer declared.
 
 declared=$1
 declared_models=$2

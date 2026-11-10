@@ -1,12 +1,10 @@
-# Cloud infrastructure Terraform workspace (Cloudflare, Hetzner)
-# RouterOS network workspace is in routeros.nix (separate state).
 {
   inputs,
   lib,
   ...
 }:
 let
-  # Auto-discover cloud terranix modules (excludes routeros — separate workspace)
+  # terranix/routeros is a separate workspace with its own state (routeros.nix).
   terranixDir = ../terranix;
   terranixModules =
     let
@@ -20,15 +18,8 @@ let
           && builtins.pathExists (terranixDir + "/${name}/default.nix")
         );
     in
-    map (
-      name:
-      let
-        type = entries.${name};
-      in
-      if type == "directory" then terranixDir + "/${name}" else terranixDir + "/${name}"
-    ) (builtins.attrNames (lib.filterAttrs isModule entries));
+    map (name: terranixDir + "/${name}") (builtins.attrNames (lib.filterAttrs isModule entries));
 
-  # Auto-discover per-machine terraform configs
   machineDir = ../machines;
   machineTfConfigs = map (name: machineDir + "/${name}/terraform-configuration.nix") (
     builtins.filter (name: builtins.pathExists (machineDir + "/${name}/terraform-configuration.nix")) (
@@ -57,7 +48,6 @@ in
 
       inherit (inputs'.clan-core.packages) clan-cli;
 
-      # B2 backend auth uses AWS env var names for S3 api
       tfSetup = # bash
         ''
           cd "$(git rev-parse --show-toplevel)"

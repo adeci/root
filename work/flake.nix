@@ -42,7 +42,6 @@
         perSystem =
           { lib, system, ... }:
           let
-            # Check every work machine built for this system.
             machinesFor = lib.filterAttrs (_name: machine: machine.pkgs.stdenv.hostPlatform.system == system);
           in
           {

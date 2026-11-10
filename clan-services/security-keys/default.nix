@@ -65,7 +65,7 @@ _: {
                 message = "security-keys: unknown key(s) in 'use': ${lib.concatStringsSep ", " unknownKeys}. Must be defined in role-level 'keys'.";
               }
             ];
-            # Shared generator — identical across all machines, stores ALL key handles
+            # Identical on every machine, so it holds all key handles.
             clan.core.vars.generators.${instanceName} = {
               share = true;
               files = lib.listToAttrs (
@@ -88,7 +88,6 @@ _: {
               script = lib.concatMapStringsSep "\n" (name: ''cp "$prompts"/${name} "$out"/${name}'') allKeyNames;
             };
 
-            # Deploy only this machine's keys
             system.activationScripts."deploy-fido2-handles" = lib.concatMapStringsSep "\n" (
               key:
               let
@@ -104,7 +103,6 @@ _: {
               ''
             ) deployKeys;
 
-            # SSH config for this machine's keys only
             programs.ssh.extraConfig = lib.concatStringsSep "\n" (
               map (
                 key: "IdentityFile ${config.users.users.${key.owner}.home}/.ssh/id_ed25519_sk_${key.name}"

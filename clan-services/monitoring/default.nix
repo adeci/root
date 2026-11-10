@@ -167,7 +167,6 @@ in
             allCollectors = defaultCollectors ++ settings.extraCollectors;
             collectorsHCL = "[" + concatStringsSep ", " (map (c: "\"${c}\"") allCollectors) + "]";
 
-            # Services whose `enable` was flipped on by a NixOS module.
             enabledNixosSystemdServices = map (v: "${v}.service") (
               lib.attrNames (
                 lib.filterAttrs (_: v: v) (
@@ -206,9 +205,7 @@ in
               }
             '';
 
-            # Alloy component labels must match [a-zA-Z_][a-zA-Z0-9_]*; the
-            # human-friendly job name (e.g. "kea-dhcp4") is preserved as the
-            # Prometheus label, and the Alloy block name is sanitized.
+            # Alloy component labels must match [a-zA-Z_][a-zA-Z0-9_]*.
             extraScrapeBlocks = concatStringsSep "\n" (
               map (
                 s:
@@ -244,8 +241,6 @@ in
             extraRelabelRules = concatStringsSep "\n" settings.journal.relabelRules;
 
             alloyConfig = builtins.toFile "config.alloy" ''
-              // ───────── Metrics ─────────
-
               prometheus.exporter.unix "local_system" {
                 set_collectors = ${collectorsHCL}
 
@@ -254,8 +249,7 @@ in
                 }
               }
 
-              // Alloy's prometheus.exporter.unix auto-sets instance=<hostname>
-              // on every node metric, matching the Prometheus convention.
+              // prometheus.exporter.unix already sets instance=<hostname> on node metrics.
               prometheus.scrape "node" {
                 targets         = prometheus.exporter.unix.local_system.targets
                 forward_to      = [prometheus.remote_write.server.receiver]
@@ -287,8 +281,6 @@ in
                   }
                 }
               }
-
-              // ───────── Logs ─────────
 
               loki.source.journal "systemd" {
                 forward_to    = [loki.write.server.receiver]
@@ -759,10 +751,8 @@ in
             '';
           in
           {
-            # ── Firewall: only allow port 80 over Tailscale ──
             networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 80 ];
 
-            # ── State folders (survive clan state restore) ──
             clan.core.state.monitoring.folders = [
               "/var/lib/${config.services.prometheus.stateDir}"
               config.services.loki.dataDir
@@ -771,7 +761,6 @@ in
               "/var/lib/alertmanager"
             ];
 
-            # ── PostgreSQL backend for Grafana ──
             clan.core.postgresql = lib.mkIf settings.grafana.enable {
               enable = true;
               users.grafana = { };
@@ -793,7 +782,6 @@ in
               };
             };
 
-            # ── Prometheus ──
             services.prometheus = {
               enable = true;
               listenAddress = "127.0.0.1";
@@ -830,7 +818,6 @@ in
               ruleFiles = [ alertRules ];
             };
 
-            # ── Alert delivery ──
             services.prometheus.alertmanager = lib.mkIf ntfyDelivery.enable {
               enable = true;
               listenAddress = "127.0.0.1";
@@ -910,7 +897,6 @@ in
               };
             };
 
-            # ── Loki ──
             services.loki = {
               enable = true;
               configuration = {
@@ -966,7 +952,6 @@ in
               };
             };
 
-            # ── Grafana ──
             services.grafana = lib.mkIf settings.grafana.enable {
               enable = true;
               # Grafana 13.2 ships these data sources as separate plugins.
@@ -1077,8 +1062,6 @@ in
               ];
             };
 
-            # ── Nginx reverse proxy ──
-            # Credentials are symlinked into /run/nginx so basicAuthFile can see them.
             services.nginx = {
               enable = true;
               recommendedProxySettings = true;

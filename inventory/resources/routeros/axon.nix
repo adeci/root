@@ -1,4 +1,4 @@
-# MikroTik CRS310-8G+2S+IN — upstairs mini rack switch
+# Upstairs mini rack
 {
   model = "CRS310-8G+2S+IN";
   host = "10.99.0.3";
@@ -6,7 +6,7 @@
 
   identity = "axon";
 
-  managementPort = "sfp-sfpplus1"; # standalone uplink — VLAN sub-interfaces trunk into bridge
+  managementPort = "sfp-sfpplus1";
   fallbackPort = "ether1"; # fallback IP goes here for local laptop recovery
 
   vlans = [
@@ -32,7 +32,6 @@
       vlan = "guest";
       comment = "Penumbra guest device";
     };
-    # "ether5" = { vlan = "iot"; comment = "IoT device"; };
   };
 
   fallbackAddress = "172.16.0.3/24";

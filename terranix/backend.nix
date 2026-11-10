@@ -4,7 +4,6 @@
   ...
 }:
 {
-  # Remote state stored on bootstrapped backblaze B2
   terraform.backend.s3 = {
     endpoints.s3 = "https://s3.us-east-005.backblazeb2.com";
     bucket = "adeci-terraform-state";
@@ -19,7 +18,6 @@
     skip_s3_checksum = true;
   };
 
-  # Encrypt state
   terraform.encryption = {
     key_provider.external.passphrase = {
       command = [ (lib.getExe self'.packages.provide-tf-passphrase) ];

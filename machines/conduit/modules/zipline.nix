@@ -12,6 +12,8 @@ let
   staging = "/var/cache/zipline";
 in
 {
+  # Clan's PostgreSQL state declaration backs up the database, including users,
+  # file metadata and settings. Objects live in B2; staging is not backup state.
   clan.core.postgresql.enable = true;
   clan.core.postgresql.users.zipline = { };
   clan.core.postgresql.databases.zipline = {
@@ -19,8 +21,6 @@ in
     restore.stopOnRestore = [ "zipline" ];
   };
 
-  # Clan's PostgreSQL state declaration backs up the database, including users,
-  # file metadata and settings. Objects live in B2; staging is not backup state.
   clan.core.vars.generators.zipline-secret = {
     files.env.secret = true;
     runtimeInputs = [ pkgs.openssl ];

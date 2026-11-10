@@ -1,4 +1,4 @@
-# MikroTik cAP ax (Gen 6) — upstairs WAP
+# Upstairs
 {
   model = "cAP-ax";
   host = "10.99.0.6";

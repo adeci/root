@@ -68,8 +68,6 @@ in
           (lib.makeBinPath (
             lib.optional (config.git != null) config.git
             ++ [
-
-              # Core CLI tools
               pkgs.ripgrep
               pkgs.fd
               pkgs.eza
@@ -79,7 +77,6 @@ in
               pkgs.fzf
               pkgs.jq
 
-              # Dev tools
               pkgs.gh
               pkgs.jujutsu
               pkgs.nixpkgs-review
@@ -97,7 +94,6 @@ in
               pkgs.python3
               pkgs.uv
 
-              # Shell integration
               pkgs.zoxide
               pkgs.direnv
               pkgs.atuin
@@ -129,11 +125,10 @@ in
         source ${./zshrc}
 
         ${lib.optionalString (config.extraInit != "") ''
-          # ── Extra init ───────────────────────────────────────────────────
           ${config.extraInit}
         ''}
 
-        # ── Syntax highlighting (must be sourced last) ───────────────────
+        # Must be sourced last.
         source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
         ttyctl -f

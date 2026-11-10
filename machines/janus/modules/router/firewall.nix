@@ -359,18 +359,16 @@ in
             iif lo counter name input_accept_loopback accept
             ip protocol icmp counter name input_accept_icmp accept
 
-            # DHCP + DNS for local subnets.
             iifname { ${topology.interfaceSet topology.serviceInterfaces} } udp dport { 53, 67 } counter name input_accept_dhcp_dns accept
             iifname { ${topology.interfaceSet topology.serviceInterfaces} } tcp dport 53 counter name input_accept_dhcp_dns accept
 
-            # Tailscale direct path from WAN. Tunnel traffic is authenticated by
-            # WireGuard; Tailscale ACLs remain the peer policy boundary.
+            # Tunnel traffic is authenticated by WireGuard; Tailscale ACLs remain the
+            # peer policy boundary.
             iifname "${topology.wan}" udp dport 41641 counter name input_accept_tailscale_direct_udp accept
 
             # Tailnet is the admin plane for Janus itself.
             iifname "tailscale0" counter name input_accept_tailnet_admin accept
 
-            # SSH from trusted + management only.
             iifname { "${topology.vlanInterface topology.vlans.trusted}", "br-mgmt" } tcp dport 22 counter name input_accept_ssh_admin accept
 
             limit rate 6/minute burst 12 packets log prefix "janus-fw input-drop " level warn

@@ -1,5 +1,4 @@
 {
-  # rbw (unofficial Bitwarden CLI) with lock-on-suspend service.
   nixos =
     { pkgs, ... }:
     {

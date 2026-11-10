@@ -1,10 +1,3 @@
-# RouterOS switch resources — bridge, ports, VLANs
-# Applied to devices that have a `vlans` attribute in their data.
-#
-# Standalone trunk management: when managementPort is a trunk port, it stays
-# standalone (like WAP ether1) with VLAN sub-interfaces feeding tagged traffic
-# into the bridge. Management IP comes from untagged mgmt on the hybrid uplink.
-# This allows single-cable switches to be configured in one terraform apply.
 {
   config,
   self,
@@ -14,13 +7,11 @@
 let
   inherit (self.resources) routeros;
 
-  # Only devices with vlans (switches, not WAPs)
   switches = lib.filterAttrs (_: d: d ? vlans) routeros;
 
   deviceProvider = name: "routeros.${name}";
   safeName = builtins.replaceStrings [ "-" ] [ "_" ];
 
-  # Port names generated from model spec
   models = import ./models.nix;
   portsForModel =
     model:
@@ -30,7 +21,6 @@ let
     (builtins.genList (i: "ether${toString (i + 1)}") spec.etherPorts)
     ++ (builtins.genList (i: "sfp-sfpplus${toString (i + 1)}") spec.sfpPorts);
 
-  # ── Per-device helpers ───────────────────────────────────────────
   bridgePorts = device: lib.filter (p: p != device.managementPort) (portsForModel device.model);
 
   portCfg = device: port: device.ports.${port} or { };
@@ -46,29 +36,25 @@ let
   accessPortsForVlan =
     device: vlanName: lib.filter (p: portVlan device p == vlanName) (accessPorts device);
 
-  # Hybrid ports that carry a given VLAN as tagged
   hybridPortsTaggedForVlan =
     device: vlanName:
     lib.filter (p: builtins.elem vlanName (portTaggedVlans device p)) (hybridPorts device);
 
-  # Hybrid ports whose native (untagged) VLAN matches
   hybridPortsUntaggedForVlan =
     device: vlanName: lib.filter (p: portVlan device p == vlanName) (hybridPorts device);
 
-  # ── Standalone trunk management ────────────────────────────────────
-  # When managementPort is a trunk port, it stays standalone (like WAP ether1)
-  # with VLAN sub-interfaces feeding tagged traffic into the bridge.
-  # Management IP comes from untagged traffic on the hybrid uplink.
+  # A trunk managementPort stays standalone (like WAP ether1); VLAN
+  # sub-interfaces feed its tagged traffic into the bridge, and the management
+  # IP comes from untagged mgmt on the hybrid uplink. This lets a single-cable
+  # switch be configured in one terraform apply.
   isMgmtTrunk = device: device.managementPort != null && isTrunk device device.managementPort;
 
-  # Sub-interface name on the standalone trunk port (RouterOS interface name)
   uplinkSubIf = port: vlanId: "${port}-v${toString vlanId}";
 
-  # Non-mgmt VLANs — mgmt is untagged on the hybrid uplink, handled by standalone port
   nonMgmtVlans = device: lib.filterAttrs (n: _: n != "mgmt") device.vlans;
 
-  # Sub-interfaces for bridge VLAN entries (replace the trunk port in tagged/untagged
-  # lists). Referenced as resources so they exist before the entry naming them.
+  # Resource references, not plain names, so the sub-interfaces exist before
+  # the bridge VLAN entries that name them.
   uplinkSubIfsForVlan =
     name: device: vlanName:
     if isMgmtTrunk device && vlanName != "mgmt" then
@@ -76,16 +62,11 @@ let
     else
       [ ];
 
-  # Switches that need a management VLAN interface on the bridge.
-  # Either no dedicated management port, or explicitly requesting one via fallbackPort.
-  # Exclude devices with trunk management — they get management via standalone port.
   switchesNeedingMgmtVlan = lib.filterAttrs (
     _: d: (d.managementPort == null || d ? fallbackPort) && !isMgmtTrunk d
   ) switches;
 in
 {
-  # ── Bridge ──────────────────────────────────────────────────────────
-
   resource.routeros_interface_bridge = lib.concatMapAttrs (name: _: {
     ${name} = {
       provider = deviceProvider name;
@@ -94,11 +75,8 @@ in
     };
   }) switches;
 
-  # ── Bridge ports ────────────────────────────────────────────────────
-
   resource.routeros_interface_bridge_port = lib.concatMapAttrs (
     name: device:
-    # Regular bridge ports (physical interfaces)
     lib.listToAttrs (
       map (port: {
         name = "${name}_${safeName port}";
@@ -119,7 +97,6 @@ in
         };
       }) (bridgePorts device)
     )
-    # Uplink sub-interface bridge ports (for standalone trunk management)
     // lib.optionalAttrs (isMgmtTrunk device) (
       lib.mapAttrs' (
         vlanName: vlanId:
@@ -134,8 +111,6 @@ in
       ) (nonMgmtVlans device)
     )
   ) switches;
-
-  # ── Ethernet port settings (PoE, etc.) ─────────────────────────────
 
   resource.routeros_interface_ethernet = lib.concatMapAttrs (
     name: device:
@@ -155,10 +130,7 @@ in
     )
   ) switches;
 
-  # ── VLAN interfaces ────────────────────────────────────────────────
-
   resource.routeros_interface_vlan =
-    # Uplink sub-interfaces on standalone trunk port
     lib.concatMapAttrs (
       name: device:
       lib.mapAttrs' (
@@ -171,7 +143,6 @@ in
         }
       ) (nonMgmtVlans device)
     ) (lib.filterAttrs (_: isMgmtTrunk) switches)
-    # Management VLAN interface on bridge (for DHCP client)
     // lib.concatMapAttrs (name: device: {
       "${name}_mgmt" = {
         provider = deviceProvider name;
@@ -188,8 +159,6 @@ in
       comment = "Management VLAN — Managed by Terraform";
     };
   }) switchesNeedingMgmtVlan;
-
-  # ── Bridge VLAN table ──────────────────────────────────────────────
 
   resource.routeros_interface_bridge_vlan = lib.concatMapAttrs (
     name: device:

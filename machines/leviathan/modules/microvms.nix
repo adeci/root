@@ -3,7 +3,7 @@
 let
   inherit (self.resources.homelan) hosts;
 
-  # Moonshine + Steam on a passed-through V100, joined to the tailnet. Powers off when idle so leviathan gets the GPU back.
+  # Powers off when idle so leviathan gets the GPU back.
   gamingSeat =
     {
       config,

@@ -2,7 +2,6 @@
   nixos =
     { pkgs, ... }:
     {
-      # Smart card daemon
       services.pcscd.enable = true;
 
       services.udev.packages = [ pkgs.yubikey-personalization ];
@@ -23,7 +22,6 @@
         libfido2
       ];
 
-      # Desktop notification when YubiKey is waiting for touch
       systemd.user.services.yubikey-touch-detector = {
         description = "YubiKey touch detector";
         partOf = [ "graphical-session.target" ];

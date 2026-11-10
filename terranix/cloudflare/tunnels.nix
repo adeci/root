@@ -1,5 +1,3 @@
-# Cloudflare tunnel resources
-# Each machine in self.resources.cloudflare.tunnels gets a tunnel + config + token.
 {
   config,
   self,
@@ -12,7 +10,7 @@ let
   inherit (inputs'.clan-core.packages) clan-cli;
 in
 {
-  # random_bytes keeps the secret sensitive; random_id printed it as its id.
+  # random_bytes, not random_id: random_id exposes the secret as its id.
   resource.random_bytes = lib.mapAttrs' (
     machine: _:
     lib.nameValuePair "tunnel_secret_${machine}" {
@@ -46,7 +44,6 @@ in
     }
   ) tunnels;
 
-  # Push tunnel tokens into clan vars for NixOS consumption
   resource.terraform_data = lib.mapAttrs' (
     machine: _:
     let

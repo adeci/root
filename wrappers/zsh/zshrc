@@ -1,6 +1,5 @@
-# Interactive zsh config. Store paths come from $zsh_pkgs, set in default.nix.
+# $zsh_pkgs (store paths) is set in default.nix.
 
-# ── Aliases ──────────────────────────────────────────────────────
 alias -- ..='cd ..'
 alias -- ...='cd ../..'
 alias -- ....='cd ../../..'
@@ -36,7 +35,6 @@ alias vi='nvim'
 alias vim='nvim'
 alias wget='noglob wget'
 
-# ── History ──────────────────────────────────────────────────────
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
@@ -46,11 +44,9 @@ setopt HIST_EXPIRE_DUPS_FIRST
 setopt EXTENDED_HISTORY
 setopt SHARE_HISTORY
 
-# ── Completions ──────────────────────────────────────────────────
 fpath+=($zsh_pkgs[completions]/share/zsh/site-functions)
 autoload -Uz compinit && compinit
 
-# ── Plugins ──────────────────────────────────────────────────────
 source $zsh_pkgs[autosuggestions]/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=242"
 
@@ -59,19 +55,16 @@ source $zsh_pkgs[fzf-tab]/share/fzf-tab/fzf-tab.plugin.zsh
 source $zsh_pkgs[autopair]/share/zsh/zsh-autopair/autopair.zsh
 autopair-init
 
-# ── Shell integrations ─────────────────────────────────────────
 eval "$($zsh_pkgs[zoxide]/bin/zoxide init zsh)"
 eval "$($zsh_pkgs[direnv]/bin/direnv hook zsh)"
 eval "$($zsh_pkgs[atuin]/bin/atuin init zsh)"
 
-# ── Shell options ────────────────────────────────────────────────
 setopt auto_cd
 setopt no_beep
 setopt pushd_ignore_dups
 setopt complete_in_word
 setopt multios
 
-# ── Keybindings ──────────────────────────────────────────────────
 bindkey -e
 
 zle_highlight+=(paste:none)
@@ -85,7 +78,6 @@ zle -N edit-command-line
 bindkey '^X^e' edit-command-line
 bindkey '^[[3~' delete-char
 
-# ── Pure prompt ──────────────────────────────────────────────────
 fpath+=($zsh_pkgs[pure]/share/zsh/site-functions)
 autoload -U promptinit; promptinit
 PURE_GIT_UNTRACKED_DIRTY=0
@@ -112,10 +104,8 @@ psvar[13]=1
 # Real hostname, even when $HOST is overridden
 PROMPT=${PROMPT//@%m/@${$(uname -n)%%.*}}
 
-# Keep long World paths and worktree names from monopolizing the
-# preprompt. Pure does not expose a path length style, so override the
-# small renderer hook it calls from precmd. The hard cap wins, but it
-# also scales down on narrow terminals.
+# Keep long paths and worktree names from monopolizing the preprompt. Pure has
+# no path length style, so this overrides its internal path renderers.
 PURE_PROMPT_PATH_MAX_COLUMNS=${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
 PURE_PROMPT_PATH_MIN_COLUMNS=${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
 PURE_PROMPT_PATH_FRACTION=${PURE_PROMPT_PATH_FRACTION:-45}
@@ -181,7 +171,6 @@ prompt_pure_render_dimmed_path() {
 }
 prompt_pure_set_path_separator
 
-# Linked worktree name
 prompt_pure_precustom() {
   local top=$prompt_pure_vcs_info[top]
   [[ -n $top && -f $top/.git ]] || return
@@ -206,7 +195,6 @@ else
   preexec_functions+=(_osc133_command)
 fi
 
-# ── fzf-tab configuration ────────────────────────────────────────
 if (( $+commands[tmux] )); then
   zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 fi
@@ -217,7 +205,6 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls -1 --color=always $realpath'
 zstyle ':fzf-tab:*' switch-group '<' '>'
 
-# ── Functions ────────────────────────────────────────────────────
 mkcd() { mkdir -p "$1" && cd "$1"; }
 
 yy() {
@@ -254,7 +241,6 @@ update-claude-code() {
     --arg predicate '(path: pkg: builtins.elem path [["claude-code"] ["claude-code-bin"] ["vscode-extensions" "anthropic" "claude-code"]])'
 }
 
-# ── Tmux integration ─────────────────────────────────────────────
 if (( $+commands[tmux] )); then
   tms() {
     if [[ -z "$1" ]]; then

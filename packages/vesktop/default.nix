@@ -1,7 +1,5 @@
-# Vesktop from upstream, pinned here instead of following nixpkgs, running the
-# root-composed Vencord. Recipe from nixpkgs' pkgs/by-name/ve/vesktop, Linux
-# only. To bump, change version and both hashes, plus Electron when
-# package.json moves to another major (preBuild fails until then).
+# Recipe from nixpkgs' pkgs/by-name/ve/vesktop. When package.json moves to
+# another Electron major, bump the electron pin below; preBuild fails until then.
 {
   lib,
   pkgs,

@@ -78,7 +78,6 @@
     pkgs.android-tools
   ];
 
-  # vm building
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 

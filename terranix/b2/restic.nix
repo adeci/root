@@ -1,4 +1,3 @@
-# Restic backup bucket and per-machine credentials.
 {
   config,
   self,

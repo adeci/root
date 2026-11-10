@@ -1,39 +1,39 @@
-# GPD Pocket 4 hardware quirks and fixes.
-# Consolidates audio DSP, suspend fixes, and touchscreen workarounds.
 { pkgs, ... }:
 {
-  # Fix USB keyboard (258a:000c) blocking suspend
-  # Keep keyboard always-on but disable wakeup
+  # The USB keyboard (258a:000c) otherwise blocks suspend.
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="000c", ATTR{power/wakeup}="disabled", ATTR{power/control}="on"
   '';
 
-  # Disable XHC0 USB controller wakeup to prevent phantom wakes from suspend
+  # XHC0 causes phantom wakes from suspend.
   systemd.services.disable-usb-wakeup = {
     description = "Disable XHC0 USB controller wakeup";
     wantedBy = [ "multi-user.target" ];
     after = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'echo XHC0 > /proc/acpi/wakeup'";
+      # Writing the name toggles, so a restart (e.g. a switch after a bash bump) would re-enable it.
+      ExecStart = pkgs.writeShellScript "disable-xhc0-wakeup" ''
+        if ${pkgs.gnugrep}/bin/grep -q '^XHC0\s.*\*enabled' /proc/acpi/wakeup; then
+          echo XHC0 > /proc/acpi/wakeup
+        fi
+      '';
       RemainAfterExit = true;
     };
   };
 
-  # Alt layer bindings (keyd uses [alt] layer, not A- prefix)
+  # keyd binds Alt combos through the [alt] layer, not an A- prefix.
   services.keyd.keyboards.default.settings.alt = {
-    # Fix touchscreen (keyd runs as root, no sudo needed)
+    # keyd runs as root, so no sudo is needed.
     equal = "command(${pkgs.systemd}/bin/systemctl start fix-touchscreen)";
-    # Media controls — mirrors Fn+volume key positions
+    # Same positions as the Fn+volume keys.
     leftbrace = "previoussong";
     rightbrace = "playpause";
     backslash = "nextsong";
   };
 
-  # The GPD Pocket 4 touchscreen (NVTK0603) often fails to reinitialize
-  # properly after suspend, coming back as PROP=2 (touchpad) instead of
-  # PROP=1 (touchscreen). Cycling the i2c_hid_acpi module fixes it.
-  # Also bound to Alt+= via keyd for manual trigger.
+  # The touchscreen (NVTK0603) often comes back from suspend as PROP=2
+  # (touchpad) instead of PROP=1 (touchscreen); reloading i2c_hid_acpi fixes it.
   systemd.services.fix-touchscreen = {
     description = "Reload i2c_hid_acpi to fix touchscreen after suspend";
     after = [

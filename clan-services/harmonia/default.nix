@@ -51,7 +51,6 @@
           {
             imports = [ inputs.harmonia.nixosModules.harmonia ];
 
-            # Generate this server's signing keypair (shared pub key, secret private key)
             clan.core.vars.generators.${generatorName} = {
               share = true;
               files.signing-key = {
@@ -69,7 +68,7 @@
                 '';
             };
 
-            # Per-server private copy — only this machine deploys the signing key
+            # Non-shared copy: only this machine deploys the signing key.
             clan.core.vars.generators."${generatorName}-private" = {
               dependencies = [ generatorName ];
               files.signing-key.secret = true;
@@ -144,7 +143,6 @@
               "http://${address}:${toString serverSettings.port}?priority=${toString priority}"
             ) serverNames;
 
-            # Read pub keys directly from shared vars — no generator needed on clients
             nix.settings.trusted-public-keys = map (
               name:
               lib.strings.trim (

@@ -1,4 +1,3 @@
-# Shared resource data available flake-wide via self.resources.*
 { lib, ... }:
 {
   options.flake.resources = lib.mkOption { default = { }; };

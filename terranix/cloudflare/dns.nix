@@ -1,5 +1,3 @@
-# Cloudflare DNS records
-# Merges tunnel CNAMEs (auto-generated) with standalone records from inventory.
 {
   config,
   self,
@@ -12,9 +10,6 @@ let
   safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
   zoneRef = zone: config.data.cloudflare_zone.${safeName zone} "id";
 
-  # Split hostname into name + zone.
-  # "vault.decio.us" → { name = "vault"; zone = "decio.us"; }
-  # "decio.us"       → { name = "@";     zone = "decio.us"; }
   splitHostname =
     hostname:
     let
@@ -26,8 +21,6 @@ let
       zone = matchedZone;
     };
 
-  # Resolve a symbolic target reference to a terraform expression.
-  # { resource = "hcloud_server"; name = "conduit"; field = "ipv4_address"; }
   resolveTarget = target: config.resource.${target.resource}.${target.name} target.field;
 
   edgeAddress =
@@ -57,7 +50,6 @@ in
 {
   resource.cloudflare_record =
     let
-      # Tunnel CNAME records (auto-generated from tunnel definitions)
       tunnelRecords = lib.concatMapAttrs (
         machine: ingress:
         lib.mapAttrs' (
@@ -77,12 +69,6 @@ in
         ) ingress
       ) tunnels;
 
-      # Standalone DNS records from self.resources.cloudflare.dns.
-      # Convenience fields:
-      # - zone -> zone_id lookup
-      # - target -> arbitrary Terraform resource field
-      # - edge -> public edge IPv4 address
-      # - ingressStream -> SRV port from public L4 stream data
       dnsRecords = lib.mapAttrs (
         _: record:
         let

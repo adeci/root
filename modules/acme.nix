@@ -2,9 +2,6 @@
   nixos =
     { config, pkgs, ... }:
     {
-      # Cloudflare DNS-01 for decio.us names. Hosts declare their own
-      # security.acme.certs; the provider plumbing lives here.
-
       # Shared: a separate token per host would carry the same zone-wide power.
       clan.core.vars.generators.cloudflare-acme-decio-us = {
         share = true;

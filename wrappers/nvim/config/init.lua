@@ -31,7 +31,6 @@ opt.listchars = {
 	nbsp = "␣",
 }
 
--- Completion: builtin fuzzy popup, fed by LSP (see LspAttach below).
 opt.autocomplete = true
 opt.completeopt = { "menu", "popup", "fuzzy" }
 

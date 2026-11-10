@@ -37,7 +37,7 @@
   environment.systemPackages = [ pkgs.numactl ];
   wrappers.big-htop.enable = true;
 
-  # Transparent Huge Pages configuration for ZGC
+  # THP tuned for ZGC.
   boot.kernelParams = [ "transparent_hugepage=madvise" ];
   systemd.tmpfiles.rules = [
     "w /sys/kernel/mm/transparent_hugepage/shmem_enabled - - - - advise"
@@ -45,7 +45,7 @@
     "w /sys/kernel/mm/transparent_hugepage/khugepaged/defrag - - - - 1"
   ];
 
-  # Daily GC — keep 2 weeks of builds for harmonia to serve
+  # Keep two weeks of builds for harmonia to serve.
   nix.gc = {
     automatic = true;
     dates = "daily";

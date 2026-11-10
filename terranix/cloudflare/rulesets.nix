@@ -1,4 +1,3 @@
-# Cloudflare Rulesets API resources.
 # API tokens need Zone WAF/Rulesets edit.
 {
   config,

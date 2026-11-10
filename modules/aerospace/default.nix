@@ -1,8 +1,7 @@
 {
-  # AeroSpace, the tiling window manager, plus borders around the focused window.
-  # launchd starts the app itself (macOS grants Accessibility to the process
-  # launchd spawns) with the config straight from the store; a config change
-  # changes the agent, so the switch restarts AeroSpace on it.
+  # launchd starts the app itself because macOS grants Accessibility to the
+  # process launchd spawns. The config's store path is part of the agent, so a
+  # config change restarts AeroSpace on switch.
   darwin =
     { pkgs, ... }:
     let

@@ -1,6 +1,5 @@
-# Handy 0.9.8 from source for Linux: nixpkgs master's
-# pkgs/by-name/ha/handy/package.nix (0.9.6) bumped to 0.9.8, plus one upstream
-# backport. default.nix stops using it once nixpkgs ships a later release.
+# nixpkgs master's pkgs/by-name/ha/handy/package.nix (0.9.6) bumped to 0.9.8;
+# default.nix drops it once nixpkgs ships a later release.
 {
   lib,
   stdenv,

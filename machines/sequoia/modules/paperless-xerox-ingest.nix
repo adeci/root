@@ -14,7 +14,6 @@ let
   };
 in
 {
-  # Legacy Xerox scanner ingress.
   # The printer uploads over plaintext FTP into Paperless' consumption dir.
   # Keep this isolated so it can be deleted when scanner transport changes.
 
@@ -74,9 +73,9 @@ in
     '';
   };
 
-  # Source-scoped firewall exceptions. NixOS' iptables firewall only has a
-  # typed allow-list for ports, not source-specific rules, so use the official
-  # escape hatch here instead of opening FTP globally.
+  # NixOS' iptables firewall only has a typed allow-list for ports, not
+  # source-specific rules, so use the official escape hatch here instead of
+  # opening FTP globally.
   networking.firewall.extraCommands = ''
     ${pkgs.iptables}/bin/iptables -A nixos-fw -s ${homelan.hosts.printer.ip} -p tcp --dport 21 -j ACCEPT
     ${pkgs.iptables}/bin/iptables -A nixos-fw -s ${homelan.hosts.printer.ip} -p tcp --dport ${toString ftpPassivePorts.from}:${toString ftpPassivePorts.to} -j ACCEPT

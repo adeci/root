@@ -1,7 +1,6 @@
-# Update root flake inputs, then re-sync the work flake's inherited pins.
-# GitHub's anonymous API limit is per IP and easily exhausted, so a token from
-# GH_TOKEN, GITHUB_TOKEN or `gh auth token` is passed to these Nix calls only,
-# via NIX_CONFIG. Nothing is written to nix.conf or the store.
+# GitHub's anonymous API limit is per IP and easily exhausted, so a token goes
+# to these Nix calls only, via NIX_CONFIG; nothing is written to nix.conf or
+# the store.
 { pkgs, ... }:
 
 pkgs.writeShellApplication {

@@ -1,5 +1,4 @@
-# Tailnet IPv4 per clan machine, as Tailscale assigned it; a reinstall can
-# change it.
+# Assigned by Tailscale; a reinstall can change them.
 {
   aegis = "100.121.2.13";
   atropos = "100.94.70.105";

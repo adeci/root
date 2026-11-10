@@ -1,20 +1,14 @@
-# Aerospace — tiling window manager for macOS
-# https://nikitabobko.github.io/AeroSpace/guide
-
 # launchd starts AeroSpace and borders (modules/aerospace/default.nix).
 start-at-login = false
 after-login-command = []
 on-focus-changed = ["move-mouse window-lazy-center"]
 
-# Normalizations
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
 
-# Layout
 default-root-container-layout = "tiles"
 default-root-container-orientation = "auto"
 
-# Gaps
 [gaps]
 inner.horizontal = 6
 inner.vertical = 6
@@ -23,43 +17,36 @@ outer.bottom = 6
 outer.top = 6
 outer.right = 6
 
-# Option (Alt) as the WM modifier — matching Super key on Linux
+# Alt stands in for niri's Mod (Super) on Linux.
 
 [mode.main.binding]
-# Spawn terminal (bash -l to pick up nix PATH)
+# bash -l to pick up the nix PATH
 alt-enter = "exec-and-forget bash -l -c @KITTY_HOME@"
 alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
 
-# Browser (new window)
 alt-w = 'exec-and-forget open -na "Google Chrome" --args --new-window'
 
-# Close window
 alt-q = "close --quit-if-last-window"
 
-# Layout controls
 alt-slash = "layout tiles horizontal vertical"
 alt-comma = "layout accordion horizontal vertical"
 alt-f = "fullscreen"
 alt-v = "join-with down"
 alt-b = "join-with right"
 
-# Focus
 alt-h = "focus left"
 alt-j = "focus down"
 alt-k = "focus up"
 alt-l = "focus right"
 
-# Move windows
 alt-shift-h = "move left"
 alt-shift-j = "move down"
 alt-shift-k = "move up"
 alt-shift-l = "move right"
 
-# Resize
 alt-minus = "resize smart -50"
 alt-equal = "resize smart +50"
 
-# Workspaces
 alt-1 = "workspace 1"
 alt-2 = "workspace 2"
 alt-3 = "workspace 3"
@@ -70,7 +57,6 @@ alt-7 = "workspace 7"
 alt-8 = "workspace 8"
 alt-9 = "workspace 9"
 
-# Move window to workspace
 alt-shift-1 = "move-node-to-workspace 1"
 alt-shift-2 = "move-node-to-workspace 2"
 alt-shift-3 = "move-node-to-workspace 3"
@@ -81,26 +67,20 @@ alt-shift-7 = "move-node-to-workspace 7"
 alt-shift-8 = "move-node-to-workspace 8"
 alt-shift-9 = "move-node-to-workspace 9"
 
-# Focus monitor (matches niri Mod+Ctrl+H/J/K/L)
 alt-ctrl-h = "focus-monitor left"
 alt-ctrl-j = "focus-monitor down"
 alt-ctrl-k = "focus-monitor up"
 alt-ctrl-l = "focus-monitor right"
 
-# Move window to monitor (matches niri Mod+Shift+Ctrl+H/J/K/L)
 alt-shift-ctrl-h = "move-node-to-monitor --focus-follows-window left"
 alt-shift-ctrl-j = "move-node-to-monitor --focus-follows-window down"
 alt-shift-ctrl-k = "move-node-to-monitor --focus-follows-window up"
 alt-shift-ctrl-l = "move-node-to-monitor --focus-follows-window right"
 
-# Move entire workspace to another monitor
 alt-shift-ctrl-u = "move-workspace-to-monitor --wrap-around next"
 
-# Floating
 alt-t = "layout floating tiling"
 
-# Reload config
 alt-shift-r = "reload-config"
 
-# Join / split
 alt-shift-space = "layout tiles horizontal vertical"

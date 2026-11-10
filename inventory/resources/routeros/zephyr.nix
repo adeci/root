@@ -1,4 +1,4 @@
-# MikroTik cAP ax (Gen 6) — living room WAP
+# Living room
 {
   model = "cAP-ax";
   host = "10.99.0.5";
@@ -14,7 +14,7 @@
       vlan = "trusted";
       security = "wpa2-wpa3";
       secret = "wifi-aether";
-      primary = true; # bound to physical radios, others get virtual interfaces
+      primary = true;
     };
     guest = {
       ssid = "Penumbra";

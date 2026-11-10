@@ -6,7 +6,6 @@
       input = "self";
     };
     roles.peer.tags = [ "adeci-net-work" ];
-    # Leave DNS to the local resolver
     roles.peer.settings.flags = [ "--accept-dns=false" ];
   };
 

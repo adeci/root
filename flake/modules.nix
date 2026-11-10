@@ -1,14 +1,9 @@
-# Publish modules/ features as self.modules.<class>.<name>.
-#
-# Every `<name>.nix` and every `<name>/default.nix` in the directory is a
-# feature named <name>, holding one module per class. Each module gets a `key`,
-# so a feature imported by both a machine and another feature (desktop imports
-# handy, handy imports keyd) is still only included once, and a `_class`, so
-# importing a darwin half into a NixOS machine fails with a clear error. Both
-# go on the module itself, not on a wrapper: modules are collected
+# Each published module gets a `key`, so a feature imported by both a machine
+# and another feature (handy imports keyd) is still only included once, and a
+# `_class`, so importing a darwin half into a NixOS machine fails with a clear
+# error. Both go on the module itself, not on a wrapper: modules are collected
 # breadth-first, so a wrapper would push every feature a level deeper and
-# reorder how definitions merge. work/ publishes its own features with the
-# same function.
+# reorder how definitions merge.
 { lib, ... }:
 let
   mkModules =

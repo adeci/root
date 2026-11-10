@@ -11,7 +11,6 @@
       };
     in
     {
-      # Disable the standard ssh-agent so TPM agent can take over
       programs.ssh.startAgent = false;
 
       security.tpm2.enable = true;
@@ -23,7 +22,6 @@
         pkgs.keyutils
       ];
 
-      # TPM SSH agent — socket activated, always available
       systemd.user.services.ssh-tpm-agent = {
         description = "SSH TPM Agent";
         unitConfig = {
@@ -48,7 +46,6 @@
         };
       };
 
-      # Use TPM agent as the default SSH agent
       environment.sessionVariables = {
         SSH_AUTH_SOCK = "/run/user/${toString config.users.users.alex.uid}/ssh-tpm-agent.sock";
       };

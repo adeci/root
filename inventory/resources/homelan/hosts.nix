@@ -1,5 +1,4 @@
 {
-  # Management network (VLAN 99)
   axon = {
     mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1 MAC (standalone management port)
     ip = "10.99.0.3";
@@ -24,7 +23,6 @@
     vlan = "mgmt";
   };
 
-  # Trusted network (VLAN 10)
   aero = {
     mac = "d4:93:90:10:8c:d1";
     ip = "10.10.0.40";
@@ -77,7 +75,7 @@
     vlan = "trusted";
   };
 
-  # Tenant network (VLAN 50), microVMs on leviathan
+  # microVMs on leviathan
   scylla = {
     mac = "02:00:00:32:00:0a";
     ip = "10.50.0.10";

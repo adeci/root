@@ -1,6 +1,4 @@
 {
-  # Secure Enclave SSH keys through Secretive's agent; the darwin counterpart of
-  # the ssh-tpm-agent feature. Create keys in the Secretive app.
   darwin =
     { config, pkgs, ... }:
     let

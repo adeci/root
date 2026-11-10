@@ -1,4 +1,3 @@
-# Publish work/modules/ features with root's helper (see root's flake/modules.nix).
 { inputs, lib, ... }:
 {
   options.flake.modules = lib.mkOption {

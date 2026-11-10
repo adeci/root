@@ -13,8 +13,6 @@ let
   dataDir = "/srv/paperless";
 in
 {
-  # Paperless-ngx document archive.
-
   clan.core.state.paperless.folders = [ dataDir ];
 
   clan.core.postgresql.enable = true;

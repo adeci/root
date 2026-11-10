@@ -21,7 +21,7 @@
       boot.loader.grub.efiSupport = lib.mkDefault true;
       boot.loader.grub.efiInstallAsRemovable = lib.mkDefault true;
 
-      # USB stick partition layout (from clan-core's flash-installer)
+      # Same layout as clan-core's flash-installer.
       disko.devices.disk.main = {
         type = "disk";
         device = lib.mkDefault "/dev/null";

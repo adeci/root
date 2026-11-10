@@ -1,6 +1,5 @@
-# Read through $THAW_HERDR (see default.nix); state, logs and sockets stay in
-# ~/.config/herdr. Keys mirror packages/tmux/tmux.conf where herdr has an
-# equivalent action; prefix+? lists everything that is bound.
+# Keys mirror wrappers/tmux/tmux.conf where herdr has an equivalent action;
+# prefix+? lists everything that is bound.
 onboarding = false
 
 [theme]
@@ -13,8 +12,8 @@ version_check = false
 [keys]
 prefix = "ctrl+space"
 
-# tmux: new-session prompt; workspaces are herdr's sessions. `(`/`)` walk
-# them like tmux sessions; shift+1..9 jumps like 1..9 does for tabs.
+# Workspaces are herdr's sessions: shift+s is tmux's new-session prompt, and
+# `(`/`)` walk them as in tmux.
 new_workspace = ["prefix+shift+n", "prefix+shift+s"]
 previous_workspace = "prefix+("
 next_workspace = "prefix+)"

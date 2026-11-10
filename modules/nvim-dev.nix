@@ -1,5 +1,4 @@
 {
-  # nvim with the small language servers and formatters (see wrappers/nvim).
   nixos =
     { self, ... }:
     {

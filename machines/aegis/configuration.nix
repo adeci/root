@@ -86,7 +86,6 @@ in
   );
 
   # Sandy Bridge exposes GPU utilization through perf events rather than sysfs.
-  # Grant only CAP_PERFMON to the two read-only monitoring tools that need it.
   security.wrappers = {
     btop-perfmon = {
       owner = "root";
@@ -102,16 +101,14 @@ in
     };
   };
 
-  # Enable Intel graphics acceleration for Sandy Bridge
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
-      intel-vaapi-driver # i965 driver - only VA-API driver that supports Sandy Bridge
+      intel-vaapi-driver # i965, the only VA-API driver that supports Sandy Bridge
     ];
   };
 
-  # Explicitly set VA-API driver to i965 for Sandy Bridge
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "i965";
   };

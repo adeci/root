@@ -1,5 +1,3 @@
-# Ask Claude for a command, get just the command back.
-# Requires rbw with an "anthropic-api-key" entry.
 { pkgs, ... }:
 
 pkgs.writeShellApplication {

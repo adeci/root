@@ -1,7 +1,4 @@
 {
-  # caps lock as escape (tap)
-  # control (hold)
-  # on all keyboards
   darwin =
     {
       config,
@@ -69,8 +66,8 @@
       );
     in
     {
-      # Karabiner's driver and daemons come from nix-darwin's module, which needs
-      # the pinned 14.13.0 (see packages/karabiner-elements).
+      # nix-darwin's module needs Karabiner-Elements 14.13.0, pinned in
+      # packages/karabiner-elements.
       services.karabiner-elements = {
         enable = true;
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.karabiner-elements;

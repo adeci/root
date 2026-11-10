@@ -1,8 +1,4 @@
-# GPD Pocket 4 PipeWire Audio DSP
 # Ported from https://github.com/Manawyrm/gpd-pocket-4-pipewire
-#
-# Provides speaker correction, bass enhancement, loudness compensation,
-# and dynamic compression for the GPD Pocket 4's internal speakers.
 { pkgs, ... }:
 let
   irLeft = pkgs.fetchurl {

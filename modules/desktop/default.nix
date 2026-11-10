@@ -1,5 +1,3 @@
-# The graphical session. Compositor-agnostic on NixOS; pair with a session
-# feature such as niri. Apps like handy and librewolf are separate features.
 {
   nixos =
     {
@@ -30,29 +28,24 @@
         pkgs.jq
         pkgs.xdg-utils
 
-        # audio
         pkgs.pavucontrol
         pkgs.pulseaudio
         pkgs.easyeffects
         easyeffectsPresets
 
-        # network
         pkgs.nmgui
 
-        # theme
         pkgs.adw-gtk3
         pkgs.papirus-icon-theme
         pkgs.phinger-cursors
       ];
 
-      # Audio
       security.rtkit.enable = true;
       services.pipewire = {
         enable = true;
         alsa.enable = true;
         pulse.enable = true;
 
-        # Set Shure MV7+ capture volume to 100% when connected.
         wireplumber.extraConfig."50-shure-mv7+" = {
           "monitor.alsa.rules" = [
             {
@@ -98,17 +91,16 @@
       networking.networkmanager.enable = true;
       networking.useNetworkd = false;
 
-      # Secrets. GCR's SSH agent can't handle FIDO2 keys.
       services.gnome.gnome-keyring.enable = true;
       # Apps store secrets in the login keyring, never in one they create themselves.
       systemd.user.tmpfiles.rules = [
         "d %h/.local/share/keyrings 0700 - - -"
         "f+ %h/.local/share/keyrings/default 0600 - - - login"
       ];
+      # GCR's SSH agent can't handle FIDO2 keys.
       services.gnome.gcr-ssh-agent.enable = false;
       programs.ssh.startAgent = lib.mkDefault true;
 
-      # Theme
       environment.sessionVariables = {
         XCURSOR_THEME = cursor;
         XCURSOR_SIZE = toString cursorSize;
@@ -145,7 +137,7 @@
 
       wrappers.kitty.enable = true;
 
-      # Touch ID for sudo (including inside tmux/screen)
+      # reattach makes Touch ID work inside tmux/screen.
       security.pam.services.sudo_local.touchIdAuth = true;
       security.pam.services.sudo_local.reattach = true;
 
@@ -175,7 +167,6 @@
           AppleShowAllExtensions = true;
           InitialKeyRepeat = 15;
           KeyRepeat = 2;
-          # Disable autocorrect annoyances
           ApplePressAndHoldEnabled = false;
           NSAutomaticCapitalizationEnabled = false;
           NSAutomaticDashSubstitutionEnabled = false;

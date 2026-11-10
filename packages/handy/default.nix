@@ -1,7 +1,3 @@
-# Handy 0.9.8 on Linux (source.nix) and macOS (signed DMG), with Nix-owned
-# settings and model: bin/handy merges `declaredSettings` into Handy's store
-# and links the declared model into its models dir before it starts; every
-# other setting stays editable in the GUI.
 {
   lib,
   pkgs,
@@ -31,7 +27,8 @@ let
   };
   declaredModels = pkgs.linkFarm "handy-declared-models" { ${model.filename} = model.file; };
 
-  # Keys follow Handy 0.9.8's AppSettings schema.
+  # Keys follow Handy 0.9.8's AppSettings schema. bin/handy merges them into
+  # Handy's store at every start; every other setting stays editable in the GUI.
   declaredSettings.settings = {
     overlay_style = "live";
     paste_method = "direct";

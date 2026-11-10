@@ -1,5 +1,3 @@
-# Public L4 listeners. Each entry is one public socket on an edge machine
-# forwarded to one Tailnet upstream. DNS stays explicit in Cloudflare resources.
 {
   conduit = [
     {

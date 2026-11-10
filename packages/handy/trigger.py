@@ -12,7 +12,6 @@ import subprocess
 import sys
 import time
 
-# Module constants so tests can point them at a fake tree.
 RUN_USER_DIR = "/run/user"
 CGROUP_PROCS_FMT = (
     "/sys/fs/cgroup/user.slice"

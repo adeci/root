@@ -1,5 +1,5 @@
-# Raspberry Pi 4 SD card layout. The first FAT partition is read by the Pi
-# firmware and also stores extlinux generations for U-Boot.
+# The Pi firmware reads the first FAT partition, which also holds U-Boot's
+# extlinux generations.
 {
   disko.devices = {
     disk.main = {

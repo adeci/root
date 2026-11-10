@@ -34,10 +34,6 @@ let
       '';
 in
 {
-
-  # --- PostgreSQL (declarative via clan.core) ---
-  # Handles database creation with LC_COLLATE='C' and backup/restore state.
-
   clan.core.postgresql.enable = true;
   clan.core.postgresql.users.matrix-synapse = { };
   clan.core.postgresql.databases.matrix-synapse.create.options = {
@@ -52,8 +48,6 @@ in
   clan.core.state.matrix-synapse.folders = [
     config.services.matrix-synapse.settings.media_store_path
   ];
-
-  # --- Synapse ---
 
   services.matrix-synapse = {
     enable = true;
@@ -92,33 +86,26 @@ in
         };
       };
 
-      # Media storage
       max_upload_size = "1G";
       url_preview_enabled = true;
-      # Keep all media forever (local and remote)
+      # No media_retention: local and remote media are kept forever.
 
-      # Registration closed — users provisioned declaratively below
+      # Users are provisioned below through the shared secret.
       enable_registration = false;
       registration_shared_secret_path = "/run/synapse-registration-shared-secret";
 
-      # Federation
       trusted_key_servers = [
         {
           server_name = "matrix.org";
         }
       ];
 
-      # Don't report stats to matrix.org
       report_stats = false;
 
       # Presence can be chatty on federated rooms
       presence.enabled = false;
     };
   };
-
-  # --- Secrets ---
-  # Registration shared secret for user provisioning,
-  # plus per-user passwords generated via xkcdpass.
 
   clan.core.vars.generators = {
     "matrix-synapse" = {
@@ -142,10 +129,6 @@ in
       '';
     }
   ) users;
-
-  # --- User provisioning ---
-  # Waits for Synapse to be ready, then creates users with --exists-ok
-  # so it's idempotent on subsequent boots.
 
   systemd.services.matrix-synapse =
     let
@@ -178,8 +161,6 @@ in
       ];
     };
 
-  # --- Nginx ---
-  # Tunnel-friendly: binds to localhost on custom ports.
   # Cloudflare tunnel routes:
   #   matrix.decio.us → localhost:8448
   #   decio.us        → localhost:8748
@@ -189,7 +170,6 @@ in
     recommendedProxySettings = true;
     serverTokens = false;
 
-    # Suppress default nginx welcome page
     virtualHosts."_default" = {
       default = true;
       locations."/".extraConfig = ''
@@ -198,7 +178,6 @@ in
       '';
     };
 
-    # Matrix reverse proxy + Element Web client
     virtualHosts."matrix" = {
       listen = [
         {
@@ -218,7 +197,6 @@ in
       locations."/".root = element-web;
     };
 
-    # .well-known delegation for federation discovery
     virtualHosts."well-known-matrix" = {
       listen = [
         {
@@ -241,9 +219,5 @@ in
       '';
     };
   };
-
-  # --- Media retention ---
-  # remote_media_lifetime in settings handles cached remote media cleanup.
-  # Local media (your uploads) is kept forever.
 
 }

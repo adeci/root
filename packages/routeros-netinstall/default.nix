@@ -1,17 +1,10 @@
-# One-shot provisioning for MikroTik devices: netinstalls RouterOS (plus any
-# extra packages), sets the admin password, adds a DHCP client. A device goes
-# from factory/blank to terraform-ready in one command:
-#
-#   nix run .#routeros-netinstall-cap-ax   # cAP ax (ARM64, WiFi 6)
-#   nix run .#routeros-netinstall-crs310   # CRS310-8G+2S+IN (ARM, upstairs switch)
-#   nix run .#routeros-netinstall-crs328   # CRS328-24P-4S+RM (ARM, main switch)
 { pkgs, inputs', ... }:
 let
   inherit (inputs'.clan-core.packages) clan-cli;
 
   version = "7.22.1";
 
-  # MikroTik Netinstall CLI, a static Linux binary.
+  # Statically linked, so it runs without patchelf.
   netinstall-cli = pkgs.stdenvNoCC.mkDerivation {
     pname = "netinstall-cli";
     inherit version;

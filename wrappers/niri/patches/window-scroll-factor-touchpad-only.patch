@@ -7,8 +7,8 @@
 -        // Get window-specific scroll factor
 -        let window_scroll_factor = pointer
 -            .current_focus()
-+        // Get window-specific scroll factor. Local patch: apply it only to
-+        // touchpad-style scrolling so mouse-wheel ticks keep their native size.
++        // Window scroll factors apply to touchpad-style scrolling only;
++        // mouse-wheel ticks keep their native size.
 +        let window_scroll_factor = matches!(source, AxisSource::Finger | AxisSource::Continuous)
 +            .then(|| pointer.current_focus())
 +            .flatten()

@@ -1,7 +1,7 @@
 Shake-to-find: enlarge the cursor while the pointer is shaken.
 
-Local niri patch. Detection follows KWin's shake cursor effect. The normal
-cursor path is unchanged; only an enlarged named cursor is rendered differently.
+Detection follows KWin's shake cursor effect. The normal cursor path is
+unchanged; only an enlarged named cursor is rendered differently.
 Config: `cursor { shake-to-find; shake-to-find-scale 3; }`.
 
 diff --git a/niri-config/src/lib.rs b/niri-config/src/lib.rs

@@ -1,6 +1,4 @@
 {
-  # LibreWolf with policies and preferences baked in.
-  # No runtime file writes — everything is in the package.
   nixos =
     { pkgs, ... }:
     let
@@ -52,7 +50,6 @@
       };
     in
     {
-      # Install .app bundle for Dock/Spotlight
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           echo "installing LibreWolf.app..."

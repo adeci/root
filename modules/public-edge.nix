@@ -57,12 +57,11 @@
     {
       config = lib.mkMerge [
         {
-          # Every public vhost; a vhost or location with its own add_header must repeat it.
+          # A vhost or location with its own add_header must repeat this one.
           services.nginx.commonHttpConfig = ''
             add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
           '';
 
-          # SSH only over the tailnet; the public interface never exposes it.
           # Out-of-band fallback: Hetzner web console, log in as the primary user.
           services.openssh.openFirewall = false;
           networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ];

@@ -1,5 +1,3 @@
-# RouterOS provider, identity, fallback IPs, service hardening
-# Shared across all device types (switches + WAPs).
 {
   config,
   self,
@@ -51,8 +49,6 @@ in
     insecure = true;
   }) routeros;
 
-  # ── Prometheus API user ───────────────────────────────────────────
-
   resource.random_password.routeros_exporter = {
     length = 32;
     special = false;
@@ -89,14 +85,10 @@ in
     };
   };
 
-  # ── System identity ───────────────────────────────────────────────
-
   resource.routeros_system_identity = lib.mapAttrs (name: device: {
     provider = deviceProvider name;
     name = device.identity;
   }) routeros;
-
-  # ── Fallback IP on management port ────────────────────────────────
 
   resource.routeros_ip_address = lib.concatMapAttrs (
     name: device:
@@ -109,8 +101,6 @@ in
       };
     }
   ) routeros;
-
-  # ── Disable unused services ───────────────────────────────────────
 
   resource.routeros_ip_service =
     let

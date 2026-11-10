@@ -1,6 +1,5 @@
 {
-  # Emacs as a user daemon (`emacsclient -c` opens a window onto it) and zmx,
-  # whose sessions keep shells alive across daemon restarts. The font comes
+  # zmx sessions keep shells alive across Emacs daemon restarts. The font comes
   # from the desktop feature.
   nixos =
     {

@@ -5,7 +5,6 @@
   ...
 }:
 let
-  # Deploys start inactive servers asynchronously; manual restart performs an update.
   defaultInstance = {
     enable = true;
     port = 8211;
@@ -137,6 +136,7 @@ let
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
 
+      # Deploys start inactive servers asynchronously; manual restart performs an update.
       restartIfChanged = false;
       stopIfChanged = false;
 

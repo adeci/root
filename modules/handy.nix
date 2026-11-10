@@ -1,8 +1,4 @@
 {
-  # Dictation with Handy: hold Super+Space to talk, tap to keep recording.
-  # keyd turns the hotkey into a momentary layer; handy-trigger (root, since
-  # keyd's socket is root-only) turns its edges into SIGUSR2 for the user's
-  # handy.service.
   nixos =
     {
       config,
@@ -36,6 +32,7 @@
           };
         };
 
+        # A system service because keyd's socket is root-only.
         systemd.services.handy-trigger = {
           description = "Handy hold-to-talk trigger (keyd layer events)";
           documentation = [
@@ -73,8 +70,6 @@
       };
     };
 
-  # Dictation with Handy: hold right ⌘ (Handy's own hotkey).
-  #
   # launchd starts the signed bundle itself, because macOS checks privacy
   # permissions against the process launchd spawned; through the shell wrapper
   # that was bash, not Handy.app. So the settings merge and model link run at
@@ -111,10 +106,8 @@
         ProcessType = "Interactive";
       };
 
-      # Restart Handy only when setup changed the store or model links, or the
-      # running binary isn't the agent's current one (e.g. Handy.app opened by
-      # hand). Wait for the old one to exit: a second instance just forwards to it
-      # and quits.
+      # Handy.app opened by hand runs a binary other than the agent's. Wait for
+      # the old one to exit: a second instance just forwards to it and quits.
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           uid=$(/usr/bin/id -u -- ${user})
