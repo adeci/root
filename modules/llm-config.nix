@@ -1,5 +1,7 @@
-{
-  nixos =
+let
+  # Linux and Mac alike: kagi search, agent skills, the pi profile, pueue for
+  # pexpect-cli and herdr's agent-state extensions.
+  shared =
     {
       config,
       inputs,
@@ -10,9 +12,6 @@
     }:
     let
       system = pkgs.stdenv.hostPlatform.system;
-      profile = self.packages.${system}.pi-profile;
-      user = self.users.alex.username;
-      home = config.users.users.${user}.home;
       mics-skills = inputs.mics-skills.packages.${system};
       searchConfig = (pkgs.formats.json { }).generate "kagi-config.json" {
         password_command = "${pkgs.coreutils}/bin/cat ${config.clan.core.vars.generators.kagi-search.files.session-link.path}";
@@ -40,14 +39,11 @@
       '';
     in
     {
-      imports = [ self.modules.nixos.wrappers ];
-
       clan.core.vars.generators.kagi-search = {
         share = true;
         files.session-link = {
           secret = true;
-          owner = user;
-          group = config.users.users.${user}.group;
+          owner = self.users.alex.username;
           mode = "0400";
         };
         prompts.session-link = {
@@ -58,10 +54,46 @@
       };
 
       environment.systemPackages = [
-        profile
+        self.packages.${system}.pi-profile
         skills
         pkgs.pueue
       ];
+
+      home.links = {
+        ".config/kagi/config.json" = searchConfig;
+        ".omp/agent/extensions/herdr-omp-agent-state.ts" =
+          "${herdrIntegrations}/.omp/agent/extensions/herdr-omp-agent-state.ts";
+        ".pi/agent/extensions/herdr-agent-state.ts" =
+          "${herdrIntegrations}/.pi/agent/extensions/herdr-agent-state.ts";
+      }
+      // lib.listToAttrs (
+        map (
+          pkg: lib.nameValuePair ".agents/skills/${pkg.pname}" "${skills}/share/skills/${pkg.pname}"
+        ) skillPkgs
+      );
+    };
+in
+{
+  nixos =
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+      ...
+    }:
+    let
+      user = self.users.alex.username;
+      home = config.users.users.${user}.home;
+      profile = self.packages.${pkgs.stdenv.hostPlatform.system}.pi-profile;
+    in
+    {
+      imports = [
+        self.modules.nixos.wrappers
+        shared
+      ];
+
+      clan.core.vars.generators.kagi-search.files.session-link.group = config.users.users.${user}.group;
 
       system.activationScripts.pi-profile = {
         deps = [ "users" ];
@@ -82,71 +114,33 @@
           UMask = "0077";
         };
       };
-
-      systemd.user.tmpfiles.rules = [
-        "d %h/.config/kagi 0700 - - - -"
-        "L+ %h/.config/kagi/config.json - - - - ${searchConfig}"
-        "d %h/.agents/skills - - - - -"
-        "d %h/.omp/agent/extensions - - - - -"
-        "L+ %h/.omp/agent/extensions/herdr-omp-agent-state.ts - - - - ${herdrIntegrations}/.omp/agent/extensions/herdr-omp-agent-state.ts"
-        "d %h/.pi/agent/extensions - - - - -"
-        "L+ %h/.pi/agent/extensions/herdr-agent-state.ts - - - - ${herdrIntegrations}/.pi/agent/extensions/herdr-agent-state.ts"
-      ]
-      ++ map (
-        pkg: "L+ %h/.agents/skills/${pkg.pname} - - - - ${skills}/share/skills/${pkg.pname}"
-      ) skillPkgs;
     };
 
   darwin =
     {
       config,
-      inputs,
       lib,
       pkgs,
       self,
       ...
     }:
     let
-      system = pkgs.stdenv.hostPlatform.system;
-      profile = self.packages.${system}.pi-profile;
-      mics-skills = inputs.mics-skills.packages.${system};
-      user = config.system.primaryUser;
+      user = self.users.alex.username;
       home = config.users.users.${user}.home;
-      searchConfig = (pkgs.formats.json { }).generate "kagi-config.json" {
-        password_command = "${pkgs.coreutils}/bin/cat ${config.clan.core.vars.generators.kagi-search.files.session-link.path}";
-      };
-
-      skillPkgs = [
-        mics-skills.kagi-search
-        self.packages.${system}.pexpect-cli
-      ];
-
-      skills = pkgs.symlinkJoin {
-        name = "pi-skills";
-        paths = skillPkgs;
-      };
+      profile = self.packages.${pkgs.stdenv.hostPlatform.system}.pi-profile;
     in
     {
-      clan.core.vars.generators.kagi-search = {
-        share = true;
-        files.session-link = {
-          secret = true;
-          owner = user;
-          group = "staff";
-          mode = "0400";
-        };
-        prompts.session-link = {
-          description = "Kagi session link or token for kagi-search on AI-tools machines";
-          type = "hidden";
-          persist = true;
-        };
-      };
-
-      environment.systemPackages = [
-        profile
-        skills
-        pkgs.pueue
+      imports = [
+        self.modules.darwin.wrappers
+        shared
       ];
+
+      clan.core.vars.generators.kagi-search.files.session-link.group = "staff";
+
+      system.activationScripts.postActivation.text = ''
+        /usr/bin/sudo -H -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"} \
+          || echo "pi-profile: ${home}/.pi/agent left unchanged" >&2
+      '';
 
       # Default queue for pexpect-cli
       launchd.user.agents.pueued.serviceConfig = {
@@ -159,22 +153,5 @@
         };
         ProcessType = "Background";
       };
-
-      system.activationScripts.postActivation.text = # bash
-      ''
-        skills_dir=${lib.escapeShellArg "${home}/.agents/skills"}
-        install -d -o ${lib.escapeShellArg user} -g staff "$skills_dir"
-        install -d -m 700 -o ${lib.escapeShellArg user} -g staff ${lib.escapeShellArg "${home}/.config/kagi"}
-        ln -sfn ${searchConfig} ${lib.escapeShellArg "${home}/.config/kagi/config.json"}
-      ''
-      + builtins.concatStringsSep "\n" (
-        map (pkg: ''
-          ln -sfn ${skills}/share/skills/${pkg.pname} "$skills_dir/${pkg.pname}"
-        '') skillPkgs
-      )
-      + ''
-        /usr/bin/sudo -H -u ${lib.escapeShellArg user} -- ${profile}/bin/pi-profile-install ${lib.escapeShellArg "${home}/.pi/agent"} \
-          || echo "pi-profile: ${home}/.pi/agent left unchanged" >&2
-      '';
     };
 }

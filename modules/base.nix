@@ -10,39 +10,51 @@ let
       ...
     }:
     {
-      nixpkgs.config.allowUnfree = true;
+      # Symlinks into the primary user's home, the one thing home-manager did
+      # that features still need. Linux makes them with user tmpfiles, macOS at
+      # activation. Stale links stay behind when an entry goes away.
+      options.home.links = lib.mkOption {
+        type = lib.types.attrsOf lib.types.pathInStore;
+        default = { };
+        example = lib.literalExpression ''{ ".config/foo/config.toml" = fooConfig; }'';
+        description = "Store paths to link into the primary user's home, keyed by path relative to it.";
+      };
 
-      # Root accepts the same keys as the machine's primary user.
-      users.users.root.openssh.authorizedKeys.keys =
-        config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
+      config = {
+        nixpkgs.config.allowUnfree = true;
 
-      environment.variables.EDITOR = "nvim";
+        # Root accepts the same keys as the machine's primary user.
+        users.users.root.openssh.authorizedKeys.keys =
+          config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
 
-      programs.ssh.extraConfig = lib.mkMerge [
-        ''
-          Host *.cymric-daggertooth.ts.net
-            ControlMaster auto
-            ControlPersist 10m
-            ControlPath ~/.ssh/cm-%C
+        environment.variables.EDITOR = "nvim";
 
-          # lachesis takes only YubiKey keys.
-          Host lachesis lachesis.cymric-daggertooth.ts.net
-            IdentityFile ~/.ssh/id_ed25519_sk_spark
-            IdentityFile ~/.ssh/id_ed25519_sk_ember
-        ''
-        # The catch-all goes after every feature's specific Host blocks: ssh
-        # takes the first value it finds for each option.
-        (lib.mkAfter ''
-          Host *
-            AddKeysToAgent yes
-            SendEnv COLORTERM
-        '')
-      ];
+        programs.ssh.extraConfig = lib.mkMerge [
+          ''
+            Host *.cymric-daggertooth.ts.net
+              ControlMaster auto
+              ControlPersist 10m
+              ControlPath ~/.ssh/cm-%C
 
-      environment.systemPackages = [
-        inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
-      ];
-      wrappers.nvim.enable = true;
+            # lachesis takes only YubiKey keys.
+            Host lachesis lachesis.cymric-daggertooth.ts.net
+              IdentityFile ~/.ssh/id_ed25519_sk_spark
+              IdentityFile ~/.ssh/id_ed25519_sk_ember
+          ''
+          # The catch-all goes after every feature's specific Host blocks: ssh
+          # takes the first value it finds for each option.
+          (lib.mkAfter ''
+            Host *
+              AddKeysToAgent yes
+              SendEnv COLORTERM
+          '')
+        ];
+
+        environment.systemPackages = [
+          inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+        ];
+        wrappers.nvim.enable = true;
+      };
     };
 
   nixSettings = {
@@ -54,7 +66,13 @@ let
 in
 {
   nixos =
-    { pkgs, self, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+      ...
+    }:
     {
       imports = [
         self.modules.nixos.wrappers
@@ -64,6 +82,10 @@ in
       users.mutableUsers = false;
 
       clan.core.networking.forwardAgent = true;
+
+      systemd.user.tmpfiles.rules = lib.mapAttrsToList (
+        path: target: "L+ %h/${path} - - - - ${target}"
+      ) config.home.links;
 
       # Secrets go in through a systemd unit that restarts consumers itself;
       # restarts requested from the activation script are deprecated.
@@ -168,12 +190,30 @@ in
       # from them) run in the C locale and mangle non-ASCII/Nerd Font glyphs.
       environment.variables.LANG = "en_US.UTF-8";
 
-      # Keep Spotlight and fseventsd off the store volume.
-      system.activationScripts.postActivation.text = # bash
+      system.activationScripts.postActivation.text =
+        let
+          home = config.users.users.${user}.home;
+          link = path: target: ''
+            home_link ${lib.escapeShellArg target} ${lib.escapeShellArg "${home}/${path}"}
+          '';
+        in
+        # bash
         ''
+          # Keep Spotlight and fseventsd off the store volume.
           touch /nix/.metadata_never_index
           mkdir -p /nix/.fseventsd
           touch /nix/.fseventsd/no_log
-        '';
+
+          # home.links, made as the user. A real file in the way stays put.
+          home_link() {
+            if [[ -e "$2" && ! -L "$2" ]]; then
+              echo "home.links: $2 is not a symlink; left alone" >&2
+            else
+              /usr/bin/sudo -u ${user} -- /bin/mkdir -p "$(/usr/bin/dirname "$2")"
+              /usr/bin/sudo -u ${user} -- /bin/ln -sfn "$1" "$2"
+            fi
+          }
+        ''
+        + lib.concatStrings (lib.mapAttrsToList link config.home.links);
     };
 }

@@ -1,56 +1,60 @@
-{
-  nixos =
+let
+  # Linux and Mac alike: wish.zsh.toml and the work git identity.
+  shared =
     { pkgs, self, ... }:
-    let
-      # Keep cd, ls and j unaliased
-      wishConfig = (pkgs.formats.toml { }).generate "wish.zsh.toml" {
-        features = {
-          "alias.cd" = false;
-          "alias.j" = false;
-          "alias.ls" = false;
-          wcd = true;
-          worldjump = true;
-          worldpath = false;
-        };
-      };
-
-      gitConfig = (pkgs.formats.gitIni { }).generate "git-config" {
-        user = {
-          name = "Alex Decious";
-          inherit (self.users.alex-work) email;
-        };
-        init.defaultBranch = "main";
-        pull.rebase = true;
-        push.autoSetupRemote = true;
-      };
-    in
     {
-      programs.zsh.interactiveShellInit = # zsh
-        ''
-          export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
+      home.links = {
+        # Keep cd, ls and j unaliased
+        ".config/wish.zsh.toml" = (pkgs.formats.toml { }).generate "wish.zsh.toml" {
+          features = {
+            "alias.cd" = false;
+            "alias.j" = false;
+            "alias.ls" = false;
+            wcd = true;
+            worldjump = true;
+            worldpath = false;
+          };
+        };
 
-          # Work toolchain shell hooks
-          if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
-            eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
-          fi
-
-          # No environment banner before each prompt
-          if (( $+functions[__shadowenv_hook] )); then
-            functions -c __shadowenv_hook __shadowenv_hook_verbose
-            __shadowenv_hook() { __shadowenv_hook_verbose preexec; }
-          fi
-        '';
-
-      systemd.user.tmpfiles.rules = [
-        "L+ %h/.config/wish.zsh.toml - - - - ${wishConfig}"
-        "d %h/.config/git 0755 - - -"
-        "L+ %h/.config/git/config - - - - ${gitConfig}"
-      ];
+        ".config/git/config" = (pkgs.formats.gitIni { }).generate "git-config" {
+          user = {
+            name = "Alex Decious";
+            inherit (self.users.alex-work) email;
+          };
+          init.defaultBranch = "main";
+          pull.rebase = true;
+          push.autoSetupRemote = true;
+        };
+      };
     };
+in
+{
+  nixos = {
+    imports = [ shared ];
+
+    programs.zsh.interactiveShellInit = # zsh
+      ''
+        export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
+
+        # Work toolchain shell hooks
+        if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
+          eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
+        fi
+
+        # No environment banner before each prompt
+        if (( $+functions[__shadowenv_hook] )); then
+          functions -c __shadowenv_hook __shadowenv_hook_verbose
+          __shadowenv_hook() { __shadowenv_hook_verbose preexec; }
+        fi
+      '';
+
+  };
 
   darwin =
     { lib, pkgs, ... }:
     {
+      imports = [ shared ];
+
       # Work zsh: base's wrapped zsh without the personal git or Atuin sync,
       # plus the work toolchain hooks; plain git instead of the personal one.
       wrappers.zsh = {
@@ -75,20 +79,5 @@
       };
       wrappers.git.enable = lib.mkForce false;
       environment.systemPackages = [ pkgs.git ];
-      # Keep cd, ls and j unaliased
-      system.activationScripts.postActivation.text = # bash
-        ''
-          mkdir -p /Users/alex/.config
-          cat > /Users/alex/.config/wish.zsh.toml << 'EOF'
-          [features]
-          "alias.cd" = false
-          "alias.j" = false
-          "alias.ls" = false
-          wcd = true
-          worldjump = true
-          worldpath = false
-          EOF
-          chown alex:staff /Users/alex/.config/wish.zsh.toml
-        '';
     };
 }
