@@ -113,8 +113,8 @@
         settings,
         ...
       }:
-      {
-        nixosModule =
+      let
+        client =
           {
             config,
             lib,
@@ -154,6 +154,10 @@
               )
             ) serverNames;
           };
+      in
+      {
+        nixosModule = client;
+        darwinModule = client;
       };
   };
 }

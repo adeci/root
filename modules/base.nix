@@ -58,6 +58,16 @@ let
     max-substitution-jobs = 64;
     download-buffer-size = 268435456; # 256MB
     fallback = true;
+    substituters = [
+      "https://cache.numtide.com?priority=50"
+      "https://nix-community.cachix.org?priority=50"
+      "https://cache.clan.lol?priority=50"
+    ];
+    trusted-public-keys = [
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "cache.clan.lol-1:3KztgSAB5R1M+Dz7vzkBGzXdodizbgLXGXKXlcQLA28="
+    ];
   };
 in
 {

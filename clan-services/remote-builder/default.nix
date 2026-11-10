@@ -107,14 +107,34 @@
   roles.client = {
     description = "Machine that offloads builds to remote builders";
 
+    interface =
+      { lib, ... }:
+      {
+        options.offload = lib.mkOption {
+          type = lib.types.enum [
+            "foreign"
+            "all"
+            "none"
+          ];
+          default = "foreign";
+          description = ''
+            Which builds go remote automatically: only systems this machine can't
+            build itself (foreign), anything a server supports (all), or nothing
+            (none). /etc/nix/machines-all always lists every server for opting in
+            per build.
+          '';
+        };
+      };
+
     perInstance =
       {
         instanceName,
         roles,
+        settings,
         ...
       }:
-      {
-        nixosModule =
+      let
+        client =
           {
             config,
             pkgs,
@@ -122,23 +142,65 @@
             ...
           }:
           let
-            varName = instanceName;
             machineName = config.clan.core.settings.machine.name;
-            serverMachineNames = builtins.filter (name: name != machineName) (
-              lib.attrNames roles.server.machines
-            );
             inherit (config.clan.core.settings) domain;
             dotDomain = if domain != null then ".${domain}" else "";
+            servers = lib.removeAttrs roles.server.machines [ machineName ];
+
+            # Nix builds i686 on x86_64 Linux on its own. Emulated systems come from
+            # binfmt, not nix.settings, which itself depends on distributedBuilds.
+            system = pkgs.stdenv.hostPlatform.system;
+            nativeSystems = [
+              system
+            ]
+            ++ (config.boot.binfmt.emulatedSystems or [ ])
+            ++ lib.optional (system == "x86_64-linux") "i686-linux";
+
+            machines = lib.mapAttrsToList (name: server: {
+              hostName = "${name}${dotDomain}";
+              inherit (server.settings)
+                systems
+                maxJobs
+                speedFactor
+                supportedFeatures
+                ;
+              protocol = "ssh-ng";
+              sshUser = "nix";
+              sshKey = config.clan.core.vars.generators.${instanceName}.files.id_ed25519.path;
+            }) servers;
+
+            autoMachines =
+              {
+                all = machines;
+                none = [ ];
+                foreign = lib.filter (m: m.systems != [ ]) (
+                  map (m: m // { systems = lib.subtractLists nativeSystems m.systems; }) machines
+                );
+              }
+              .${settings.offload};
+
+            machineLine =
+              m:
+              lib.concatStringsSep " " [
+                "${m.protocol}://${m.sshUser}@${m.hostName}"
+                (lib.concatStringsSep "," m.systems)
+                m.sshKey
+                (toString m.maxJobs)
+                (toString m.speedFactor)
+                (if m.supportedFeatures == [ ] then "-" else lib.concatStringsSep "," m.supportedFeatures)
+                "-"
+                "-"
+              ];
           in
           {
             assertions = [
               {
-                assertion = lib.attrNames roles.server.machines != [ ];
+                assertion = roles.server.machines != { };
                 message = "@adeci/remote-builder: client has no servers. Add machines to roles.server.";
               }
             ];
 
-            clan.core.vars.generators.${varName} = {
+            clan.core.vars.generators.${instanceName} = {
               files.id_ed25519 = { };
               files."id_ed25519.pub".secret = false;
               runtimeInputs = [ pkgs.openssh ];
@@ -148,37 +210,28 @@
                 '';
             };
 
-            nix.buildMachines = map (
-              serverMachineName:
-              let
-                serverSettings = roles.server.machines.${serverMachineName}.settings;
-              in
-              {
-                hostName = "${serverMachineName}${dotDomain}";
-                inherit (serverSettings)
-                  systems
-                  maxJobs
-                  speedFactor
-                  supportedFeatures
-                  ;
-                protocol = "ssh-ng";
-                sshUser = "nix";
-                sshKey = config.clan.core.vars.generators.${varName}.files.id_ed25519.path;
-              }
-            ) serverMachineNames;
+            nix.buildMachines = autoMachines;
+            nix.distributedBuilds = autoMachines != [ ];
+            environment.etc."nix/machines-all".text = lib.concatMapStrings (m: machineLine m + "\n") machines;
 
             programs.ssh.extraConfig = lib.mkBefore (
-              lib.concatMapStringsSep "\n" (serverMachineName: ''
-                Host ${serverMachineName}${dotDomain}
+              lib.concatMapStringsSep "\n" (m: ''
+                Host ${m.hostName}
                   StrictHostKeyChecking accept-new
 
                 # Nix handles its own SSH connections here, so keep our usual ControlMaster setup out of the way.
-                Match host ${serverMachineName}${dotDomain} user nix
+                # An unreachable builder should fail the build in seconds, not after the TCP timeout.
+                Match host ${m.hostName} user nix
                   ControlMaster no
                   ControlPath none
-              '') serverMachineNames
+                  ConnectTimeout 10
+              '') machines
             );
           };
+      in
+      {
+        nixosModule = client;
+        darwinModule = client;
       };
   };
 }
