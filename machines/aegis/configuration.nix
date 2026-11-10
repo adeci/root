@@ -15,32 +15,32 @@ let
   '';
 in
 {
-  imports = [
+  imports = with self.modules.nixos; [
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x220
 
     self.users.alex.nixosModule
 
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/nvim-dev.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/atuin-login.nix
-    ../../modules/nixos/llm-tools.nix
-    ../../modules/nixos/auto-pressure-gc.nix
-    ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/smartd.nix
-    ../../modules/nixos/desktop
-    ../../modules/nixos/niri
-    ../../modules/nixos/noctalia.nix
-    ../../modules/nixos/niri/autologin.nix
-    ../../modules/nixos/keyd.nix
-    ../../modules/nixos/zram.nix
-    ../../modules/nixos/laptop.nix
-    ../../modules/nixos/printing.nix
-    ../../modules/nixos/social.nix
-    ../../modules/nixos/yubikey.nix
-    ../../modules/nixos/mullvad.nix
-    ../../modules/nixos/rbw.nix
-    ../../modules/nixos/cheat.nix
+    base
+    nvim-dev
+    zsh
+    atuin-login
+    llm-tools
+    auto-pressure-gc
+    auto-timezone
+    smartd
+    desktop
+    niri
+    noctalia
+    niri-autologin
+    keyd
+    zram
+    laptop
+    printing
+    social
+    yubikey
+    mullvad
+    rbw
+    cheat
   ];
 
   thaw.apps.niri.files."machine.kdl" = ./niri.kdl;

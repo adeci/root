@@ -5,7 +5,7 @@
   ...
 }:
 {
-  imports = [
+  imports = with self.modules.nixos; [
     inputs.nixos-hardware.nixosModules.gpd-pocket-4
 
     self.users.alex.nixosModule
@@ -13,34 +13,34 @@
     ./modules/gpd-hacks.nix
     ./modules/gpd-audio-dsp.nix
     ./modules/viture-beast-audio.nix
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/nvim-dev.nix
-    ../../modules/nixos/emacs.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/atuin-login.nix
-    ../../modules/nixos/llm-tools.nix
-    ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/auto-pressure-gc.nix
-    ../../modules/nixos/smartd.nix
-    ../../modules/nixos/desktop
-    ../../modules/nixos/niri
-    ../../modules/nixos/noctalia.nix
-    ../../modules/nixos/niri/autologin.nix
-    ../../modules/nixos/keyd.nix
-    ../../modules/nixos/amd-gpu.nix
-    ../../modules/nixos/zram.nix
-    ../../modules/nixos/laptop.nix
-    ../../modules/nixos/printing.nix
-    ../../modules/nixos/social.nix
-    ../../modules/nixos/gaming.nix
-    ../../modules/nixos/creative.nix
-    ../../modules/nixos/yubikey.nix
-    ../../modules/nixos/ssh-tpm-agent.nix
-    ../../modules/nixos/mullvad.nix
-    ../../modules/nixos/rbw.nix
-    ../../modules/nixos/cheat.nix
-    ../../modules/nixos/tailscale-travel.nix
-    ../../modules/nixos/remote-hosts.nix
+    base
+    nvim-dev
+    emacs
+    zsh
+    atuin-login
+    llm-tools
+    auto-timezone
+    auto-pressure-gc
+    smartd
+    desktop
+    niri
+    noctalia
+    niri-autologin
+    keyd
+    amd-gpu
+    zram
+    laptop
+    printing
+    social
+    gaming
+    creative
+    yubikey
+    ssh-tpm-agent
+    mullvad
+    rbw
+    cheat
+    tailscale-travel
+    remote-hosts
   ];
 
   thaw.apps.niri.files."machine.kdl" = ./niri.kdl;

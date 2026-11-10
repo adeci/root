@@ -1,24 +1,25 @@
 {
   self,
+  workInputs,
   ...
 }:
 {
-  imports = [
+  imports = with self.modules.darwin; [
     self.users.alex-work.darwinModule
 
-    ../../modules/darwin/managed-device.nix
-    ../../modules/darwin/apps.nix
-    ../../modules/darwin/shell.nix
+    workInputs.self.modules.darwin.managed-device
+    workInputs.self.modules.darwin.apps
+    workInputs.self.modules.darwin.shell
 
-    (self + "/modules/darwin/base.nix")
-    (self + "/modules/darwin/librewolf.nix")
-    (self + "/modules/darwin/llm-config.nix")
-    (self + "/modules/darwin/handy.nix")
-    (self + "/modules/darwin/karabiner.nix")
-    (self + "/modules/darwin/mouse.nix")
-    (self + "/modules/darwin/aerospace")
-    (self + "/modules/darwin/linux-rosetta-builder.nix")
-    (self + "/modules/darwin/secretive.nix")
+    base
+    librewolf
+    llm-config
+    handy
+    karabiner
+    mouse
+    aerospace
+    linux-rosetta-builder
+    secretive
   ];
 
   # Work keys only; Clan deploys as root.

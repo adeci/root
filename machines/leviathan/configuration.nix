@@ -5,7 +5,7 @@
 }:
 {
 
-  imports = [
+  imports = with self.modules.nixos; [
     self.users.alex.nixosModule
     self.users.brittonr.nixosModule
     self.users.dima.nixosModule
@@ -13,12 +13,12 @@
     self.users.jared.nixosModule
     self.users.tymon.nixosModule
 
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/llm-tools.nix
-    ../../modules/nixos/smartd.nix
-    ../../modules/nixos/cloudflared.nix
-    ../../modules/nixos/auto-pressure-gc.nix
+    base
+    zsh
+    llm-tools
+    smartd
+    cloudflared
+    auto-pressure-gc
     ./modules/llm/host.nix
     ./modules/microvms.nix
     ./modules/palworld

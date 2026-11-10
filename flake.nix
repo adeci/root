@@ -81,7 +81,7 @@
       imports = [
         inputs.clan-core.flakeModules.default
         inputs.treefmt-nix.flakeModule
-        ./modules/flake-parts/flake-module.nix
+        ./flake
       ];
       debug = builtins ? currentSystem; # debug mode in repl
       systems = import inputs.systems;

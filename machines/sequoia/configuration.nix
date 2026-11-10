@@ -2,15 +2,15 @@
 {
   time.timeZone = "America/New_York";
 
-  imports = [
+  imports = with self.modules.nixos; [
     self.users.alex.nixosModule
 
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/llm-tools.nix
-    ../../modules/nixos/auto-pressure-gc.nix
-    ../../modules/nixos/cloudflared.nix
-    ../../modules/nixos/acme.nix
+    base
+    zsh
+    llm-tools
+    auto-pressure-gc
+    cloudflared
+    acme
 
     ./modules/wildcard-cert.nix
     ./modules/tailscale-exit-node.nix

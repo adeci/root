@@ -3,12 +3,12 @@
   ...
 }:
 {
-  imports = [
+  imports = with self.modules.nixos; [
     self.users.alex.nixosModule
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/auto-pressure-gc.nix
-    ../../modules/nixos/zram.nix
+    base
+    zsh
+    auto-pressure-gc
+    zram
     ./modules/router
   ];
 

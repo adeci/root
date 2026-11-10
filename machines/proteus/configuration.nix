@@ -1,21 +1,21 @@
 { self, ... }:
 {
-  imports = [
+  imports = with self.modules.nixos; [
     self.users.alex.nixosModule
 
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/nvim-dev.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/llm-tools.nix
-    ../../modules/nixos/auto-pressure-gc.nix
-    ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/desktop
-    ../../modules/nixos/niri
-    ../../modules/nixos/noctalia.nix
-    ../../modules/nixos/amd-gpu.nix
-    ../../modules/nixos/zram.nix
-    ../../modules/nixos/keyd.nix
-    ../../modules/nixos/steam-deck.nix
+    base
+    nvim-dev
+    zsh
+    llm-tools
+    auto-pressure-gc
+    auto-timezone
+    desktop
+    niri
+    noctalia
+    amd-gpu
+    zram
+    keyd
+    steam-deck
   ];
 
   environment.systemPackages = [

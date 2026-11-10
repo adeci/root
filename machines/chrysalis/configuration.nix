@@ -1,6 +1,6 @@
 { self, ... }:
 {
-  imports = [ ../../modules/nixos/clan-installer.nix ];
+  imports = with self.modules.nixos; [ clan-installer ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
 

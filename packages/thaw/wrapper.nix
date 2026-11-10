@@ -1,7 +1,7 @@
 # Opt an app into `thaw`: it reads `thaw.files` through links in
 # $XDG_RUNTIME_DIR/thaw/<name>/, which point at the system copy in
 # /etc/thaw/<name>/ until `thaw <name>` points them at editable files.
-# On NixOS the links are made at login (modules/nixos/thaw.nix); the launcher
+# On NixOS the links are made at login (modules/thaw.nix); the launcher
 # fills in missing ones and, outside NixOS, keeps them on the current store copy.
 {
   config,

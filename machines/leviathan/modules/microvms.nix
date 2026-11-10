@@ -159,7 +159,7 @@ let
     };
 in
 {
-  imports = [ ../../../modules/nixos/microvm-host.nix ];
+  imports = [ self.modules.nixos.microvm-host ];
 
   # leviathan takes no address on the tenant VLAN.
   systemd.network = {

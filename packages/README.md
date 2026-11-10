@@ -2,7 +2,7 @@
 
 My buildable configured outputs. These consist of [wrappers](https://github.com/BirdeeHub/nix-wrapper-modules), patched apps and overrides, helper tools, and some executable utilities/scripts.
 
-`./default.nix` is a registry for all these outputs consumed by the [flake-parts packages module](../modules/flake-parts/packages.nix).
+`./default.nix` is a registry for all these outputs consumed by the [flake-parts packages module](../flake/packages.nix).
 
 Registry entries are grouped by implementation type:
 

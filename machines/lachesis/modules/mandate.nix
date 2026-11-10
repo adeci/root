@@ -3,6 +3,7 @@
   inputs,
   lib,
   pkgs,
+  self,
   ...
 }:
 let
@@ -22,7 +23,7 @@ in
 {
   imports = [
     inputs.mandate.nixosModules.default
-    ../../../modules/nixos/acme.nix
+    self.modules.nixos.acme
   ];
 
   security.acme.certs.${domain} = {

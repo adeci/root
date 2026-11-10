@@ -35,7 +35,8 @@
         ];
         imports = [
           inputs.clan-core.flakeModules.default
-          ./modules/flake-parts/clan.nix
+          ./flake/clan.nix
+          ./flake/modules.nix
         ];
 
         perSystem =

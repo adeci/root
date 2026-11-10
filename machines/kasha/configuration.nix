@@ -6,20 +6,20 @@
 }:
 {
 
-  imports = [
+  imports = with self.modules.nixos; [
     self.users.alex.nixosModule
     self.users.natalya.nixosModule
 
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
 
-    ../../modules/nixos/base.nix
-    ../../modules/nixos/zsh.nix
-    ../../modules/nixos/auto-pressure-gc.nix
-    ../../modules/nixos/zram.nix
-    ../../modules/nixos/auto-timezone.nix
-    ../../modules/nixos/gnome.nix
-    ../../modules/nixos/amd-gpu.nix
-    ../../modules/nixos/printing.nix
+    base
+    zsh
+    auto-pressure-gc
+    zram
+    auto-timezone
+    gnome
+    amd-gpu
+    printing
   ];
 
   boot.loader = {
