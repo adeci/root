@@ -23,6 +23,8 @@
     btrfs
     smartd
     desktop
+    handy
+    librewolf
     desktop-unlock
     keyring-tpm
     niri

@@ -7,6 +7,7 @@
       config,
       pkgs,
       lib,
+      self,
       ...
     }:
     let
@@ -68,7 +69,12 @@
       );
     in
     {
-      homebrew.casks = [ "karabiner-elements" ];
+      # Karabiner's driver and daemons come from nix-darwin's module, which needs
+      # the pinned 14.13.0 (see packages/karabiner-elements).
+      services.karabiner-elements = {
+        enable = true;
+        package = self.packages.${pkgs.stdenv.hostPlatform.system}.karabiner-elements;
+      };
 
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''

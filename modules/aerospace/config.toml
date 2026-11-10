@@ -1,12 +1,10 @@
 # Aerospace — tiling window manager for macOS
 # https://nikitabobko.github.io/AeroSpace/guide
 
-start-at-login = true
+# launchd starts AeroSpace and borders (modules/aerospace/default.nix).
+start-at-login = false
 after-login-command = []
 on-focus-changed = ["move-mouse window-lazy-center"]
-after-startup-command = [
-  "exec-and-forget borders active_color=0xff00C0A3 inactive_color=0xff292e42 width=6.0 style=round",
-]
 
 # Normalizations
 enable-normalization-flatten-containers = true
@@ -15,20 +13,6 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # Layout
 default-root-container-layout = "tiles"
 default-root-container-orientation = "auto"
-
-# Workspace-to-monitor assignment
-# Split workspaces across monitors (niri-like per-monitor workspaces)
-# "main" = built-in/primary, "secondary" = any external monitor
-[workspace-to-monitor-force-assignment]
-1 = "main"
-2 = "main"
-3 = "main"
-4 = "main"
-5 = "main"
-6 = "secondary"
-7 = "secondary"
-8 = "secondary"
-9 = "secondary"
 
 # Gaps
 [gaps]
@@ -45,9 +29,6 @@ outer.right = 6
 # Spawn terminal (bash -l to pick up nix PATH)
 alt-enter = "exec-and-forget bash -l -c @KITTY_HOME@"
 alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
-
-# Launcher
-alt-d = "exec-and-forget open -a Raycast"
 
 # Browser (new window)
 alt-w = 'exec-and-forget open -na "Google Chrome" --args --new-window'

@@ -23,6 +23,8 @@
     auto-pressure-gc
     smartd
     desktop
+    handy
+    librewolf
     niri
     noctalia
     niri-autologin
@@ -40,7 +42,6 @@
     rbw
     cheat
     tailscale-travel
-    remote-hosts
   ];
 
   wrappers.niri.machineConfig = # kdl

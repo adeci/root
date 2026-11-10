@@ -12,6 +12,8 @@
     workInputs.self.modules.darwin.shell
 
     base
+    desktop
+    nvim-dev
     librewolf
     llm-config
     handy
@@ -21,17 +23,6 @@
     linux-rosetta-builder
     secretive
   ];
-
-  # Work keys only; Clan deploys as root.
-  users.users.root.openssh.authorizedKeys.keys = self.users.alex-work.sshKeys;
-  services.openssh = {
-    enable = true;
-    extraConfig = ''
-      PasswordAuthentication no
-      KbdInteractiveAuthentication no
-      AuthorizedKeysFile none
-    '';
-  };
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 6;

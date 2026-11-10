@@ -1,13 +1,10 @@
 {
-  # Aerospace — tiling window manager for macOS
-  # Generates aerospace.toml with helper scripts and reloads on activation.
+  # AeroSpace, the tiling window manager, plus borders around the focused window.
+  # launchd starts the app itself (macOS grants Accessibility to the process
+  # launchd spawns) with the config straight from the store; a config change
+  # changes the agent, so the switch restarts AeroSpace on it.
   darwin =
-    {
-      lib,
-      pkgs,
-      config,
-      ...
-    }:
+    { pkgs, ... }:
     let
       kitty-home = pkgs.writeShellScript "kitty-home" ''exec kitty -d "$HOME"'';
 
@@ -32,27 +29,31 @@
           (builtins.readFile ./config.toml)
       );
 
-      inherit (config.system) primaryUser;
     in
     {
-      homebrew = {
-        taps = [
-          "FelixKratz/formulae"
-          "nikitabobko/tap"
+      environment.systemPackages = [ pkgs.aerospace ];
+
+      launchd.user.agents.aerospace.serviceConfig = {
+        ProgramArguments = [
+          "/Applications/Nix Apps/AeroSpace.app/Contents/MacOS/AeroSpace"
+          "--config-path"
+          "${aerospaceConfig}"
         ];
-        brews = [ "FelixKratz/formulae/borders" ];
-        casks = [ "nikitabobko/tap/aerospace" ];
+        RunAtLoad = true;
+        KeepAlive = {
+          Crashed = true;
+          SuccessfulExit = false;
+        };
+        LimitLoadToSessionType = "Aqua";
+        ProcessType = "Interactive";
       };
-      system.activationScripts.postActivation.text = # bash
-        lib.mkAfter ''
-          AEROSPACE_DIR="/Users/${primaryUser}/.config/aerospace"
-          mkdir -p "$AEROSPACE_DIR"
-          cp ${aerospaceConfig} "$AEROSPACE_DIR/aerospace.toml"
-          # AeroSpace's IPC socket belongs to the user session; root cannot reach it.
-          if /usr/bin/pgrep -qx AeroSpace; then
-            launchctl asuser "$(/usr/bin/id -u -- ${primaryUser})" \
-              sudo --user=${primaryUser} -- /opt/homebrew/bin/aerospace reload-config || true
-          fi
-        '';
+
+      services.jankyborders = {
+        enable = true;
+        active_color = "0xff00C0A3";
+        inactive_color = "0xff292e42";
+        width = 6.0;
+        style = "round";
+      };
     };
 }

@@ -24,7 +24,7 @@ let
 
   kittyConf = pkgs.writeText "kitty.conf" (toKittyConf config.settings);
 
-  # Finder, Raycast and LaunchServices start Contents/MacOS/kitty directly,
+  # Finder, Spotlight and LaunchServices start Contents/MacOS/kitty directly,
   # bypassing bin/kitty. Give the app bundle its own launcher that passes the
   # same --config. Built separately so the compiler output is code-signed.
   appLauncher =

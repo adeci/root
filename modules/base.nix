@@ -1,24 +1,67 @@
-{
-  nixos =
+let
+  # Every machine, Linux or Mac: SSH client, root's keys, editor, clan-cli.
+  shared =
     {
       config,
-      self,
       inputs,
+      lib,
       pkgs,
+      self,
       ...
     }:
     {
-      imports = [ self.modules.nixos.wrappers ];
-
       nixpkgs.config.allowUnfree = true;
 
-      users.mutableUsers = false;
-      users.users.root = {
-        # Root accepts the same keys as the machine's primary user.
-        openssh.authorizedKeys.keys =
-          config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
-      };
+      # Root accepts the same keys as the machine's primary user.
+      users.users.root.openssh.authorizedKeys.keys =
+        config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
+
       environment.variables.EDITOR = "nvim";
+
+      programs.ssh.extraConfig = lib.mkMerge [
+        ''
+          Host *.cymric-daggertooth.ts.net
+            ControlMaster auto
+            ControlPersist 10m
+            ControlPath ~/.ssh/cm-%C
+
+          # lachesis takes only YubiKey keys.
+          Host lachesis lachesis.cymric-daggertooth.ts.net
+            IdentityFile ~/.ssh/id_ed25519_sk_spark
+            IdentityFile ~/.ssh/id_ed25519_sk_ember
+        ''
+        # The catch-all goes after every feature's specific Host blocks: ssh
+        # takes the first value it finds for each option.
+        (lib.mkAfter ''
+          Host *
+            AddKeysToAgent yes
+            SendEnv COLORTERM
+        '')
+      ];
+
+      environment.systemPackages = [
+        inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+      ];
+      wrappers.nvim.enable = true;
+    };
+
+  nixSettings = {
+    http-connections = 64;
+    max-substitution-jobs = 64;
+    download-buffer-size = 268435456; # 256MB
+    fallback = true;
+  };
+in
+{
+  nixos =
+    { pkgs, self, ... }:
+    {
+      imports = [
+        self.modules.nixos.wrappers
+        shared
+      ];
+
+      users.mutableUsers = false;
 
       clan.core.networking.forwardAgent = true;
 
@@ -35,37 +78,15 @@
         };
       };
 
-      programs.ssh.extraConfig = ''
-        Host *.cymric-daggertooth.ts.net
-          ControlMaster auto
-          ControlPersist 10m
-          ControlPath ~/.ssh/cm-%C
-
-        # lachesis takes only YubiKey keys.
-        Host lachesis lachesis.cymric-daggertooth.ts.net
-          IdentityFile ~/.ssh/id_ed25519_sk_spark
-          IdentityFile ~/.ssh/id_ed25519_sk_ember
-
-        Host *
-          AddKeysToAgent yes
-          SendEnv COLORTERM
-      '';
-      nix.settings = {
-        http-connections = 64;
-        max-substitution-jobs = 64;
-        download-buffer-size = 268435456; # 256MB
-        fallback = true;
-      };
+      nix.settings = nixSettings;
       programs.direnv.enable = true;
       documentation.dev.enable = true;
       documentation.man.cache.enable = true;
       environment.systemPackages = [
-        inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
         pkgs.kitty.terminfo
         pkgs.man-pages
         pkgs.man-pages-posix
       ];
-      wrappers.nvim.enable = true;
       i18n.defaultLocale = "en_US.UTF-8";
       i18n.extraLocaleSettings = {
         LC_ADDRESS = "en_US.UTF-8";
@@ -80,128 +101,79 @@
       };
     };
 
-  # Fleet-wide Darwin defaults: nix, shell, fonts, system preferences, common tools.
+  # Every Mac, desktop or headless: nix, accounts, sshd, shell. Desktop
+  # settings live in the desktop feature.
   darwin =
     {
       config,
-      self,
-      pkgs,
-      lib,
       inputs,
+      lib,
+      self,
       ...
     }:
+    let
+      user = self.users.alex.username;
+    in
     {
       imports = [
         self.modules.darwin.wrappers
+        shared
         inputs.nix-index-database.darwinModules.nix-index
       ];
 
       nix.enable = true;
+      nix.settings = lib.mkIf config.nix.enable (
+        nixSettings
+        // {
+          trusted-users = [
+            "root"
+            user
+          ];
+        }
+      );
 
       # nix-index with pre-built database: command-not-found handler + comma
       programs.nix-index-database.comma.enable = true;
 
-      # Homebrew for macOS-native apps not available in nixpkgs
-      homebrew = {
-        enable = true;
-        onActivation.cleanup = "zap";
-        casks = [ "raycast" ];
+      # nix-darwin owns the primary account, so it sets the login shell (no
+      # dscl by hand) and its keys. macOS gives the first account uid 501.
+      system.primaryUser = user;
+      users.knownUsers = [ user ];
+      users.users.${user} = {
+        uid = lib.mkDefault 501;
+        shell = config.wrappers.zsh.wrapper;
       };
 
-      # Touch ID for sudo (including inside tmux/screen)
-      security.pam.services.sudo_local.touchIdAuth = true;
-      security.pam.services.sudo_local.reattach = true;
+      # Keys only, and only the ones declared here (users.users.*.openssh).
+      services.openssh = {
+        enable = true;
+        extraConfig = ''
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          AuthorizedKeysFile none
+          AcceptEnv COLORTERM
+        '';
+      };
 
-      # Fonts
-      fonts.packages = [
-        pkgs.nerd-fonts.caskaydia-cove
-        pkgs.nerd-fonts.caskaydia-mono
-      ];
-
-      # Wrapped shell as login shell
-      # NOTE: nix-darwin doesn't change the macOS login shell via dscl.
-      # Run once: sudo dscl . -change /Users/alex UserShell /bin/zsh <path-to-wrapped-zsh>
+      # Wrapped shell and tools
       programs.zsh.enable = true;
-      programs.ssh.extraConfig = ''
-        Host *
-          SendEnv COLORTERM
-      '';
       environment.pathsToLink = [ "/share/zsh" ];
       environment.shells = lib.mkDefault [ config.wrappers.zsh.wrapper ];
+      wrappers.zsh.enable = true;
+      wrappers.git.enable = true;
+      wrappers.tmux.enable = true;
+      wrappers.btop.enable = true;
 
       # macOS sshd sets no locale; without this, ssh sessions (and tmux started
       # from them) run in the C locale and mangle non-ASCII/Nerd Font glyphs.
       environment.variables.LANG = "en_US.UTF-8";
 
-      # Wrapped tools available system-wide
-      wrappers.zsh.enable = true;
-      wrappers.git.enable = true;
-      wrappers.kitty.enable = true;
-      wrappers.tmux.enable = true;
-      wrappers.btop.enable = true;
-      wrappers.nvim-dev.enable = true;
-      environment.systemPackages = [
-        inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
-      ];
-
-      # System defaults
-      system.primaryUser = self.users.alex.username;
-      system.defaults = {
-        dock = {
-          autohide = true;
-          mru-spaces = false;
-          show-recents = false;
-        };
-        finder = {
-          AppleShowAllExtensions = true;
-        };
-        WindowManager = {
-          EnableStandardClickToShowDesktop = false;
-        };
-        NSGlobalDomain = {
-          AppleShowAllExtensions = true;
-          InitialKeyRepeat = 15;
-          KeyRepeat = 2;
-          # Disable autocorrect annoyances
-          ApplePressAndHoldEnabled = false;
-          NSAutomaticCapitalizationEnabled = false;
-          NSAutomaticDashSubstitutionEnabled = false;
-          NSAutomaticPeriodSubstitutionEnabled = false;
-          NSAutomaticQuoteSubstitutionEnabled = false;
-          NSAutomaticSpellingCorrectionEnabled = false;
-        };
-        controlcenter = {
-          BatteryShowPercentage = true;
-        };
-        screencapture = {
-          disable-shadow = true;
-          type = "png";
-        };
-        # Disable hot corners
-        dock.wvous-tl-corner = 1;
-        dock.wvous-tr-corner = 1;
-        dock.wvous-bl-corner = 1;
-        dock.wvous-br-corner = 1;
-      };
-
-      nix.settings = lib.mkIf config.nix.enable {
-        trusted-users = [
-          "root"
-          self.users.alex.username
-        ];
-      };
-
-      # nix-darwin rsyncs changed app bundles into /Applications/Nix Apps. macOS
-      # keeps the old signature in LaunchServices and kills the next Finder or
-      # Raycast launch with "Launch Constraint Violation". Re-register the copies.
+      # Keep Spotlight and fseventsd off the store volume.
       system.activationScripts.postActivation.text = # bash
-        lib.mkAfter ''
-          if [[ -d "/Applications/Nix Apps" ]]; then
-            launchctl asuser "$(/usr/bin/id -u -- ${config.system.primaryUser})" \
-              sudo --user=${config.system.primaryUser} -- \
-              /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
-              -f -R "/Applications/Nix Apps" || true
-          fi
+        ''
+          touch /nix/.metadata_never_index
+          mkdir -p /nix/.fseventsd
+          touch /nix/.fseventsd/no_log
         '';
     };
 }

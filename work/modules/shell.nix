@@ -58,10 +58,7 @@
         atuinSync = false;
         extraInit = # zsh
           ''
-            if [[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]]; then
-              source /opt/homebrew/share/google-cloud-sdk/path.zsh.inc
-            fi
-
+            # gcloud (google-cloud-sdk) comes from the work apps feature.
             export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
 
             # Work toolchain shell hooks

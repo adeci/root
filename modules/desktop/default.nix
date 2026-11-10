@@ -1,4 +1,5 @@
-# Compositor-agnostic; pair with a session feature such as niri.
+# The graphical session. Compositor-agnostic on NixOS; pair with a session
+# feature such as niri. Apps like handy and librewolf are separate features.
 {
   nixos =
     {
@@ -19,11 +20,7 @@
       '';
     in
     {
-      imports = [
-        self.modules.nixos.wrappers
-        self.modules.nixos.handy
-        self.modules.nixos.librewolf
-      ];
+      imports = [ self.modules.nixos.wrappers ];
 
       wrappers.kitty.enable = true;
 
@@ -133,5 +130,79 @@
           }
         ];
       };
+    };
+
+  darwin =
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+      ...
+    }:
+    {
+      imports = [ self.modules.darwin.wrappers ];
+
+      wrappers.kitty.enable = true;
+
+      # Touch ID for sudo (including inside tmux/screen)
+      security.pam.services.sudo_local.touchIdAuth = true;
+      security.pam.services.sudo_local.reattach = true;
+
+      fonts.packages = [
+        pkgs.nerd-fonts.caskaydia-cove
+        pkgs.nerd-fonts.caskaydia-mono
+      ];
+
+      system.defaults = {
+        dock = {
+          autohide = true;
+          mru-spaces = false;
+          show-recents = false;
+          # Disable hot corners
+          wvous-tl-corner = 1;
+          wvous-tr-corner = 1;
+          wvous-bl-corner = 1;
+          wvous-br-corner = 1;
+        };
+        finder = {
+          AppleShowAllExtensions = true;
+        };
+        WindowManager = {
+          EnableStandardClickToShowDesktop = false;
+        };
+        NSGlobalDomain = {
+          AppleShowAllExtensions = true;
+          InitialKeyRepeat = 15;
+          KeyRepeat = 2;
+          # Disable autocorrect annoyances
+          ApplePressAndHoldEnabled = false;
+          NSAutomaticCapitalizationEnabled = false;
+          NSAutomaticDashSubstitutionEnabled = false;
+          NSAutomaticPeriodSubstitutionEnabled = false;
+          NSAutomaticQuoteSubstitutionEnabled = false;
+          NSAutomaticSpellingCorrectionEnabled = false;
+        };
+        controlcenter = {
+          BatteryShowPercentage = true;
+        };
+        screencapture = {
+          disable-shadow = true;
+          type = "png";
+        };
+      };
+
+      # nix-darwin rsyncs changed app bundles into /Applications/Nix Apps. macOS
+      # keeps the old signature in LaunchServices and kills the next Finder or
+      # Spotlight launch with "Launch Constraint Violation". Re-register the copies.
+      system.activationScripts.postActivation.text = # bash
+        lib.mkAfter ''
+          if [[ -d "/Applications/Nix Apps" ]]; then
+            launchctl asuser "$(/usr/bin/id -u -- ${config.system.primaryUser})" \
+              sudo --user=${config.system.primaryUser} -- \
+              /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+              -f -R "/Applications/Nix Apps" || true
+          fi
+        '';
     };
 }

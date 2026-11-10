@@ -21,6 +21,8 @@
     btrfs
     smartd
     desktop
+    handy
+    librewolf
     desktop-unlock
     keyring-tpm
     niri
@@ -39,7 +41,6 @@
     rbw
     cheat
     tailscale-travel
-    remote-hosts
   ];
 
   wrappers.niri.machineConfig = # kdl

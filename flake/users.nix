@@ -79,10 +79,11 @@ let
           };
         };
 
+      # No uid: macOS gives the first account 501, which darwin's base sets.
       darwinModule = _: {
         users.users.${username} = {
           name = username;
-          inherit (attrs) uid description;
+          inherit (attrs) description;
           home = "/Users/${username}";
           openssh.authorizedKeys.keys = attrs.sshKeys;
         };

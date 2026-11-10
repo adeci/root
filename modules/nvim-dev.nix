@@ -1,11 +1,16 @@
 {
-  # nvim with the small language servers, instead of base's plain nvim.
+  # nvim with the small language servers and formatters (see wrappers/nvim).
   nixos =
-    { lib, self, ... }:
+    { self, ... }:
     {
       imports = [ self.modules.nixos.wrappers ];
+      wrappers.nvim.languageServers = true;
+    };
 
-      wrappers.nvim-dev.enable = true;
-      wrappers.nvim.enable = lib.mkForce false;
+  darwin =
+    { self, ... }:
+    {
+      imports = [ self.modules.darwin.wrappers ];
+      wrappers.nvim.languageServers = true;
     };
 }

@@ -3,14 +3,9 @@
   # Keep the trackpad on natural scrolling, but make mouse wheels non-natural via
   # Scroll Reverser. Also raises external mouse tracking speed.
   darwin =
-    { config, lib, ... }:
-    let
-      user = lib.escapeShellArg config.system.primaryUser;
-      scrollReverserApp = "/Applications/Scroll Reverser.app";
-      scrollReverserBin = "${scrollReverserApp}/Contents/MacOS/Scroll Reverser";
-    in
+    { pkgs, ... }:
     {
-      homebrew.casks = [ "scroll-reverser" ];
+      environment.systemPackages = [ pkgs.scroll-reverser ];
 
       system.defaults = {
         # Trackpad stays natural. Scroll Reverser flips only physical mouse wheels.
@@ -30,13 +25,19 @@
             ReverseX = false;
             ReverseY = true;
             ShowDiscreteScrollOptions = true;
+            # Sparkle reads these over the app's Info.plist. The app never asks
+            # for permission to check, so these alone silence the update window.
+            SUAutomaticallyUpdate = false;
+            SUEnableAutomaticChecks = false;
           };
         };
       };
 
+      # launchd starts it (RunAtLoad also covers the first switch after install)
+      # and restarts it if it crashes.
       launchd.user.agents.scroll-reverser.serviceConfig = {
         Label = "org.nixos.scroll-reverser";
-        ProgramArguments = [ scrollReverserBin ];
+        ProgramArguments = [ "/Applications/Nix Apps/Scroll Reverser.app/Contents/MacOS/Scroll Reverser" ];
         RunAtLoad = true;
         KeepAlive = {
           Crashed = true;
@@ -45,15 +46,5 @@
         LimitLoadToSessionType = "Aqua";
         ProcessType = "Interactive";
       };
-
-      system.activationScripts.postActivation.text = # bash
-        lib.mkAfter ''
-          # Start Scroll Reverser after first install; launchd handles future logins.
-          # Opening an already-running app shows its settings window.
-          if [[ -d ${lib.escapeShellArg scrollReverserApp} ]] && ! /usr/bin/pgrep -qx "Scroll Reverser"; then
-            launchctl asuser "$(/usr/bin/id -u -- ${user})" \
-              sudo --user=${user} -- /usr/bin/open -gj -a "Scroll Reverser" || true
-          fi
-        '';
     };
 }
