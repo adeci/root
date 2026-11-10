@@ -27,12 +27,11 @@ alias md='mkdir -p'
 alias mv='mv -i'
 alias nix='noglob nix'
 alias nom='noglob nom'
-alias nrb='noglob nom build --max-jobs 0 --builders @/etc/nix/machines-all'
 alias rm='rm -i'
 alias rz='exec zsh'
 alias tree='eza --tree --icons'
-alias vi='nvim'
-alias vim='nvim'
+alias vi='"$EDITOR"'
+alias vim='"$EDITOR"'
 alias wget='noglob wget'
 
 HISTFILE="$HOME/.zsh_history"
@@ -188,7 +187,8 @@ if [[ ${${INSIDE_EMACS-}%%,*} == ghostel && -r ${EMACS_GHOSTEL_PATH-}/etc/shell/
   source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.zsh"
 else
   # OSC 133 marks — broken in tmux with multi-line prompts (pure prompt
-  # triggers CSI 0 J which wipes the marks). Kept for kitty without tmux.
+  # triggers CSI 0 J which wipes the marks). Kept for terminals used
+  # without tmux.
   _osc133_prompt() { print -Pn "\e]133;A\e\\"; }
   _osc133_command() { print -Pn "\e]133;C\e\\"; }
   precmd_functions+=(_osc133_prompt)
@@ -217,7 +217,7 @@ yy() {
 
 ekh() {
   if [[ $# -eq 0 ]]; then
-    nvim ~/.ssh/known_hosts
+    "$EDITOR" ~/.ssh/known_hosts
   else
     local kh=~/.ssh/known_hosts
     for pattern in "$@"; do
@@ -232,8 +232,6 @@ ekh() {
     done
   fi
 }
-
-levtop() { ssh leviathan -t htop; }
 
 update-claude-code() {
   nix-shell maintainers/scripts/update.nix \

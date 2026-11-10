@@ -30,12 +30,12 @@ Tailscale SaaS remains the control plane. Auth keys are supplied through Clan va
 
 ```nix
 {
-  "adeci-net" = {
+  "my-tailnet" = {
     module = {
       name = "@adeci/tailscale";
       input = "self";
     };
-    roles.peer.tags = [ "adeci-net" ];
+    roles.peer.tags = [ "my-tailnet" ];
   };
 }
 ```

@@ -122,7 +122,6 @@
           }:
           let
             inherit (config.clan.core.settings) domain;
-            dotDomain = if domain != null then ".${domain}" else "";
             serverNames = lib.attrNames roles.server.machines;
           in
           {
@@ -137,7 +136,7 @@
               name:
               let
                 serverSettings = roles.server.machines.${name}.settings;
-                address = if serverSettings.address != null then serverSettings.address else "${name}${dotDomain}";
+                address = if serverSettings.address != null then serverSettings.address else "${name}.${domain}";
                 priority = if settings.priority != null then settings.priority else serverSettings.priority;
               in
               "http://${address}:${toString serverSettings.port}?priority=${toString priority}"

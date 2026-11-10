@@ -1,5 +1,5 @@
-# Private names resolve through janus (inventory/resources/homelan/dns.nix);
-# tailnet clients reach it over janus's subnet routes.
+# Split DNS: the homelan's private domains resolve through the trusted VLAN's
+# gateway, which tailnet clients reach over the subnet routes approved below.
 {
   config,
   lib,
@@ -21,7 +21,7 @@ in
 
   data.tailscale_device.janus.hostname = "janus";
 
-  # Same set janus advertises (machines/janus/modules/router/topology.nix).
+  # Approves the homelan VLANs marked `tailnet`; the device advertises the same set.
   resource.tailscale_device_subnet_routes.janus = {
     device_id = config.data.tailscale_device.janus "node_id";
     routes = map (vlan: vlan.cidr) (

@@ -1,5 +1,5 @@
-# HSTS covers every proxied hostname (tunnels); DNS-only records such as
-# share.decio.us bypass Cloudflare and set it in nginx.
+# HSTS here covers proxied hostnames only; DNS-only records bypass Cloudflare,
+# so their origin must send the header itself.
 {
   config,
   self,

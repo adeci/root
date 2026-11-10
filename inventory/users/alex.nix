@@ -23,4 +23,8 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEhgjkz1FKcpufSwoe8fwefLiBijonH8djVddlLjt+Li"
 
   ];
+  git = {
+    name = "adeci";
+    email = "alex.decious@gmail.com";
+  };
 }

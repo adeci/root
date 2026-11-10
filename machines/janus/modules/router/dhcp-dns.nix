@@ -11,7 +11,7 @@ let
   devices = topology.homelan.hosts;
   dnsRecords = topology.homelan.dns.records;
   dnsDevices = lib.filterAttrs (_: host: host.publishDns or true) devices;
-  tailnetCidr = "100.64.0.0/10";
+  tailnetCidr = self.resources.tailscale.cidr;
 
   localAliases = lib.concatMapAttrs (
     _hostName: host:
@@ -134,9 +134,8 @@ in
         rrset-cache-size = "32m";
       };
 
-      # Janus disables systemd-resolved, so @adeci/tailscale's dns-delegate
-      # path is intentionally unused here. Unbound forwards Tailnet names to
-      # MagicDNS directly for local services such as Alloy.
+      # systemd-resolved is off here, so Unbound itself forwards tailnet names
+      # to MagicDNS for local services.
       forward-zone = [
         {
           name = "ts.net.";

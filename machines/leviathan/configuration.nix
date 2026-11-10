@@ -36,6 +36,7 @@
 
   environment.systemPackages = [ pkgs.numactl ];
   wrappers.big-htop.enable = true;
+  wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
 
   # THP tuned for ZGC.
   boot.kernelParams = [ "transparent_hugepage=madvise" ];

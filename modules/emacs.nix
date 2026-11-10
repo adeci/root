@@ -1,6 +1,5 @@
 {
-  # zmx sessions keep shells alive across Emacs daemon restarts. The font comes
-  # from the desktop feature.
+  # zmx sessions keep shells alive across Emacs daemon restarts.
   nixos =
     {
       config,
@@ -20,5 +19,6 @@
       };
 
       environment.systemPackages = [ pkgs.zmx ];
+      fonts.packages = [ pkgs.nerd-fonts.caskaydia-mono ];
     };
 }

@@ -3,6 +3,8 @@
   nixos =
     { self, ... }:
     {
+      imports = [ self.modules.nixos.niri ];
+
       services.greetd = {
         enable = true;
         settings.default_session = {

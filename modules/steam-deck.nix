@@ -11,6 +11,7 @@
     {
       imports = [
         inputs.jovian.nixosModules.default
+        self.modules.nixos.niri
       ];
 
       jovian.devices.steamdeck.enable = true;

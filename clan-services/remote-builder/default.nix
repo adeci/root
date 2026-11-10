@@ -51,7 +51,7 @@
               SSH public keys from external users (friends not in your clan)
               to authorize on the nix build user.
             '';
-            example = [ "ssh-ed25519 AAAA... aodhan" ];
+            example = [ "ssh-ed25519 AAAA... friend" ];
           };
         };
       };
@@ -144,7 +144,6 @@
           let
             machineName = config.clan.core.settings.machine.name;
             inherit (config.clan.core.settings) domain;
-            dotDomain = if domain != null then ".${domain}" else "";
             servers = lib.removeAttrs roles.server.machines [ machineName ];
 
             # Nix builds i686 on x86_64 Linux on its own. Emulated systems come from
@@ -157,7 +156,7 @@
             ++ lib.optional (system == "x86_64-linux") "i686-linux";
 
             machines = lib.mapAttrsToList (name: server: {
-              hostName = "${name}${dotDomain}";
+              hostName = "${name}.${domain}";
               inherit (server.settings)
                 systems
                 maxJobs
@@ -219,7 +218,7 @@
                 Host ${m.hostName}
                   StrictHostKeyChecking accept-new
 
-                # Nix handles its own SSH connections here, so keep our usual ControlMaster setup out of the way.
+                # Nix manages its own SSH connections: disable any ControlMaster a user/system ssh config enables for this host.
                 # An unreachable builder should fail the build in seconds, not after the TCP timeout.
                 Match host ${m.hostName} user nix
                   ControlMaster no

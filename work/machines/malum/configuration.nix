@@ -10,6 +10,7 @@
     workInputs.self.modules.darwin.managed-device
     workInputs.self.modules.darwin.apps
     workInputs.self.modules.darwin.shell
+    workInputs.self.modules.darwin.zsh
 
     base
     desktop

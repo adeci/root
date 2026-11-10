@@ -1,6 +1,11 @@
 {
   nixos =
-    { pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       tailscaleTravel = pkgs.writeShellApplication {
         name = "tailscale-travel";
@@ -12,7 +17,7 @@
           pkgs.tailscale
         ];
         text = ''
-          default_exit_node=sequoia
+          default_exit_node=${lib.escapeShellArg config.tailscaleTravel.defaultExitNode}
 
           usage() {
             cat <<EOF
@@ -135,6 +140,11 @@
       };
     in
     {
-      environment.systemPackages = [ tailscaleTravel ];
+      options.tailscaleTravel.defaultExitNode = lib.mkOption {
+        type = lib.types.str;
+        description = "Exit node `tailscale-travel away` uses when none is given.";
+      };
+
+      config.environment.systemPackages = [ tailscaleTravel ];
     };
 }

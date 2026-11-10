@@ -8,7 +8,7 @@ let
   inherit (self.resources) homelan;
 
   paperlessHost = "paperless.decio.us";
-  tailnetCidr = "100.64.0.0/10";
+  tailnetCidr = self.resources.tailscale.cidr;
 
   dataDir = "/srv/paperless";
 in

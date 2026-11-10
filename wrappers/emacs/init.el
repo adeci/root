@@ -1,4 +1,4 @@
-;;; init.el --- Alex's Emacs -*- lexical-binding: t; -*-
+;;; init.el --- Emacs configuration -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -98,8 +98,8 @@
   :custom
   (term-sessions-preferred-frontend 'ghostel)
   :init
-  ;; Sessions start through `ghostel-exec', which doesn't set this, so zsh in
-  ;; a session couldn't find ghostel's integration (see zshrc).
+  ;; Shells read EMACS_GHOSTEL_PATH to find ghostel's shell integration, but
+  ;; sessions start through `ghostel-exec', which doesn't set it.
   (setenv "EMACS_GHOSTEL_PATH"
           (file-name-directory (locate-library "ghostel"))))
 

@@ -77,7 +77,7 @@ in
       "--dhcp-client ether1"
       ''--installed-summary "RouterOS ${version} (arm64) + wifi-qcom"''
       "--dhcp-summary ether1"
-      ''--completion-note "Plug ether1 into management network, then net-apply."''
+      ''--completion-note "Plug ether1 into the management network, then apply its configuration."''
     ];
   };
 
@@ -96,7 +96,7 @@ in
       "--dhcp-client sfp-sfpplus1"
       ''--installed-summary "RouterOS ${version} (arm)"''
       ''--dhcp-summary "ether1 and sfp-sfpplus1"''
-      ''--completion-note "Plug ether1 or sfp-sfpplus1 into the network, then net-apply."''
+      ''--completion-note "Plug ether1 or sfp-sfpplus1 into the network, then apply its configuration."''
     ];
   };
 
@@ -114,7 +114,7 @@ in
       "--dhcp-client ether1"
       ''--installed-summary "RouterOS ${version} (arm)"''
       "--dhcp-summary ether1"
-      ''--completion-note "Plug ether1 into management network, then net-apply."''
+      ''--completion-note "Plug ether1 into the management network, then apply its configuration."''
     ];
   };
 }

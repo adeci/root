@@ -13,7 +13,7 @@ in
   resource.tailscale_device_tags = lib.mapAttrs (hostname: tags: {
     device_id = config.data.tailscale_device.${hostname} "node_id";
     inherit tags;
-    # The policy must define tag:work first.
+    # Tags must exist in the policy before a device can carry them.
     depends_on = [ "tailscale_acl.policy" ];
   }) deviceTags;
 }

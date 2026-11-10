@@ -1,11 +1,13 @@
 {
   nixos =
     {
-      pkgs,
       config,
+      pkgs,
+      self,
       ...
     }:
     let
+      inherit (self.users.alex) username;
       ssh-tpm-agent = pkgs.ssh-tpm-agent.overrideAttrs {
         doCheck = false; # keyring tests need kernel keyring unavailable in sandbox
       };
@@ -15,7 +17,7 @@
 
       security.tpm2.enable = true;
       security.tpm2.tctiEnvironment.enable = true;
-      users.users.alex.extraGroups = [ config.security.tpm2.tssGroup ];
+      users.users.${username}.extraGroups = [ config.security.tpm2.tssGroup ];
 
       environment.systemPackages = [
         ssh-tpm-agent
@@ -47,7 +49,7 @@
       };
 
       environment.sessionVariables = {
-        SSH_AUTH_SOCK = "/run/user/${toString config.users.users.alex.uid}/ssh-tpm-agent.sock";
+        SSH_AUTH_SOCK = "/run/user/${toString config.users.users.${username}.uid}/ssh-tpm-agent.sock";
       };
     };
 }

@@ -188,7 +188,7 @@ _: {
               '';
             };
 
-            # Served through the Cloudflare tunnel; keep nginx on loopback.
+            # A local tunnel or reverse proxy serves the public side; keep nginx on loopback.
             services.nginx.virtualHosts.${settings.domain} = {
               listen = [
                 {
@@ -232,10 +232,6 @@ _: {
                 repo: _: generators.${effectSecretsGenerator repo}.files.secrets.path
               ) settings.effectSecrets;
             };
-
-            # Builds go through this machine's nix daemon; other systems use
-            # its @adeci/remote-builder machines.
-            nix.distributedBuilds = lib.mkDefault true;
           };
       };
   };

@@ -1,14 +1,11 @@
 { lib, ... }:
+let
+  dir = ../inventory/resources;
+in
 {
   options.flake.resources = lib.mkOption { default = { }; };
 
-  config.flake.resources = {
-    b2 = import ../inventory/resources/b2;
-    cloudflare = import ../inventory/resources/cloudflare;
-    homelan = import ../inventory/resources/homelan;
-    ingress = import ../inventory/resources/ingress;
-    llm = import ../inventory/resources/llm;
-    routeros = import ../inventory/resources/routeros;
-    tailscale = import ../inventory/resources/tailscale;
-  };
+  config.flake.resources = lib.mapAttrs (name: _: import (dir + "/${name}")) (
+    lib.filterAttrs (_: type: type == "directory") (builtins.readDir dir)
+  );
 }

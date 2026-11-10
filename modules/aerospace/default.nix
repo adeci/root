@@ -3,9 +3,16 @@
   # process launchd spawns. The config's store path is part of the agent, so a
   # config change restarts AeroSpace on switch.
   darwin =
-    { pkgs, ... }:
+    {
+      config,
+      pkgs,
+      self,
+      ...
+    }:
     let
-      kitty-home = pkgs.writeShellScript "kitty-home" ''exec kitty -d "$HOME"'';
+      kitty = "${config.wrappers.kitty.wrapper}/bin/kitty";
+
+      kitty-home = pkgs.writeShellScript "kitty-home" ''exec ${kitty} -d "$HOME"'';
 
       kitty-here = pkgs.writeShellScript "kitty-here" ''
         APP_PID=$(osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true' 2>/dev/null)
@@ -14,11 +21,11 @@
           if [ -n "$SHELL_PID" ]; then
             CWD=$(lsof -a -p "$SHELL_PID" -d cwd -Fn 2>/dev/null | awk '/^n\//{ print substr($0,2)}')
             if [ -n "$CWD" ] && [ -d "$CWD" ]; then
-              exec kitty -d "$CWD"
+              exec ${kitty} -d "$CWD"
             fi
           fi
         fi
-        exec kitty
+        exec ${kitty}
       '';
 
       aerospaceConfig = pkgs.writeText "aerospace.toml" (
@@ -30,6 +37,11 @@
 
     in
     {
+      imports = [ self.modules.darwin.wrappers ];
+
+      wrappers.kitty.enable = true;
+      fonts.packages = [ pkgs.nerd-fonts.caskaydia-mono ];
+
       environment.systemPackages = [ pkgs.aerospace ];
 
       launchd.user.agents.aerospace.serviceConfig = {

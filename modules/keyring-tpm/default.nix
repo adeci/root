@@ -25,7 +25,7 @@
         partOf = [ "graphical-session.target" ];
         before = [ "graphical-session.target" ];
         wantedBy = [ "graphical-session.target" ];
-        # Decrypt retry loops exhaust TPM sessions (ssh-tpm-agent too).
+        # Decrypt retry loops exhaust TPM sessions, starving other TPM clients.
         startLimitIntervalSec = 120;
         startLimitBurst = 3;
         serviceConfig = {

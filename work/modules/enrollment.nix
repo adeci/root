@@ -1,6 +1,7 @@
 {
   nixos =
     {
+      pkgs,
       self,
       workInputs,
       ...
@@ -14,6 +15,8 @@
         user = self.users.alex-work.username;
         idpUsername = self.users.alex-work.email;
         developerTools.enable = true;
+        # Replaces the default apps, whose plain 1Password lacks polkit owners.
+        packages.apps = [ pkgs.slack ];
       };
     };
 }

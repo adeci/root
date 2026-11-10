@@ -1,10 +1,15 @@
-{ config, ... }:
 {
-  # Used only for the Hetzner rescue console / initial provisioning.
-  # Pinned to avoid server replacement when sshKeys order changes.
+  config,
+  lib,
+  self,
+  ...
+}:
+{
+  # Used only for the Hetzner rescue console / initial provisioning. Selected
+  # by comment, so reordering the user's sshKeys doesn't replace the server.
   resource.hcloud_ssh_key.alex = {
     name = "alex";
-    public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJVB44hBiASLPelTC//teEK3CpzrwswdBccLe9MKbaMp adecigear";
+    public_key = lib.head (lib.filter (lib.hasSuffix " adecigear") self.users.alex.sshKeys);
   };
 
   # Hetzner creates it from Ubuntu; nixos-anywhere then replaces the OS, so

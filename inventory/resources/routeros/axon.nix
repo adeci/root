@@ -1,8 +1,6 @@
 # Upstairs mini rack
 {
   model = "CRS310-8G+2S+IN";
-  host = "10.99.0.3";
-  port = 8728;
 
   identity = "axon";
 

@@ -9,9 +9,10 @@
     }:
     let
       inherit (self.users.alex) username;
+      inherit (config.wrappers.zsh) atuinSyncAddress;
       files = config.clan.core.vars.generators.atuin.files;
       configDir = pkgs.writeTextDir "config.toml" ''
-        sync_address = "http://sequoia.cymric-daggertooth.ts.net:8888"
+        sync_address = "${atuinSyncAddress}"
       '';
 
       login = pkgs.writeShellApplication {
@@ -28,6 +29,15 @@
       };
     in
     {
+      imports = [ self.modules.nixos.wrappers ];
+
+      assertions = [
+        {
+          assertion = atuinSyncAddress != null;
+          message = "atuin-login needs wrappers.zsh.atuinSyncAddress, the server to log in to.";
+        }
+      ];
+
       clan.core.vars.generators.atuin = {
         share = true;
         prompts = lib.genAttrs [ "username" "password" "key" ] (name: {
@@ -49,7 +59,7 @@
         serviceConfig = {
           Type = "oneshot";
           ExecStart = lib.getExe login;
-          # The server is on the tailnet, which may come up after login.
+          # The server may not be reachable yet at login.
           Restart = "on-failure";
           RestartSec = 60;
         };

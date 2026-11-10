@@ -1,9 +1,8 @@
 # @adeci/monitoring
 
-Observability stack for the adeci-net fleet. One server (sequoia) runs
-Prometheus + Loki + Grafana behind nginx; every machine tagged `adeci-net`
-runs a Grafana Alloy agent that pushes metrics and journal logs over
-Tailscale.
+Observability stack for a clan. One server runs Prometheus + Loki + Grafana
+behind nginx; every agent machine runs a Grafana Alloy agent that pushes
+metrics and journal logs over Tailscale.
 
 ## Architecture
 
@@ -23,7 +22,7 @@ Tailscale.
         │ metrics                                 logs  │
         │ (/prometheus/api/v1/write)    (/loki/loki/api/v1/push)
         │                                               │
-        └─── Alloy (agent) on every adeci-net machine ──┘
+        └─── Alloy (agent) on every monitored machine ──┘
 ```
 
 ## Roles
@@ -48,14 +47,14 @@ provisioned dashboards are still managed from git.
 
 ### `agent`
 
-Every adeci-net machine. Ships metrics + journal logs.
+Every monitored machine. Ships metrics + journal logs.
 
 | Setting                | Default | Description                                                                                          |
 | ---------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
 | `extraCollectors`      | `[]`    | Extra `prometheus.exporter.unix` collectors on top of the defaults.                                  |
 | `useSSL`               | `false` | Use HTTPS when talking to the server.                                                                |
 | `scrapeInterval`       | `"15s"` | Local scrape interval.                                                                               |
-| `extraScrapeTargets`   | `[]`    | Extra local Prometheus jobs, used for sidecar exporters like Janus' Kea and Unbound exporters.       |
+| `extraScrapeTargets`   | `[]`    | Extra local Prometheus jobs, such as sidecar Kea or Unbound exporters.                               |
 | `extraLabels`          | `{}`    | Extra external labels applied to all metrics + logs (e.g. `{ role = "router"; }`).                   |
 | `journal.mode`         | `"all"` | `"all"`, `"nixos"` (services explicitly enabled via NixOS), or `"explicit"` (see `journal.include`). |
 | `journal.include`      | `[]`    | Explicit service list when `journal.mode = "explicit"`. Omit the `.service` suffix.                  |
@@ -67,11 +66,9 @@ default: `cpu`, `meminfo`, `filesystem`, `diskstats`, `netdev`, `netclass`,
 `textfile` collector reads `/var/lib/alloy/textfile/*.prom`, so machine-
 specific modules can add custom metrics without editing this service.
 
-Janus uses that textfile path for router-local probes and nftables firewall
-counters. The firewall exporter parses named counters from `nft -j list ruleset`
-and emits only bounded labels (`family`, `table`, `chain`, `counter`, `action`,
-`zone`). Per-IP and per-port firewall details stay in Loki drop logs, not
-Prometheus labels.
+A router, for example, can publish its probe results and nftables counters
+there. Keep such labels bounded: per-IP and per-port detail belongs in Loki
+logs, not Prometheus labels.
 
 Host identity lives in the standard Prometheus `instance` label (set to the
 machine's short hostname). Alloy's unix exporter populates it automatically
@@ -80,24 +77,22 @@ Alloy's own metrics carry the hostname too. Loki journal logs get `instance`
 from `__journal__hostname`. Alerts and dashboards can query `{instance="$host"}`
 directly.
 
-Log volume is intentionally tiered in inventory: core infra machines keep full
-journald shipping, while personal/non-core machines use explicit units only
-(`alloy`, `sshd`, and Tailscale units). Failed unit metrics still cover the
-whole system via the node exporter. Janus keeps full journald shipping so
-rate-limited kernel nft drop logs with `janus-fw input-drop` and
-`janus-fw forward-drop` prefixes reach Loki for forensic filtering.
+`journal.mode` tiers log volume per machine: core infrastructure can ship the
+full journal while other machines ship explicit units only (for example
+`alloy`, `sshd`, and the Tailscale units). Failed unit metrics still cover the
+whole system via the node exporter. Kernel messages, such as firewall drop
+logs, have no systemd unit, so only `journal.mode = "all"` ships them.
 
 ## Inventory example
 
 ```nix
-# inventory/clan/instances/monitoring.nix
 {
   monitoring = {
     module = { name = "@adeci/monitoring"; input = "self"; };
     roles = {
       agent = {
-        tags = [ "adeci-net" ];
-        machines.janus.settings = {
+        tags = [ "all" ];
+        machines.router.settings = {
           extraCollectors = [ "conntrack" ];
           extraLabels.role = "router";
           extraScrapeTargets = [
@@ -107,8 +102,8 @@ rate-limited kernel nft drop logs with `janus-fw input-drop` and
           ];
         };
       };
-      server.machines.sequoia.settings = {
-        host = "sequoia.cymric-daggertooth.ts.net";
+      server.machines.monitor.settings = {
+        host = "monitor.example.ts.net";
       };
     };
   };
@@ -120,10 +115,9 @@ rate-limited kernel nft drop logs with `janus-fw input-drop` and
 - `prometheus-auth`, `loki-auth` (perMachine, shared) — one htpasswd pair per
   endpoint. Alloy reads the password via systemd `LoadCredential`, nginx
   reads the htpasswd file via `basicAuthFile`. Username is `alloy`.
-- `ntfy-alerts` (Sequoia) — provisions the private ntfy users/tokens for
-  Atlas alerts. The generated `alex-password` is the phone login password;
-  `ntfy.env` configures ntfy auth/ACLs; `alertmanager-ntfy.yml` gives the
-  bridge a write-only ntfy token.
+- `alertDelivery.ntfy.configGenerator` (default `ntfy-alerts`) — not created by
+  this service. The server machine must define it with an
+  `alertmanager-ntfy.yml` that gives the bridge a write-only ntfy token.
 
 ## Self-monitoring
 
@@ -134,38 +128,40 @@ built-in Prometheus alert rules cover `HostStale`, `DiskSpaceHigh`/`Critical`,
 `InodeExhaustionHigh`, `SystemdUnitFailed`, `AlloyWriteFailing`,
 `PrometheusIngestBroken`, and `LokiIngestBroken`.
 
-Janus has an additional `router-health` rule group for low-noise router alerts:
-core service down, telemetry/exporter degradation, systemd degraded, stale
-firewall counter collection, WAN/internet/DNS probe failure, severe packet loss,
-high latency, high CPU/NVMe temperature, root filesystem full, conntrack
-pressure, and sustained interface errors. Data-plane and WAN outage alerts are
-critical; telemetry-only failures are warnings. These use existing Janus metrics
-only; firewall drop counters and logs are not alert sources.
+An additional `router-health` rule group covers low-noise router alerts: core
+service down, telemetry/exporter degradation, systemd degraded, stale firewall
+counter collection, WAN/internet/DNS probe failure, severe packet loss, high
+latency, high CPU/NVMe temperature, root filesystem full, conntrack pressure,
+and sustained interface errors. Data-plane and WAN outage alerts are critical;
+telemetry-only failures are warnings. Firewall drop counters and logs are not
+alert sources. Unlike the rest of the service, these rules (and the dashboard
+below) are still written for one specific router: they select
+`instance="janus"` and the probe, RouterOS and firewall-counter metrics that
+machine publishes.
 
 ## Alert Delivery
 
 The monitoring service owns Alertmanager routing and the `alertmanager-ntfy`
 bridge. The notification backend is injected through
-`settings.alertDelivery.ntfy`; on Sequoia that backend is the local ntfy service
-from `machines/sequoia/modules/ntfy.nix`.
+`settings.alertDelivery.ntfy`: an ntfy server at `baseUrl` (by default one on
+the monitoring server itself) and the generator described above.
 
 - `alertmanager-ntfy` listens on `127.0.0.1` and formats Alertmanager webhooks
   into ntfy messages.
 - Alertmanager routes only `severity="critical"` to ntfy. Warnings stay visible
-  in Prometheus/Grafana but do not page the phone.
+  in Prometheus/Grafana but do not notify.
 - The bridge receives its ntfy token from the configured clan vars generator, so
   notification credentials do not enter the Nix store.
 
 ## Dashboards
 
-The curated Atlas dashboard is provisioned from git under
-`clan-services/monitoring/dashboards/` and placed in the `Atlas` folder.
-Grafana's home dashboard is the `Network` page, not the upstream welcome
-screen. Provisioned dashboards are read-only in the UI so production matches
-the repo.
+The curated Atlas dashboard is provisioned from this service's `dashboards/`
+directory and placed in the `Atlas` folder. Grafana's home dashboard is the
+`Network` page, not the upstream welcome screen. Provisioned dashboards are
+read-only in the UI so production matches the repo.
 
 Current page:
 
-- `Network / Router` — Janus status, WAN/VLAN throughput, high-frequency internet latency/loss percentiles from Smokeping, DHCP leases/pool usage, Unbound resolver status/queries per second/cache/RCODE/query-type/latency/request-list/memory, RouterOS reachability latency, interface drops/errors, conntrack pressure, nftables firewall counter rates, and recent rate-limited firewall drop logs.
+- `Network / Router` — router status (the `janus` instance), WAN/VLAN throughput, high-frequency internet latency/loss percentiles from Smokeping, DHCP leases/pool usage, Unbound resolver status/queries per second/cache/RCODE/query-type/latency/request-list/memory, RouterOS reachability latency, interface drops/errors, conntrack pressure, nftables firewall counter rates, and recent rate-limited firewall drop logs.
 
 Use `Save as` for scratch UI experiments. Promote useful panels back into git.

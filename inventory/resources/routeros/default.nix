@@ -17,9 +17,14 @@ let
       }) vlanNames
     );
 
+  # Defaults: the API at the device's homelan reservation, on RouterOS's API port.
   expandDevice =
     device:
-    device
+    {
+      host = homelan.hosts.${device.identity}.ip;
+      port = 8728;
+    }
+    // device
     // (
       if device ? vlans && builtins.isList device.vlans then { vlans = vlanIdsFor device.vlans; } else { }
     );

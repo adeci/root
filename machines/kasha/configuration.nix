@@ -22,6 +22,8 @@
     printing
   ];
 
+  wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
+
   boot.loader = {
     timeout = 0;
     grub = {

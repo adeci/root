@@ -7,14 +7,11 @@ let
 in
 {
   nixos =
-    { pkgs, self, ... }:
+    { self, ... }:
     {
       imports = [ shared ];
 
       programs._1password-gui.polkitPolicyOwners = [ self.users.alex-work.username ];
-
-      # Without the framework's plain 1Password, which lacks the polkit owners
-      shopify-framework.packages.apps = [ pkgs.slack ];
     };
 
   # 1Password's module copies the app into /Applications, where it must live.

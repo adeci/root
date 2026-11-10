@@ -9,17 +9,16 @@
 let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
 
-  defaultGit = self.wrappers.git.wrap { inherit pkgs; };
   wrappedTmux = self.wrappers.tmux.wrap { inherit pkgs; };
 
-  atunConfigDir = pkgs.writeTextDir "config.toml" (
+  atuinConfigDir = pkgs.writeTextDir "config.toml" (
     ''
       enter_accept = false
     ''
     + (
-      if config.atuinSync then
+      if config.atuinSyncAddress != null then
         ''
-          sync_address = "http://sequoia.cymric-daggertooth.ts.net:8888"
+          sync_address = "${config.atuinSyncAddress}"
           auto_sync = true
         ''
       else
@@ -40,24 +39,23 @@ in
 
   options.git = lib.mkOption {
     type = lib.types.nullOr lib.types.package;
-    default = defaultGit;
+    default = null;
     description = "git first on PATH; null leaves git to the system.";
   };
 
-  options.atuinSync = lib.mkOption {
-    type = lib.types.bool;
-    default = true;
-    description = "Sync shell history through sequoia's Atuin server.";
+  options.atuinSyncAddress = lib.mkOption {
+    type = lib.types.nullOr lib.types.str;
+    default = null;
+    example = "http://atuin.example.com:8888";
+    description = "Atuin server to sync shell history with; null keeps history local.";
   };
 
   config = {
     hmSessionVariables = null;
 
     env = {
-      EDITOR = "nvim";
-      VISUAL = "nvim";
       WORDCHARS = "*?_-.[]~=&;!#$%^(){}<>";
-      ATUIN_CONFIG_DIR = "${atunConfigDir}";
+      ATUIN_CONFIG_DIR = "${atuinConfigDir}";
     };
 
     prefixVar = [
@@ -104,6 +102,7 @@ in
               pkgs.unrar
               pkgs.dmidecode
               pkgs.pciutils
+              pkgs.wl-clipboard
             ]
           ))
         ];

@@ -35,7 +35,7 @@
           };
         };
 
-        # Terraform writes the token with `clan vars set`.
+        # The token is provisioned externally with `clan vars set`.
         clan.core.vars.generators.cloudflare-tunnel-token = {
           files.token = {
             secret = true;

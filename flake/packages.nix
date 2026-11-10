@@ -42,7 +42,7 @@ in
       ...
     }:
     let
-      # Packages that can't even evaluate here (niri on darwin) count as unavailable.
+      # Packages that can't even evaluate on this platform count as unavailable.
       availableHere = lib.filterAttrs (
         _: drv:
         let
@@ -79,7 +79,7 @@ in
       );
     in
     {
-      # Machines use this instance too (flake/clan.nix).
+      # Machines use this instance too.
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;

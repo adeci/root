@@ -1,8 +1,8 @@
-{ lib, ... }:
+{ lib, self, ... }:
 let
   atlasHost = "atlas.decio.us";
   grafanaPort = 3000;
-  tailnetCidr = "100.64.0.0/10";
+  tailnetCidr = self.resources.tailscale.cidr;
 in
 {
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [

@@ -17,14 +17,11 @@ outer.bottom = 6
 outer.top = 6
 outer.right = 6
 
-# Alt stands in for niri's Mod (Super) on Linux.
+# Alt is the window-manager modifier.
 
 [mode.main.binding]
-# bash -l to pick up the nix PATH
-alt-enter = "exec-and-forget bash -l -c @KITTY_HOME@"
-alt-shift-enter = "exec-and-forget bash -l -c @KITTY_HERE@"
-
-alt-w = 'exec-and-forget open -na "Google Chrome" --args --new-window'
+alt-enter = "exec-and-forget @KITTY_HOME@"
+alt-shift-enter = "exec-and-forget @KITTY_HERE@"
 
 alt-q = "close --quit-if-last-window"
 

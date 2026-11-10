@@ -1,5 +1,5 @@
-# Keys mirror wrappers/tmux/tmux.conf where herdr has an equivalent action;
-# prefix+? lists everything that is bound.
+# tmux-style keys where herdr has an equivalent action; prefix+? lists
+# everything that is bound.
 onboarding = false
 
 [theme]
@@ -12,14 +12,14 @@ version_check = false
 [keys]
 prefix = "ctrl+space"
 
-# Workspaces are herdr's sessions: shift+s is tmux's new-session prompt, and
-# `(`/`)` walk them as in tmux.
+# Workspaces are herdr's sessions, so they take tmux-style session keys:
+# shift+s starts one and `(`/`)` walk them.
 new_workspace = ["prefix+shift+n", "prefix+shift+s"]
 previous_workspace = "prefix+("
 next_workspace = "prefix+)"
 switch_workspace = "prefix+shift+1..9"
 
-# tmux H/L walk windows (herdr tabs).
+# Tabs are tmux-style windows: shift+h/l walk them.
 previous_tab = ["prefix+p", "prefix+shift+h"]
 next_tab = ["prefix+n", "prefix+shift+l"]
 close_tab = ["prefix+shift+x", "prefix+shift+k"]
@@ -30,17 +30,19 @@ swap_pane_down = "prefix+alt+j"
 swap_pane_up = "prefix+alt+k"
 swap_pane_right = "prefix+alt+l"
 
-# Tab toggles back to the previous pane anywhere (tmux switch-client -l
-# muscle memory); tmux `o` cycles panes, so the notification jump moves to O.
+# Tab toggles back to the previous pane anywhere, like a tmux-style
+# last-session key; `o` cycles panes as in tmux, so the notification jump
+# moves to O.
 last_pane = "prefix+tab"
 cycle_pane_next = "prefix+o"
 open_notification_target = "prefix+shift+o"
 
-# tmux `-` stacks, `|` sits side by side; `"` and `%` kept as muscle memory.
+# tmux-style splits: `-` stacks, `|` sits side by side; tmux's own `"` and
+# `%` stay as muscle memory.
 split_horizontal = ["prefix+minus", "prefix+\""]
 split_vertical = ["prefix+|", "prefix+%"]
 
-# tmux `v` enters copy mode, so `[`/`]` walk agents instead.
+# `v` enters copy mode (tmux-style), so `[`/`]` walk agents instead.
 copy_mode = "prefix+v"
 previous_agent = "prefix+["
 next_agent = "prefix+]"
@@ -65,10 +67,11 @@ width = "90%"
 height = "90%"
 
 [ui]
-# tmux `c` opens a window without asking for a name.
+# `c` opens a tab without asking for a name, as in tmux.
 prompt_new_tab_name = false
 
 # Desktop notification (notify-send) when an agent finishes or needs input.
-# Off by default; "terminal" would go through kitty, which filters them.
+# Off by default; "terminal" delivery needs a host terminal that allows OSC
+# notifications.
 [ui.toast]
 delivery = "system"

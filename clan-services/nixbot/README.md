@@ -5,11 +5,13 @@ buildbot-nix.
 
 ## Roles
 
-- `server` runs nixbot, its local PostgreSQL, the loopback nginx vhost (the
-  public side is a Cloudflare tunnel) and the GitHub App secrets.
+- `server` runs nixbot, its local PostgreSQL, a loopback-only nginx vhost and
+  the GitHub App secrets. Something on the machine, such as a tunnel or reverse
+  proxy, must forward the public `<domain>` to that vhost.
 
-Builds go through the server's nix daemon. Systems it can't build itself go to
-its `@adeci/remote-builder` machines.
+Builds go through the server's nix daemon. Systems it can't build itself need
+nix remote builders (`nix.buildMachines` with `nix.distributedBuilds`), which
+this service does not configure.
 
 The server rejects `nixbld` traffic to loopback, private ranges and the
 tailnet, so fixed-output CI builds only reach DNS and the internet.
@@ -41,18 +43,18 @@ commit wait for a repo writer's "Approve CI" click.
       input = "self";
     };
 
-    roles.server.machines.leviathan.settings = {
-      domain = "nixbot.decio.us";
+    roles.server.machines.ci-server.settings = {
+      domain = "nixbot.example.com";
       buildSystems = [
         "aarch64-linux"
         "x86_64-linux"
       ];
-      admins = [ "github:adeci" ];
+      admins = [ "github:<login>" ];
       prApproval.enable = true;
       github = {
-        appId = 5474567;
+        appId = 123456;
         oauthId = "Iv23...";
-        userAllowlist = [ "adeci" ];
+        userAllowlist = [ "<login>" ];
       };
     };
   };

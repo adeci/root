@@ -71,7 +71,7 @@ let
           };
         };
 
-      # No uid: macOS gives the first account 501, which darwin's base sets.
+      # No uid: macOS assigns it (501 for the first account).
       darwinModule = _: {
         users.users.${username} = {
           name = username;

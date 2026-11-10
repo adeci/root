@@ -9,7 +9,7 @@
         NSGlobalDomain."com.apple.swipescrolldirection" = true;
 
         # 2.0 is what macOS wrote when the Mouse tracking speed slider was set to
-        # 8/10 in System Settings on malum.
+        # 8/10 in System Settings.
         ".GlobalPreferences"."com.apple.mouse.scaling" = 2.0;
 
         CustomUserPreferences = {

@@ -246,7 +246,7 @@ pkgs.testers.runNixOSTest {
         leviathan.succeed("systemctl is-active fake-gpu-holder")
 
     with subtest("a magic packet from the trusted LAN starts its seat, one from the tenant VLAN does not"):
-        janus.succeed("wakeonlan -i 10.50.0.255 ${hosts.charybdis.mac}")
+        janus.succeed("wakeonlan -i ${tenant.prefix}.255 ${hosts.charybdis.mac}")
         janus.succeed("wakeonlan -i 192.168.2.255 ${hosts.scylla.mac}")
         leviathan.wait_for_unit("microvm@scylla.service", timeout=180)
         leviathan.fail("systemctl is-active microvm@charybdis")

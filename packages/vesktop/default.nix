@@ -76,7 +76,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.getLib stdenv.cc.cc)
   ];
 
-  # Always load the root-composed Vencord: never downloaded files or a stale
+  # Always load the vencord package: never downloaded files or a stale
   # vencordDir profile override.
   postPatch = ''
     substituteInPlace src/main/vencordFilesDir.ts \

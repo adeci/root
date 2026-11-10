@@ -23,7 +23,7 @@
       devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") config.devShells;
     in
     {
-      # Package checks come from flake/packages.nix.
+      # Packages add their own checks where they're defined.
       checks =
         lib.mapAttrs (_: machine: machine.config.system.build.toplevel) nixosMachines
         // lib.mapAttrs (_: machine: machine.system) darwinMachines

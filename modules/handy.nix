@@ -52,8 +52,8 @@
           };
         };
 
-        # Super+Space is unbound in niri, and keyd consumes it before anything else
-        # sees it (Ctrl+Space is the tmux prefix).
+        # Super+Space is the hold-to-talk key; keyd consumes it before the
+        # compositor or any app sees it.
         services.keyd.keyboards.default.extraConfig = lib.mkAfter ''
           [meta]
           space = layer(handy_ptt)

@@ -63,8 +63,8 @@ window-rule {
     clip-to-geometry true
 }
 
-// Chromium and Electron multiply touchpad scroll by 12; 0.15 was tuned live on
-// delphi. window-scroll-factor-touchpad-only.patch keeps mouse wheels native.
+// Chromium and Electron multiply touchpad scroll by 12; 0.15 was tuned on a
+// touchpad. window-scroll-factor-touchpad-only.patch keeps mouse wheels native.
 window-rule {
     match app-id="(?i)^(google-chrome|chromium|chromium-browser|brave-browser|slack|discord|vesktop|element|signal|1password|code|cursor|obsidian|bitwarden|spotify|steam)$"
     scroll-factor 0.15
@@ -77,7 +77,6 @@ binds {
     Mod+Shift+Return hotkey-overlay-title="Open Terminal Here" { spawn "kitty-here"; }
     Mod+D hotkey-overlay-title="Run an Application" { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
     Mod+Alt+V hotkey-overlay-title="Clipboard History" { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
-    // Mod+Space is Handy's dictation hotkey; keyd consumes it.
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "noctalia" "msg" "session" "lock"; }
 
     XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+"; }

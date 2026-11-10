@@ -9,6 +9,13 @@ The service treats `config.clan.core.state` as the source of truth:
 - runs each state's `postBackupCommand`
 - exposes Clan backup provider commands for create/list/restore
 
-Repository credentials are supplied through Clan vars. Terraform creates the
-Backblaze B2 bucket and per-machine application keys, then writes the per-machine
-S3 credentials to `restic-b2-credentials/env`.
+Each machine gets its own repository: `repository` if set, otherwise
+`s3:<s3Endpoint>/<name>/<machine>` from the flake's
+`resources.b2.buckets.resticBackups`.
+
+Credentials come from Clan vars. The repository password
+(`<passwordGenerator>/password`) is generated. The repository environment
+(`<credentialsGenerator>/env`, for example `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` for an S3 repository) is only declared: whatever
+issues the machine's storage keys sets it with
+`clan vars set <machine> <credentialsGenerator>/env`.

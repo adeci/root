@@ -4,7 +4,7 @@
   ...
 }:
 let
-  # terranix/routeros is a separate workspace with its own state (routeros.nix).
+  # routeros is a separate workspace with its own state.
   terranixDir = ../terranix;
   terranixModules =
     let
@@ -48,21 +48,10 @@ in
 
       inherit (inputs'.clan-core.packages) clan-cli;
 
-      tfSetup = # bash
-        ''
-          cd "$(git rev-parse --show-toplevel)"
-          mkdir -p .terraform/cloud
-          cd .terraform/cloud
-
-          AWS_ACCESS_KEY_ID=$(clan secrets get b2-key-id)
-          AWS_SECRET_ACCESS_KEY=$(clan secrets get b2-application-key)
-          AWS_REQUEST_CHECKSUM_CALCULATION=when_required
-          AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
-          export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
-          export AWS_REQUEST_CHECKSUM_CALCULATION AWS_RESPONSE_CHECKSUM_VALIDATION
-
-          install -m644 ${tfConfig} config.tf.json
-        '';
+      tofu = import ./tofu-workspace.nix {
+        inherit pkgs clan-cli tfConfig;
+        workspace = "cloud";
+      };
     in
     {
       packages = {
@@ -95,34 +84,13 @@ in
             '';
         };
       }
-      //
-        lib.genAttrs
-          [
-            "tf-init"
-            "tf-plan"
-            "tf-apply"
-            "tf-output"
-            "tf-state"
-            "tf-destroy"
-          ]
-          (
-            name:
-            let
-              cmd = lib.removePrefix "tf-" name;
-            in
-            pkgs.writeShellApplication {
-              inherit name;
-              runtimeInputs = [
-                pkgs.gitMinimal
-                pkgs.opentofu
-                clan-cli
-              ];
-              text = # bash
-                ''
-                  ${tfSetup}
-                  tofu ${cmd} "$@"
-                '';
-            }
-          );
+      // lib.genAttrs [
+        "tf-init"
+        "tf-plan"
+        "tf-apply"
+        "tf-output"
+        "tf-state"
+        "tf-destroy"
+      ] (name: tofu.command name (lib.removePrefix "tf-" name));
     };
 }

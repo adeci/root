@@ -18,13 +18,13 @@ _: {
           repository = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Override Restic repository URL. Defaults to the shared B2 bucket and this machine name.";
+            description = "Restic repository URL. Null means `s3:<s3Endpoint>/<name>/<machine>` from the flake's `resources.b2.buckets.resticBackups`.";
           };
 
           credentialsGenerator = lib.mkOption {
             type = lib.types.str;
             default = "restic-b2-credentials";
-            description = "Clan vars generator containing the Restic repository environment file.";
+            description = "Clan vars generator whose `env` file holds the repository credentials as environment variables. The service only declares the file; set it with `clan vars set <machine> <generator>/env`.";
           };
 
           passwordGenerator = lib.mkOption {

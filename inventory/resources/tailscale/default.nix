@@ -1,21 +1,10 @@
 let
-  workMachines = import ../../../work/inventory/clan/machines.nix;
   addresses = import ./addresses.nix;
 in
 {
   inherit addresses;
+  # Tailscale's CGNAT range; every tailnet address falls inside it.
+  cidr = "100.64.0.0/10";
   policy = import ./policy.nix { inherit addresses; };
-
-  deviceTags = builtins.listToAttrs (
-    map
-      (name: {
-        inherit name;
-        value = [ "tag:work" ];
-      })
-      (
-        builtins.filter (name: builtins.elem "adeci-net-work" (workMachines.${name}.tags or [ ])) (
-          builtins.attrNames workMachines
-        )
-      )
-  );
+  deviceTags = import ./device-tags.nix;
 }

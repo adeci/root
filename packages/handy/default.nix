@@ -48,9 +48,9 @@ let
     typing_tool = "wtype";
     # An on-demand mic opens with ~125 ms of silence and clips the first word.
     always_on_microphone = true;
-    # The GUI shows the real hotkey, and Ctrl+Space (tmux) stays free. Handy
-    # drops a binding missing any field, and the first start copies this file
-    # verbatim, so spell out the whole ShortcutBinding.
+    # The GUI shows the real hotkey, and Ctrl+Space stays free for other
+    # programs. Handy drops a binding missing any field, and the first start
+    # copies this file verbatim, so spell out the whole ShortcutBinding.
     bindings.transcribe = {
       id = "transcribe";
       name = "Transcribe";

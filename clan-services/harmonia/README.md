@@ -18,7 +18,7 @@ Runs the harmonia cache daemon and generates the signing key pair.
 | ---------- | ---------- | ------- | ------------------------------------------ |
 | `port`     | `port`     | `5000`  | Port for the harmonia cache server         |
 | `address`  | `str/null` | `null`  | Override address (defaults to host.domain) |
-| `priority` | `int`      | `40`    | Default substituter priority for clients   |
+| `priority` | `int`      | `50`    | Default substituter priority for clients   |
 
 ### client
 

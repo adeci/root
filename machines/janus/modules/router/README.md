@@ -41,15 +41,14 @@ Guest can reach WAN and the trusted printer on TCP ports 515 (LPD), 631 (IPP), a
 (JetDirect). Management has no forwarding by default; devices there can reach Janus for
 DHCP/DNS/API.
 
-Vault (lachesis, which runs mandate and holds the messaging logins) can only reach WAN,
-plus Janus for DHCP/DNS. It is its own VLAN because hosts sharing a VLAN reach each other
-at L2, past Janus. It is not advertised as a Tailscale subnet route; lachesis is a tailnet
-node itself, so the Tailscale policy governs who reaches it over the tailnet. Initrd SSH
-unlock reaches it from trusted.
+Vault holds hosts with sensitive credentials. It can only reach WAN, plus Janus for
+DHCP/DNS; trusted reaches in. It is its own VLAN because hosts sharing a VLAN reach each
+other at L2, past Janus. It is not advertised as a Tailscale subnet route: its hosts are
+tailnet nodes themselves, so the Tailscale policy governs who reaches them over the tailnet.
 
-Tenant (microVMs on leviathan) can only reach WAN, plus Janus for DHCP/DNS; trusted
-reaches in. Leviathan isolates the VMs' bridge ports, so they do not reach each other at
-L2 either. Like vault, it is not advertised as a Tailscale subnet route.
+Tenant holds untrusted hosted workloads. It can only reach WAN, plus Janus for DHCP/DNS;
+trusted reaches in. Tenants must not reach each other at L2 either, so whatever hosts them
+isolates their bridge ports. Like vault, it is not advertised as a Tailscale subnet route.
 
 Tailscale is the admin plane. Janus accepts Tailnet traffic to itself and forwards approved subnet-route traffic into local VLANs. Peer authorization lives in Tailscale route approval and ACLs, not per-peer nftables rules on Janus.
 

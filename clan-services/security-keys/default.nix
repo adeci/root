@@ -21,12 +21,12 @@ _: {
                 name = lib.mkOption {
                   type = lib.types.str;
                   description = "Name of the FIDO2 security key";
-                  example = "spark";
+                  example = "yubikey-a";
                 };
                 owner = lib.mkOption {
                   type = lib.types.str;
                   description = "Username who owns this key";
-                  example = "alex";
+                  example = "alice";
                 };
               };
             }
@@ -38,7 +38,7 @@ _: {
           default = [ ];
           description = "Which keys to use on this machine (subset of key names)";
           example = [
-            "spark"
+            "yubikey-a"
           ];
         };
       };

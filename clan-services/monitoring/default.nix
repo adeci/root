@@ -366,7 +366,7 @@ in
               MagicDNS name. Also used as the Grafana `domain` and the nginx
               `server_name`.
             '';
-            example = "sequoia.cymric-daggertooth.ts.net";
+            example = "monitor.example.ts.net";
           };
 
           grafana.enable = lib.mkOption {

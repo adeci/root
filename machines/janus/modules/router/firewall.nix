@@ -55,7 +55,7 @@ let
     };
     vault = {
       interface = topology.vlanInterface topology.vlans.vault;
-      description = "lachesis, which holds the messaging logins; internet only";
+      description = "hosts with sensitive credentials; internet only";
       allow = [
         {
           target = "wan";
@@ -65,7 +65,7 @@ let
     };
     tenant = {
       interface = topology.vlanInterface topology.vlans.tenant;
-      description = "microVM tenants hosted on leviathan; internet only";
+      description = "untrusted hosted workloads; internet only";
       allow = [
         {
           target = "wan";

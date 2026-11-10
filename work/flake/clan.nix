@@ -13,7 +13,7 @@
     meta.name = "adeci-work";
     meta.domain = "cymric-daggertooth.ts.net";
     inventory = import ../inventory/clan;
-    modules."@adeci/tailscale" = import (inputs.root + "/clan-services/tailscale");
+    modules."@adeci/tailscale" = inputs.root.clanServices."@adeci/tailscale";
     # Shared modules see the main flake as self and inputs.
     specialArgs = {
       self = inputs.root;

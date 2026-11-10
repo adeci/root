@@ -44,6 +44,10 @@
     tailscale-travel
   ];
 
+  tailscaleTravel.defaultExitNode = "sequoia";
+
+  wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
+
   wrappers.niri.machineConfig = # kdl
     ''
       output "PNP(HSX) YHB03P24 0x00888888" {

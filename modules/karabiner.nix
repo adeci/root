@@ -9,6 +9,7 @@
     }:
     let
       user = config.system.primaryUser;
+      home = config.users.users.${user}.home;
 
       karabinerConfig = pkgs.writeText "karabiner.json" (
         builtins.toJSON {
@@ -66,8 +67,8 @@
       );
     in
     {
-      # nix-darwin's module needs Karabiner-Elements 14.13.0, pinned in
-      # packages/karabiner-elements.
+      # nix-darwin's module needs Karabiner-Elements 14.13.0, which the pinned
+      # package provides.
       services.karabiner-elements = {
         enable = true;
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.karabiner-elements;
@@ -76,7 +77,7 @@
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           echo "installing karabiner config..."
-          configDir="/Users/${user}/.config/karabiner"
+          configDir="${home}/.config/karabiner"
           mkdir -p "$configDir"
           cp "${karabinerConfig}" "$configDir/karabiner.json"
           chmod 644 "$configDir/karabiner.json"

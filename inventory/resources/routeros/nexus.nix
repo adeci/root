@@ -1,8 +1,6 @@
 # Main rack
 {
   model = "CRS328-24P-4S+RM";
-  host = "10.99.0.2";
-  port = 8728;
 
   identity = "nexus";
 

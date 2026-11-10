@@ -67,12 +67,12 @@ in
       ]) grammars;
     };
 
-    # git isn't here: every machine already has it on PATH.
     runtimePkgs =
       with pkgs;
       [
         fd
         fzf
+        git
         ripgrep
       ]
       ++ lib.optionals config.languageServers [

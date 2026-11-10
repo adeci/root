@@ -15,63 +15,47 @@ let
         };
 
         ".config/git/config" = (pkgs.formats.gitIni { }).generate "git-config" {
-          user = {
-            name = "Alex Decious";
-            inherit (self.users.alex-work) email;
-          };
+          user = { inherit (self.users.alex-work.git) name email; };
           init.defaultBranch = "main";
           pull.rebase = true;
           push.autoSetupRemote = true;
         };
       };
+
+      wrappers.zsh.extraInit = # zsh
+        ''
+          export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
+
+          if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
+            eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
+          fi
+
+          # No environment banner before each prompt
+          if (( $+functions[__shadowenv_hook] )); then
+            functions -c __shadowenv_hook __shadowenv_hook_verbose
+            __shadowenv_hook() { __shadowenv_hook_verbose preexec; }
+          fi
+        '';
     };
 in
 {
-  nixos = {
-    imports = [ shared ];
-
-    programs.zsh.interactiveShellInit = # zsh
-      ''
-        export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
-
-        if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
-          eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
-        fi
-
-        # No environment banner before each prompt
-        if (( $+functions[__shadowenv_hook] )); then
-          functions -c __shadowenv_hook __shadowenv_hook_verbose
-          __shadowenv_hook() { __shadowenv_hook_verbose preexec; }
-        fi
-      '';
-
-  };
+  nixos =
+    { self, ... }:
+    {
+      imports = [
+        self.modules.nixos.home-links
+        self.modules.nixos.wrappers
+        shared
+      ];
+    };
 
   darwin =
-    { lib, pkgs, ... }:
+    { self, ... }:
     {
-      imports = [ shared ];
-
-      wrappers.zsh = {
-        git = null;
-        atuinSync = false;
-        extraInit = # zsh
-          ''
-            # gcloud (google-cloud-sdk) comes from the work apps feature.
-            export KUBECONFIG="''${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/config.shopify.cloudplatform"
-
-            if [[ -x "$HOME/.local/state/tec/profiles/base/current/global/init" ]]; then
-              eval "$($HOME/.local/state/tec/profiles/base/current/global/init zsh)"
-            fi
-
-            # No environment banner before each prompt
-            if (( $+functions[__shadowenv_hook] )); then
-              functions -c __shadowenv_hook __shadowenv_hook_verbose
-              __shadowenv_hook() { __shadowenv_hook_verbose preexec; }
-            fi
-          '';
-      };
-      wrappers.git.enable = lib.mkForce false;
-      environment.systemPackages = [ pkgs.git ];
+      imports = [
+        self.modules.darwin.home-links
+        self.modules.darwin.wrappers
+        shared
+      ];
     };
 }

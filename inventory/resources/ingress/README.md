@@ -1,52 +1,45 @@
 # Ingress
 
-Public L4 ingress data for edge machines.
+Public L4 ingress data for edge machines. Both files are keyed by edge machine name.
 
 ## What This Owns
 
-`streams.nix` owns public socket forwarding:
+`streams.nix` owns public socket forwarding. Each edge lists its streams:
 
 ```nix
 {
-  name = "minecraft-gab";
+  name = "minecraft-gab"; # unique per edge
   description = "Minecraft bros gab";
-  protocol = "tcp";
-  listen = 25573;
-  upstream = "leviathan.cymric-daggertooth.ts.net:25573";
+  protocol = "tcp"; # tcp or udp
+  listen = 25573; # public port on the edge
+  upstream = "leviathan.cymric-daggertooth.ts.net:25573"; # host:port
 }
 ```
 
-Each stream entry is consumed by:
+A stream forwards its `listen` port to `upstream` and opens that port on the edge's firewalls, including its cloud firewall. Each protocol/port pair binds at most one stream per edge.
 
-- `modules/public-edge.nix` for Nginx `stream` proxy config.
-- `modules/public-edge.nix` for the edge machine's NixOS firewall.
-- `terranix/hcloud/default.nix` for Hetzner Cloud firewalls on `hcloud` edges.
+`edges.nix` owns edge-machine metadata and the static cloud firewall rules that are not streams, such as HTTP/HTTPS and Tailscale UDP:
 
-`edges.nix` owns edge-machine metadata and static cloud firewall rules, such as HTTP/HTTPS and Tailscale UDP. SSH is deliberately absent: `public-edge.nix` only allows it on `tailscale0`.
+```nix
+{
+  provider = "hcloud"; # cloud whose firewall fronts the edge
+  firewall = {
+    name = "conduit"; # optional, defaults to the edge name
+    staticRules = [
+      {
+        description = "HTTPS (Zipline)";
+        protocol = "tcp"; # tcp or udp
+        port = 443;
+      }
+    ];
+  };
+}
+```
+
+A protocol/port pair appears once across an edge's static rules and streams. SSH is deliberately absent: edges accept it only over Tailscale.
 
 ## What This Does Not Own
 
-DNS still lives in `inventory/resources/cloudflare/dns.nix`. Cloudflare records may reference ingress streams for edge IPs and SRV ports, but DNS remains Cloudflare-owned.
+DNS belongs to the Cloudflare resource. Its records may reference ingress streams for edge IPs and SRV ports, but DNS remains Cloudflare-owned.
 
-Upstream service firewalls still live with the service host. For example, Sequoia or Leviathan must explicitly allow any private `tailscale0` ports they serve.
-
-## Why Nginx Uses Variables
-
-Nginx resolves static `proxy_pass host:port` targets during config test/reload. That breaks deploys when a Tailnet or shared-in Tailscale hostname is temporarily unresolved.
-
-`public-edge.nix` emits variable-backed upstreams instead:
-
-```nginx
-resolver 100.100.100.100 valid=30s ipv6=off;
-set $upstream_minecraft_gab_tcp_25573 "leviathan.cymric-daggertooth.ts.net:25573";
-proxy_pass $upstream_minecraft_gab_tcp_25573;
-```
-
-This keeps Nginx reloads independent from current MagicDNS availability while still resolving the upstream at connection time.
-
-## Adding A Public L4 Service
-
-1. Add one entry to `streams.nix` under the edge machine.
-2. If it needs DNS, add the A/SRV/CNAME record in `inventory/resources/cloudflare/dns.nix`, referencing the edge or stream as needed.
-3. Run `nix eval .#nixosConfigurations.<edge>.config.system.build.toplevel.drvPath`.
-4. Run `nix run .#tf-plan` if the edge uses a provider-backed firewall.
+Upstream service firewalls stay with the service host: it must explicitly allow any private `tailscale0` ports it serves.

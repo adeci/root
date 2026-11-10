@@ -43,6 +43,8 @@
     tailscale-travel
   ];
 
+  tailscaleTravel.defaultExitNode = "sequoia";
+
   wrappers.niri.machineConfig = # kdl
     ''
       output "BOE NE135A1M-NY1 Unknown" {

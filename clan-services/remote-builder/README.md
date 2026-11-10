@@ -35,8 +35,8 @@ servers that should trust the new client.
 
 `foreign` keeps same-system builds local (cheaper for small builds, works
 offline) while builds for other systems, like darwin from Linux, just work.
-`/etc/nix/machines-all` always lists every server for opting in per build:
-`nrb` (zsh alias) or `--builders @/etc/nix/machines-all --max-jobs 0`.
+`/etc/nix/machines-all` always lists every server, for opting in per build
+with `--builders @/etc/nix/machines-all --max-jobs 0`.
 
 The server role is NixOS only.
 

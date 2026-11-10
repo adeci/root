@@ -1,19 +1,8 @@
 # Built on demand, never as flake checks.
-{
-  inputs,
-  lib,
-  self,
-  ...
-}:
+{ lib, self, ... }:
 {
   perSystem =
-    { system, ... }:
-    let
-      pkgs = import inputs.nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
-    in
+    { pkgs, system, ... }:
     {
       packages = lib.optionalAttrs (system == "x86_64-linux") {
         leviathan-microvms-test = import ../machines/leviathan/tests/microvms.nix { inherit pkgs self; };
