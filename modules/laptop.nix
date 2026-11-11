@@ -1,8 +1,12 @@
 {
   nixos =
-    { pkgs, ... }:
+    { config, pkgs, ... }:
     {
-      environment.systemPackages = [ pkgs.cheese ];
+      environment.systemPackages = [
+        pkgs.cheese
+        pkgs.powertop
+        config.boot.kernelPackages.turbostat
+      ];
       hardware.bluetooth = {
         enable = true;
         powerOnBoot = true;

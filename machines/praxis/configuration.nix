@@ -14,6 +14,7 @@
     ./modules/gpd-audio-dsp.nix
     ./modules/viture-beast-audio.nix
     base
+    latest-kernel
     nvim-dev
     emacs
     zsh
@@ -97,7 +98,6 @@
   networking.modemmanager.enable = true;
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
     kernelParams = [
       "pcie_ports=native"
     ];

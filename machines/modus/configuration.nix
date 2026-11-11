@@ -12,6 +12,7 @@
     self.users.fmzakari.nixosModule
 
     base
+    latest-kernel
     nvim-dev
     zsh
     llm-tools
@@ -49,7 +50,7 @@
 
   wrappers.niri.machineConfig = # kdl
     ''
-      output "BOE NE135A1M-NY1 Unknown" {
+      output "eDP-1" {
           mode "2880x1920@120"
           scale 2
           transform "normal"

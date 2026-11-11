@@ -260,9 +260,9 @@
               -f -R "/Applications/Nix Apps" || true
           fi
 
-          # Idle shows the screensaver at 5 minutes and turns the display off at 15, on battery too.
-          /usr/bin/pmset -a displaysleep 15
-          ${asUser} /usr/bin/defaults -currentHost write com.apple.screensaver idleTime -int 300
+          # Idle never blanks or locks the screen; only the lid or a manual lock does.
+          /usr/bin/pmset -a displaysleep 0
+          ${asUser} /usr/bin/defaults -currentHost write com.apple.screensaver idleTime -int 0
 
           # Spotlight opens on Option-D (shortcut 64); -dict-add leaves the other shortcuts alone.
           ${asUser} /usr/bin/defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 \
