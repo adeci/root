@@ -11,9 +11,10 @@
   ...
 }:
 let
-  inherit (self.resources) homelan routeros;
+  inherit (self.resources) homelan;
+  inherit (self.resources.routeros) devices;
 
-  waps = lib.filterAttrs (_: d: d ? wifi) routeros;
+  waps = lib.filterAttrs (_: d: d ? wifi) devices;
 
   deviceProvider = name: "routeros.${name}";
 

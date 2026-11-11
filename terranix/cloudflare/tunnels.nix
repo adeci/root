@@ -6,7 +6,7 @@
   ...
 }:
 let
-  inherit (self.resources.cloudflare) tunnels;
+  inherit (self.resources.cloudflare) tunnels tunnelToken;
   inherit (inputs'.clan-core.packages) clan-cli;
 in
 {
@@ -35,8 +35,9 @@ in
       tunnel_id = config.resource.cloudflare_zero_trust_tunnel_cloudflared.${machine} "id";
 
       config.ingress_rule =
-        (lib.mapAttrsToList (hostname: service: {
-          inherit hostname service;
+        (lib.mapAttrsToList (hostname: route: {
+          inherit hostname;
+          service = "http://localhost:${toString route.port}";
         }) ingress)
         ++ [
           { service = "http_status:404"; }
@@ -58,7 +59,7 @@ in
         # Keep only the tunnel ID there; pass the token directly to the provisioner.
         environment.TUNNEL_TOKEN = "\${sensitive(cloudflare_zero_trust_tunnel_cloudflared.${machine}.tunnel_token)}";
         command = ''
-          printf '%s\n' "$TUNNEL_TOKEN" | ${lib.getExe clan-cli} vars set ${machine} cloudflare-tunnel-token/token
+          printf '%s\n' "$TUNNEL_TOKEN" | ${lib.getExe clan-cli} vars set ${machine} ${tunnelToken.generator}/${tunnelToken.file}
         '';
       };
     }

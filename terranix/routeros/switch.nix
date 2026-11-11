@@ -5,9 +5,9 @@
   ...
 }:
 let
-  inherit (self.resources) routeros;
+  inherit (self.resources.routeros) devices;
 
-  switches = lib.filterAttrs (_: d: d ? vlans) routeros;
+  switches = lib.filterAttrs (_: d: d ? vlans) devices;
 
   deviceProvider = name: "routeros.${name}";
   safeName = builtins.replaceStrings [ "-" ] [ "_" ];

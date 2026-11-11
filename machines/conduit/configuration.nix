@@ -13,6 +13,8 @@
     ./modules/zipline.nix
   ];
 
+  publicEdge.streams = self.resources.ingress.streams.conduit;
+
   time.timeZone = "America/New_York";
 
   services.journald.settings.Journal.SystemMaxUse = "200M";

@@ -1,7 +1,5 @@
-{ pkgs, inputs', ... }:
+{ pkgs, ... }:
 let
-  inherit (inputs'.clan-core.packages) clan-cli;
-
   version = "7.22.1";
 
   # Statically linked, so it runs without patchelf.
@@ -44,7 +42,8 @@ let
         "--package ${npk p.name arch p.hash}"
         "--package-name ${p.name}-${version}-${arch}.npk"
       ]) packages
-      ++ args;
+      ++ args
+      ++ [ ''"$@"'' ];
     in
     pkgs.writeShellApplication {
       name = "routeros-netinstall-${name}";
@@ -52,7 +51,6 @@ let
         pkgs.iproute2
         pkgs.iptables
         pkgs.python3
-        clan-cli
       ];
       text = "exec python3 ${./netinstall.py} \\\n  ${pkgs.lib.concatStringsSep " \\\n  " flags}\n";
       meta.platforms = [ "x86_64-linux" ];

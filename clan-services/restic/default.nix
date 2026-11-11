@@ -18,13 +18,23 @@ _: {
           repository = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Restic repository URL. Null means `s3:<s3Endpoint>/<name>/<machine>` from the flake's `resources.b2.buckets.resticBackups`.";
+            description = "Restic repository URL. Null means `<repositoryBase>/<machine>`.";
           };
 
-          credentialsGenerator = lib.mkOption {
+          repositoryBase = lib.mkOption {
             type = lib.types.str;
-            default = "restic-b2-credentials";
-            description = "Clan vars generator whose `env` file holds the repository credentials as environment variables. The service only declares the file; set it with `clan vars set <machine> <generator>/env`.";
+            example = "s3:s3.example.com/restic-backups";
+            description = "Repository URL prefix; each machine's repository is `<repositoryBase>/<machine>` unless `repository` is set.";
+          };
+
+          credentials = lib.mkOption {
+            description = "Clan var whose file holds the repository credentials as environment variables. The service only declares the file; set it with `clan vars set <machine> <generator>/<file>`.";
+            type = lib.types.submodule {
+              options = {
+                generator = lib.mkOption { type = lib.types.str; };
+                file = lib.mkOption { type = lib.types.str; };
+              };
+            };
           };
 
           passwordGenerator = lib.mkOption {
@@ -88,18 +98,16 @@ _: {
             config,
             lib,
             pkgs,
-            self,
             ...
           }:
           let
             machineName = config.clan.core.settings.machine.name;
-            bucket = self.resources.b2.buckets.resticBackups;
             inherit (settings) jobName;
             repository =
               if settings.repository != null then
                 settings.repository
               else
-                "s3:${bucket.s3Endpoint}/${bucket.name}/${machineName}";
+                "${settings.repositoryBase}/${machineName}";
 
             stateEntries = lib.attrValues config.clan.core.state;
             stateFolders = lib.unique (lib.flatten (map (state: state.folders) stateEntries));
@@ -179,8 +187,8 @@ _: {
           in
           {
             config = lib.mkIf hasState {
-              clan.core.vars.generators.${settings.credentialsGenerator} = {
-                files.env.secret = true;
+              clan.core.vars.generators.${settings.credentials.generator} = {
+                files.${settings.credentials.file}.secret = true;
               };
 
               clan.core.vars.generators.${settings.passwordGenerator} = {
@@ -204,7 +212,8 @@ _: {
                 ];
                 initialize = true;
                 inhibitsSleep = true;
-                environmentFile = config.clan.core.vars.generators.${settings.credentialsGenerator}.files.env.path;
+                environmentFile =
+                  config.clan.core.vars.generators.${settings.credentials.generator}.files.${settings.credentials.file}.path;
                 passwordFile = config.clan.core.vars.generators.${settings.passwordGenerator}.files.password.path;
                 inherit backupPrepareCommand backupCleanupCommand;
               };

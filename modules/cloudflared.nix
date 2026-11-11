@@ -4,17 +4,25 @@
       config,
       lib,
       pkgs,
-      self,
       ...
     }:
     let
-      inherit (self.resources.cloudflare) tunnels;
+      inherit (config.cloudflared) token;
       machineName = config.networking.hostName;
-      hasTunnel = tunnels ? ${machineName};
-      tokenPath = config.clan.core.vars.generators.cloudflare-tunnel-token.files.token.path;
+      tokenPath = config.clan.core.vars.generators.${token.generator}.files.${token.file}.path;
     in
     {
-      config = lib.mkIf hasTunnel {
+      options.cloudflared.token = lib.mkOption {
+        description = "Clan var holding this machine's tunnel token.";
+        type = lib.types.submodule {
+          options = {
+            generator = lib.mkOption { type = lib.types.str; };
+            file = lib.mkOption { type = lib.types.str; };
+          };
+        };
+      };
+
+      config = {
         systemd.services."cloudflared-tunnel-${machineName}" = {
           description = "Cloudflare Tunnel ${machineName}";
           after = [ "network-online.target" ];
@@ -36,8 +44,8 @@
         };
 
         # The token is provisioned externally with `clan vars set`.
-        clan.core.vars.generators.cloudflare-tunnel-token = {
-          files.token = {
+        clan.core.vars.generators.${token.generator} = {
+          files.${token.file} = {
             secret = true;
             restartUnits = [ "cloudflared-tunnel-${machineName}.service" ];
           };

@@ -41,6 +41,8 @@
     tailscale-travel
   ];
 
+  system.primaryUser = self.users.alex.username;
+
   tailscaleTravel.defaultExitNode = "sequoia";
 
   wrappers.niri.machineConfig = # kdl

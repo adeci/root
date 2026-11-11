@@ -25,6 +25,9 @@
     ./modules/v100-compute.nix
   ];
 
+  system.primaryUser = self.users.alex.username;
+  cloudflared.token = self.resources.cloudflare.tunnelToken;
+
   time.timeZone = "America/New_York";
 
   swapDevices = [

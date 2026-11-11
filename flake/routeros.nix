@@ -3,6 +3,12 @@
   lib,
   ...
 }:
+let
+  routerosAdmin = {
+    user = "admin";
+    secret = "routeros-password";
+  };
+in
 {
   perSystem =
     {
@@ -26,7 +32,12 @@
         ];
         extraArgs = {
           inherit (inputs) self;
-          inherit self' inputs inputs';
+          inherit
+            self'
+            inputs
+            inputs'
+            routerosAdmin
+            ;
         };
       };
 
@@ -35,9 +46,8 @@
         workspace = "network";
         tfConfig = netTfConfig;
       };
-    in
-    {
-      apps = lib.mapAttrs (_: program: { inherit program; }) {
+
+      tofuApps = {
         net-init = tofu.command "net-init" "init";
         net-plan = tofu.command "net-plan" "plan";
         net-apply = tofu.command "net-apply" "apply";
@@ -73,5 +83,28 @@
           echo "Done."
         '';
       };
+
+      # Process substitution keeps the password off argv and out of any file of our own.
+      netinstallApps = lib.mapAttrs' (
+        name: package:
+        let
+          app = "net-netinstall-${lib.removePrefix "routeros-netinstall-" name}";
+        in
+        lib.nameValuePair app (
+          pkgs.writeShellApplication {
+            name = app;
+            runtimeInputs = [ clan-cli ];
+            text = ''
+              exec ${lib.getExe package} \
+                --admin-user ${lib.escapeShellArg routerosAdmin.user} \
+                --admin-password-file <(clan secrets get ${lib.escapeShellArg routerosAdmin.secret}) \
+                "$@"
+            '';
+          }
+        )
+      ) (lib.filterAttrs (name: _: lib.hasPrefix "routeros-netinstall-" name) self'.packages);
+    in
+    {
+      apps = lib.mapAttrs (_: program: { inherit program; }) (tofuApps // netinstallApps);
     };
 }

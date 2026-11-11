@@ -5,9 +5,10 @@ buildbot-nix.
 
 ## Roles
 
-- `server` runs nixbot, its local PostgreSQL, a loopback-only nginx vhost and
-  the GitHub App secrets. Something on the machine, such as a tunnel or reverse
-  proxy, must forward the public `<domain>` to that vhost.
+- `server` runs nixbot, its local PostgreSQL, a loopback-only nginx vhost on
+  `listenPort` (default 80) and the GitHub App secrets. Something on the
+  machine, such as a tunnel or reverse proxy, must forward the public `<domain>`
+  to that vhost.
 
 Builds go through the server's nix daemon. Systems it can't build itself need
 nix remote builders (`nix.buildMachines` with `nix.distributedBuilds`), which

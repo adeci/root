@@ -29,4 +29,14 @@ let
       if device ? vlans && builtins.isList device.vlans then { vlans = vlanIdsFor device.vlans; } else { }
     );
 in
-builtins.mapAttrs (_: expandDevice) devices
+{
+  devices = builtins.mapAttrs (_: expandDevice) devices;
+
+  # Read-only API account for metrics scraping; its password lives in this machine's vars.
+  exporter = {
+    machine = "janus";
+    generator = "routeros-exporter";
+    file = "password";
+    user = "prometheus";
+  };
+}

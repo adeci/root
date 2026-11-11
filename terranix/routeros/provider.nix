@@ -4,14 +4,15 @@
   self',
   inputs',
   lib,
+  routerosAdmin,
   ...
 }:
 let
-  inherit (self.resources) homelan routeros;
+  inherit (self.resources) homelan;
+  inherit (self.resources.routeros) devices exporter;
   inherit (inputs'.clan-core.packages) clan-cli;
 
   deviceProvider = name: "routeros.${name}";
-  routerosExporterUser = "prometheus";
   routerosExporterSource = "${homelan.vlans.mgmt.gateway}/32";
   routerosExporterPolicy = [
     "api"
@@ -34,20 +35,20 @@ in
     version = "~> 2.0";
   };
 
-  data.external.routeros-password = {
+  data.external.${routerosAdmin.secret} = {
     program = [
       (lib.getExe self'.packages.get-clan-secret)
-      "routeros-password"
+      routerosAdmin.secret
     ];
   };
 
   provider.routeros = lib.mapAttrsToList (name: device: {
     alias = name;
     hosturl = "api://${device.host}:${toString device.port}";
-    username = "admin";
-    password = config.data.external.routeros-password "result.secret";
+    username = routerosAdmin.user;
+    password = config.data.external.${routerosAdmin.secret} "result.secret";
     insecure = true;
-  }) routeros;
+  }) devices;
 
   resource.random_password.routeros_exporter = {
     length = 32;
@@ -56,39 +57,39 @@ in
 
   resource.routeros_system_user_group = lib.mapAttrs' (
     name: _:
-    lib.nameValuePair "${name}_${routerosExporterUser}" {
+    lib.nameValuePair "${name}_${exporter.user}" {
       provider = deviceProvider name;
-      name = routerosExporterUser;
+      name = exporter.user;
       policy = routerosExporterPolicy;
       comment = "Prometheus read-only API — Managed by Terraform";
     }
-  ) routeros;
+  ) devices;
 
   resource.routeros_system_user = lib.mapAttrs' (
     name: _:
-    lib.nameValuePair "${name}_${routerosExporterUser}" {
+    lib.nameValuePair "${name}_${exporter.user}" {
       provider = deviceProvider name;
-      name = routerosExporterUser;
-      group = config.resource.routeros_system_user_group."${name}_${routerosExporterUser}" "name";
+      name = exporter.user;
+      group = config.resource.routeros_system_user_group."${name}_${exporter.user}" "name";
       password = config.resource.random_password.routeros_exporter "result";
       address = routerosExporterSource;
       disabled = false;
       comment = "Prometheus read-only API — Managed by Terraform";
     }
-  ) routeros;
+  ) devices;
 
   resource.terraform_data.routeros_exporter_password = {
     input = config.resource.random_password.routeros_exporter "result";
 
     provisioner.local-exec = {
-      command = "echo \"\${self.input}\" | ${lib.getExe clan-cli} vars set janus routeros-exporter/password";
+      command = "echo \"\${self.input}\" | ${lib.getExe clan-cli} vars set ${exporter.machine} ${exporter.generator}/${exporter.file}";
     };
   };
 
   resource.routeros_system_identity = lib.mapAttrs (name: device: {
     provider = deviceProvider name;
     name = device.identity;
-  }) routeros;
+  }) devices;
 
   resource.routeros_ip_address = lib.concatMapAttrs (
     name: device:
@@ -100,7 +101,7 @@ in
         comment = "Static fallback — Managed by Terraform";
       };
     }
-  ) routeros;
+  ) devices;
 
   resource.routeros_ip_service =
     let
@@ -119,5 +120,5 @@ in
           disabled = true;
         };
       }) disabledServices
-    ) routeros;
+    ) devices;
 }

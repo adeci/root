@@ -12,6 +12,17 @@ let
   resticInstance = self.clan.inventory.instances.restic or null;
   clients = if resticInstance == null then { } else resticInstance.roles.client.machines or { };
   keyResourceName = machine: "restic_${safeName machine}";
+  # Inventory settings are modules; merge the role's and the machine's like clan does.
+  clientSettings =
+    machine:
+    (lib.evalModules {
+      modules = [
+        { freeformType = lib.types.lazyAttrsOf lib.types.anything; }
+        resticInstance.roles.client.settings
+        clients.${machine}.settings
+      ];
+    }).config;
+  credentials = machine: (clientSettings machine).credentials;
   inherit (inputs'.clan-core.packages) clan-cli;
 in
 {
@@ -81,7 +92,7 @@ in
           printf 'AWS_ACCESS_KEY_ID=%s\nAWS_SECRET_ACCESS_KEY=%s\n' \
             "$B2_APPLICATION_KEY_ID" \
             "$B2_APPLICATION_KEY" \
-            | ${lib.getExe clan-cli} vars set ${machine} restic-b2-credentials/env
+            | ${lib.getExe clan-cli} vars set ${machine} ${(credentials machine).generator}/${(credentials machine).file}
         '';
       };
     }

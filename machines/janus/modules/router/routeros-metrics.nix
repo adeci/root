@@ -9,31 +9,34 @@ let
   mainConfigPath = "/run/prometheus-mikrotik-exporter/config.yml";
   poeConfigPath = "/run/prometheus-mikrotik-poe-exporter/config.yml";
 
+  inherit (self.resources.routeros) exporter;
+  exporterPassword = config.clan.core.vars.generators.${exporter.generator}.files.${exporter.file};
+
   mkDevices =
     devices:
     lib.mapAttrsToList (name: device: {
       inherit name;
       address = device.host;
       port = toString (device.port or 8728);
-      user = "prometheus";
+      inherit (exporter) user;
     }) devices;
 
   mainBaseConfig = pkgs.writeText "routeros-exporter-base.json" (
     builtins.toJSON {
-      devices = mkDevices self.resources.routeros;
+      devices = mkDevices self.resources.routeros.devices;
       features.monitor = true;
     }
   );
 
   poeBaseConfig = pkgs.writeText "routeros-poe-exporter-base.json" (
     builtins.toJSON {
-      devices = mkDevices { inherit (self.resources.routeros) nexus; };
+      devices = mkDevices { inherit (self.resources.routeros.devices) nexus; };
       features.poe = true;
     }
   );
 
   healthDevices = pkgs.writeText "routeros-health-devices.json" (
-    builtins.toJSON (mkDevices self.resources.routeros)
+    builtins.toJSON (mkDevices self.resources.routeros.devices)
   );
 
   routerosHealthProbe = pkgs.writeTextFile {
@@ -204,7 +207,7 @@ let
     '';
 in
 {
-  clan.core.vars.generators.routeros-exporter.files.password.secret = true;
+  clan.core.vars.generators.${exporter.generator}.files.${exporter.file}.secret = true;
 
   services.prometheus.exporters.mikrotik = {
     enable = true;
@@ -227,7 +230,7 @@ in
 
     serviceConfig = {
       LoadCredential = [
-        "routeros-password:${config.clan.core.vars.generators.routeros-exporter.files.password.path}"
+        "routeros-password:${exporterPassword.path}"
       ];
       RuntimeDirectory = "prometheus-mikrotik-exporter";
       RuntimeDirectoryMode = "0700";
@@ -250,7 +253,7 @@ in
     serviceConfig = {
       DynamicUser = true;
       LoadCredential = [
-        "routeros-password:${config.clan.core.vars.generators.routeros-exporter.files.password.path}"
+        "routeros-password:${exporterPassword.path}"
       ];
       RuntimeDirectory = "prometheus-mikrotik-poe-exporter";
       RuntimeDirectoryMode = "0700";
@@ -272,7 +275,7 @@ in
       Type = "oneshot";
       ExecStart = routerosHealthProbe;
       LoadCredential = [
-        "routeros-password:${config.clan.core.vars.generators.routeros-exporter.files.password.path}"
+        "routeros-password:${exporterPassword.path}"
       ];
       NoNewPrivileges = true;
       PrivateTmp = true;

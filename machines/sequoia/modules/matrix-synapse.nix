@@ -2,12 +2,14 @@
   config,
   pkgs,
   lib,
+  self,
   ...
 }:
 let
   serverName = "decio.us";
   matrixDomain = "matrix.decio.us";
   synapsePort = 8008;
+  tunnels = self.resources.cloudflare.tunnels.sequoia;
 
   users = {
     alex = {
@@ -161,10 +163,6 @@ in
       ];
     };
 
-  # Cloudflare tunnel routes:
-  #   matrix.decio.us → localhost:8448
-  #   decio.us        → localhost:8748
-
   services.nginx = {
     enable = true;
     recommendedProxySettings = true;
@@ -182,7 +180,7 @@ in
       listen = [
         {
           addr = "127.0.0.1";
-          port = 8448;
+          port = tunnels.${matrixDomain}.port;
         }
       ];
       extraConfig = ''
@@ -201,7 +199,7 @@ in
       listen = [
         {
           addr = "127.0.0.1";
-          port = 8748;
+          port = tunnels.${serverName}.port;
         }
       ];
       locations."=/.well-known/matrix/server".extraConfig = ''

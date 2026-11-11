@@ -10,12 +10,11 @@ The service treats `config.clan.core.state` as the source of truth:
 - exposes Clan backup provider commands for create/list/restore
 
 Each machine gets its own repository: `repository` if set, otherwise
-`s3:<s3Endpoint>/<name>/<machine>` from the flake's
-`resources.b2.buckets.resticBackups`.
+`<repositoryBase>/<machine>`.
 
 Credentials come from Clan vars. The repository password
 (`<passwordGenerator>/password`) is generated. The repository environment
-(`<credentialsGenerator>/env`, for example `AWS_ACCESS_KEY_ID` and
+(`credentials = { generator; file; }`, for example `AWS_ACCESS_KEY_ID` and
 `AWS_SECRET_ACCESS_KEY` for an S3 repository) is only declared: whatever
 issues the machine's storage keys sets it with
-`clan vars set <machine> <credentialsGenerator>/env`.
+`clan vars set <machine> <generator>/<file>`.

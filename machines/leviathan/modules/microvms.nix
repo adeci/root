@@ -26,6 +26,8 @@ let
       };
 
       config = {
+        microvmGuest.adminKeys = self.users.alex.sshKeys;
+
         microvmGuest.secrets.tailscale-gaming = {
           shared = true;
           prompt = "Tailscale auth key for gaming seats: reusable, not ephemeral, tagged tag:tenant,tag:gaming";

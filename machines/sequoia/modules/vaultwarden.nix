@@ -2,9 +2,12 @@
   config,
   lib,
   pkgs,
+  self,
   ...
 }:
 let
+  domain = "vault.decio.us";
+  inherit (self.resources.cloudflare.tunnels.sequoia.${domain}) port;
   stateDirectory =
     if lib.versionOlder config.system.stateVersion "24.11" then "bitwarden_rs" else "vaultwarden";
   dataDir = "/var/lib/${stateDirectory}";
@@ -42,8 +45,8 @@ in
     enable = true;
     environmentFile = config.clan.core.vars.generators.vaultwarden.files."vaultwarden.env".path;
     config = {
-      DOMAIN = "https://vault.decio.us";
-      ROCKET_PORT = 8222;
+      DOMAIN = "https://${domain}";
+      ROCKET_PORT = port;
       SIGNUPS_ALLOWED = false;
       INVITATIONS_ALLOWED = true;
       SHOW_PASSWORD_HINT = false;

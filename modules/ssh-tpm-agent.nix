@@ -7,12 +7,14 @@
       ...
     }:
     let
-      inherit (self.users.alex) username;
+      username = config.system.primaryUser;
       ssh-tpm-agent = pkgs.ssh-tpm-agent.overrideAttrs {
         doCheck = false; # keyring tests need kernel keyring unavailable in sandbox
       };
     in
     {
+      imports = [ self.modules.nixos.primary-user ];
+
       programs.ssh.startAgent = false;
 
       security.tpm2.enable = true;

@@ -7,6 +7,7 @@
 }:
 let
   bucket = self.resources.b2.buckets.ziplineShares;
+  inherit (bucket) credentials;
   port = 3002;
   origin = "share.decio.us";
   staging = "/var/cache/zipline";
@@ -28,7 +29,7 @@ in
       printf 'CORE_SECRET=%s\n' "$(openssl rand -hex 64)" > "$out/env"
     '';
   };
-  clan.core.vars.generators.zipline-b2-credentials.files.env = {
+  clan.core.vars.generators.${credentials.generator}.files.${credentials.file} = {
     secret = true;
     restartUnits = [ "zipline.service" ];
   };
@@ -50,7 +51,7 @@ in
     database.createLocally = false;
     environmentFiles = [
       config.clan.core.vars.generators.zipline-secret.files.env.path
-      config.clan.core.vars.generators.zipline-b2-credentials.files.env.path
+      config.clan.core.vars.generators.${credentials.generator}.files.${credentials.file}.path
     ];
     settings = {
       DATABASE_URL = "postgresql://zipline@localhost/zipline?host=/run/postgresql";

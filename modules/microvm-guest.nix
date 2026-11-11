@@ -3,13 +3,39 @@
     {
       config,
       lib,
-      self,
       ...
     }:
     let
-      name = config.networking.hostName;
+      cfg = config.microvmGuest;
     in
     {
+      options.microvmGuest.adminKeys = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        description = "SSH public keys that log in as root.";
+      };
+
+      options.microvmGuest.seed = {
+        image = lib.mkOption {
+          type = lib.types.str;
+          description = "Host path of the image holding the secrets; set by the host.";
+        };
+        label = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          default = "seed";
+        };
+        sizeMiB = lib.mkOption {
+          type = lib.types.ints.positive;
+          readOnly = true;
+          default = 8;
+        };
+        mountPoint = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          default = "/run/seed";
+        };
+      };
+
       options.microvmGuest.secrets = lib.mkOption {
         default = { };
         description = ''
@@ -18,7 +44,7 @@
         '';
         type = lib.types.attrsOf (
           lib.types.submodule (
-            { name, ... }:
+            { name, config, ... }:
             {
               options = {
                 prompt = lib.mkOption {
@@ -39,10 +65,16 @@
                   default = false;
                   description = "One value for every VM on the host that declares this secret.";
                 };
+                seedPath = lib.mkOption {
+                  type = lib.types.str;
+                  readOnly = true;
+                  default = "secrets/${name}";
+                  description = "Path inside the seed image.";
+                };
                 path = lib.mkOption {
                   type = lib.types.str;
                   readOnly = true;
-                  default = "/run/seed/secrets/${name}";
+                  default = "${cfg.seed.mountPoint}/${config.seedPath}";
                 };
               };
             }
@@ -58,7 +90,7 @@
 
         microvmGuest.secrets.ssh-host-key = {
           script = ''
-            ssh-keygen -q -t ed25519 -N "" -C ${name} -f "$out/value"
+            ssh-keygen -q -t ed25519 -N "" -C ${config.networking.hostName} -f "$out/value"
             rm "$out/value.pub"
           '';
           runtimeInputs = [ config.programs.ssh.package ];
@@ -82,11 +114,11 @@
               size = 1024;
             }
             {
-              image = "/run/microvm-seeds/${name}.img";
+              inherit (cfg.seed) image;
               mountPoint = null;
               autoCreate = false;
               readOnly = true;
-              size = 8;
+              size = cfg.seed.sizeMiB;
             }
           ];
         };
@@ -97,8 +129,8 @@
             neededForBoot = true;
           })
           // {
-            "/run/seed" = {
-              device = "/dev/disk/by-label/seed";
+            ${cfg.seed.mountPoint} = {
+              device = "/dev/disk/by-label/${cfg.seed.label}";
               fsType = "ext4";
               options = [ "ro" ];
             };
@@ -124,7 +156,7 @@
         };
 
         users.mutableUsers = false;
-        users.users.root.openssh.authorizedKeys.keys = self.users.alex.sshKeys;
+        users.users.root.openssh.authorizedKeys.keys = cfg.adminKeys;
         services.openssh = {
           enable = true;
           hostKeys = [

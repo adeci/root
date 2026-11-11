@@ -26,6 +26,8 @@ in
     self.modules.nixos.acme
   ];
 
+  acme.tokenGenerator = self.resources.cloudflare.acmeTokenGenerator;
+
   security.acme.certs.${domain} = {
     group = "mandate-front";
     reloadServices = [ "mandate-front.service" ];

@@ -100,44 +100,49 @@ in
     };
   };
 
-  nixbot = {
-    module = {
-      name = "@adeci/nixbot";
-      input = "self";
-    };
-
-    roles.server.machines.leviathan.settings = {
+  nixbot =
+    let
       domain = "nixbot.decio.us";
-      # aarch64 only builds on bramble (Pi 4) and times out.
-      buildSystems = [ "x86_64-linux" ];
-      # leviathan is shared with other users and the LLM host; keep CI bounded.
-      evalWorkerCount = 8;
-      evalMaxMemorySize = 4096;
-      buildConcurrency = 8;
-      admins = [
-        "github:adeci"
-        "github:fzakaria"
-      ];
-      prApproval = {
-        enable = true;
-        trustedAssociations = [
-          "OWNER"
-          "MEMBER"
-          "COLLABORATOR"
-        ];
+    in
+    {
+      module = {
+        name = "@adeci/nixbot";
+        input = "self";
       };
-      github = {
-        appId = 5474567;
-        oauthId = "Iv23liPuk6XhuDT6Owtz";
-        userAllowlist = [
-          "adeci"
-          "ddeci"
-          "fzakaria"
+
+      roles.server.machines.leviathan.settings = {
+        inherit domain;
+        listenPort = (import ../resources/cloudflare).tunnels.leviathan.${domain}.port;
+        # aarch64 only builds on bramble (Pi 4) and times out.
+        buildSystems = [ "x86_64-linux" ];
+        # leviathan is shared with other users and the LLM host; keep CI bounded.
+        evalWorkerCount = 8;
+        evalMaxMemorySize = 4096;
+        buildConcurrency = 8;
+        admins = [
+          "github:adeci"
+          "github:fzakaria"
         ];
+        prApproval = {
+          enable = true;
+          trustedAssociations = [
+            "OWNER"
+            "MEMBER"
+            "COLLABORATOR"
+          ];
+        };
+        github = {
+          appId = 5474567;
+          oauthId = "Iv23liPuk6XhuDT6Owtz";
+          userAllowlist = [
+            "adeci"
+            "ddeci"
+            "fzakaria"
+          ];
+        };
+        effectSecrets."github:fzakaria/rewindvm" = [ "cachix" ];
       };
-      effectSecrets."github:fzakaria/rewindvm" = [ "cachix" ];
     };
-  };
 
   builders = {
     module = {
@@ -171,20 +176,29 @@ in
     };
   };
 
-  restic = {
-    module = {
-      name = "@adeci/restic";
-      input = "self";
-    };
+  restic =
+    let
+      bucket = (import ../resources/b2).buckets.resticBackups;
+    in
+    {
+      module = {
+        name = "@adeci/restic";
+        input = "self";
+      };
 
-    roles.client.machines = {
-      conduit = { };
-      sequoia = { };
-      leviathan = { };
-      lachesis = { };
-      janus = { };
+      roles.client.settings = {
+        repositoryBase = "s3:${bucket.s3Endpoint}/${bucket.name}";
+        inherit (bucket) credentials;
+      };
+
+      roles.client.machines = {
+        conduit = { };
+        sequoia = { };
+        leviathan = { };
+        lachesis = { };
+        janus = { };
+      };
     };
-  };
 
   security-keys = {
     module = {

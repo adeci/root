@@ -3,11 +3,10 @@
     {
       config,
       lib,
-      self,
       ...
     }:
     let
-      streams = self.resources.ingress.streams.${config.networking.hostName} or [ ];
+      inherit (config.publicEdge) streams;
       safeName =
         builtins.replaceStrings
           [
@@ -19,21 +18,10 @@
             "_"
           ];
 
-      validProtocols = [
-        "tcp"
-        "udp"
-      ];
-      isPort = port: builtins.isInt port && port > 0 && port <= 65535;
-      hasPortSuffix = upstream: builtins.match ".+:[0-9]+" upstream != null;
       listenerKey = stream: "${stream.protocol}:${toString stream.listen}";
 
       names = map (stream: stream.name) streams;
       listenerKeys = map listenerKey streams;
-      invalidProtocols = lib.filter (stream: !(lib.elem stream.protocol validProtocols)) streams;
-      invalidListenPorts = lib.filter (stream: !(isPort stream.listen)) streams;
-      invalidUpstreams = lib.filter (
-        stream: !(builtins.isString stream.upstream && hasPortSuffix stream.upstream)
-      ) streams;
 
       streamsFor = protocol: lib.filter (stream: stream.protocol == protocol) streams;
       publicPortsFor = protocol: lib.unique (map (stream: stream.listen) (streamsFor protocol));
@@ -55,6 +43,36 @@
         '';
     in
     {
+      options.publicEdge.streams = lib.mkOption {
+        default = [ ];
+        description = "Public L4 streams: each forwards its listen port to its upstream and opens that port in the firewall.";
+        type = lib.types.listOf (
+          lib.types.submodule {
+            options = {
+              name = lib.mkOption {
+                type = lib.types.str;
+                description = "Unique on this machine.";
+              };
+              description = lib.mkOption { type = lib.types.str; };
+              protocol = lib.mkOption {
+                type = lib.types.enum [
+                  "tcp"
+                  "udp"
+                ];
+              };
+              listen = lib.mkOption {
+                type = lib.types.ints.between 1 65535;
+                description = "Public port; each protocol/port pair binds at most one stream.";
+              };
+              upstream = lib.mkOption {
+                type = lib.types.strMatching ".+:[0-9]+";
+                description = "host:port to forward to.";
+              };
+            };
+          }
+        );
+      };
+
       config = lib.mkMerge [
         {
           assertions = [
@@ -75,18 +93,6 @@
         }
         (lib.mkIf (streams != [ ]) {
           assertions = [
-            {
-              assertion = invalidProtocols == [ ];
-              message = "public-edge ${config.networking.hostName}: protocols must be tcp or udp.";
-            }
-            {
-              assertion = invalidListenPorts == [ ];
-              message = "public-edge ${config.networking.hostName}: listen ports must be integers from 1 to 65535.";
-            }
-            {
-              assertion = invalidUpstreams == [ ];
-              message = "public-edge ${config.networking.hostName}: upstreams must be host:port strings.";
-            }
             {
               assertion = names == lib.unique names;
               message = "public-edge ${config.networking.hostName}: stream names must be unique.";

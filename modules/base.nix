@@ -5,14 +5,13 @@ let
       inputs,
       lib,
       pkgs,
-      self,
       ...
     }:
     {
       nixpkgs.config.allowUnfree = true;
 
       users.users.root.openssh.authorizedKeys.keys =
-        config.users.users.${self.users.alex.username}.openssh.authorizedKeys.keys;
+        config.users.users.${config.system.primaryUser}.openssh.authorizedKeys.keys;
 
       environment.variables = {
         EDITOR = "nvim";
@@ -67,6 +66,7 @@ in
       imports = [
         self.modules.nixos.wrappers
         self.modules.nixos.home-links
+        self.modules.nixos.primary-user
         shared
       ];
 
@@ -114,7 +114,7 @@ in
       ...
     }:
     let
-      user = self.users.alex.username;
+      user = config.system.primaryUser;
     in
     {
       imports = [
@@ -136,7 +136,6 @@ in
 
       # nix-darwin owns the primary account, so users.users sets its login shell
       # (no dscl by hand) and keys. macOS gives the first account uid 501.
-      system.primaryUser = user;
       users.knownUsers = [ user ];
       users.users.${user}.uid = lib.mkDefault 501;
 

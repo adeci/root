@@ -7,7 +7,11 @@
 }:
 let
   bucket = self.resources.b2.buckets.ziplineShares;
-  key = config.resource.b2_application_key.zipline_conduit;
+  inherit (bucket) credentials;
+  inherit (credentials) machine;
+  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
+  keyName = "zipline_${safeName machine}";
+  key = config.resource.b2_application_key.${keyName};
   inherit (inputs'.clan-core.packages) clan-cli;
 in
 {
@@ -34,8 +38,8 @@ in
     };
   };
 
-  resource.b2_application_key.zipline_conduit = {
-    key_name = "zipline-conduit";
+  resource.b2_application_key.${keyName} = {
+    key_name = "zipline-${machine}";
     bucket_ids = [ (config.resource.b2_bucket.zipline_shares "bucket_id") ];
     capabilities = [
       "listBuckets"
@@ -47,7 +51,7 @@ in
     ];
   };
 
-  resource.terraform_data.zipline_b2_credentials_conduit = {
+  resource.terraform_data."zipline_b2_credentials_${safeName machine}" = {
     input = {
       application_key_id = key "application_key_id";
     };
@@ -56,14 +60,14 @@ in
       # Never duplicate the secret into terraform_data's unredacted output.
       environment = {
         B2_APPLICATION_KEY_ID = key "application_key_id";
-        B2_APPLICATION_KEY = "\${sensitive(b2_application_key.zipline_conduit.application_key)}";
+        B2_APPLICATION_KEY = "\${sensitive(b2_application_key.${keyName}.application_key)}";
       };
       command = ''
         set -eu
         printf 'DATASOURCE_S3_ACCESS_KEY_ID=%s\nDATASOURCE_S3_SECRET_ACCESS_KEY=%s\n' \
           "$B2_APPLICATION_KEY_ID" \
           "$B2_APPLICATION_KEY" \
-          | ${lib.getExe clan-cli} vars set conduit zipline-b2-credentials/env
+          | ${lib.getExe clan-cli} vars set ${machine} ${credentials.generator}/${credentials.file}
       '';
     };
   };

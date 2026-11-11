@@ -22,6 +22,12 @@ _: {
             example = "nixbot.example.com";
           };
 
+          listenPort = lib.mkOption {
+            type = lib.types.port;
+            default = 80;
+            description = "Loopback port of the nginx vhost that the tunnel or reverse proxy forwards the domain to";
+          };
+
           useHTTPS = lib.mkOption {
             type = lib.types.bool;
             default = true;
@@ -193,11 +199,11 @@ _: {
               listen = [
                 {
                   addr = "127.0.0.1";
-                  port = 80;
+                  port = settings.listenPort;
                 }
                 {
                   addr = "[::1]";
-                  port = 80;
+                  port = settings.listenPort;
                 }
               ];
               extraConfig = ''

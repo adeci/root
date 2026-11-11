@@ -12,6 +12,7 @@
       imports = [
         inputs.jovian.nixosModules.default
         self.modules.nixos.niri
+        self.modules.nixos.primary-user
       ];
 
       jovian.devices.steamdeck.enable = true;
@@ -20,7 +21,7 @@
       jovian.steam = {
         enable = true;
         autoStart = true;
-        user = self.users.alex.username;
+        user = config.system.primaryUser;
         desktopSession = "niri";
         environment = {
           # nixpkgs sets this on the Steam wrapper, but Gaming Mode bypasses it
@@ -32,7 +33,7 @@
 
       jovian.decky-loader = {
         enable = true;
-        user = self.users.alex.username;
+        user = config.system.primaryUser;
       };
 
       # X11 input translation for Wayland desktop mode

@@ -27,7 +27,7 @@ let
         share = true;
         files.session-link = {
           secret = true;
-          owner = self.users.alex.username;
+          owner = config.system.primaryUser;
           mode = "0400";
         };
         prompts.session-link = {
@@ -48,11 +48,12 @@ in
     {
       imports = [
         self.modules.nixos.home-links
+        self.modules.nixos.primary-user
         shared
       ];
 
       clan.core.vars.generators.kagi-search.files.session-link.group =
-        config.users.users.${self.users.alex.username}.group;
+        config.users.users.${config.system.primaryUser}.group;
     };
 
   darwin =

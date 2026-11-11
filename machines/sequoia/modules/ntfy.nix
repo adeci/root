@@ -2,11 +2,12 @@
   config,
   lib,
   pkgs,
+  self,
   ...
 }:
 let
   ntfyHost = "ntfy.decio.us";
-  ntfyPort = 2586;
+  ntfyPort = self.resources.cloudflare.tunnels.sequoia.${ntfyHost}.port;
 
   topics = {
     atlas = "atlas-alerts";

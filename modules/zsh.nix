@@ -7,14 +7,15 @@ let
       ...
     }:
     let
-      user = self.users.alex;
+      inherit (config.system) primaryUser;
+      inherit (self.users.${primaryUser}) git;
     in
     {
       environment.pathsToLink = [ "/share/zsh" ];
 
       programs.nix-index-database.comma.enable = true;
 
-      users.users.${user.username}.shell = config.wrappers.zsh.wrapper;
+      users.users.${primaryUser}.shell = config.wrappers.zsh.wrapper;
 
       wrappers.zsh = {
         enable = true;
@@ -25,8 +26,8 @@ let
       wrappers.git = {
         enable = true;
         settings.user = {
-          name = lib.mkDefault user.git.name;
-          email = lib.mkDefault user.git.email;
+          name = lib.mkDefault git.name;
+          email = lib.mkDefault git.email;
         };
       };
       wrappers.tmux.enable = true;
@@ -39,6 +40,7 @@ in
     {
       imports = [
         self.modules.nixos.wrappers
+        self.modules.nixos.primary-user
         inputs.nix-index-database.nixosModules.nix-index
         shared
       ];

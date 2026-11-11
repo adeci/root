@@ -16,27 +16,34 @@
       holders = lib.escapeShellArgs cfg.gpu.holders;
 
       secretsOf = vm: config.microvm.vms.${vm}.config.config.microvmGuest.secrets;
+      seedOf = vm: config.microvm.vms.${vm}.config.config.microvmGuest.seed;
       generatorOf =
         vm: name: secret:
         if secret.shared then "microvm-${name}" else "microvm-${vm}-${name}";
 
       writeSeed =
         name:
+        let
+          seed = seedOf name;
+          secrets = secretsOf name;
+        in
         pkgs.writeShellScript "microvm-${name}-seed" ''
           set -eu
-          seed=${seedDir}/${name}.img
+          seed=${seed.image}
           install -d -m 0750 -g kvm ${seedDir}
           tmp=$(mktemp -d -p /run)
           trap 'rm -rf "$tmp" "$seed.tmp"' EXIT
-          mkdir "$tmp/secrets"
+          ${lib.concatMapStringsSep "\n" (dir: ''mkdir "$tmp/${dir}"'') (
+            lib.unique (lib.mapAttrsToList (_: secret: dirOf secret.seedPath) secrets)
+          )}
           ${lib.concatStrings (
             lib.mapAttrsToList (secret: file: ''
-              install -m 0400 ${file} "$tmp/secrets/${secret}" ||
+              install -m 0400 ${file} "$tmp/${secrets.${secret}.seedPath}" ||
                 { echo "${name}: secret ${secret} is not generated" >&2; exit 1; }
             '') cfg.secretFiles.${name}
           )}
-          truncate -s 8M "$seed.tmp"
-          mkfs.ext4 -q -F -L seed -d "$tmp" "$seed.tmp"
+          truncate -s ${toString seed.sizeMiB}M "$seed.tmp"
+          mkfs.ext4 -q -F -L ${seed.label} -d "$tmp" "$seed.tmp"
           chown microvm:kvm "$seed.tmp"
           chmod 0400 "$seed.tmp"
           mv "$seed.tmp" "$seed"
@@ -194,6 +201,7 @@
                 self.modules.nixos.microvm-guest
                 vm.config
               ];
+              microvmGuest.seed.image = "${seedDir}/${name}.img";
               microvm = {
                 hypervisor = "cloud-hypervisor";
                 inherit (vm) vcpu;
@@ -245,7 +253,7 @@
                       Type = "oneshot";
                       RemainAfterExit = true;
                       ExecStart = writeSeed name;
-                      ExecStop = "${pkgs.coreutils}/bin/rm -f ${seedDir}/${name}.img";
+                      ExecStop = "${pkgs.coreutils}/bin/rm -f ${(seedOf name).image}";
                     };
                   };
 

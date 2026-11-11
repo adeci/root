@@ -22,6 +22,8 @@
     printing
   ];
 
+  system.primaryUser = self.users.alex.username;
+
   wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
 
   boot.loader = {

@@ -4,13 +4,21 @@
   self,
   ...
 }:
+let
+  # Hetzner's rescue console and initial setup only, so hardware-backed keys. Picked by comment, so reordering the user's sshKeys doesn't replace the server.
+  rescueKeys = [
+    "praxis-tpm"
+    "modus-tpm"
+    "spark"
+    "ember"
+  ];
+  keyNamed = comment: lib.head (lib.filter (lib.hasSuffix " ${comment}") self.users.alex.sshKeys);
+in
 {
-  # Used only for the Hetzner rescue console / initial provisioning. Selected
-  # by comment, so reordering the user's sshKeys doesn't replace the server.
-  resource.hcloud_ssh_key.alex = {
-    name = "alex";
-    public_key = lib.head (lib.filter (lib.hasSuffix " adecigear") self.users.alex.sshKeys);
-  };
+  resource.hcloud_ssh_key = lib.genAttrs rescueKeys (name: {
+    inherit name;
+    public_key = keyNamed name;
+  });
 
   # Hetzner creates it from Ubuntu; nixos-anywhere then replaces the OS, so
   # create-time fields must never force a replacement (which wipes the disk
@@ -20,7 +28,7 @@
     server_type = "cpx11";
     location = "ash";
     image = "ubuntu-24.04";
-    ssh_keys = [ (config.resource.hcloud_ssh_key.alex "id") ];
+    ssh_keys = map (name: config.resource.hcloud_ssh_key.${name} "id") rescueKeys;
     firewall_ids = [ (config.resource.hcloud_firewall.conduit "id") ];
 
     # Hetzner refuses delete/rebuild via API or console until these are off.

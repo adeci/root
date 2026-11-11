@@ -1,15 +1,18 @@
 {
   # Autologin on every greetd start, including after logout.
   nixos =
-    { self, ... }:
+    { config, self, ... }:
     {
-      imports = [ self.modules.nixos.niri ];
+      imports = [
+        self.modules.nixos.niri
+        self.modules.nixos.primary-user
+      ];
 
       services.greetd = {
         enable = true;
         settings.default_session = {
           command = "niri-session";
-          user = self.users.alex.username;
+          user = config.system.primaryUser;
         };
       };
     };

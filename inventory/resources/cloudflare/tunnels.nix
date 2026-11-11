@@ -1,13 +1,13 @@
-# Machine names must match networking.hostName
+# Keys are clan machine names: each machine receives its tunnel's token as a clan var.
 {
   sequoia = {
-    "vault.decio.us" = "http://localhost:8222";
-    "matrix.decio.us" = "http://localhost:8448";
-    "decio.us" = "http://localhost:8748";
-    "ntfy.decio.us" = "http://localhost:2586";
+    "vault.decio.us".port = 8222;
+    "matrix.decio.us".port = 8448;
+    "decio.us".port = 8748;
+    "ntfy.decio.us".port = 2586;
   };
 
   leviathan = {
-    "nixbot.decio.us" = "http://localhost:80";
+    "nixbot.decio.us".port = 80;
   };
 }

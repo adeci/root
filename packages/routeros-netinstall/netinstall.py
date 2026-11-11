@@ -2,8 +2,10 @@ import argparse
 import atexit
 import json
 import os
+import shutil
 import subprocess
 import tempfile
+import unicodedata
 
 
 def run(command, **kwargs):
@@ -45,7 +47,7 @@ def choose_interface():
     return ifaces[choice][0]
 
 
-def cleanup(iface, setup_script):
+def cleanup(iface, workdir):
     print("==> Cleaning up...")
     subprocess.run(
         ["sudo", "iptables", "-D", "nixos-fw", "-i", iface, "-j", "ACCEPT"],
@@ -59,19 +61,41 @@ def cleanup(iface, setup_script):
         stderr=subprocess.DEVNULL,
         check=False,
     )
-    if setup_script and os.path.exists(setup_script):
-        os.unlink(setup_script)
+    shutil.rmtree(workdir, ignore_errors=True)
 
 
-def write_setup_script(dhcp_clients):
-    print("==> Reading admin password from clan secrets...")
-    password = output(["clan", "secrets", "get", "routeros-password"])
+def routeros_string(value, label):
+    for char in value:
+        if unicodedata.category(char) == "Cc":
+            raise SystemExit(f"ERROR: {label} contains control character U+{ord(char):04X}.")
+    # Backslashes first, so the escapes added for quotes and dollars stay intact.
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$")
+    return f'"{escaped}"'
 
-    fd, path = tempfile.mkstemp(prefix="routeros-setup-", suffix=".rsc", dir="/tmp")
-    with os.fdopen(fd, "w") as script:
-        script.write(f'/user set admin password="{password}"\n')
-        for interface in dhcp_clients:
-            script.write(f"/ip dhcp-client add interface={interface} disabled=no\n")
+
+def read_admin_password(path):
+    with open(path, encoding="utf-8", newline="") as file:
+        password = file.read().removesuffix("\n")
+    # An empty file usually means the command that produced it failed.
+    if not password:
+        raise SystemExit(f"ERROR: No admin password in {path}.")
+    return password
+
+
+def render_setup_script(admin_user, admin_password, dhcp_clients):
+    user = routeros_string(admin_user, "Admin user")
+    password = routeros_string(admin_password, "Admin password")
+    lines = [f"/user set {user} password={password}"]
+    lines += [
+        f"/ip dhcp-client add interface={interface} disabled=no" for interface in dhcp_clients
+    ]
+    return "".join(f"{line}\n" for line in lines)
+
+
+def write_setup_script(workdir, text):
+    fd, path = tempfile.mkstemp(prefix="routeros-setup-", suffix=".rsc", dir=workdir)
+    with os.fdopen(fd, "w", encoding="utf-8") as script:
+        script.write(text)
     return path
 
 
@@ -87,10 +111,16 @@ def main():
     parser.add_argument("--installed-summary", required=True)
     parser.add_argument("--dhcp-summary", required=True)
     parser.add_argument("--completion-note", required=True)
+    parser.add_argument("--admin-user", default="admin")
+    parser.add_argument("--admin-password-file", required=True)
     args = parser.parse_args()
 
     if len(args.packages) != len(args.package_names):
         raise SystemExit("ERROR: --package and --package-name counts must match.")
+
+    setup_text = render_setup_script(
+        args.admin_user, read_admin_password(args.admin_password_file), args.dhcp_clients
+    )
 
     print(f"RouterOS Netinstall — {args.device} ({args.arch}, v{args.version})")
     print("")
@@ -100,8 +130,8 @@ def main():
     print("")
 
     iface = choose_interface()
-    setup_script = None
-    atexit.register(lambda: cleanup(iface, setup_script))
+    workdir = tempfile.mkdtemp(prefix="routeros-netinstall-", dir="/tmp")
+    atexit.register(cleanup, iface, workdir)
 
     print("")
     print(f"==> Setting up 192.168.88.2/24 on {iface}...")
@@ -111,7 +141,7 @@ def main():
     print(f"==> Opening firewall on {iface} (temporary)...")
     run(["sudo", "iptables", "-I", "nixos-fw", "3", "-i", iface, "-j", "ACCEPT"])
 
-    setup_script = write_setup_script(args.dhcp_clients)
+    setup_script = write_setup_script(workdir, setup_text)
 
     print("==> Running netinstall...")
     print(f"    Packages: {', '.join(args.package_names)}")
@@ -140,7 +170,7 @@ def main():
     print("")
     print("  Device has been configured with:")
     print(f"    - {args.installed_summary}")
-    print("    - Admin password (from clan secrets)")
+    print(f"    - Password for {args.admin_user}")
     print(f"    - DHCP client on {args.dhcp_summary}")
     print("")
     print(f"  {args.completion_note}")
