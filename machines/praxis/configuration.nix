@@ -17,7 +17,6 @@
     nvim-dev
     emacs
     zsh
-    atuin-login
     llm-tools
     auto-timezone
     auto-pressure-gc

@@ -5,7 +5,6 @@
 
     base
     zsh
-    atuin-login
     auto-pressure-gc
     desktop
     laptop

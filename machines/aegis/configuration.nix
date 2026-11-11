@@ -22,7 +22,6 @@ in
     base
     nvim-dev
     zsh
-    atuin-login
     llm-tools
     auto-pressure-gc
     auto-timezone

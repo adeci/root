@@ -13,6 +13,21 @@ let
   };
 in
 {
+  atuin = {
+    module = {
+      name = "@adeci/atuin";
+      input = "self";
+    };
+    roles.server.machines.sequoia = { };
+    roles.client.machines = {
+      aegis = { };
+      icarus = { };
+      modus = { };
+      praxis = { };
+    };
+    roles.client.settings.user = "alex";
+  };
+
   harmonia = {
     module = {
       name = "@adeci/harmonia";

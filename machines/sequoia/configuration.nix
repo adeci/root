@@ -18,7 +18,6 @@
     ./modules/vaultwarden.nix
     ./modules/atlas.nix
     ./modules/ntfy.nix
-    ./modules/atuin.nix
     ./modules/paperless.nix
     ./modules/paperless-xerox-ingest.nix
   ];

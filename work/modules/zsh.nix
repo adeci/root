@@ -1,12 +1,9 @@
 let
-  # A plain system git instead of the git wrapper, and no shell history sync.
+  # A plain system git instead of the git wrapper.
   shared =
     { lib, ... }:
     {
-      wrappers.zsh = {
-        git = null;
-        atuinSyncAddress = null;
-      };
+      wrappers.zsh.git = null;
       wrappers.git.enable = lib.mkForce false;
     };
 in

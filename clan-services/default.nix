@@ -7,4 +7,5 @@
   "@adeci/monitoring" = import ./monitoring;
   "@adeci/restic" = import ./restic;
   "@adeci/nixbot" = import ./nixbot { inherit inputs; };
+  "@adeci/atuin" = import ./atuin;
 }

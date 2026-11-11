@@ -19,7 +19,8 @@ let
       wrappers.zsh = {
         enable = true;
         git = lib.mkIf config.wrappers.git.enable config.wrappers.git.wrapper;
-        atuinSyncAddress = lib.mkDefault "http://sequoia.${config.clan.core.settings.domain}:8888";
+        # Only machines that sync shell history declare atuinSync.
+        atuinSyncAddress = lib.mkDefault (config.atuinSync.address or null);
       };
       wrappers.git = {
         enable = true;
