@@ -1,5 +1,5 @@
 let
-  homelan = import ../homelan;
+  homelan = import ../homelan.nix;
 
   devices = {
     nexus = import ./nexus.nix;

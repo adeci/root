@@ -1,3 +1,0 @@
-{
-  buckets = import ./buckets.nix;
-}
