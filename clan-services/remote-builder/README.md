@@ -29,8 +29,8 @@ servers that should trust the new client.
 
 `offload` decides which builds go remote automatically:
 
-| Setting   | Type                           | Default     | Description                                                        |
-| --------- | ------------------------------ | ----------- | ------------------------------------------------------------------ |
+| Setting   | Type                           | Default     | Description                                                               |
+| --------- | ------------------------------ | ----------- | ------------------------------------------------------------------------- |
 | `offload` | `"foreign"`, `"all"`, `"none"` | `"foreign"` | Only systems this machine can't build, anything servers offer, or nothing |
 
 `foreign` keeps same-system builds local (cheaper for small builds, works

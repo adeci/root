@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
 if [ $# -ne 2 ]; then
   echo "usage: mac-install <machine> <address>" >&2
   exit 1
@@ -6,7 +9,7 @@ machine=$1
 address=$2
 target="root@$address"
 
-cd "$(git rev-parse --show-toplevel)"
+cd "$(git rev-parse --show-toplevel)" || exit
 
 control=$(mktemp -d)
 secrets=$(mktemp -d)
@@ -113,6 +116,4 @@ else
 fi
 
 section "Left for you"
-echo "  - Tailscale: approve $machine at https://login.tailscale.com/admin/machines if it asks"
 echo "  - FileVault: $(mac fdesetup status)"
-echo "  - From now on: clan machines update $machine"

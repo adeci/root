@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Primes a fresh Mac for `mac-install` from an admin machine: installs Nix, turns
-# on Remote Login and authorizes the fleet's SSH keys for root and this user.
-#
-#   curl -fsSL https://raw.githubusercontent.com/adeci/root/main/flake/mac-install/bootstrap.sh | bash
-#
-# Run it as the admin user created in Setup Assistant; it asks for sudo itself
-# because the Nix installer refuses to run as root.
+
+# Primes a fresh Mac for `mac-install` from an admin machine: installs Nix, turns on Remote Login and authorizes the fleet's SSH keys for root and this user.
+
+# curl -fsSL https://raw.githubusercontent.com/adeci/root/main/flake/mac-install/bootstrap.sh | bash
+
 set -euo pipefail
 
 repo=${BOOTSTRAP_REPO:-adeci/root}
@@ -76,8 +74,4 @@ Ready. This Mac:
   addresses:     $ips
   SSH host key:  $fingerprint
 
-On your admin machine, from the fleet repo:
-  nix run .#mac-install -- <machine> <address>
-
-It shows the host key it sees; it must match the one above.
 EOF
