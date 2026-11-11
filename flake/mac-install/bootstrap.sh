@@ -2,8 +2,6 @@
 
 # Primes a fresh Mac for `mac-install` from an admin machine: installs Nix, turns on Remote Login and authorizes the fleet's SSH keys for root and this user.
 
-# curl -fsSL https://raw.githubusercontent.com/adeci/root/main/flake/mac-install/bootstrap.sh | bash
-
 set -euo pipefail
 
 repo=${BOOTSTRAP_REPO:-adeci/root}
