@@ -17,8 +17,6 @@ outer.bottom = 6
 outer.top = 6
 outer.right = 6
 
-# Alt is the window-manager modifier.
-
 [mode.main.binding]
 alt-enter = "exec-and-forget @KITTY_HOME@"
 alt-shift-enter = "exec-and-forget @KITTY_HERE@"

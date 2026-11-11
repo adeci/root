@@ -38,7 +38,6 @@ in
 {
   inherit script;
 
-  # `name` runs `tofu <subcommand>` with its own arguments.
   command =
     name: subcommand:
     script name ''

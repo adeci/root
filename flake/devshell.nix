@@ -1,14 +1,10 @@
-{ self, ... }:
 {
   perSystem =
-    {
-      pkgs,
-      ...
-    }:
+    { pkgs, self', ... }:
     {
       devShells.default = pkgs.mkShell {
         packages = [
-          self.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+          self'.packages.clan-cli
           pkgs.opentofu
         ];
       };

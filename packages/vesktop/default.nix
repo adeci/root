@@ -3,7 +3,7 @@
 {
   lib,
   pkgs,
-  self,
+  self',
   stdenv,
   fetchFromGitHub,
   fetchurl,
@@ -23,7 +23,7 @@
   ...
 }:
 let
-  inherit (self.packages.${stdenv.hostPlatform.system}) vencord;
+  inherit (self'.packages) vencord;
 
   # The release package.json pins. This nixpkgs has no electron_45, so use
   # upstream's release build through the builder behind electron_*-bin.
