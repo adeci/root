@@ -2,7 +2,7 @@
 # Primes a fresh Mac for `mac-install` from an admin machine: installs Nix, turns
 # on Remote Login and authorizes the fleet's SSH keys for root and this user.
 #
-#   curl -fsSL https://raw.githubusercontent.com/adeci/root/main/bootstrap/mac.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/adeci/root/main/flake/mac-install/bootstrap.sh | bash
 #
 # Run it as the admin user created in Setup Assistant; it asks for sudo itself
 # because the Nix installer refuses to run as root.

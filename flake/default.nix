@@ -4,7 +4,7 @@
     ./clan.nix
     ./devshell.nix
     ./formatter.nix
-    ./mac-install.nix
+    ./mac-install
     ./modules.nix
     ./packages.nix
     ./resources.nix
