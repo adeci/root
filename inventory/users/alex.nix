@@ -18,6 +18,7 @@
 
     "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBD3P/z4gT05tYsaIlGfV5Z7L+l6nRl5hKidz2IFmxv/crvo16GLYYfJT0wMSOweMuUYWx8hH02Bw+sDD3Qtrp8U= modus-tpm"
     "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBODjmeH4hzi0wWwiJVoWBj2Kz5kKRz+hIaxn6nc9WrIFMp/coHtcvzFjukiCG7IbuR+aKczwyhYZrc33U4PTK2A= praxis-tpm"
+    "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAJa5JNj1B7grD4B3gr132AmGLCg1IxpnQPq5VbLHABEJiBj+vIDH79LYaHRn/K4LM3CN1g2/jQwmtkHutUOMzM= icarus-se"
 
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJVB44hBiASLPelTC//teEK3CpzrwswdBccLe9MKbaMp adecigear"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEhgjkz1FKcpufSwoe8fwefLiBijonH8djVddlLjt+Li"
