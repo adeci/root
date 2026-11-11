@@ -17,7 +17,6 @@
     nvim-dev
     librewolf
     llm-config
-    handy
     karabiner
     mouse
     aerospace

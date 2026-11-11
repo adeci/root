@@ -28,7 +28,6 @@ in
     auto-timezone
     smartd
     desktop
-    handy
     librewolf
     niri
     noctalia

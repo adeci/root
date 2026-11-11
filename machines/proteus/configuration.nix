@@ -10,7 +10,6 @@
     auto-pressure-gc
     auto-timezone
     desktop
-    handy
     librewolf
     niri
     noctalia

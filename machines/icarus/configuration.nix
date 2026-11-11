@@ -10,7 +10,6 @@
     librewolf
     llm-config
     llm-tools
-    handy
     karabiner
     mouse
     aerospace

@@ -23,7 +23,6 @@
     auto-pressure-gc
     smartd
     desktop
-    handy
     librewolf
     niri
     noctalia

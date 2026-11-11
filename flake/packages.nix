@@ -12,7 +12,6 @@ let
   skipChecks = [
     "element-desktop"
     "emacs"
-    "handy"
     "karabiner-elements"
     "prusa-slicer"
     "signal-desktop"
