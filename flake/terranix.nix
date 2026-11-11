@@ -83,14 +83,20 @@ in
               jq -n --arg key "$PASSPHRASE" '{"keys":{"encryption_key":($key|@base64),"decryption_key":($key|@base64)},"meta":{"external_data":{}}}'
             '';
         };
-      }
-      // lib.genAttrs [
-        "tf-init"
-        "tf-plan"
-        "tf-apply"
-        "tf-output"
-        "tf-state"
-        "tf-destroy"
-      ] (name: tofu.command name (lib.removePrefix "tf-" name));
+      };
+
+      apps =
+        lib.genAttrs
+          [
+            "tf-init"
+            "tf-plan"
+            "tf-apply"
+            "tf-output"
+            "tf-state"
+            "tf-destroy"
+          ]
+          (name: {
+            program = tofu.command name (lib.removePrefix "tf-" name);
+          });
     };
 }

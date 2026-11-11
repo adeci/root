@@ -1,11 +1,8 @@
 {
   perSystem =
     { pkgs, inputs', ... }:
-    {
-      # First install of a Mac primed by bootstrap.sh: secrets, first
-      # nix-darwin switch, then the System Settings steps the config declares.
-      # Later deploys are plain `clan machines update`.
-      packages.mac-install = pkgs.writeShellApplication {
+    let
+      mac-install = pkgs.writeShellApplication {
         name = "mac-install";
         runtimeInputs = [
           inputs'.clan-core.packages.clan-cli
@@ -16,9 +13,13 @@
         ];
         text = builtins.readFile ./install.sh;
       };
+    in
+    {
+      # First install of a Mac primed by bootstrap.sh: secrets, first nix-darwin switch, then the System Settings steps the config declares.
+      apps.mac-install.program = mac-install;
 
-      # bootstrap.sh runs before Nix exists, fetched raw from GitHub, so only
-      # this check keeps it under shellcheck.
+      # Apps aren't built by `nix flake check`; these keep both scripts under shellcheck.
+      checks.mac-install = mac-install;
       checks.mac-bootstrap = pkgs.writeShellApplication {
         name = "mac-bootstrap";
         text = builtins.readFile ./bootstrap.sh;

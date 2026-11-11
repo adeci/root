@@ -37,7 +37,7 @@
       };
     in
     {
-      packages = {
+      apps = lib.mapAttrs (_: program: { inherit program; }) {
         net-init = tofu.command "net-init" "init";
         net-plan = tofu.command "net-plan" "plan";
         net-apply = tofu.command "net-apply" "apply";

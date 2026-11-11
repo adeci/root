@@ -11,6 +11,7 @@
     ./routeros.nix
     ./terranix.nix
     ./tests.nix
+    ./update-locks.nix
     ./users.nix
   ];
 }
