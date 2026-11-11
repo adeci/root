@@ -1,8 +1,25 @@
 {
   darwin =
-    { pkgs, ... }:
+    { pkgs, self, ... }:
     {
-      environment.systemPackages = [ pkgs.scroll-reverser ];
+      imports = [ self.modules.darwin.mac-setup ];
+
+      environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.scroll-reverser ];
+
+      macSetup.steps = [
+        {
+          name = "Scroll Reverser";
+          url = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
+          instructions = "Turn on Scroll Reverser.";
+          grants = [
+            {
+              service = "kTCCServiceAccessibility";
+              client = "com.pilotmoon.scroll-reverser";
+            }
+          ];
+          restart = [ "gui/org.nixos.scroll-reverser" ];
+        }
+      ];
 
       system.defaults = {
         # Trackpad stays natural. Scroll Reverser flips only physical mouse wheels.

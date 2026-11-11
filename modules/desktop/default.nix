@@ -137,6 +137,9 @@
 
       wrappers.kitty.enable = true;
 
+      # Prints the `defaults write` for each setting changed in System Settings.
+      environment.systemPackages = [ pkgs.plistwatch ];
+
       # reattach makes Touch ID work inside tmux/screen.
       security.pam.services.sudo_local.touchIdAuth = true;
       security.pam.services.sudo_local.reattach = true;

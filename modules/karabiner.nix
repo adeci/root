@@ -67,12 +67,48 @@
       );
     in
     {
+      imports = [ self.modules.darwin.mac-setup ];
+
       # nix-darwin's module needs Karabiner-Elements 14.13.0, which the pinned
       # package provides.
       services.karabiner-elements = {
         enable = true;
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.karabiner-elements;
       };
+
+      macSetup.steps =
+        let
+          bin = "${config.services.karabiner-elements.package}/Library/Application Support/org.pqrs/Karabiner-Elements/bin";
+          daemons = [
+            "system/org.pqrs.karabiner.karabiner_grabber"
+            "system/org.pqrs.karabiner.karabiner_observer"
+          ];
+        in
+        [
+          {
+            name = "Karabiner driver";
+            url = "x-apple.systempreferences:com.apple.LoginItems-Settings.extension";
+            instructions = "Driver Extensions (i) > turn on Karabiner-DriverKit-VirtualHIDDevice.";
+            check = "/usr/bin/systemextensionsctl list 2>/dev/null | /usr/bin/grep -q 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice.*activated enabled'";
+            restart = daemons;
+          }
+          {
+            name = "Karabiner input monitoring";
+            url = "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent";
+            instructions = "Turn on karabiner_grabber and karabiner_observer.";
+            grants =
+              map
+                (daemon: {
+                  service = "kTCCServiceListenEvent";
+                  client = "${bin}/${daemon}";
+                })
+                [
+                  "karabiner_grabber"
+                  "karabiner_observer"
+                ];
+            restart = daemons;
+          }
+        ];
 
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''

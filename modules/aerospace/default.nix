@@ -37,7 +37,32 @@
 
     in
     {
-      imports = [ self.modules.darwin.wrappers ];
+      imports = [
+        self.modules.darwin.wrappers
+        self.modules.darwin.mac-setup
+      ];
+
+      macSetup.steps = [
+        {
+          name = "AeroSpace and borders";
+          url = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
+          instructions = "Turn on AeroSpace and borders.";
+          grants = [
+            {
+              service = "kTCCServiceAccessibility";
+              client = "bobko.aerospace";
+            }
+            {
+              service = "kTCCServiceAccessibility";
+              client = "${config.services.jankyborders.package}/bin/borders";
+            }
+          ];
+          restart = [
+            "gui/org.nixos.aerospace"
+            "gui/org.nixos.jankyborders"
+          ];
+        }
+      ];
 
       wrappers.kitty.enable = true;
       fonts.packages = [ pkgs.nerd-fonts.caskaydia-mono ];
