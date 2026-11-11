@@ -30,12 +30,33 @@ in
     };
 
   darwin =
-    { pkgs, self, ... }:
+    {
+      config,
+      pkgs,
+      self,
+      ...
+    }:
+    let
+      user = config.system.primaryUser;
+      asUser = ''launchctl asuser "$(/usr/bin/id -u -- ${user})" sudo -H --user=${user} --'';
+    in
     {
       imports = [ self.modules.darwin.home-links ];
 
       environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf-macos ];
 
       home.links.".librewolf/librewolf.overrides.cfg" = pkgs.writeText "librewolf.overrides.cfg" prefs;
+
+      # macOS confirms a browser change in a dialog, so this only asks while LibreWolf isn't the default. The app is registered first: this runs before Launch Services has seen a freshly copied bundle.
+      system.activationScripts.postActivation.text = ''
+        ${asUser} /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+          -f "/Applications/Nix Apps/LibreWolf.app" || true
+        ${asUser} /usr/bin/osascript -l JavaScript -e '
+          ObjC.import("CoreServices");
+          const id = "net.librewolf.librewolf";
+          if (ObjC.castRefToObject($.LSCopyDefaultHandlerForURLScheme($("https"))).js !== id)
+            $.LSSetDefaultHandlerForURLScheme($("http"), $(id));
+        ' >/dev/null || true
+      '';
     };
 }

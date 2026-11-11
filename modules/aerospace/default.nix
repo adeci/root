@@ -86,10 +86,14 @@
 
       services.jankyborders = {
         enable = true;
+        package = self.packages.${pkgs.stdenv.hostPlatform.system}.jankyborders;
         active_color = "0xff00C0A3";
         inactive_color = "0xff292e42";
-        width = 6.0;
+        width = 2.0;
+        hidpi = true;
         style = "round";
+        # Below, the window's own drop shadow darkens the border's bottom and right edges.
+        order = "above";
       };
     };
 }

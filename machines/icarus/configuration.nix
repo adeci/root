@@ -6,6 +6,7 @@
     base
     zsh
     desktop
+    laptop
     nvim-dev
     librewolf
     llm-config

@@ -1,0 +1,34 @@
+Keep the focused border above its window with order=above.
+
+Firefox-based browsers raise their window on every keystroke, which briefly
+covers a border drawn with order=above and makes it flicker. Keep the focused
+window's border one sub-level above that window; order=below is unchanged.
+
+From https://github.com/FelixKratz/JankyBorders/pull/212 (open upstream).
+
+diff --git a/src/border.c b/src/border.c
+index 0c0a28e..f87d1e6 100644
+--- a/src/border.c
++++ b/src/border.c
+@@ -195,6 +195,10 @@ void border_update_internal(struct border* border, struct settings* settings) {
+   int level = window_level(cid, border->target_wid);
+   int sub_level = window_sub_level(cid, border->target_wid);
+ 
++  bool pin_above = settings->border_order == BORDER_ORDER_ABOVE
++                   && border->focused
++                   && !border->is_proxy;
++
+   if (!border->wid) {
+     border_create_window(border,
+                          frame,
+@@ -235,7 +239,9 @@ void border_update_internal(struct border* border, struct settings* settings) {
+                                      transform   );
+   }
+   SLSTransactionSetWindowLevel(transaction, border->wid, level);
+-  SLSTransactionSetWindowSubLevel(transaction, border->wid, sub_level);
++  SLSTransactionSetWindowSubLevel(transaction,
++                                  border->wid,
++                                  pin_above ? sub_level + 1 : sub_level);
+   SLSTransactionOrderWindow(transaction,
+                             border->wid,
+                             settings->border_order,

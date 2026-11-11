@@ -132,6 +132,10 @@
       self,
       ...
     }:
+    let
+      user = config.system.primaryUser;
+      asUser = ''launchctl asuser "$(/usr/bin/id -u -- ${user})" sudo -H --user=${user} --'';
+    in
     {
       imports = [ self.modules.darwin.wrappers ];
 
@@ -192,11 +196,18 @@
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           if [[ -d "/Applications/Nix Apps" ]]; then
-            launchctl asuser "$(/usr/bin/id -u -- ${config.system.primaryUser})" \
-              sudo -H --user=${config.system.primaryUser} -- \
-              /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+            ${asUser} /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
               -f -R "/Applications/Nix Apps" || true
           fi
+
+          # Idle shows the screensaver at 5 minutes and turns the display off at 15, on battery too.
+          /usr/bin/pmset -a displaysleep 15
+          ${asUser} /usr/bin/defaults -currentHost write com.apple.screensaver idleTime -int 300
+
+          # Spotlight opens on Option-D (shortcut 64); -dict-add leaves the other shortcuts alone.
+          ${asUser} /usr/bin/defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 \
+            '<dict><key>enabled</key><true/><key>value</key><dict><key>parameters</key><array><integer>100</integer><integer>2</integer><integer>524288</integer></array><key>type</key><string>standard</string></dict></dict>'
+          ${asUser} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
         '';
     };
 }
