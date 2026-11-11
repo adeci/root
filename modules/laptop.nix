@@ -28,8 +28,10 @@
       };
     };
 
-  # Only closing the lid sleeps the Mac; idle just turns the display off.
   darwin = {
+    system.defaults.trackpad.Clicking = true;
+
+    # Only closing the lid sleeps the Mac; idle just turns the display off.
     system.activationScripts.postActivation.text = ''
       /usr/bin/pmset -a sleep 0
     '';

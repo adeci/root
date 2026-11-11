@@ -5,6 +5,8 @@
 
     base
     zsh
+    atuin-login
+    auto-pressure-gc
     desktop
     laptop
     nvim-dev
@@ -15,6 +17,7 @@
     mouse
     aerospace
     secretive
+    mac-security
   ];
 
   networking.hostName = "icarus";

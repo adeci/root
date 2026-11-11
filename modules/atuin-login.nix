@@ -1,18 +1,12 @@
-{
-  nixos =
-    {
-      config,
-      lib,
-      pkgs,
-      self,
-      ...
-    }:
+let
+  session =
+    { config, pkgs }:
     let
-      inherit (self.users.alex) username;
-      inherit (config.wrappers.zsh) atuinSyncAddress;
       files = config.clan.core.vars.generators.atuin.files;
+    in
+    {
       configDir = pkgs.writeTextDir "config.toml" ''
-        sync_address = "${atuinSyncAddress}"
+        sync_address = "${config.wrappers.zsh.atuinSyncAddress}"
       '';
 
       login = pkgs.writeShellApplication {
@@ -27,13 +21,19 @@
           atuin sync
         '';
       };
-    in
-    {
-      imports = [ self.modules.nixos.wrappers ];
+    };
 
+  shared =
+    {
+      config,
+      lib,
+      self,
+      ...
+    }:
+    {
       assertions = [
         {
-          assertion = atuinSyncAddress != null;
+          assertion = config.wrappers.zsh.atuinSyncAddress != null;
           message = "atuin-login needs wrappers.zsh.atuinSyncAddress, the server to log in to.";
         }
       ];
@@ -48,9 +48,28 @@
           persist = true;
         });
         files = lib.genAttrs [ "username" "password" "key" ] (_: {
-          owner = username;
+          owner = self.users.alex.username;
         });
       };
+    };
+in
+{
+  nixos =
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+      ...
+    }:
+    let
+      inherit (session { inherit config pkgs; }) configDir login;
+    in
+    {
+      imports = [
+        self.modules.nixos.wrappers
+        shared
+      ];
 
       systemd.user.services.atuin-login = {
         description = "Atuin sync login";
@@ -63,6 +82,33 @@
           Restart = "on-failure";
           RestartSec = 60;
         };
+      };
+    };
+
+  darwin =
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+      ...
+    }:
+    let
+      inherit (session { inherit config pkgs; }) configDir login;
+    in
+    {
+      imports = [
+        self.modules.darwin.wrappers
+        shared
+      ];
+
+      launchd.user.agents.atuin-login.serviceConfig = {
+        ProgramArguments = [ (lib.getExe login) ];
+        EnvironmentVariables.ATUIN_CONFIG_DIR = "${configDir}";
+        RunAtLoad = true;
+        # The server may not be reachable yet at login; retry every minute until it is.
+        KeepAlive.SuccessfulExit = false;
+        ThrottleInterval = 60;
       };
     };
 }

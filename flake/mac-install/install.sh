@@ -86,6 +86,14 @@ else
   echo "  ✓ on"
 fi
 
+section "FileVault"
+# A warning, not a stop: turning it on is a separate decision, and it can wait.
+if mac "fdesetup isactive" >/dev/null 2>&1; then
+  echo "  ✓ on"
+else
+  echo "  ! off: System Settings > Privacy & Security > FileVault"
+fi
+
 section "Secrets"
 clan vars generate "$machine"
 clan vars upload "$machine" --directory "$secrets"

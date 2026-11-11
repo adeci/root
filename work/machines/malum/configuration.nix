@@ -15,7 +15,6 @@
     base
     desktop
     nvim-dev
-    librewolf
     llm-config
     karabiner
     mouse

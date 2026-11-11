@@ -28,10 +28,19 @@
         exec ${kitty}
       '';
 
+      # Closing a window lets macOS focus the app's next one, possibly on another workspace; come back to where the close started.
+      close-here = pkgs.writeShellScript "close-here" ''
+        aerospace=${pkgs.aerospace}/bin/aerospace
+        workspace=$($aerospace list-workspaces --focused)
+        $aerospace close --quit-if-last-window
+        sleep 0.1
+        $aerospace workspace "$workspace"
+      '';
+
       aerospaceConfig = pkgs.writeText "aerospace.toml" (
         builtins.replaceStrings
-          [ "@KITTY_HOME@" "@KITTY_HERE@" ]
-          [ (toString kitty-home) (toString kitty-here) ]
+          [ "@KITTY_HOME@" "@KITTY_HERE@" "@CLOSE_HERE@" ]
+          [ (toString kitty-home) (toString kitty-here) (toString close-here) ]
           (builtins.readFile ./config.toml)
       );
 

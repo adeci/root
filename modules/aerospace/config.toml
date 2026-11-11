@@ -24,7 +24,7 @@ outer.right = 6
 alt-enter = "exec-and-forget @KITTY_HOME@"
 alt-shift-enter = "exec-and-forget @KITTY_HERE@"
 
-alt-q = "close --quit-if-last-window"
+alt-q = "exec-and-forget @CLOSE_HERE@"
 
 alt-slash = "layout tiles horizontal vertical"
 alt-comma = "layout accordion horizontal vertical"

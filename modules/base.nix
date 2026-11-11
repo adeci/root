@@ -39,6 +39,8 @@ let
         inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
       ];
       wrappers.nvim.enable = true;
+      programs.direnv.enable = true;
+      clan.core.networking.forwardAgent = true;
     };
 
   nixSettings = {
@@ -69,9 +71,6 @@ in
       ];
 
       users.mutableUsers = false;
-
-      clan.core.networking.forwardAgent = true;
-
       # Secrets go in through a systemd unit that restarts consumers itself;
       # restarts requested from the activation script are deprecated.
       sops.useSystemdActivation = true;
@@ -86,7 +85,6 @@ in
       };
 
       nix.settings = nixSettings;
-      programs.direnv.enable = true;
       documentation.dev.enable = true;
       documentation.man.cache.enable = true;
       environment.systemPackages = [
