@@ -42,6 +42,8 @@
     tailscale-travel
   ];
 
+  gitSigning.key = "praxis-tpm";
+
   tailscaleTravel.defaultExitNode = "sequoia";
 
   wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";

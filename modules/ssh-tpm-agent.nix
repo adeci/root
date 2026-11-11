@@ -2,18 +2,25 @@
   nixos =
     {
       config,
+      lib,
       pkgs,
       self,
       ...
     }:
     let
       username = config.system.primaryUser;
+      socket = "/run/user/${toString config.users.users.${username}.uid}/ssh-tpm-agent.sock";
       ssh-tpm-agent = pkgs.ssh-tpm-agent.overrideAttrs {
         doCheck = false; # keyring tests need kernel keyring unavailable in sandbox
       };
     in
     {
-      imports = [ self.modules.nixos.primary-user ];
+      imports = [
+        self.modules.nixos.primary-user
+        self.modules.nixos.git-signing
+      ];
+
+      gitSigning.agentSocket = lib.mkDefault socket;
 
       programs.ssh.startAgent = false;
 
@@ -51,7 +58,7 @@
       };
 
       environment.sessionVariables = {
-        SSH_AUTH_SOCK = "/run/user/${toString config.users.users.${username}.uid}/ssh-tpm-agent.sock";
+        SSH_AUTH_SOCK = socket;
       };
     };
 }

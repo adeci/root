@@ -22,6 +22,8 @@
   networking.hostName = "icarus";
   networking.computerName = "icarus";
 
+  gitSigning.key = "icarus-se";
+
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 7;
 }

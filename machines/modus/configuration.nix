@@ -43,6 +43,8 @@
 
   system.primaryUser = self.users.alex.username;
 
+  gitSigning.key = "modus-tpm";
+
   tailscaleTravel.defaultExitNode = "sequoia";
 
   wrappers.niri.machineConfig = # kdl

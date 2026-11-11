@@ -24,7 +24,7 @@
 
   ];
   git = {
-    name = "adeci";
-    email = "alex.decious@gmail.com";
+    name = "Alex Decious";
+    email = "alex@decio.us";
   };
 }
