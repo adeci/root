@@ -23,7 +23,11 @@ echo "==> sudo (asked once, kept alive while this runs)"
 # shellcheck disable=SC2024
 sudo -v </dev/tty
 while sleep 50; do sudo -n true 2>/dev/null || exit; done &
-trap 'kill $! 2>/dev/null || true' EXIT
+keepalive=$!
+trap 'kill $keepalive 2>/dev/null || true' EXIT
+
+echo "==> Keeping the Mac awake while this runs (lid open)"
+caffeinate -dimsu -w $$ &
 
 if [ -x "$nix_bin/nix" ]; then
   echo "==> Nix already installed: $("$nix_bin/nix" --version)"
@@ -39,6 +43,8 @@ echo "==> Remote Login"
 # What nix-darwin's openssh module does; systemsetup would need Full Disk Access.
 sudo launchctl enable system/com.openssh.sshd
 sudo launchctl bootstrap system /System/Library/LaunchDaemons/ssh.plist 2>/dev/null || true
+# macOS creates host keys on the first connection; the fingerprint below needs them now.
+sudo ssh-keygen -A
 
 echo "==> Authorizing keys from $repo:$user_file"
 user_nix=$(mktemp)
@@ -63,6 +69,9 @@ add_keys() {
 add_keys /var/root root
 add_keys "$HOME" "$(id -un)"
 
+# Only a click can turn this on, and the person running this is at the Mac; mac-install verifies it.
+open "x-apple.systempreferences:com.apple.Sharing-Settings.extension"
+
 ips=$(ifconfig | awk '/inet / && $2 != "127.0.0.1" { print $2 }' | paste -sd ' ' -)
 fingerprint=$(ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub | awk '{ print $2 }')
 
@@ -71,5 +80,8 @@ cat <<EOF
 Ready. This Mac:
   addresses:     $ips
   SSH host key:  $fingerprint
+
+One click left, in the Sharing window that just opened:
+  Remote Login (i) > turn on "Allow full disk access for remote users"
 
 EOF

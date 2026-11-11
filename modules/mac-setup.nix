@@ -74,17 +74,6 @@
       };
 
       config = {
-        # Reading the privacy database over SSH is how every later step is
-        # verified, and only works once this is on.
-        macSetup.steps = lib.mkBefore [
-          {
-            name = "Full Disk Access for remote users";
-            url = "x-apple.systempreferences:com.apple.Sharing-Settings.extension";
-            instructions = "Remote Login (i) > turn on \"Allow full disk access for remote users\".";
-            check = "/usr/bin/sqlite3 ${lib.escapeShellArg tccDb.system} 'select 1' >/dev/null 2>&1";
-          }
-        ];
-
         environment.etc."mac-setup.json".text = builtins.toJSON {
           inherit user;
           inherit (config.users.users.${user}) uid;

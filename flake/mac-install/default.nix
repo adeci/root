@@ -6,6 +6,7 @@
         name = "mac-install";
         runtimeInputs = [
           inputs'.clan-core.packages.clan-cli
+          pkgs.coreutils
           pkgs.gitMinimal
           pkgs.gnutar
           pkgs.jq
