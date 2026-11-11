@@ -17,7 +17,7 @@
     roles.default.tags = [ "all" ];
     roles.default.settings.extraModules = [
       {
-        clan.core.state-version.enable = true;
+        clan.core.settings.state-version.enable = true;
       }
     ];
   };

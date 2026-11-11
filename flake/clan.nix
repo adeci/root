@@ -16,10 +16,7 @@ in
   clan = {
     meta.name = "adeci";
     meta.domain = "cymric-daggertooth.ts.net";
-    inventory = import ../inventory/clan {
-      inherit (inputs.nixpkgs) lib;
-      inherit inputs;
-    };
+    inventory = import ../inventory/clan;
     modules = services;
     specialArgs = {
       inherit (inputs) self;

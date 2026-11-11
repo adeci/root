@@ -1,0 +1,291 @@
+let
+  minimalJournal = {
+    journal = {
+      mode = "explicit";
+      include = [
+        "alloy"
+        "sshd"
+        "tailscaled"
+        "tailscaled-autoconnect"
+        "tailscaled-set"
+      ];
+    };
+  };
+in
+{
+  harmonia = {
+    module = {
+      name = "@adeci/harmonia";
+      input = "self";
+    };
+    roles.server.machines.leviathan = { };
+    roles.client.tags = [ "adeci-net" ];
+  };
+
+  monitoring = {
+    module = {
+      name = "@adeci/monitoring";
+      input = "self";
+    };
+    roles = {
+      agent = {
+        tags = [ "adeci-net" ];
+        machines = {
+          aegis.settings = minimalJournal;
+          atropos.settings = minimalJournal;
+          clotho.settings = minimalJournal;
+          kasha.settings = minimalJournal;
+          lachesis.settings = minimalJournal;
+          modus.settings = minimalJournal;
+          praxis.settings = minimalJournal;
+          proteus.settings = minimalJournal;
+
+          janus.settings = {
+            extraCollectors = [ "conntrack" ];
+            extraLabels.role = "router";
+            extraScrapeTargets = [
+              {
+                job = "kea-dhcp4";
+                target = "127.0.0.1:9547";
+              }
+              {
+                job = "unbound";
+                target = "127.0.0.1:9167";
+              }
+              {
+                job = "smokeping";
+                target = "127.0.0.1:9374";
+              }
+              {
+                job = "mikrotik";
+                target = "127.0.0.1:9436";
+              }
+              {
+                job = "mikrotik-poe";
+                target = "127.0.0.1:9437";
+              }
+            ];
+          };
+
+          leviathan.settings.extraScrapeTargets = [
+            {
+              job = "dcgm";
+              target = "127.0.0.1:9400";
+            }
+          ];
+        };
+      };
+      server.machines.sequoia.settings = {
+        host = "sequoia.cymric-daggertooth.ts.net";
+        grafana.enable = true;
+        retentionDays = 30;
+        loki.retentionHours = 168;
+        alertDelivery.ntfy.enable = true;
+      };
+    };
+  };
+
+  nixbot = {
+    module = {
+      name = "@adeci/nixbot";
+      input = "self";
+    };
+
+    roles.server.machines.leviathan.settings = {
+      domain = "nixbot.decio.us";
+      # aarch64 only builds on bramble (Pi 4) and times out.
+      buildSystems = [ "x86_64-linux" ];
+      # leviathan is shared with other users and the LLM host; keep CI bounded.
+      evalWorkerCount = 8;
+      evalMaxMemorySize = 4096;
+      buildConcurrency = 8;
+      admins = [
+        "github:adeci"
+        "github:fzakaria"
+      ];
+      prApproval = {
+        enable = true;
+        trustedAssociations = [
+          "OWNER"
+          "MEMBER"
+          "COLLABORATOR"
+        ];
+      };
+      github = {
+        appId = 5474567;
+        oauthId = "Iv23liPuk6XhuDT6Owtz";
+        userAllowlist = [
+          "adeci"
+          "ddeci"
+          "fzakaria"
+        ];
+      };
+      effectSecrets."github:fzakaria/rewindvm" = [ "cachix" ];
+    };
+  };
+
+  builders = {
+    module = {
+      name = "@adeci/remote-builder";
+      input = "self";
+    };
+    roles.server.machines = {
+      bramble.settings = {
+        systems = [ "aarch64-linux" ];
+        maxJobs = 2;
+        speedFactor = 1;
+        supportedFeatures = [ ];
+      };
+
+      leviathan.settings = {
+        systems = [
+          "x86_64-linux"
+          "i686-linux"
+        ];
+        maxJobs = 16;
+        speedFactor = 10;
+      };
+    };
+    roles.client.machines = {
+      aegis = { };
+      bramble = { };
+      icarus = { };
+      leviathan = { };
+      modus = { };
+      praxis = { };
+    };
+  };
+
+  restic = {
+    module = {
+      name = "@adeci/restic";
+      input = "self";
+    };
+
+    roles.client.machines = {
+      conduit = { };
+      sequoia = { };
+      leviathan = { };
+      lachesis = { };
+      janus = { };
+    };
+  };
+
+  security-keys = {
+    module = {
+      name = "@adeci/security-keys";
+      input = "self";
+    };
+    roles.default = {
+      settings.keys = [
+        {
+          name = "spark";
+          owner = "alex";
+        }
+        {
+          name = "ember";
+          owner = "alex";
+        }
+      ];
+      machines.aegis.settings.use = [
+        "ember"
+      ];
+      machines.modus.settings.use = [
+        "spark"
+      ];
+      machines.praxis.settings.use = [
+        "spark"
+      ];
+    };
+  };
+
+  sshd = {
+    module = {
+      name = "sshd";
+      input = "clan-core";
+    };
+    roles.server.tags = [ "adeci-net" ];
+    roles.client.tags = [ "adeci-net" ];
+  };
+
+  state-version = {
+    module = {
+      name = "importer";
+      input = "clan-core";
+    };
+    roles.default.tags = [ "all" ];
+    roles.default.settings.extraModules = [
+      {
+        clan.core.settings.state-version.enable = true;
+      }
+    ];
+  };
+
+  syncthing = {
+    module = {
+      name = "syncthing";
+      input = "clan-core";
+    };
+    roles.peer = {
+      machines = {
+        aegis = { };
+        modus = { };
+        praxis = { };
+        sequoia = { };
+      };
+
+      extraModules = [
+        { services.syncthing.user = "alex"; }
+      ];
+
+      settings = {
+        extraDevices = {
+          razr = {
+            id = "PXAMRHT-G7OA3GU-VMEBK2F-TPQTS55-4A4KBXO-AWATRBJ-FZ7KH7L-3OU2GQA";
+            name = "razr";
+          };
+        };
+
+        folders = {
+          notes = {
+            path = "/home/alex/notes";
+          };
+          study = {
+            path = "/home/alex/study";
+          };
+        };
+
+      };
+    };
+  };
+
+  "adeci-net" = {
+    module = {
+      name = "@adeci/tailscale";
+      input = "self";
+    };
+    roles.peer.tags = [ "adeci-net" ];
+  };
+
+  "adeci-net-ephemeral" = {
+    module = {
+      name = "@adeci/tailscale";
+      input = "self";
+    };
+    roles.peer.tags = [ "adeci-net-ephemeral" ];
+  };
+
+  wifi = {
+    module = {
+      name = "wifi";
+      input = "clan-core";
+    };
+    roles.default = {
+      tags = [ "wifi-preload" ];
+      settings.networks = {
+        home = { };
+        hotspot = { };
+      };
+    };
+  };
+}
