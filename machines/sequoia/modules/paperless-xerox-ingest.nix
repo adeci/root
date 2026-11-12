@@ -45,7 +45,9 @@ in
       config.clan.core.vars.generators.paperless-xerox-ingest.files.ftp-password-hash.path;
   };
 
-  services.paperless.consumptionDirIsPublic = true;
+  # Group-writable for the upload user, rather than writable by everyone.
+  systemd.tmpfiles.settings."10-paperless".${config.services.paperless.consumptionDir}.d.mode =
+    "2770";
 
   # vsftpd uses PAM for local logins; without this, PAM's fallback denies them.
   security.pam.services.vsftpd = { };
