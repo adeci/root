@@ -15,7 +15,6 @@
     smartd
     cloudflared
     auto-pressure-gc
-    ./modules/llm/host.nix
     ./modules/microvms.nix
     ./modules/palworld
     ./modules/v100-compute.nix

@@ -126,7 +126,6 @@
         "lachesis:22"
         "lachesis:443"
         "leviathan:22"
-        "leviathan:11435"
         "${homelan.hosts.sequoia.ip}:443"
         "tag:work:22"
       ];

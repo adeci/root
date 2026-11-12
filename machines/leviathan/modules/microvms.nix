@@ -193,7 +193,6 @@ in
       "nvidia-persistenced.service"
       "dcgm-hostengine.service"
       "dcgm-exporter.service"
-      "llama-swap.service"
       "nvidia-container-toolkit-cdi-generator.service"
     ];
 
