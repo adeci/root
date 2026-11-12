@@ -1,13 +1,13 @@
 {
   config,
   self,
-  inputs',
   lib,
+  clanSecret,
+  setClanVar,
   ...
 }:
 let
   inherit (self.resources.cloudflare) tunnels tunnelToken;
-  inherit (inputs'.clan-core.packages) clan-cli;
 in
 {
   # random_bytes, not random_id: random_id exposes the secret as its id.
@@ -21,7 +21,7 @@ in
   resource.cloudflare_zero_trust_tunnel_cloudflared = lib.mapAttrs' (
     machine: _:
     lib.nameValuePair machine {
-      account_id = config.data.external.cloudflare-account-id "result.secret";
+      account_id = clanSecret "cloudflare-account-id";
       name = machine;
       secret = config.resource.random_bytes."tunnel_secret_${machine}" "base64";
       config_src = "cloudflare";
@@ -31,7 +31,7 @@ in
   resource.cloudflare_zero_trust_tunnel_cloudflared_config = lib.mapAttrs' (
     machine: ingress:
     lib.nameValuePair machine {
-      account_id = config.data.external.cloudflare-account-id "result.secret";
+      account_id = clanSecret "cloudflare-account-id";
       tunnel_id = config.resource.cloudflare_zero_trust_tunnel_cloudflared.${machine} "id";
 
       config.ingress_rule =
@@ -58,7 +58,7 @@ in
         # terraform_data echoes its input unredacted, so only the tunnel ID goes there; the token goes straight to the provisioner.
         environment.TUNNEL_TOKEN = "\${sensitive(cloudflare_zero_trust_tunnel_cloudflared.${machine}.tunnel_token)}";
         command = ''
-          printf '%s\n' "$TUNNEL_TOKEN" | ${lib.getExe clan-cli} vars set ${machine} ${tunnelToken.generator}/${tunnelToken.file}
+          printf '%s\n' "$TUNNEL_TOKEN" | ${setClanVar machine tunnelToken}
         '';
       };
     }

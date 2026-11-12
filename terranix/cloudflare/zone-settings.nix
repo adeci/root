@@ -1,9 +1,9 @@
 # HSTS here covers proxied hostnames only; DNS-only records bypass Cloudflare, so their origin must send the header itself.
 {
-  config,
   self,
   lib,
   safeName,
+  zoneId,
   ...
 }:
 let
@@ -14,7 +14,7 @@ in
     map (zone: {
       name = safeName zone;
       value = {
-        zone_id = config.data.cloudflare_zone.${safeName zone} "id";
+        zone_id = zoneId zone;
         settings.security_header = {
           enabled = true;
           max_age = 31536000;

@@ -1,34 +1,25 @@
 # Each redirect gets a proxied placeholder record (100:: is Cloudflare's address for hostnames without an origin) and a rule in its zone's dynamic redirect ruleset.
 {
-  config,
   self,
   lib,
   safeName,
+  zoneId,
+  hostnameParts,
   ...
 }:
 let
-  inherit (self.resources.cloudflare) zones redirects;
-  zoneId = zone: config.data.cloudflare_zone.${safeName zone} "id";
-
-  zoneOf =
-    hostname:
-    lib.findFirst (
-      zone: hostname == zone || lib.hasSuffix ".${zone}" hostname
-    ) (throw "Cloudflare redirect ${hostname} does not match any configured zone") zones;
-
-  recordName =
-    hostname:
-    let
-      zone = zoneOf hostname;
-    in
-    if hostname == zone then "@" else lib.removeSuffix ".${zone}" hostname;
+  inherit (self.resources.cloudflare) redirects;
+  zoneOf = hostname: (hostnameParts hostname).zone;
 in
 {
   resource.cloudflare_record = lib.mapAttrs' (
     hostname: _:
+    let
+      parts = hostnameParts hostname;
+    in
     lib.nameValuePair "redirect_${safeName hostname}" {
-      zone_id = zoneId (zoneOf hostname);
-      name = recordName hostname;
+      zone_id = zoneId parts.zone;
+      inherit (parts) name;
       type = "AAAA";
       content = "100::";
       proxied = true;

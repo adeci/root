@@ -1,8 +1,7 @@
 {
-  config,
   self,
-  self',
   lib,
+  clanSecret,
   ...
 }:
 let
@@ -51,26 +50,15 @@ let
       rules;
 in
 {
-  terraform.required_providers = {
-    hcloud = {
-      source = "hetznercloud/hcloud";
-      version = "~> 1.65";
-    };
-    external = {
-      source = "registry.opentofu.org/hashicorp/external";
-      version = "~> 2.0";
-    };
+  terraform.required_providers.hcloud = {
+    source = "hetznercloud/hcloud";
+    version = "~> 1.65";
   };
 
-  data.external.hcloud-api-token = {
-    program = [
-      (lib.getExe self'.packages.get-clan-secret)
-      "hcloud-api-token"
-    ];
-  };
+  clanSecrets = [ "hcloud-api-token" ];
 
   provider.hcloud = {
-    token = config.data.external.hcloud-api-token "result.secret";
+    token = clanSecret "hcloud-api-token";
   };
 
   resource.hcloud_firewall = lib.mapAttrs (edgeName: edge: {

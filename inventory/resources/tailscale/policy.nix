@@ -1,4 +1,8 @@
 { addresses, homelan }:
+let
+  # The owner's tailnet login.
+  owner = "alex.decious@gmail.com";
+in
 {
   hosts = {
     inherit (addresses)
@@ -94,7 +98,7 @@
 
   tests = [
     {
-      src = "alex.decious@gmail.com";
+      src = owner;
       accept = [
         "${homelan.hosts.leviathan-idrac.ip}:443"
         "${homelan.hosts.sequoia.ip}:443"
@@ -114,7 +118,7 @@
         "tag:adeci-installer:22"
       ];
       deny = [
-        "alex.decious@gmail.com:22"
+        "${owner}:22"
         "${homelan.hosts.sequoia.ip}:443"
         "${homelan.hosts.leviathan-idrac.ip}:443"
       ];
@@ -131,7 +135,7 @@
       ];
     }
     {
-      src = "alex.decious@gmail.com";
+      src = owner;
       accept = [
         "tag:tenant:22"
         "tag:gaming:47989"
@@ -146,7 +150,7 @@
         "lachesis:8443"
         "${homelan.hosts.sequoia.ip}:443"
         "${homelan.hosts.leviathan-idrac.ip}:443"
-        "alex.decious@gmail.com:22"
+        "${owner}:22"
       ];
     }
   ];

@@ -1,9 +1,10 @@
 {
   config,
   self,
-  inputs',
-  lib,
   safeName,
+  setClanVar,
+  privateBucket,
+  bucketKeyCapabilities,
   ...
 }:
 let
@@ -12,43 +13,14 @@ let
   inherit (credentials) machine;
   keyName = "zipline_${safeName machine}";
   key = config.resource.b2_application_key.${keyName};
-  inherit (inputs'.clan-core.packages) clan-cli;
 in
 {
-  resource.b2_bucket.zipline_shares = {
-    bucket_name = bucket.name;
-    bucket_type = "allPrivate";
-    default_server_side_encryption = [
-      {
-        mode = "SSE-B2";
-        algorithm = "AES256";
-      }
-    ];
-    lifecycle_rules = [
-      {
-        file_name_prefix = "";
-        days_from_hiding_to_deleting = 7;
-        days_from_starting_to_canceling_unfinished_large_files = 1;
-      }
-    ];
-    bucket_info = {
-      managed-by = "opentofu";
-      purpose = "zipline-shares";
-      inherit (bucket) region;
-    };
-  };
+  resource.b2_bucket.zipline_shares = privateBucket bucket.name "zipline-shares";
 
   resource.b2_application_key.${keyName} = {
     key_name = "zipline-${machine}";
     bucket_ids = [ (config.resource.b2_bucket.zipline_shares "bucket_id") ];
-    capabilities = [
-      "listBuckets"
-      "listFiles"
-      "readFiles"
-      "writeFiles"
-      "deleteFiles"
-      "readBucketEncryption"
-    ];
+    capabilities = bucketKeyCapabilities;
   };
 
   resource.terraform_data."zipline_b2_credentials_${safeName machine}" = {
@@ -67,7 +39,7 @@ in
         printf 'DATASOURCE_S3_ACCESS_KEY_ID=%s\nDATASOURCE_S3_SECRET_ACCESS_KEY=%s\n' \
           "$B2_APPLICATION_KEY_ID" \
           "$B2_APPLICATION_KEY" \
-          | ${lib.getExe clan-cli} vars set ${machine} ${credentials.generator}/${credentials.file}
+          | ${setClanVar machine credentials}
       '';
     };
   };

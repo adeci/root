@@ -6,10 +6,12 @@
   ...
 }:
 let
-  bucket = self.resources.b2.buckets.ziplineShares;
+  inherit (self.resources) b2;
+  bucket = b2.buckets.ziplineShares;
   inherit (bucket) credentials;
   port = 3002;
-  origin = "share.decio.us";
+  record = self.resources.cloudflare.dns.shares;
+  origin = "${record.name}.${record.zone}";
   staging = "/var/cache/zipline";
 in
 {
@@ -62,8 +64,8 @@ in
       CORE_TRUSTED_PROXIES = "127.0.0.1,::1";
       DATASOURCE_TYPE = "s3";
       DATASOURCE_S3_BUCKET = bucket.name;
-      DATASOURCE_S3_REGION = bucket.region;
-      DATASOURCE_S3_ENDPOINT = "https://${bucket.s3Endpoint}";
+      DATASOURCE_S3_REGION = b2.region;
+      DATASOURCE_S3_ENDPOINT = "https://${b2.s3Endpoint}";
       DATASOURCE_S3_FORCE_PATH_STYLE = "true";
       FEATURES_USER_REGISTRATION = "false";
       FEATURES_OAUTH_REGISTRATION = "false";

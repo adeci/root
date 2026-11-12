@@ -4,7 +4,6 @@
   machines,
   resources,
   instances,
-  routerosModels,
 }:
 let
   inherit (resources)
@@ -28,6 +27,8 @@ let
   cloudflareFile = "inventory/resources/cloudflare.nix";
   b2File = "inventory/resources/b2.nix";
   routerosFile = "inventory/resources/routeros/default.nix";
+  routerosModelsFile = "inventory/resources/routeros/models.nix";
+  routerosDeviceFile = name: "inventory/resources/routeros/${name}.nix";
   instancesFile = "inventory/instances.nix";
 
   machineClasses = [
@@ -129,7 +130,7 @@ let
         ) (machine.lan.extra or { })
       )
     ) machines
-    // lib.mapAttrs (name: _: place "inventory/resources/routeros/${name}.nix" "lan") routeros.devices;
+    // lib.mapAttrs (name: _: place (routerosDeviceFile name) "lan") routeros.devices;
 
   # Each host's value from valueOf, skipping hosts where it is null.
   hostEntries =
@@ -271,6 +272,13 @@ let
       )
     ) b2.buckets
     ++ unknownMachine routerosFile "exporter.machine" routeros.exporter.machine
+    ++ concatMapAttrsToList (
+      name: device:
+      lib.optional (!(routeros.models ? ${device.model})) (
+        problemAt (routerosDeviceFile name) "model"
+          "${device.model} is not a model in ${routerosModelsFile}"
+      )
+    ) routeros.devices
     ++ unknownMachine homelanFile "router.machine" router.machine
     ++ concatMapAttrsToList (
       name: record:
@@ -324,12 +332,6 @@ let
   ];
 
   ends = lib.concatMap cableEnds links;
-
-  # Interface names on a RouterOS model: etherN, then sfp-sfpplusN.
-  modelPorts =
-    model:
-    lib.genList (i: "ether${toString (i + 1)}") routerosModels.${model}.etherPorts
-    ++ lib.genList (i: "sfp-sfpplus${toString (i + 1)}") routerosModels.${model}.sfpPorts;
 
   # What a cable end carries, in words both ends must match.
   carrying =
@@ -410,9 +412,9 @@ let
       [ (report "${end.text} needs a port") ]
     else if end.kind == "router" && !(router.ports ? ${end.port}) then
       [ (report "${router.machine} has no port ${end.port} in router.ports") ]
-    else if end.kind == "routeros" && !(routerosModels ? ${model}) then
-      [ (report "${end.device}'s model ${model} has no port list in terranix/routeros/models.nix") ]
-    else if end.kind == "routeros" && !(lib.elem end.port (modelPorts model)) then
+    else if end.kind == "routeros" && !(routeros.models ? ${model}) then
+      [ ] # already reported for the device
+    else if end.kind == "routeros" && !(lib.elem end.port routeros.models.${model}.ports) then
       [ (report "${end.device}, a ${model}, has no port ${end.port}") ]
     else
       [ ];

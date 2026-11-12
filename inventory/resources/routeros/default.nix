@@ -22,9 +22,21 @@ let
     // (
       if device ? vlans && builtins.isList device.vlans then { vlans = vlanIdsFor device.vlans; } else { }
     );
+
+  # A model's interface names: etherN, then sfp-sfpplusN.
+  expandModel =
+    model:
+    model
+    // {
+      ports =
+        builtins.genList (i: "ether${toString (i + 1)}") model.etherPorts
+        ++ builtins.genList (i: "sfp-sfpplus${toString (i + 1)}") model.sfpPorts;
+    };
 in
 {
   devices = builtins.mapAttrs expandDevice (import ./devices.nix);
+
+  models = builtins.mapAttrs (_: expandModel) (import ./models.nix);
 
   # Read-only API account for metrics scraping; its password lives in this machine's vars.
   exporter = {

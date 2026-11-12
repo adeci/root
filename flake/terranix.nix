@@ -42,7 +42,7 @@ in
         };
       };
 
-      inherit (inputs'.clan-core.packages) clan-cli;
+      inherit (self'.packages) clan-cli;
 
       tofu = import ./tofu-workspace.nix {
         inherit pkgs clan-cli tfConfig;

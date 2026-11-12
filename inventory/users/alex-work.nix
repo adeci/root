@@ -1,14 +1,14 @@
 # The same account as alex, with work keys and the work identity.
 let
+  alex = import ./alex.nix;
   email = "alex.decious@shopify.com";
 in
-import ./alex.nix
+alex
 // {
   username = "alex";
   description = "Alex Shopify";
   inherit email;
-  git = {
-    name = "Alex Decious";
+  git = alex.git // {
     inherit email;
   };
   sshKeys = [

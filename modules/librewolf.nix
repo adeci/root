@@ -37,11 +37,13 @@ in
       ...
     }:
     let
-      user = config.system.primaryUser;
-      asUser = ''launchctl asuser "$(/usr/bin/id -u -- ${user})" sudo -H --user=${user} --'';
+      asUser = config.system.asPrimaryUser;
     in
     {
-      imports = [ self.modules.darwin.home-links ];
+      imports = [
+        self.modules.darwin.home-links
+        self.modules.darwin.primary-user
+      ];
 
       environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.librewolf-macos ];
 

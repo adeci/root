@@ -14,12 +14,8 @@ let
           };
         };
 
-        ".config/git/config" = (pkgs.formats.gitIni { }).generate "git-config" {
-          user = { inherit (config.system.primaryUserProfile.git) name email; };
-          init.defaultBranch = "main";
-          pull.rebase = true;
-          push.autoSetupRemote = true;
-        };
+        # The plain git gets the git wrapper's settings.
+        ".config/git/config" = (pkgs.formats.gitIni { }).generate "git-config" config.wrappers.git.settings;
       };
 
       wrappers.zsh.extraInit = # zsh

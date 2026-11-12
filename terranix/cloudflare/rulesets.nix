@@ -1,25 +1,17 @@
 # API tokens need Zone WAF/Rulesets edit.
 {
-  config,
   self,
   lib,
   safeName,
+  zoneId,
+  hostnameParts,
   ...
 }:
 let
-  inherit (self.resources.cloudflare) firewall zones;
+  inherit (self.resources.cloudflare) firewall;
   cfString = builtins.toJSON;
 
-  zoneForHost =
-    hostname:
-    let
-      matches = builtins.filter (zone: hostname == zone || lib.hasSuffix ".${zone}" hostname) zones;
-      sortedMatches = lib.sort (a: b: builtins.stringLength a > builtins.stringLength b) matches;
-    in
-    if sortedMatches == [ ] then
-      throw "Cloudflare firewall hostname ${hostname} does not match any configured zone"
-    else
-      builtins.head sortedMatches;
+  zoneForHost = hostname: (hostnameParts hostname).zone;
 
   checkedPath =
     hostname: path:
@@ -170,7 +162,7 @@ let
   rateLimitRulesByZone = builtins.groupBy (entry: entry.zone) rateLimitRules;
 
   mkRuleset = phase: name: description: zone: entries: {
-    zone_id = config.data.cloudflare_zone.${safeName zone} "id";
+    zone_id = zoneId zone;
     inherit phase name description;
     kind = "zone";
     rules = map (entry: entry.rule) entries;

@@ -13,6 +13,13 @@ let
     // {
       inherit username;
 
+      # The SSH key with this comment; picking by comment survives reordering sshKeys.
+      keyNamed =
+        comment:
+        lib.findFirst (lib.hasSuffix " ${
+           comment
+         }") (throw "user ${name} has no SSH key named ${comment}") attrs.sshKeys;
+
       nixosModule =
         {
           config,

@@ -9,7 +9,6 @@ let
     let
       cfg = config.gitSigning;
       user = config.system.primaryUserProfile;
-      keyNamed = comment: lib.head (lib.filter (lib.hasSuffix " ${comment}") user.sshKeys);
 
       # Signs through this machine's own agent, also in sessions that forward another machine's.
       sshKeygen = pkgs.writeShellScript "ssh-keygen-device" ''
@@ -37,7 +36,7 @@ let
 
       config = lib.mkIf (cfg.key != null) {
         wrappers.git.settings = {
-          user.signingkey = "key::${keyNamed cfg.key}";
+          user.signingkey = "key::${user.keyNamed cfg.key}";
           gpg = {
             format = "ssh";
             ssh.program = "${sshKeygen}";

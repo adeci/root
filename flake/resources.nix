@@ -11,7 +11,6 @@ let
     inherit lib resources;
     machines = import ../inventory/machines.nix;
     instances = import ../inventory/instances.nix;
-    routerosModels = import ../terranix/routeros/models.nix;
   };
 in
 {

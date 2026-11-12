@@ -8,6 +8,7 @@
 }:
 let
   inherit (self.resources) homelan;
+  router = homelan.router.machine;
 in
 {
   resource.tailscale_dns_split_nameservers = lib.mapAttrs' (
@@ -18,11 +19,11 @@ in
     }
   ) homelan.dns.records;
 
-  data.tailscale_device.janus.hostname = "janus";
+  data.tailscale_device.${router}.hostname = router;
 
-  # Approves the homelan VLANs marked `tailnet`; the device advertises the same set.
-  resource.tailscale_device_subnet_routes.janus = {
-    device_id = config.data.tailscale_device.janus "node_id";
+  # Approves the homelan VLANs marked `tailnet`; the router advertises the same set.
+  resource.tailscale_device_subnet_routes.${router} = {
+    device_id = config.data.tailscale_device.${router} "node_id";
     routes = map (vlan: vlan.cidr) (
       lib.attrValues (lib.filterAttrs (_: vlan: vlan.tailnet or false) homelan.vlans)
     );

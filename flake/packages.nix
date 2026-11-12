@@ -48,10 +48,10 @@ in
         r.success && r.value
       );
 
-      build =
-        name:
-        let
-          result = pkgs.callPackage (../packages + "/${name}") {
+      packages = availableHere (
+        lib.genAttrs (featureDirs ../packages) (
+          name:
+          pkgs.callPackage (../packages + "/${name}") {
             inherit
               inputs
               inputs'
@@ -60,16 +60,9 @@ in
               pkgs
               ;
             inherit (inputs) self;
-          };
-        in
-        if lib.isDerivation result then
-          { ${name} = result; }
-        else
-          lib.mapAttrs' (key: lib.nameValuePair "${name}-${key}") (
-            lib.filterAttrs (_: lib.isDerivation) result
-          );
-
-      packages = availableHere (lib.mergeAttrsList (map build (featureDirs ../packages)));
+          }
+        )
+      );
 
       wrappers = availableHere (
         lib.genAttrs (featureDirs ../wrappers) (name: inputs.self.wrappers.${name}.wrap { inherit pkgs; })

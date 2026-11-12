@@ -2,26 +2,18 @@
   config,
   self,
   lib,
+  safeName,
+  deviceProvider,
   ...
 }:
 let
-  inherit (self.resources.routeros) devices;
+  inherit (self.resources.routeros) devices models;
 
   switches = lib.filterAttrs (_: d: d ? vlans) devices;
 
-  deviceProvider = name: "routeros.${name}";
-  safeName = builtins.replaceStrings [ "-" ] [ "_" ];
+  modelPorts = device: models.${device.model}.ports;
 
-  models = import ./models.nix;
-  portsForModel =
-    model:
-    let
-      spec = models.${model};
-    in
-    (builtins.genList (i: "ether${toString (i + 1)}") spec.etherPorts)
-    ++ (builtins.genList (i: "sfp-sfpplus${toString (i + 1)}") spec.sfpPorts);
-
-  bridgePorts = device: lib.filter (p: p != device.managementPort) (portsForModel device.model);
+  bridgePorts = device: lib.filter (p: p != device.managementPort) (modelPorts device);
 
   portCfg = device: port: device.ports.${port} or { };
   isTrunk = device: port: (portCfg device port).trunk or false;
@@ -111,7 +103,7 @@ in
   resource.routeros_interface_ethernet = lib.concatMapAttrs (
     name: device:
     let
-      portsWithPoe = lib.filter (p: (portCfg device p).poe or null != null) (portsForModel device.model);
+      portsWithPoe = lib.filter (p: (portCfg device p).poe or null != null) (modelPorts device);
     in
     lib.listToAttrs (
       map (port: {

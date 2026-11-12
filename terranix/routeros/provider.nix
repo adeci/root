@@ -1,16 +1,15 @@
 {
   config,
   self,
-  self',
-  inputs',
   lib,
   routerosAdmin,
+  clanSecret,
+  setClanVar,
   ...
 }:
 let
   inherit (self.resources) homelan;
   inherit (self.resources.routeros) devices exporter;
-  inherit (inputs'.clan-core.packages) clan-cli;
 
   deviceProvider = name: "routeros.${name}";
   routerosExporterSource = "${homelan.vlans.mgmt.gateway}/32";
@@ -20,6 +19,8 @@ let
   ];
 in
 {
+  _module.args = { inherit deviceProvider; };
+
   terraform.required_providers.routeros = {
     source = "terraform-routeros/routeros";
     version = "~> 1.99";
@@ -30,23 +31,13 @@ in
     version = "~> 3.9";
   };
 
-  terraform.required_providers.external = {
-    source = "registry.opentofu.org/hashicorp/external";
-    version = "~> 2.0";
-  };
-
-  data.external.${routerosAdmin.secret} = {
-    program = [
-      (lib.getExe self'.packages.get-clan-secret)
-      routerosAdmin.secret
-    ];
-  };
+  clanSecrets = [ routerosAdmin.secret ];
 
   provider.routeros = lib.mapAttrsToList (name: device: {
     alias = name;
     hosturl = "api://${device.host}:${toString device.port}";
     username = routerosAdmin.user;
-    password = config.data.external.${routerosAdmin.secret} "result.secret";
+    password = clanSecret routerosAdmin.secret;
     insecure = true;
   }) devices;
 
@@ -82,7 +73,7 @@ in
     input = config.resource.random_password.routeros_exporter "result";
 
     provisioner.local-exec = {
-      command = "echo \"\${self.input}\" | ${lib.getExe clan-cli} vars set ${exporter.machine} ${exporter.generator}/${exporter.file}";
+      command = "echo \"\${self.input}\" | ${setClanVar exporter.machine exporter}";
     };
   };
 

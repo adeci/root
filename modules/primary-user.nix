@@ -31,5 +31,20 @@ in
       };
     };
 
-  darwin = profiles;
+  darwin =
+    { config, lib, ... }:
+    let
+      user = config.system.primaryUser;
+    in
+    {
+      imports = [ profiles ];
+
+      options.system.asPrimaryUser = lib.mkOption {
+        type = lib.types.str;
+        readOnly = true;
+        description = "Prefix that runs an activation-script command as the primary user, inside their login session.";
+      };
+
+      config.system.asPrimaryUser = ''launchctl asuser "$(/usr/bin/id -u -- ${user})" sudo -H --user=${user} --'';
+    };
 }

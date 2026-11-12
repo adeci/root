@@ -1,18 +1,17 @@
-# ether1 keeps untagged DHCP management and carries the WiFi VLANs as tagged sub-interfaces (no vlan_filtering), so the facing switch port must be hybrid.
+# The management port keeps untagged DHCP management and carries the WiFi VLANs as tagged sub-interfaces (no vlan_filtering), so the facing switch port must be hybrid.
 {
   config,
   self,
-  self',
   lib,
+  deviceProvider,
+  clanSecret,
   ...
 }:
 let
   inherit (self.resources) homelan;
-  inherit (self.resources.routeros) devices;
+  inherit (self.resources.routeros) devices models;
 
   waps = lib.filterAttrs (_: d: d ? wifi) devices;
-
-  deviceProvider = name: "routeros.${name}";
 
   authTypes = {
     "wpa3" = [ "wpa3-psk" ];
@@ -33,36 +32,14 @@ let
   secondarySsidNames =
     device: lib.filter (n: !(device.wifi.${n}.primary or false)) (lib.attrNames device.wifi);
 
-  # On cAP ax wifi1 is 5GHz and wifi2 2.4GHz; these ids are stable after netinstall.
-  radios = [
-    {
-      name = "wifi1";
-      id = "*2";
-    }
-    {
-      name = "wifi2";
-      id = "*3";
-    }
-  ];
+  radios = device: models.${device.model}.radios;
 in
 {
-  data.external =
-    let
-      allSecrets = lib.unique (
-        lib.concatMap (device: lib.mapAttrsToList (_: ssidCfg: ssidCfg.secret) device.wifi) (
-          lib.attrValues waps
-        )
-      );
-    in
-    lib.listToAttrs (
-      map (secret: {
-        name = secret;
-        value.program = [
-          (lib.getExe self'.packages.get-clan-secret)
-          secret
-        ];
-      }) allSecrets
-    );
+  clanSecrets = lib.unique (
+    lib.concatMap (device: lib.mapAttrsToList (_: ssidCfg: ssidCfg.secret) device.wifi) (
+      lib.attrValues waps
+    )
+  );
 
   resource.routeros_interface_vlan = lib.concatMapAttrs (
     name: device:
@@ -72,7 +49,7 @@ in
         value = {
           provider = deviceProvider name;
           name = vlanInterfaceName vlanName;
-          interface = "ether1";
+          interface = device.managementPort;
           vlan_id = vlanId vlanName;
         };
       }) (deviceVlans device)
@@ -114,7 +91,7 @@ in
         provider = deviceProvider name;
         name = "${name}-${ssidName}";
         authentication_types = authTypes.${ssidCfg.security};
-        passphrase = config.data.external.${ssidCfg.secret} "result.secret";
+        passphrase = clanSecret ssidCfg.secret;
       }
     ) device.wifi
   ) waps;
@@ -152,7 +129,7 @@ in
     ) device.wifi
   ) waps;
 
-  # wifi1/wifi2 pre-exist after netinstall; the import blocks below bring them into state on first apply.
+  # The radios pre-exist after netinstall; the import blocks below bring them into state on first apply.
   resource.routeros_wifi = lib.concatMapAttrs (
     name: device:
     let
@@ -172,13 +149,13 @@ in
           security = {
             config = config.resource.routeros_wifi_security."${name}_${primary}" "name";
             authentication_types = lib.concatStringsSep "," authTypes.${device.wifi.${primary}.security};
-            passphrase = config.data.external.${device.wifi.${primary}.secret} "result.secret";
+            passphrase = clanSecret device.wifi.${primary}.secret;
           };
           datapath = {
             config = config.resource.routeros_wifi_datapath."${name}_${primary}" "name";
           };
         };
-      }) radios
+      }) (radios device)
     )
     // lib.listToAttrs (
       lib.concatMap (
@@ -195,16 +172,18 @@ in
             };
           };
         }) secondaries
-      ) radios
+      ) (radios device)
     )
   ) waps;
 
-  import = lib.concatMap (
-    name:
-    map (radio: {
-      to = "routeros_wifi.${name}_${radio.name}";
-      inherit (radio) id;
-      provider = deviceProvider name;
-    }) radios
-  ) (lib.attrNames waps);
+  import = lib.concatLists (
+    lib.mapAttrsToList (
+      name: device:
+      map (radio: {
+        to = "routeros_wifi.${name}_${radio.name}";
+        inherit (radio) id;
+        provider = deviceProvider name;
+      }) (radios device)
+    ) waps
+  );
 }

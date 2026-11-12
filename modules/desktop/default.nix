@@ -134,11 +134,14 @@
     }:
     let
       user = config.system.primaryUser;
-      asUser = ''launchctl asuser "$(/usr/bin/id -u -- ${user})" sudo -H --user=${user} --'';
+      asUser = config.system.asPrimaryUser;
       screenshots = "${config.users.users.${user}.home}/Pictures/Screenshots";
     in
     {
-      imports = [ self.modules.darwin.wrappers ];
+      imports = [
+        self.modules.darwin.primary-user
+        self.modules.darwin.wrappers
+      ];
 
       wrappers.kitty.enable = true;
 

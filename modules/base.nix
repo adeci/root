@@ -2,9 +2,9 @@ let
   shared =
     {
       config,
-      inputs,
       lib,
       pkgs,
+      self,
       ...
     }:
     {
@@ -34,7 +34,7 @@ let
       ];
 
       environment.systemPackages = [
-        inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
+        self.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli
       ];
       wrappers.nvim.enable = true;
       programs.direnv.enable = true;

@@ -12,10 +12,6 @@ folder. It is exported as `self.packages.<system>.<name>` on the systems its
 meta.platforms = [ "x86_64-linux" ];
 ```
 
-A folder can also return a set of packages, exported as `<name>-<key>`:
-`routeros-netinstall/` gives `routeros-netinstall-cap-ax`,
-`routeros-netinstall-crs310` and `routeros-netinstall-crs328`.
-
 Every package is also a flake check, except the heavy GUI builds listed in
 `skipChecks` in `flake/packages.nix`.
 

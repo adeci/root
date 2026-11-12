@@ -60,7 +60,6 @@ in
 
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
-    pkgs.mullvad-browser
     pkgs.openscad
   ];
   wrappers.btop.package = btopPerfmon;
@@ -99,13 +98,9 @@ in
     };
   };
 
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-    extraPackages = with pkgs; [
-      intel-vaapi-driver # i965, the only VA-API driver that supports Sandy Bridge
-    ];
-  };
+  hardware.graphics.extraPackages = with pkgs; [
+    intel-vaapi-driver # i965, the only VA-API driver that supports Sandy Bridge
+  ];
 
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "i965";

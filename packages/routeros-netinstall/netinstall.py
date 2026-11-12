@@ -102,27 +102,32 @@ def write_setup_script(workdir, text):
 def main():
     parser = argparse.ArgumentParser(description="Run MikroTik RouterOS netinstall.")
     parser.add_argument("--device", required=True)
+    parser.add_argument("--model", required=True)
     parser.add_argument("--arch", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--netinstall-cli", required=True)
-    parser.add_argument("--package", action="append", required=True, dest="packages")
-    parser.add_argument("--package-name", action="append", required=True, dest="package_names")
+    parser.add_argument(
+        "--package", nargs=2, metavar=("NAME", "FILE"), action="append", required=True, dest="packages"
+    )
     parser.add_argument("--dhcp-client", action="append", required=True, dest="dhcp_clients")
-    parser.add_argument("--installed-summary", required=True)
-    parser.add_argument("--dhcp-summary", required=True)
-    parser.add_argument("--completion-note", required=True)
     parser.add_argument("--admin-user", default="admin")
     parser.add_argument("--admin-password-file", required=True)
     args = parser.parse_args()
 
-    if len(args.packages) != len(args.package_names):
-        raise SystemExit("ERROR: --package and --package-name counts must match.")
+    package_names = [name for name, _ in args.packages]
+    package_files = [file for _, file in args.packages]
+    npk_names = [f"{name}-{args.version}-{args.arch}.npk" for name in package_names]
+    installed = " + ".join(
+        [f"RouterOS {args.version} ({args.arch})"] + [name for name in package_names if name != "routeros"]
+    )
+    dhcp_ports = " and ".join(args.dhcp_clients)
+    plug_ports = " or ".join(args.dhcp_clients)
 
     setup_text = render_setup_script(
         args.admin_user, read_admin_password(args.admin_password_file), args.dhcp_clients
     )
 
-    print(f"RouterOS Netinstall — {args.device} ({args.arch}, v{args.version})")
+    print(f"RouterOS Netinstall — {args.device}, a {args.model} ({args.arch}, v{args.version})")
     print("")
     print("Prerequisites:")
     print("  1. Device in Netinstall mode (hold reset 15s: flash → solid → off → release)")
@@ -144,7 +149,7 @@ def main():
     setup_script = write_setup_script(workdir, setup_text)
 
     print("==> Running netinstall...")
-    print(f"    Packages: {', '.join(args.package_names)}")
+    print(f"    Packages: {', '.join(npk_names)}")
     print("")
     print("    Waiting for device in Netinstall mode...")
     print("")
@@ -159,7 +164,7 @@ def main():
             iface,
             "-a",
             "192.168.88.3",
-            *args.packages,
+            *package_files,
         ]
     )
 
@@ -169,11 +174,11 @@ def main():
     print("========================================================")
     print("")
     print("  Device has been configured with:")
-    print(f"    - {args.installed_summary}")
+    print(f"    - {installed}")
     print(f"    - Password for {args.admin_user}")
-    print(f"    - DHCP client on {args.dhcp_summary}")
+    print(f"    - DHCP client on {dhcp_ports}")
     print("")
-    print(f"  {args.completion_note}")
+    print(f"  Plug {plug_ports} into the management network, then apply its configuration.")
     print("")
 
 

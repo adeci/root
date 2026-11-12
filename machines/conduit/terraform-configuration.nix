@@ -12,12 +12,11 @@ let
     "spark"
     "ember"
   ];
-  keyNamed = comment: lib.head (lib.filter (lib.hasSuffix " ${comment}") self.users.alex.sshKeys);
 in
 {
   resource.hcloud_ssh_key = lib.genAttrs rescueKeys (name: {
     inherit name;
-    public_key = keyNamed name;
+    public_key = self.users.alex.keyNamed name;
   });
 
   # nixos-anywhere replaces the Ubuntu image; never let create-time fields force a replacement (wipes disk, new IP).

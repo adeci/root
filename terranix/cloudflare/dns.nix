@@ -3,23 +3,12 @@
   self,
   lib,
   safeName,
+  zoneId,
+  hostnameParts,
   ...
 }:
 let
-  inherit (self.resources.cloudflare) zones tunnels dns;
-
-  zoneRef = zone: config.data.cloudflare_zone.${safeName zone} "id";
-
-  splitHostname =
-    hostname:
-    let
-      matchedZone = lib.findFirst (z: lib.hasSuffix z hostname) null zones;
-      name = if hostname == matchedZone then "@" else lib.removeSuffix ".${matchedZone}" hostname;
-    in
-    {
-      inherit name;
-      zone = matchedZone;
-    };
+  inherit (self.resources.cloudflare) tunnels dns;
 
   resolveTarget = target: config.resource.${target.resource}.${target.name} target.field;
 
@@ -55,10 +44,10 @@ in
         lib.mapAttrs' (
           hostname: _:
           let
-            parts = splitHostname hostname;
+            parts = hostnameParts hostname;
           in
           lib.nameValuePair "tunnel_${safeName hostname}" {
-            zone_id = zoneRef parts.zone;
+            zone_id = zoneId parts.zone;
             inherit (parts) name;
             type = "CNAME";
             content = "${
@@ -82,7 +71,7 @@ in
         in
         passthrough
         // {
-          zone_id = zoneRef record.zone;
+          zone_id = zoneId record.zone;
         }
         // lib.optionalAttrs (record ? target) {
           content = resolveTarget record.target;

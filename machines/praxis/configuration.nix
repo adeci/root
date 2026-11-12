@@ -38,6 +38,7 @@
     yubikey
     ssh-tpm-agent
     mullvad
+    virt-manager
     rbw
     cheat
     tailscale-travel
@@ -105,7 +106,6 @@
 
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
-    pkgs.mullvad-browser
     pkgs.calibre
     pkgs.modem-manager-gui
     pkgs.linux-wifi-hotspot
@@ -115,9 +115,6 @@
     pkgs.android-tools
     inputs.mandate.packages.${pkgs.stdenv.hostPlatform.system}.mandate
   ];
-
-  virtualisation.libvirtd.enable = true;
-  programs.virt-manager.enable = true;
 
   services.udev.extraRules = ''
     # SDWire USB SD card mux (usb device + block device for dd without sudo)

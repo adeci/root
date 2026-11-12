@@ -15,7 +15,7 @@ in
       ...
     }:
     let
-      inherit (inputs'.clan-core.packages) clan-cli;
+      inherit (self'.packages) clan-cli;
 
       netTfConfig = inputs.terranix.lib.terranixConfiguration {
         inherit system;
@@ -80,25 +80,42 @@ in
         '';
       };
 
-      # Process substitution keeps the password off argv and out of any file of our own.
-      netinstallApps = lib.mapAttrs' (
-        name: package:
+      inherit (inputs.self.resources.routeros) devices models;
+      netinstall = self'.packages.routeros-netinstall;
+
+      # Reinstalls a device with its model's packages, leaving a DHCP client on each port it is managed through.
+      netinstallApp =
+        name: device:
         let
-          app = "net-netinstall-${lib.removePrefix "routeros-netinstall-" name}";
+          app = "net-netinstall-${name}";
+          inherit (models.${device.model}) arch;
+          packages = [ "routeros" ] ++ models.${device.model}.extraPackages or [ ];
+          dhcpClients = [ device.managementPort ] ++ lib.optional (device ? fallbackPort) device.fallbackPort;
+          flags = [
+            "--device ${name}"
+            "--model ${lib.escapeShellArg device.model}"
+            "--arch ${arch}"
+          ]
+          ++ map (package: "--package ${package} ${netinstall.npk arch package}") packages
+          ++ map (port: "--dhcp-client ${port}") dhcpClients
+          # Process substitution keeps the password off argv and out of any file of our own.
+          ++ [
+            "--admin-user ${lib.escapeShellArg routerosAdmin.user}"
+            "--admin-password-file <(clan secrets get ${lib.escapeShellArg routerosAdmin.secret})"
+            ''"$@"''
+          ];
         in
         lib.nameValuePair app (
           pkgs.writeShellApplication {
             name = app;
             runtimeInputs = [ clan-cli ];
-            text = ''
-              exec ${lib.getExe package} \
-                --admin-user ${lib.escapeShellArg routerosAdmin.user} \
-                --admin-password-file <(clan secrets get ${lib.escapeShellArg routerosAdmin.secret}) \
-                "$@"
-            '';
+            text = "exec ${lib.getExe netinstall} \\\n  ${lib.concatStringsSep " \\\n  " flags}\n";
           }
-        )
-      ) (lib.filterAttrs (name: _: lib.hasPrefix "routeros-netinstall-" name) self'.packages);
+        );
+
+      netinstallApps = lib.optionalAttrs (self'.packages ? routeros-netinstall) (
+        lib.mapAttrs' netinstallApp devices
+      );
     in
     {
       apps = lib.mapAttrs (_: program: { inherit program; }) (tofuApps // netinstallApps);

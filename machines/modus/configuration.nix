@@ -37,6 +37,7 @@
     yubikey
     ssh-tpm-agent
     mullvad
+    virt-manager
     rbw
     cheat
     tailscale-travel
@@ -77,12 +78,8 @@
     '';
 
   environment.systemPackages = [
-    pkgs.mullvad-browser
     pkgs.calibre
     pkgs.ethtool
     pkgs.android-tools
   ];
-
-  virtualisation.libvirtd.enable = true;
-  programs.virt-manager.enable = true;
 }

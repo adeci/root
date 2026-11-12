@@ -180,7 +180,8 @@ in
 
   restic =
     let
-      bucket = (import ./resources/b2.nix).buckets.resticBackups;
+      b2 = import ./resources/b2.nix;
+      bucket = b2.buckets.resticBackups;
     in
     {
       module = {
@@ -189,7 +190,7 @@ in
       };
 
       roles.client.settings = {
-        repositoryBase = "s3:${bucket.s3Endpoint}/${bucket.name}";
+        repositoryBase = "s3:${b2.s3Endpoint}/${bucket.name}";
         inherit (bucket) credentials;
       };
 
