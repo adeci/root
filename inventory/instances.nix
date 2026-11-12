@@ -1,4 +1,6 @@
 let
+  tailnet = import ./resources/tailscale;
+
   minimalJournal = {
     journal = {
       mode = "explicit";
@@ -91,7 +93,7 @@ in
         };
       };
       server.machines.sequoia.settings = {
-        host = "sequoia.cymric-daggertooth.ts.net";
+        host = "sequoia.${tailnet.domain}";
         grafana.enable = true;
         retentionDays = 30;
         loki.retentionHours = 168;
@@ -112,7 +114,7 @@ in
 
       roles.server.machines.leviathan.settings = {
         inherit domain;
-        listenPort = (import ../resources/cloudflare.nix).tunnels.leviathan.${domain}.port;
+        listenPort = (import ./resources/cloudflare.nix).tunnels.leviathan.${domain}.port;
         # aarch64 only builds on bramble (Pi 4) and times out.
         buildSystems = [ "x86_64-linux" ];
         # leviathan is shared with other users and the LLM host; keep CI bounded.
@@ -178,7 +180,7 @@ in
 
   restic =
     let
-      bucket = (import ../resources/b2.nix).buckets.resticBackups;
+      bucket = (import ./resources/b2.nix).buckets.resticBackups;
     in
     {
       module = {

@@ -1,4 +1,7 @@
 { inputs, ... }:
+let
+  inherit (inputs.root.resources.tailscale) domain;
+in
 {
   perSystem =
     { system, ... }:
@@ -11,8 +14,12 @@
 
   clan = {
     meta.name = "adeci-work";
-    meta.domain = "cymric-daggertooth.ts.net";
-    inventory = import ../inventory/clan;
+    meta.domain = domain;
+    inventory = inputs.root.lib.mkInventory {
+      inherit domain;
+      machines = import ../inventory/machines.nix;
+      instances = import ../inventory/instances.nix;
+    };
     modules."@adeci/tailscale" = inputs.root.clanServices."@adeci/tailscale";
     # Shared modules see the main flake as self and inputs.
     specialArgs = {

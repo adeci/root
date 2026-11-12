@@ -1,4 +1,7 @@
 # Keyed by edge machine. A stream forwards its listen port to upstream and opens it on the edge's firewalls.
+let
+  inherit (import ./tailscale) domain;
+in
 {
   edges = {
     conduit = {
@@ -33,14 +36,14 @@
         description = "Minecraft bros dj2";
         protocol = "tcp";
         listen = 25568;
-        upstream = "leviathan.cymric-daggertooth.ts.net:25568";
+        upstream = "leviathan.${domain}:25568";
       }
       {
         name = "minecraft-dj2-voice";
         description = "Minecraft bros dj2 voice";
         protocol = "udp";
         listen = 24457;
-        upstream = "leviathan.cymric-daggertooth.ts.net:24457";
+        upstream = "leviathan.${domain}:24457";
       }
 
       {
@@ -48,14 +51,14 @@
         description = "Minecraft bros gab";
         protocol = "tcp";
         listen = 25573;
-        upstream = "leviathan.cymric-daggertooth.ts.net:25573";
+        upstream = "leviathan.${domain}:25573";
       }
       {
         name = "minecraft-gab-voice";
         description = "Minecraft bros gab voice";
         protocol = "udp";
         listen = 24460;
-        upstream = "leviathan.cymric-daggertooth.ts.net:24460";
+        upstream = "leviathan.${domain}:24460";
       }
     ];
   };

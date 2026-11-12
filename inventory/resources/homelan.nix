@@ -1,7 +1,8 @@
 let
-  inherit (import ./tailscale) addresses;
+  machines = import ../machines.nix;
 
-  hosts = {
+  # Devices that aren't clan machines; machines bring their own reservation.
+  devices = {
     axon = {
       mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1 MAC (standalone management port)
       ip = "10.99.0.3";
@@ -32,33 +33,6 @@ let
       vlan = "trusted";
     };
 
-    atropos = {
-      mac = "6c:4b:90:75:df:79";
-      clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:c4:8c:38:f1:54:f6:d7:a4"; # systemd-networkd
-      ip = "10.10.0.60";
-      vlan = "trusted";
-    };
-
-    clotho = {
-      mac = "6c:4b:90:1a:87:8f";
-      clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:66:3c:b9:3c:ea:ef:3e:fa"; # systemd-networkd
-      ip = "10.10.0.61";
-      vlan = "trusted";
-    };
-
-    lachesis = {
-      mac = "6c:4b:90:18:da:ca";
-      clientId = "ff:66:7b:93:2a:00:02:00:00:ab:11:73:db:fa:94:7e:19:65:ef"; # systemd-networkd
-      ip = "10.40.0.62";
-      vlan = "vault";
-    };
-
-    leviathan = {
-      mac = "e4:3d:1a:cd:96:60";
-      ip = "10.10.0.20";
-      vlan = "trusted";
-    };
-
     leviathan-idrac = {
       mac = "b0:7b:25:f0:b0:c8";
       ip = "10.10.0.21";
@@ -70,12 +44,6 @@ let
       ip = "10.10.0.50";
       vlan = "trusted";
       publishDns = false;
-    };
-
-    sequoia = {
-      mac = "00:e0:4c:6d:c5:c9";
-      ip = "10.10.0.10";
-      vlan = "trusted";
     };
 
     # microVMs on leviathan
@@ -91,6 +59,17 @@ let
       vlan = "tenant";
     };
   };
+
+  withLan = builtins.filter (name: machines.${name} ? lan) (builtins.attrNames machines);
+
+  hosts =
+    devices
+    // builtins.listToAttrs (
+      map (name: {
+        inherit name;
+        value = machines.${name}.lan;
+      }) withLan
+    );
 in
 {
   domain = "lan";
@@ -170,7 +149,7 @@ in
   # Served by janus to the LAN and, through Tailscale split DNS, to the tailnet; atlas and mandate only listen on the tailnet.
   dns.records = {
     "paperless.decio.us" = hosts.sequoia.ip;
-    "atlas.decio.us" = addresses.sequoia;
-    "mandate.decio.us" = addresses.lachesis;
+    "atlas.decio.us" = machines.sequoia.tailnet;
+    "mandate.decio.us" = machines.lachesis.tailnet;
   };
 }

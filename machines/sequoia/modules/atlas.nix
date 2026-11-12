@@ -1,4 +1,9 @@
-{ lib, self, ... }:
+{
+  config,
+  lib,
+  self,
+  ...
+}:
 let
   atlasHost = "atlas.decio.us";
   grafanaPort = 3000;
@@ -43,9 +48,8 @@ in
     };
   };
 
-  # Keep the monitoring ingest endpoints on the MagicDNS host, but move the UI
-  # off plain HTTP.
-  services.nginx.virtualHosts."sequoia.cymric-daggertooth.ts.net".locations = {
+  # Keep the monitoring ingest endpoints on the MagicDNS host, but move the UI off plain HTTP.
+  services.nginx.virtualHosts.${config.networking.fqdn}.locations = {
     "/grafana/" = lib.mkForce {
       return = "301 https://${atlasHost}/";
     };
