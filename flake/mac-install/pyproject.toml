@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mac-install"
+version = "0.1.0"
+description = "First install of a Mac primed by bootstrap.sh, and the System Settings steps its configuration declares"
+requires-python = ">=3.13"
+
+[project.scripts]
+mac-install = "mac_install.cli:main"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812", # trailing commas are the formatter's call
+  "CPY",    # no copyright headers
+  "D",      # docstrings where they say something
+  "E501",   # line length is the formatter's call
+  "S603",   # argument lists, never a shell, on this side
+  "S607",   # tools come from the PATH the wrapper sets
+  "T201",   # print is the interface
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Fakes ignore what they stand in for.
+"tests/*" = ["ARG", "FBT001", "PLR2004", "S101"]
+
+[tool.mypy]
+strict = true
+warn_unreachable = true
+files = ["mac_install", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

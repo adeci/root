@@ -84,4 +84,7 @@ Ready. This Mac:
 One click left, in the Sharing window that just opened:
   Remote Login (i) > turn on "Allow full disk access for remote users"
 
+Then, from the repo on the admin machine:
+  nix run .#mac-install -- install <machine> <address>
+
 EOF
