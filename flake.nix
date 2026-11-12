@@ -11,12 +11,14 @@
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixos-hardware.inputs.nixpkgs.follows = "nixpkgs";
 
     clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
     clan-core.inputs.nixpkgs.follows = "nixpkgs";
     clan-core.inputs.flake-parts.follows = "flake-parts";
     clan-core.inputs.nix-darwin.follows = "nix-darwin";
     clan-core.inputs.systems.follows = "systems";
+    clan-core.inputs.treefmt-nix.follows = "treefmt-nix";
 
     terranix.url = "github:terranix/terranix";
     terranix.inputs.flake-parts.follows = "flake-parts";
@@ -44,6 +46,7 @@
 
     harmonia.url = "github:nix-community/harmonia";
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
+    harmonia.inputs.nix-darwin.follows = "nix-darwin";
 
     llm-agents.url = "github:numtide/llm-agents.nix";
     llm-agents.inputs.flake-parts.follows = "flake-parts";
@@ -69,6 +72,7 @@
 
     mandate.url = "github:adeci/mandate/next";
     mandate.inputs.nixpkgs.follows = "nixpkgs";
+    mandate.inputs.treefmt-nix.follows = "treefmt-nix";
   };
 
   outputs =

@@ -13,6 +13,7 @@
 
     # nixos-hardware#1912 plus kernel 7.2 fixes; drop once merged.
     nixos-hardware-xps14.url = "github:adeci/nixos-hardware/xps14-7.2-fixes";
+    nixos-hardware-xps14.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
