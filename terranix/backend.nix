@@ -1,14 +1,19 @@
 {
+  self,
   self',
   lib,
   ...
 }:
+let
+  # A B2 account has one region, so the state bucket shares the managed buckets' endpoint.
+  inherit (lib.head (lib.attrValues self.resources.b2.buckets)) region s3Endpoint;
+in
 {
   terraform.backend.s3 = {
-    endpoints.s3 = "https://s3.us-east-005.backblazeb2.com";
+    endpoints.s3 = "https://${s3Endpoint}";
     bucket = "adeci-terraform-state";
     key = "tofu.tfstate";
-    region = "us-east-005";
+    inherit region;
 
     # B2 isn't *real* S3 so skip AWS-specific checks
     skip_credentials_validation = true;

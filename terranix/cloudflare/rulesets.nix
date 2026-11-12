@@ -3,11 +3,11 @@
   config,
   self,
   lib,
+  safeName,
   ...
 }:
 let
   inherit (self.resources.cloudflare) firewall zones;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
   cfString = builtins.toJSON;
 
   zoneForHost =

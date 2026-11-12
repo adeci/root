@@ -40,20 +40,11 @@
         ];
 
         perSystem =
-          { lib, system, ... }:
-          let
-            machinesFor = lib.filterAttrs (_name: machine: machine.pkgs.stdenv.hostPlatform.system == system);
-          in
+          { system, ... }:
           {
             formatter = inputs.root.formatter.${system};
             devShells = inputs.root.devShells.${system};
-            checks =
-              lib.mapAttrs' (n: machine: lib.nameValuePair "nixos-${n}" machine.config.system.build.toplevel) (
-                machinesFor inputs.self.nixosConfigurations
-              )
-              // lib.mapAttrs' (n: machine: lib.nameValuePair "darwin-${n}" machine.system) (
-                machinesFor inputs.self.darwinConfigurations
-              );
+            checks = inputs.root.lib.mkMachineChecks inputs.self system;
           };
       };
 }

@@ -7,11 +7,11 @@ let
 in
 {
   nixos =
-    { self, ... }:
+    { config, ... }:
     {
       imports = [ shared ];
 
-      programs._1password-gui.polkitPolicyOwners = [ self.users.alex-work.username ];
+      programs._1password-gui.polkitPolicyOwners = [ config.system.primaryUser ];
     };
 
   # 1Password's module copies the app into /Applications, where it must live.

@@ -15,7 +15,10 @@ in
   inherit addresses;
   # Tailscale's CGNAT range; every tailnet address falls inside it.
   cidr = "100.64.0.0/10";
-  policy = import ./policy.nix { inherit addresses; };
+  policy = import ./policy.nix {
+    inherit addresses;
+    homelan = import ../homelan.nix;
+  };
   # ACL tags set on tailnet devices through the Tailscale API, by hostname.
   deviceTags = {
     delphi = [ "tag:work" ];

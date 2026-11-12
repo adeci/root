@@ -4,11 +4,11 @@
   config,
   self,
   lib,
+  safeName,
   ...
 }:
 let
   inherit (self.resources.cloudflare) zones;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
 in
 {
   resource.cloudflare_zone_settings_override = lib.listToAttrs (

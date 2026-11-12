@@ -19,9 +19,6 @@
     steam-deck
   ];
 
-  environment.systemPackages = [
-  ];
-
   nix.settings.trusted-users = [
     "root"
     self.users.alex.username

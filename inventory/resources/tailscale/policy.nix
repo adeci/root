@@ -1,4 +1,4 @@
-{ addresses }:
+{ addresses, homelan }:
 {
   hosts = {
     inherit (addresses)
@@ -16,7 +16,7 @@
     }
     {
       src = [ "autogroup:member" ];
-      dst = [ "10.10.0.0/24" ];
+      dst = [ homelan.vlans.trusted.cidr ];
       ip = [ "*" ];
     }
     {
@@ -97,15 +97,15 @@
     {
       src = "alex.decious@gmail.com";
       accept = [
-        "10.10.0.21:443"
-        "10.10.0.10:443"
+        "${homelan.hosts.leviathan-idrac.ip}:443"
+        "${homelan.hosts.sequoia.ip}:443"
         "tag:adeci-installer:22"
         "lachesis:443"
       ];
       deny = [
         "tag:work:22"
-        "10.20.0.1:80"
-        "10.99.0.2:80"
+        "${homelan.vlans.iot.gateway}:80"
+        "${homelan.hosts.nexus.ip}:80"
       ];
     }
     {
@@ -116,8 +116,8 @@
       ];
       deny = [
         "alex.decious@gmail.com:22"
-        "10.10.0.10:443"
-        "10.10.0.21:443"
+        "${homelan.hosts.sequoia.ip}:443"
+        "${homelan.hosts.leviathan-idrac.ip}:443"
       ];
     }
     {
@@ -128,7 +128,7 @@
         "lachesis:443"
         "leviathan:22"
         "leviathan:11435"
-        "10.10.0.10:443"
+        "${homelan.hosts.sequoia.ip}:443"
         "tag:work:22"
       ];
     }
@@ -146,8 +146,8 @@
         "leviathan:22"
         "lachesis:443"
         "lachesis:8443"
-        "10.10.0.10:443"
-        "10.10.0.21:443"
+        "${homelan.hosts.sequoia.ip}:443"
+        "${homelan.hosts.leviathan-idrac.ip}:443"
         "alex.decious@gmail.com:22"
       ];
     }

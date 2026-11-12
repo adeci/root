@@ -51,7 +51,7 @@ in
     description = "Machine features by class: self.modules.nixos.<name>, self.modules.darwin.<name>.";
   };
 
-  # Helpers other flakes reuse; several flake modules add to it.
+  # Helpers other flakes reuse; declared so more than one flake module can add to it.
   options.flake.lib = lib.mkOption {
     type = lib.types.lazyAttrsOf lib.types.raw;
     default = { };

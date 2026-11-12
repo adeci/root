@@ -3,13 +3,13 @@
   self,
   inputs',
   lib,
+  safeName,
   ...
 }:
 let
   bucket = self.resources.b2.buckets.ziplineShares;
   inherit (bucket) credentials;
   inherit (credentials) machine;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
   keyName = "zipline_${safeName machine}";
   key = config.resource.b2_application_key.${keyName};
   inherit (inputs'.clan-core.packages) clan-cli;

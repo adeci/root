@@ -10,8 +10,7 @@ let
   stateDir = "/var/lib/llm-weights";
 
   inherit (self.resources.llm) models weights;
-  localModels = lib.filterAttrs (_: model: model.backend.type == "local-gguf") models;
-  localWeightIds = lib.unique (map (model: model.backend.weight) (builtins.attrValues localModels));
+  localWeightIds = lib.unique (map (model: model.backend.weight) (builtins.attrValues models));
   localWeights = lib.genAttrs localWeightIds (id: weights.${id});
 
   # V100s only (sm_70); CUDA 13 dropped Volta.
@@ -93,7 +92,7 @@ let
 
   groupFor = model: model.runtime.group or "exclusive";
   membersForGroup =
-    group: lib.filter (name: groupFor localModels.${name} == group) (builtins.attrNames localModels);
+    group: lib.filter (name: groupFor models.${name} == group) (builtins.attrNames models);
 
   llamaSwapGroups = lib.filterAttrs (_: group: group.members != [ ]) (
     lib.mapAttrs (name: settings: settings // { members = membersForGroup name; }) runtimeGroups
@@ -221,7 +220,7 @@ in
       healthCheckTimeout = 1800;
       includeAliasesInList = true;
       logToStdout = "proxy";
-      models = lib.mapAttrs mkModel localModels;
+      models = lib.mapAttrs mkModel models;
       groups = llamaSwapGroups;
     };
   };

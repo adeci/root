@@ -94,5 +94,4 @@ in
   options.flake.users = lib.mkOption { default = { }; };
 
   config.flake.users = lib.mapAttrs mkUser rawUsers;
-  config.flake.lib.mkUser = mkUser;
 }

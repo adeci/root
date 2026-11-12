@@ -3,12 +3,12 @@
   self,
   inputs',
   lib,
+  safeName,
   ...
 }:
 let
   bucket = self.resources.b2.buckets.resticBackups;
   inherit (bucket) name region s3Endpoint;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
   resticInstance = self.clan.inventory.instances.restic or null;
   clients = if resticInstance == null then { } else resticInstance.roles.client.machines or { };
   keyResourceName = machine: "restic_${safeName machine}";

@@ -3,11 +3,11 @@
   config,
   self,
   lib,
+  safeName,
   ...
 }:
 let
   inherit (self.resources.cloudflare) zones redirects;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
   zoneId = zone: config.data.cloudflare_zone.${safeName zone} "id";
 
   zoneOf =

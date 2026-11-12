@@ -2,12 +2,12 @@
   config,
   self,
   lib,
+  safeName,
   ...
 }:
 let
   inherit (self.resources.cloudflare) zones tunnels dns;
 
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
   zoneRef = zone: config.data.cloudflare_zone.${safeName zone} "id";
 
   splitHostname =

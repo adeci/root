@@ -4,11 +4,11 @@
   config,
   lib,
   self,
+  safeName,
   ...
 }:
 let
   inherit (self.resources) homelan;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
 in
 {
   resource.tailscale_dns_split_nameservers = lib.mapAttrs' (

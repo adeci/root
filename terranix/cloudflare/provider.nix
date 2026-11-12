@@ -3,11 +3,11 @@
   self,
   self',
   lib,
+  safeName,
   ...
 }:
 let
   inherit (self.resources.cloudflare) zones;
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
 in
 {
   terraform.required_providers.cloudflare = {

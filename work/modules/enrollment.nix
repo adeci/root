@@ -1,6 +1,7 @@
 {
   nixos =
     {
+      config,
       pkgs,
       self,
       workInputs,
@@ -12,7 +13,7 @@
 
       shopify-framework = {
         enable = true;
-        user = self.users.alex-work.username;
+        user = config.system.primaryUser;
         idpUsername = self.users.alex-work.email;
         developerTools.enable = true;
         # Replaces the default apps, whose plain 1Password lacks polkit owners.
