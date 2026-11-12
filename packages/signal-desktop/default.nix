@@ -1,13 +1,1 @@
-# Electron's safeStorage auto-detection doesn't work on tiling WMs (niri, sway, etc.).
-{ pkgs, ... }:
-pkgs.signal-desktop.overrideAttrs (oldAttrs: {
-  nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
-
-  postInstall = (oldAttrs.postInstall or "") + ''
-    wrapProgram $out/bin/signal-desktop \
-      --add-flags "--password-store=gnome-libsecret"
-  '';
-  meta = oldAttrs.meta // {
-    platforms = [ "x86_64-linux" ];
-  };
-})
+{ pkgs, ... }: import ../electron-libsecret.nix pkgs pkgs.signal-desktop

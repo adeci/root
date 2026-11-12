@@ -10,11 +10,9 @@ let
 
   # Heavy GUI builds, not worth routine checks.
   skipChecks = [
-    "element-desktop"
     "emacs"
     "karabiner-elements"
     "prusa-slicer"
-    "signal-desktop"
     "vencord"
     "vesktop"
     "zipline"
