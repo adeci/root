@@ -17,11 +17,22 @@ in
   flake.lib.mkMachineChecks = mkMachineChecks;
 
   perSystem =
-    { config, system, ... }:
+    {
+      config,
+      pkgs,
+      system,
+      ...
+    }:
     {
       # Packages add their own checks where they're defined.
       checks =
         mkMachineChecks self system
-        // lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") config.devShells;
+        // lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") config.devShells
+        // {
+          # Reading every resource runs the inventory checks.
+          inventory = pkgs.writeText "inventory" (
+            lib.concatLines (lib.mapAttrsToList (name: resource: builtins.seq resource name) self.resources)
+          );
+        };
     };
 }
