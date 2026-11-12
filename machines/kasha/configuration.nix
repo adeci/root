@@ -41,12 +41,6 @@
     epiphany
   ];
 
-  # Enable fractional scaling in GNOME
-  services.desktopManager.gnome.extraGSettingsOverrides = ''
-    [org.gnome.mutter]
-    experimental-features=['scale-monitor-framebuffer']
-  '';
-
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;

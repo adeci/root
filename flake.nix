@@ -48,9 +48,9 @@
     harmonia.inputs.nixpkgs.follows = "nixpkgs";
     harmonia.inputs.nix-darwin.follows = "nix-darwin";
 
+    # Not following nixpkgs: upstream only tests and caches against its own pin.
     llm-agents.url = "github:numtide/llm-agents.nix";
     llm-agents.inputs.flake-parts.follows = "flake-parts";
-    llm-agents.inputs.nixpkgs.follows = "nixpkgs";
     llm-agents.inputs.treefmt-nix.follows = "treefmt-nix";
     llm-agents.inputs.systems.follows = "systems";
 

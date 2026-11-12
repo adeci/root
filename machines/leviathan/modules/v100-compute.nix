@@ -10,15 +10,10 @@ let
   # V100s only (sm_70); CUDA 13 dropped Volta, and the 580 driver tops out at CUDA 13.0.
   cuda = pkgs.pkgsForCudaArch.sm_70.cudaPackages_12;
 
-  dcgm = pkgs.dcgm.overrideAttrs (old: {
-    disabledTests = (old.disabledTests or [ ]) ++ [
-      # Nixpkgs already tries to skip this but the actual CTest name has the "Scenario:" prefix
-      "Scenario: GetPluginCudalessDir returns cudaless directory in plugin directory"
-      # Diag ignore-error-code parsing broke in Oct 2026 nixpkgs (Diag unused here); drop with nixpkgs#567739 (dcgm 4.6.1).
-      "Ignore error codes validation tests"
-      "PluginLib::SetIgnoreErrorCodesParam"
-    ];
-  });
+  dcgm = pkgs.dcgm.overrideAttrs {
+    # Every test fails before running: its CMake hands Catch2 `--colour-mode;ansi` as one argument.
+    doCheck = false;
+  };
 
   dcgmExporter = (pkgs.prometheus-dcgm-exporter.override { inherit dcgm; }).overrideAttrs (old: {
     # Upstream probes /sbin/ldconfig for libdcgm.so.4

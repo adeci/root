@@ -22,18 +22,18 @@ in
       # nixpkgs has 0.59; 0.60 adds ghostel-status-next and the status indicator.
       ghostel = prev.ghostel.overrideAttrs (
         self: _: {
-          version = "0.60.0";
+          version = "0.63.0";
           src = pkgs.fetchFromGitHub {
             owner = "dakra";
             repo = "ghostel";
             tag = "v${self.version}";
-            hash = "sha256-k10nzaIHKGvPJoI1KiiDBY6yDTKL2OAXZ1kxx91BB3E=";
+            hash = "sha256-3Mh6UMWbqcsiA9Q6NY0nmH69CXYtzr9vTUyV3nSXGac=";
           };
           zig = pkgs.zig_0_17;
           zigDeps = self.zig.fetchDeps {
             inherit (self) src pname version;
             fetchAll = true;
-            hash = "sha256-Kt3r1B/5kgjMO89gih/87oEtuWmby9NB6oQp5t0vUYw=";
+            hash = "sha256-X16YfBc8i84G2/Dd7/qPhm0lRMDJDLfWCcLeXymb4yg=";
           };
         }
       );
