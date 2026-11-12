@@ -20,8 +20,8 @@ in
       netTfConfig = inputs.terranix.lib.terranixConfiguration {
         inherit system;
         modules = [
-          ../terranix/backend.nix
-          ../terranix/routeros
+          ../terranix/base.nix
+          ../terranix/routeros.nix
           {
             terraform.backend.s3.key = lib.mkForce "network.tfstate";
           }

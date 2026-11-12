@@ -1,28 +1,4 @@
 { inputs, lib, ... }:
-let
-  # routeros is a separate workspace with its own state.
-  terranixDir = ../terranix;
-  terranixModules =
-    let
-      entries = builtins.readDir terranixDir;
-      isModule =
-        name: type:
-        (type == "regular" && lib.hasSuffix ".nix" name)
-        || (
-          type == "directory"
-          && name != "routeros"
-          && builtins.pathExists (terranixDir + "/${name}/default.nix")
-        );
-    in
-    map (name: terranixDir + "/${name}") (builtins.attrNames (lib.filterAttrs isModule entries));
-
-  machineDir = ../machines;
-  machineTfConfigs = map (name: machineDir + "/${name}/terraform-configuration.nix") (
-    builtins.filter (name: builtins.pathExists (machineDir + "/${name}/terraform-configuration.nix")) (
-      builtins.attrNames (lib.filterAttrs (_: type: type == "directory") (builtins.readDir machineDir))
-    )
-  );
-in
 {
   perSystem =
     {
@@ -35,7 +11,14 @@ in
     let
       tfConfig = inputs.terranix.lib.terranixConfiguration {
         inherit system;
-        modules = terranixModules ++ machineTfConfigs;
+        modules = [
+          ../terranix/base.nix
+          ../terranix/b2.nix
+          ../terranix/cloudflare.nix
+          ../terranix/hcloud.nix
+          ../terranix/tailscale.nix
+          ../machines/conduit/terraform-configuration.nix
+        ];
         extraArgs = {
           inherit (inputs) self;
           inherit self' inputs inputs';
