@@ -1,46 +1,18 @@
-# Harmonia Binary Cache
+# Harmonia
 
-Serves the local nix store as a binary cache using
-[harmonia](https://github.com/nix-community/harmonia), with automatic
-client configuration via clan vars.
-
-The signing key pair is generated automatically. Clients discover
-servers and trust their public keys through the inventory — no manual
-key distribution needed.
+Serves the local nix store as a binary cache with
+[harmonia](https://github.com/nix-community/harmonia). Signing keys are
+generated and clients trust them through the inventory, so no keys are
+distributed by hand.
 
 ## Roles
 
-### server
+- `server` (NixOS only): runs the harmonia cache on `port`, opened in the
+  firewall, and signs what it serves with its generated key.
+- `client`: configures nix to use every server as a substituter and trust its
+  public key.
 
-Runs the harmonia cache daemon and generates the signing key pair.
+## Notes
 
-| Setting    | Type       | Default | Description                                |
-| ---------- | ---------- | ------- | ------------------------------------------ |
-| `port`     | `port`     | `5000`  | Port for the harmonia cache server         |
-| `address`  | `str/null` | `null`  | Override address (defaults to host.domain) |
-| `priority` | `int`      | `50`    | Default substituter priority for clients   |
-
-### client
-
-Configures nix to use harmonia servers as substituters.
-
-| Setting    | Type       | Default | Description                              |
-| ---------- | ---------- | ------- | ---------------------------------------- |
-| `priority` | `int/null` | `null`  | Override priority (defaults to server's) |
-
-## Requirements
-
-The `harmonia` flake input must be available and passed to the service
-module definitions.
-
-## Example
-
-```nix
-harmonia = {
-  module = { name = "@adeci/harmonia"; input = "self"; };
-  roles.server.machines.my-builder = {
-    settings.port = 5000;
-  };
-  roles.client.tags = [ "my-network" ];
-};
-```
+- Clients reach each server at `<server>.<clan domain>` unless it sets
+  `address`.

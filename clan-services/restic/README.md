@@ -1,20 +1,17 @@
-# @adeci/restic
+# Restic
 
-Restic backup client for machines with `clan.core.state` declarations.
+Backs up each machine's `clan.core.state` folders with
+[restic](https://restic.net), as the provider behind `clan backups create`,
+`list` and `restore`.
 
-The service treats `config.clan.core.state` as the source of truth:
+## Roles
 
-- runs each state's `preBackupCommand`
-- backs up all declared state folders
-- runs each state's `postBackupCommand`
-- exposes Clan backup provider commands for create/list/restore
+- `client` (NixOS only): runs each state's `preBackupCommand`, backs up all
+  declared state folders, then runs each `postBackupCommand`. Machines without
+  `clan.core.state` get no backup job.
 
-Each machine gets its own repository: `repository` if set, otherwise
-`<repositoryBase>/<machine>`.
+## Notes
 
-Credentials come from Clan vars. The repository password
-(`<passwordGenerator>/password`) is generated. The repository environment
-(`credentials = { generator; file; }`, for example `AWS_ACCESS_KEY_ID` and
-`AWS_SECRET_ACCESS_KEY` for an S3 repository) is only declared: whatever
-issues the machine's storage keys sets it with
-`clan vars set <machine> <generator>/<file>`.
+- The repository password is generated. The `credentials` file (for example
+  `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for S3) is only declared:
+  set it with `clan vars set <machine> <generator>/<file>`.
