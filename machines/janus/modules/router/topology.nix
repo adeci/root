@@ -1,13 +1,12 @@
 { lib, self }:
 let
-  ports = import ./ports.nix;
-
-  wan = ports.eth4; # -> ISP modem
-  lan = ports.sfpPlus2; # -> nexus sfp-sfpplus1 (VLAN trunk)
-  mgmt = ports.eth5; # -> nexus ether1 (management)
-
   inherit (self.resources) homelan;
   inherit (homelan) vlans;
+  inherit (homelan.router) ports roles;
+
+  wan = ports.${roles.wan};
+  lan = ports.${roles.lan};
+  mgmt = ports.${roles.mgmt};
 
   vlanInterface = vlan: "vlan${toString vlan.id}";
   subnetInterface = vlan: vlan.interface or (vlanInterface vlan);

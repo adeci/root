@@ -139,4 +139,68 @@ in
     "atlas.decio.us" = machines.sequoia.tailnet;
     "mandate.decio.us" = machines.lachesis.tailnet;
   };
+
+  # The machine routing the LAN, its chassis labels mapped to Linux names, and the label per role.
+  router = {
+    machine = "janus";
+    # Qotom Q20321G9, plug-tested 2026-04-12: ethN by RJ45 label (2.5G igc), sfpPlus1/2 right top/bottom (10G ixgbe).
+    ports = {
+      eth1 = "enp6s0";
+      eth2 = "enp7s0";
+      eth3 = "enp4s0";
+      eth4 = "enp5s0";
+      eth5 = "enp8s0";
+      sfpPlus1 = "eno2";
+      sfpPlus2 = "eno1";
+      sfpPlus3 = "eno3";
+      sfpPlus4 = "eno4";
+    };
+    # wan leads to the ISP, lan carries every VLAN tagged, mgmt carries mgmt untagged.
+    roles = {
+      wan = "eth4";
+      lan = "sfpPlus2";
+      mgmt = "eth5";
+    };
+  };
+
+  # Known cables, one per entry; ends are "<device>:<port>" (the router by chassis label), a host with a single cable may omit its port, and "isp" is the ISP's modem.
+  links = [
+    {
+      a = "janus:eth4";
+      b = "isp";
+    }
+    {
+      a = "janus:sfpPlus2";
+      b = "nexus:sfp-sfpplus1";
+    }
+    {
+      a = "janus:eth5";
+      b = "nexus:ether1";
+    }
+    {
+      a = "nexus:sfp-sfpplus2";
+      b = "axon:sfp-sfpplus1";
+    }
+    {
+      a = "nexus:sfp-sfpplus3";
+      b = "leviathan:eno12399np0";
+    }
+    {
+      a = "nexus:sfp-sfpplus4";
+      b = "leviathan:eno12409np1";
+      vlan = "tenant"; # what the host end carries instead of the host's own VLAN
+    }
+    {
+      a = "nexus:ether2";
+      b = "zephyr:ether1";
+    }
+    {
+      a = "nexus:ether3";
+      b = "nimbus:ether1";
+    }
+    {
+      a = "axon:ether1";
+      b = "lachesis";
+    }
+  ];
 }

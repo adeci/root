@@ -4,6 +4,7 @@
   machines,
   resources,
   instances,
+  routerosModels,
 }:
 let
   inherit (resources)
@@ -14,7 +15,12 @@ let
     routeros
     tailscale
     ;
-  inherit (homelan) hosts vlans;
+  inherit (homelan)
+    hosts
+    vlans
+    router
+    links
+    ;
 
   machinesFile = "inventory/machines.nix";
   homelanFile = "inventory/resources/homelan.nix";
@@ -265,6 +271,7 @@ let
       )
     ) b2.buckets
     ++ unknownMachine routerosFile "exporter.machine" routeros.exporter.machine
+    ++ unknownMachine homelanFile "router.machine" router.machine
     ++ concatMapAttrsToList (
       name: record:
       lib.optionals (record ? edge) (unknownEdge "dns.${name}.edge" record.edge)
@@ -285,5 +292,193 @@ let
       ) (members.machines or { })
     ) (instance.roles or { })
   ) instances;
+
+  linkPlace = link: place homelanFile "links \"${link.a} <-> ${link.b}\"";
+
+  # A cable end: "<device>:<port>" or a bare device, with the kind of device it names (null when unknown).
+  cableEnd =
+    link: text:
+    let
+      parts = builtins.match "([^:]*)(:(.*))?" text;
+      device = lib.head parts;
+    in
+    {
+      inherit link text device;
+      port = lib.elemAt parts 2;
+      kind =
+        if device == router.machine then
+          "router"
+        else if device == "isp" then
+          "isp"
+        else if routeros.devices ? ${device} then
+          "routeros"
+        else if hosts ? ${device} then
+          "host"
+        else
+          null;
+    };
+
+  cableEnds = link: [
+    (cableEnd link link.a)
+    (cableEnd link link.b)
+  ];
+
+  ends = lib.concatMap cableEnds links;
+
+  # Interface names on a RouterOS model: etherN, then sfp-sfpplusN.
+  modelPorts =
+    model:
+    lib.genList (i: "ether${toString (i + 1)}") routerosModels.${model}.etherPorts
+    ++ lib.genList (i: "sfp-sfpplus${toString (i + 1)}") routerosModels.${model}.sfpPorts;
+
+  # What a cable end carries, in words both ends must match.
+  carrying =
+    untagged: tagged:
+    let
+      tags = lib.concatStringsSep "+" (lib.sort lib.lessThan (lib.unique tagged));
+    in
+    if untagged == null && tags == "" then
+      "nothing"
+    else
+      lib.concatStringsSep " and " (
+        lib.optional (untagged != null) "${untagged} untagged" ++ lib.optional (tags != "") "${tags} tagged"
+      );
+
+  nothing = carrying null [ ];
+
+  roleCarriage = {
+    wan = "the WAN";
+    lan = carrying null (lib.attrNames vlans);
+    mgmt = carrying "mgmt" [ ];
+  };
+
+  routerCarriage = lib.mapAttrs' (
+    role: port: lib.nameValuePair port (roleCarriage.${role} or nothing)
+  ) router.roles;
+
+  # The management port keeps the device's own VLAN untagged, tagging its WiFi VLANs or, as a trunk, the device's other VLANs; bridge ports carry only VLANs the device has.
+  routerosCarriage =
+    device: port:
+    let
+      settings = device.ports.${port} or { };
+      deviceVlans = lib.attrNames (device.vlans or { });
+      untagged = settings.vlan or device.defaultVlan;
+    in
+    if port == device.managementPort then
+      carrying device.lan.vlan (
+        if device ? wifi then
+          lib.mapAttrsToList (_: ssid: ssid.vlan) device.wifi
+        else
+          lib.optionals (settings.trunk or false) (lib.remove device.lan.vlan deviceVlans)
+      )
+    else if !(device ? vlans) then
+      nothing
+    else if settings.trunk or false then
+      carrying null deviceVlans
+    else
+      carrying (if lib.elem untagged deviceVlans then untagged else null) (
+        lib.intersectLists deviceVlans (lib.optionals (settings.hybrid or false) (settings.tagged or [ ]))
+      );
+
+  # What an end carries: the router's ports by role, the ISP the WAN, a host its VLAN untagged unless the cable names another.
+  carriage =
+    end:
+    {
+      router = routerCarriage.${end.port} or nothing;
+      isp = roleCarriage.wan;
+      routeros = routerosCarriage routeros.devices.${end.device} end.port;
+      host = carrying (end.link.vlan or hosts.${end.device}.vlan or null) [ ];
+    }
+    .${end.kind};
+
+  endProblems =
+    end:
+    let
+      report = problem [ (linkPlace end.link) ];
+      inherit (routeros.devices.${end.device}) model;
+    in
+    if end.kind == null then
+      [
+        (report (
+          if machines ? ${end.device} then
+            "${end.device} has no lan in ${machinesFile}"
+          else
+            "${end.device} is not ${router.machine}, isp, a RouterOS device or a LAN host"
+        ))
+      ]
+    else if end.port == null && (end.kind == "router" || end.kind == "routeros") then
+      [ (report "${end.text} needs a port") ]
+    else if end.kind == "router" && !(router.ports ? ${end.port}) then
+      [ (report "${router.machine} has no port ${end.port} in router.ports") ]
+    else if end.kind == "routeros" && !(routerosModels ? ${model}) then
+      [ (report "${end.device}'s model ${model} has no port list in terranix/routeros/models.nix") ]
+    else if end.kind == "routeros" && !(lib.elem end.port (modelPorts model)) then
+      [ (report "${end.device}, a ${model}, has no port ${end.port}") ]
+    else
+      [ ];
+
+  linkProblems =
+    link:
+    let
+      linkEnds = cableEnds link;
+      a = lib.head linkEnds;
+      b = lib.last linkEnds;
+      report = problem [ (linkPlace link) ];
+      problems = lib.concatMap endProblems linkEnds;
+    in
+    if problems != [ ] then
+      problems
+    else
+      lib.optional (carriage a != carriage b) (
+        report "${a.text} carries ${carriage a}, but ${b.text} carries ${carriage b}"
+      )
+      ++ lib.optional (link ? vlan && !(lib.any (end: end.kind == "host") linkEnds)) (
+        report "vlan only applies to a host's end"
+      );
+
+  # A host may leave out its port only while it has a single cable.
+  portlessProblems =
+    let
+      portless = lib.filter (end: end.kind == "host" && end.port == null) ends;
+    in
+    lib.concatMap (
+      host:
+      let
+        hostEnds = lib.filter (end: end.device == host) ends;
+        places = map (end: linkPlace end.link) hostEnds;
+      in
+      lib.optional (lib.length hostEnds > 1) (
+        problem places "${host} has more than one cable, so each end needs a port"
+      )
+    ) (lib.unique (map (end: end.device) portless));
+
+  roleProblems = concatMapAttrsToList (
+    role: port:
+    let
+      report = problemAt homelanFile "router.roles.${role}";
+    in
+    if !(router.ports ? ${port}) then
+      [ (report "${router.machine} has no port ${port} in router.ports") ]
+    else
+      lib.optional (!(lib.any (end: end.kind == "router" && end.port == port) ends)) (
+        report "${router.machine}:${port} has no cable in links"
+      )
+  ) router.roles;
+
+  cablingProblems =
+    lib.concatMap linkProblems links
+    ++ duplicated "port" (
+      map (end: {
+        place = linkPlace end.link;
+        value = end.text;
+      }) (lib.filter (end: end.port != null) ends)
+    )
+    ++ portlessProblems
+    ++ roleProblems;
 in
-vlanProblems ++ hostProblems ++ machineProblems ++ referenceProblems ++ instanceProblems
+vlanProblems
+++ hostProblems
+++ machineProblems
+++ referenceProblems
+++ instanceProblems
+++ cablingProblems
