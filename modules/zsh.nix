@@ -1,14 +1,9 @@
 let
   shared =
-    {
-      config,
-      lib,
-      self,
-      ...
-    }:
+    { config, lib, ... }:
     let
       inherit (config.system) primaryUser;
-      inherit (self.users.${primaryUser}) git;
+      inherit (config.system.primaryUserProfile) git;
     in
     {
       environment.pathsToLink = [ "/share/zsh" ];
@@ -65,6 +60,7 @@ in
     {
       imports = [
         self.modules.darwin.wrappers
+        self.modules.darwin.primary-user
         inputs.nix-index-database.darwinModules.nix-index
         shared
       ];

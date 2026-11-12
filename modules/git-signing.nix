@@ -4,12 +4,11 @@ let
       config,
       lib,
       pkgs,
-      self,
       ...
     }:
     let
       cfg = config.gitSigning;
-      user = self.users.${config.system.primaryUser};
+      user = config.system.primaryUserProfile;
       keyNamed = comment: lib.head (lib.filter (lib.hasSuffix " ${comment}") user.sshKeys);
 
       # Signs through this machine's own agent, also in sessions that forward another machine's.
@@ -66,6 +65,7 @@ in
     {
       imports = [
         self.modules.darwin.wrappers
+        self.modules.darwin.primary-user
         shared
       ];
     };

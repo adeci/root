@@ -1,7 +1,8 @@
 { config, lib, ... }:
 let
   rawUsers = import ../inventory/users;
-  primaryUserModule = config.flake.modules.nixos.primary-user;
+  inherit (config.flake) modules;
+  registry = config.flake.users;
 
   mkUser =
     name: attrs:
@@ -20,10 +21,11 @@ let
           ...
         }:
         {
-          imports = [ primaryUserModule ];
+          imports = [ modules.nixos.primary-user ];
 
           # Machines with several users pick theirs.
           system.primaryUser = lib.mkDefault username;
+          system.userProfiles.${username} = registry.${name};
 
           users.users.${username} = {
             inherit (attrs) uid description;
@@ -79,7 +81,10 @@ let
 
       # No uid: macOS assigns it (501 for the first account).
       darwinModule = _: {
+        imports = [ modules.darwin.primary-user ];
+
         system.primaryUser = lib.mkDefault username;
+        system.userProfiles.${username} = registry.${name};
 
         users.users.${username} = {
           name = username;

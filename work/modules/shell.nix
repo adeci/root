@@ -1,6 +1,6 @@
 let
   shared =
-    { pkgs, self, ... }:
+    { config, pkgs, ... }:
     {
       home.links = {
         ".config/wish.zsh.toml" = (pkgs.formats.toml { }).generate "wish.zsh.toml" {
@@ -15,7 +15,7 @@ let
         };
 
         ".config/git/config" = (pkgs.formats.gitIni { }).generate "git-config" {
-          user = { inherit (self.users.alex-work.git) name email; };
+          user = { inherit (config.system.primaryUserProfile.git) name email; };
           init.defaultBranch = "main";
           pull.rebase = true;
           push.autoSetupRemote = true;
@@ -44,6 +44,7 @@ in
     {
       imports = [
         self.modules.nixos.home-links
+        self.modules.nixos.primary-user
         self.modules.nixos.wrappers
         shared
       ];
@@ -54,6 +55,7 @@ in
     {
       imports = [
         self.modules.darwin.home-links
+        self.modules.darwin.primary-user
         self.modules.darwin.wrappers
         shared
       ];
