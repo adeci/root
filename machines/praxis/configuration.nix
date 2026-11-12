@@ -128,9 +128,4 @@
     SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666"
     SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", MODE="0666"
   '';
-
-  nix.settings.trusted-users = [
-    "root"
-    self.users.alex.username
-  ];
 }

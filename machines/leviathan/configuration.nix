@@ -56,16 +56,7 @@
     options = "--delete-older-than 14d";
   };
 
-  nix.settings = {
-    max-jobs = 16;
-    trusted-users = [
-      "root"
-      self.users.alex.username
-      self.users.brittonr.username
-      self.users.dima.username
-      self.users.fmzakari.username
-    ];
-  };
+  nix.settings.max-jobs = 16;
 
   # farid's cursed stuff:
 

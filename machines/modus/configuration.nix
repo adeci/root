@@ -85,9 +85,4 @@
 
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
-
-  nix.settings.trusted-users = [
-    "root"
-    self.users.alex.username
-  ];
 }

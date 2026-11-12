@@ -56,10 +56,4 @@
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="leds", KERNEL=="platform::micmute", ATTR{trigger}="none", ATTR{brightness}="0"
   '';
-
-  nix.settings.trusted-users = [
-    "root"
-    self.users.alex.username
-  ];
-
 }

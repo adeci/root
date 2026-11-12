@@ -84,7 +84,10 @@ in
         };
       };
 
-      nix.settings = nixSettings;
+      # Sudo users may use Nix as trusted users; NixOS already trusts root.
+      nix.settings = nixSettings // {
+        trusted-users = [ "@wheel" ];
+      };
       documentation.dev.enable = true;
       documentation.man.cache.enable = true;
       environment.systemPackages = [

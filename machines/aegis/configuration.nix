@@ -110,10 +110,4 @@ in
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "i965";
   };
-
-  nix.settings.trusted-users = [
-    "root"
-    self.users.alex.username
-  ];
-
 }

@@ -18,9 +18,4 @@
     keyd
     steam-deck
   ];
-
-  nix.settings.trusted-users = [
-    "root"
-    self.users.alex.username
-  ];
 }
