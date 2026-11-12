@@ -39,6 +39,20 @@ let
       ];
     };
 
+    cautionWhenNonZero = {
+      mode = "absolute";
+      steps = [
+        {
+          color = "green";
+          value = null;
+        }
+        {
+          color = "yellow";
+          value = 1;
+        }
+      ];
+    };
+
     goodWhenOne = {
       mode = "absolute";
       steps = [
@@ -229,6 +243,13 @@ let
     // {
       instant = true;
       range = false;
+    };
+
+  tableTarget =
+    refId: expr:
+    (instantTarget refId expr "")
+    // {
+      format = "table";
     };
 
   lokiTarget = refId: expr: {
@@ -519,6 +540,43 @@ let
       };
     };
 
+  table =
+    {
+      id,
+      title,
+      x,
+      y,
+      w,
+      h,
+      targets,
+      hiddenColumns ? [ ],
+    }:
+    {
+      inherit id title targets;
+      type = "table";
+      datasource = prometheus;
+      gridPos = grid x y w h;
+      fieldConfig = {
+        defaults = { };
+        overrides = [ ];
+      };
+      options = {
+        cellHeight = "sm";
+        showHeader = true;
+      };
+      transformations = [
+        {
+          id = "organize";
+          options.excludeByName = builtins.listToAttrs (
+            map (name: {
+              inherit name;
+              value = true;
+            }) hiddenColumns
+          );
+        }
+      ];
+    };
+
   logs =
     {
       id,
@@ -567,7 +625,7 @@ let
         uid
         ;
       schemaVersion = 41;
-      tags = [ "atlas" ];
+      tags = [ "monitoring" ];
       templating.list = [ ];
       time = {
         from = timeFrom;
@@ -592,6 +650,8 @@ in
     row
     stat
     statTargets
+    table
+    tableTarget
     target
     text
     thresholds

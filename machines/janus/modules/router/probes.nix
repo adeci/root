@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   self,
@@ -53,9 +54,8 @@ let
     ];
     text = # bash
       ''
-        out_dir=/var/lib/alloy/textfile
+        out_dir=${config.monitoring.textfileDirectory}
         install -d -m 0755 "$out_dir"
-        rm -f "$out_dir/janus-network-observe.prom"
         tmp=$(mktemp "$out_dir/janus-network-probe.prom.XXXXXX")
         trap 'rm -f "$tmp"' EXIT
 
@@ -133,6 +133,12 @@ in
     pingInterval = "1s";
     extraFlags = [ "--config.file=${smokepingConfig}" ];
   };
+
+  monitoring.scrapeTargets.smokeping =
+    let
+      inherit (config.services.prometheus.exporters) smokeping;
+    in
+    "${smokeping.listenAddress}:${toString smokeping.port}";
 
   systemd.services.janus-network-probe = {
     description = "Probe Janus network reachability and DNS health";

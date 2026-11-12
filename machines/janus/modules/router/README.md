@@ -32,6 +32,9 @@ Tailscale
 - `firewall.nix` owns nftables forwarding/NAT policy, named counters, counter export, and rate-limited drop logging; it asserts that every VLAN has a forward zone.
 - `dhcp-dns.nix` owns Kea DHCP, Unbound DNS, local Kea/Unbound metrics, and Kea state.
 - `probes.nix` owns Janus-local active probes plus Smokeping-style high-frequency internet quality probing.
+- `routeros-metrics.nix` owns the RouterOS API, PoE and health exporters for the switches and access points.
+
+The router's alert rules and Grafana dashboard live in `machines/janus/monitoring/`, which the monitoring instance reads; they derive VLANs, interfaces and RouterOS cabling from the inventory.
 
 ## Trust Model
 
@@ -61,18 +64,18 @@ Kea leases live in `/var/lib/kea` and are registered with `clan.core.state`.
 
 Unbound exposes extended statistics through a Unix remote-control socket at
 `/run/unbound/unbound.ctl`. `prometheus-unbound-exporter` reads it as the
-`unbound` user and exposes resolver metrics on `127.0.0.1:9167` for Alloy.
+`unbound` user and serves resolver metrics locally for the monitoring agent.
 
-`prometheus-smokeping-prober` pings `1.1.1.1` and `8.8.8.8` every second and exposes latency histograms on `127.0.0.1:9374`; Alloy scrapes it for internet latency percentiles and packet loss.
+`prometheus-smokeping-prober` pings `1.1.1.1` and `8.8.8.8` every second and serves latency histograms for internet latency percentiles and packet loss.
 
-`janus-network-probe.timer` writes slower reachability/DNS/device probe metrics to
-`/var/lib/alloy/textfile/janus-network-probe.prom`; Alloy's unix exporter
-ships them with the rest of Janus' node metrics.
+`janus-network-probe.timer` writes slower reachability/DNS/device probe metrics
+to the agent's textfile directory, which ships them with the rest of Janus'
+node metrics.
 
 `firewall.nix` declares named nftables counters on stable policy categories
 (input service accepts, invalid drops, forward zone allows, and default drops).
 `janus-firewall-counters.timer` runs every 15 seconds, parses `nft -j list
-ruleset`, and writes `/var/lib/alloy/textfile/janus-firewall-counters.prom`.
+ruleset`, and writes `janus-firewall-counters.prom` to the same directory.
 Prometheus labels stay bounded to `family`, `table`, `chain`, `counter`,
 `action`, and `zone`; IP addresses and ports stay out of metrics.
 

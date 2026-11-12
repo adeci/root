@@ -1,3 +1,3 @@
-_: {
-  network = import ./network.nix;
+{
+  fleet = import ./fleet.nix;
 }

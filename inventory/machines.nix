@@ -4,6 +4,7 @@
     tags = [
       "adeci-net"
       "wifi-preload"
+      "portable"
     ];
     tailnet = "100.121.2.13";
   };
@@ -49,7 +50,10 @@
 
   icarus = {
     class = "darwin";
-    tags = [ "adeci-net" ];
+    tags = [
+      "adeci-net"
+      "portable"
+    ];
     tailnet = "100.86.7.91";
   };
 
@@ -59,7 +63,10 @@
   };
 
   kasha = {
-    tags = [ "adeci-net" ];
+    tags = [
+      "adeci-net"
+      "portable"
+    ];
     tailnet = "100.70.179.117";
   };
 
@@ -92,6 +99,7 @@
     tags = [
       "adeci-net"
       "wifi-preload"
+      "portable"
     ];
     tailnet = "100.104.206.85";
   };
@@ -100,6 +108,7 @@
     tags = [
       "adeci-net"
       "wifi-preload"
+      "portable"
     ];
     tailnet = "100.88.20.8";
   };
@@ -108,6 +117,7 @@
     tags = [
       "adeci-net"
       "wifi-preload"
+      "portable"
     ];
     tailnet = "100.78.27.92";
   };

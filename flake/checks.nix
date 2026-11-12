@@ -33,6 +33,10 @@ in
           inventory = pkgs.writeText "inventory" (
             lib.concatLines (lib.mapAttrsToList (name: resource: builtins.seq resource name) self.resources)
           );
+        }
+        // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          # Alert rules, routing and the ntfy bridge, all of which run on the Linux monitoring server.
+          monitoring = import ../clan-services/monitoring/tests { inherit lib pkgs; };
         };
     };
 }

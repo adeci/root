@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   self,
@@ -229,7 +230,7 @@ let
 
       NFT = "${pkgs.nftables}/bin/nft"
       METADATA_PATH = "${counterMetadataFile}"
-      OUT_DIR = "/var/lib/alloy/textfile"
+      OUT_DIR = "${config.monitoring.textfileDirectory}"
       OUT_PATH = os.path.join(OUT_DIR, "janus-firewall-counters.prom")
 
 

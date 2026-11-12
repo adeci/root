@@ -13,6 +13,7 @@ let
     "systemd"
     "pressure"
     "hwmon"
+    "edac"
     "textfile"
   ];
 in
@@ -33,6 +34,17 @@ in
       { lib, ... }:
       {
         options = {
+          alwaysOn = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = ''
+              Whether this machine is meant to be online at all times. Only
+              always-on machines alert: when they stop reporting, and on failed
+              units, filling disks and hardware errors. Turn it off for laptops
+              and handhelds, which then only show up on dashboards.
+            '';
+          };
+
           extraCollectors = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [ ];
@@ -56,36 +68,6 @@ in
             type = lib.types.str;
             default = "15s";
             description = "How often Alloy scrapes its local exporters.";
-          };
-
-          extraScrapeTargets = lib.mkOption {
-            type = lib.types.listOf (
-              lib.types.submodule {
-                options = {
-                  job = lib.mkOption {
-                    type = lib.types.str;
-                    description = "Prometheus `job` label for this scrape.";
-                  };
-                  target = lib.mkOption {
-                    type = lib.types.str;
-                    example = "127.0.0.1:9547";
-                    description = "`address:port` to scrape.";
-                  };
-                };
-              }
-            );
-            default = [ ];
-            description = ''
-              Extra Prometheus scrape jobs to forward to the monitoring server.
-              Each entry becomes a `prometheus.scrape` Alloy component on this
-              agent. The `instance` label is set to the machine's hostname.
-            '';
-            example = [
-              {
-                job = "kea-dhcp4";
-                target = "127.0.0.1:9547";
-              }
-            ];
           };
 
           extraLabels = lib.mkOption {
@@ -127,6 +109,35 @@ in
             default = [ ];
             description = "Extra Alloy `rule` blocks appended to the `loki.relabel \"journal\"` component.";
           };
+
+          rules = lib.mkOption {
+            type = lib.types.listOf lib.types.attrs;
+            default = [ ];
+            description = ''
+              Prometheus alerting and recording rules about this machine's own
+              metrics, which the server evaluates as one group named after the
+              machine. Every alert needs `labels.severity`: `critical` notifies
+              at any hour, `warning` outside the server's quiet hours.
+            '';
+            example = [
+              {
+                alert = "DhcpDown";
+                expr = ''node_systemd_unit_state{instance="router", name="kea-dhcp4-server.service", state="active"} == 0'';
+                for = "3m";
+                labels.severity = "critical";
+                annotations.summary = "DHCP is down";
+              }
+            ];
+          };
+
+          dashboards = lib.mkOption {
+            type = lib.types.attrsOf lib.types.attrs;
+            default = { };
+            description = ''
+              Grafana dashboard models about this machine, by name. The server
+              provisions them next to its own; names must be unique across agents.
+            '';
+          };
         };
       };
 
@@ -138,6 +149,7 @@ in
             config,
             lib,
             options,
+            pkgs,
             ...
           }:
           let
@@ -148,6 +160,7 @@ in
               ;
 
             machineName = config.clan.core.settings.machine.name;
+            inherit (config.monitoring) textfileDirectory;
 
             serverMachineCount = builtins.length (builtins.attrNames roles.server.machines);
             serverSettings =
@@ -202,25 +215,20 @@ in
             '';
 
             # Alloy component labels must match [a-zA-Z_][a-zA-Z0-9_]*.
-            extraScrapeBlocks = concatStringsSep "\n" (
-              map (
-                s:
-                let
-                  alloyName = builtins.replaceStrings [ "-" ] [ "_" ] s.job;
-                in
-                ''
-                  prometheus.scrape "${alloyName}" {
-                    targets = [{
-                      __address__ = "${s.target}",
-                      instance    = "${machineName}",
-                      job         = "${s.job}",
-                    }]
-                    honor_labels    = true
-                    forward_to      = [prometheus.remote_write.server.receiver]
-                    scrape_interval = "${settings.scrapeInterval}"
-                  }
-                ''
-              ) settings.extraScrapeTargets
+            scrapeTargetBlock = job: address: ''
+              prometheus.scrape "target_${builtins.replaceStrings [ "-" ] [ "_" ] job}" {
+                targets = [{
+                  __address__ = "${address}",
+                  instance    = "${machineName}",
+                  job         = "${job}",
+                }]
+                honor_labels    = true
+                forward_to      = [prometheus.remote_write.server.receiver]
+                scrape_interval = "${settings.scrapeInterval}"
+              }
+            '';
+            scrapeTargetBlocks = concatStringsSep "\n" (
+              lib.mapAttrsToList scrapeTargetBlock config.monitoring.scrapeTargets
             );
 
             extraLabelPairs = lib.mapAttrsToList (n: v: "    \"${n}\" = \"${v}\",") settings.extraLabels;
@@ -241,13 +249,22 @@ in
                 set_collectors = ${collectorsHCL}
 
                 textfile {
-                  directory = "/var/lib/alloy/textfile"
+                  directory = "${textfileDirectory}"
                 }
               }
 
-              // prometheus.exporter.unix already sets instance=<hostname> on node metrics.
+              // The server's alerts expect node metrics under the machine name, whatever the hostname.
+              discovery.relabel "node" {
+                targets = prometheus.exporter.unix.local_system.targets
+
+                rule {
+                  target_label = "instance"
+                  replacement  = "${machineName}"
+                }
+              }
+
               prometheus.scrape "node" {
-                targets         = prometheus.exporter.unix.local_system.targets
+                targets         = discovery.relabel.node.output
                 forward_to      = [prometheus.remote_write.server.receiver]
                 scrape_interval = "${settings.scrapeInterval}"
               }
@@ -265,7 +282,7 @@ in
                 scrape_interval = "${settings.scrapeInterval}"
               }
 
-              ${extraScrapeBlocks}
+              ${scrapeTargetBlocks}
 
               prometheus.remote_write "server" {
                 ${externalLabelsBlock}
@@ -319,6 +336,39 @@ in
                 }
               }
             '';
+
+            acmeCertificates = pkgs.writeText "acme-certificates" (
+              lib.concatLines (
+                lib.mapAttrsToList (name: cert: "${name}\t${cert.directory}/cert.pem") config.security.acme.certs
+              )
+            );
+
+            acmeCertificateExpiry = pkgs.writeShellApplication {
+              name = "acme-certificate-expiry";
+              runtimeInputs = [
+                pkgs.coreutils
+                pkgs.openssl
+              ];
+              text = ''
+                out=${textfileDirectory}/acme-certificates.prom
+                tmp=$(mktemp "$out.XXXXXX")
+                trap 'rm -f "$tmp"' EXIT
+
+                {
+                  echo '# HELP acme_certificate_expiry_timestamp_seconds When the ACME certificate expires.'
+                  echo '# TYPE acme_certificate_expiry_timestamp_seconds gauge'
+                  while IFS=$'\t' read -r name path; do
+                    if not_after=$(openssl x509 -enddate -noout -in "$path"); then
+                      echo "acme_certificate_expiry_timestamp_seconds{certificate=\"$name\"} $(date -d "''${not_after#notAfter=}" +%s)"
+                    fi
+                  done < ${acmeCertificates}
+                } > "$tmp"
+
+                chmod 0644 "$tmp"
+                mv "$tmp" "$out"
+                trap - EXIT
+              '';
+            };
           in
           {
             services.alloy = {
@@ -342,6 +392,15 @@ in
                 "alloy"
                 "alloy/textfile"
               ];
+            };
+
+            systemd.services.acme-certificate-expiry = lib.mkIf (config.security.acme.certs != { }) {
+              description = "Export ACME certificate expiry times for the metrics agent";
+              startAt = "*:0/15";
+              serviceConfig = {
+                Type = "oneshot";
+                ExecStart = lib.getExe acmeCertificateExpiry;
+              };
             };
           };
       };
@@ -371,6 +430,15 @@ in
             description = "Enable Grafana dashboards on this server.";
           };
 
+          grafana.homeDashboard = lib.mkOption {
+            type = lib.types.str;
+            default = "fleet";
+            description = ''
+              Name of the dashboard Grafana opens on: `fleet`, this service's
+              overview of every machine, or one an agent brings in its `dashboards`.
+            '';
+          };
+
           retentionDays = lib.mkOption {
             type = lib.types.int;
             default = 30;
@@ -383,36 +451,66 @@ in
             description = "Loki log retention (hours). 168h = 7 days.";
           };
 
+          alertDelivery.quietHours = lib.mkOption {
+            type = lib.types.nullOr (
+              lib.types.submodule {
+                options = {
+                  start = lib.mkOption {
+                    type = lib.types.strMatching "[0-2][0-9]:[0-5][0-9]";
+                    description = "Local time, as `HH:MM`, at which warnings start waiting.";
+                  };
+                  end = lib.mkOption {
+                    type = lib.types.strMatching "[0-2][0-9]:[0-5][0-9]";
+                    description = "Local time, as `HH:MM`, at which held warnings go out.";
+                  };
+                };
+              }
+            );
+            default = {
+              start = "22:00";
+              end = "08:00";
+            };
+            description = ''
+              Window in this machine's time zone during which warnings wait;
+              those still firing when it ends notify then. Critical alerts always
+              notify at once. `null` sends warnings at any hour.
+            '';
+          };
+
           alertDelivery.ntfy = {
             enable = lib.mkOption {
               type = lib.types.bool;
               default = false;
-              description = "Route critical Alertmanager notifications through alertmanager-ntfy.";
+              description = "Send alert notifications to ntfy through alertmanager-ntfy.";
             };
 
             baseUrl = lib.mkOption {
               type = lib.types.str;
-              default = "http://127.0.0.1:2586";
-              description = "Local ntfy server base URL used by alertmanager-ntfy.";
+              example = "http://127.0.0.1:2586";
+              description = "Base URL of the ntfy server alerts are published to.";
             };
 
             topic = lib.mkOption {
               type = lib.types.str;
-              default = "atlas-alerts";
-              description = "ntfy topic for critical alert notifications.";
+              example = "alerts";
+              description = "ntfy topic for alert notifications.";
             };
 
             configGenerator = lib.mkOption {
               type = lib.types.str;
-              default = "ntfy-alerts";
-              description = "Clan vars generator that provides alertmanager-ntfy.yml.";
+              example = "ntfy-alerts";
+              description = ''
+                Clan vars generator on this machine whose `alertmanager-ntfy.yml`
+                file holds the ntfy credentials, as `ntfy.auth.token` or
+                `ntfy.auth.basic`, for a user allowed to publish to the topic.
+              '';
             };
           };
         };
       };
 
     perInstance =
-      { settings, ... }:
+      { settings, roles, ... }:
       {
         nixosModule =
           {
@@ -422,12 +520,17 @@ in
             ...
           }:
           let
-            prometheusPort = 9090;
-            alertmanagerPort = 9093;
-            alertmanagerNtfyPort = 8000;
-            lokiPort = 3100;
-            lokiGrpcPort = 9095;
-            grafanaPort = 3000;
+            ports = {
+              prometheus = 9090;
+              alertmanager = 9093;
+              ntfyBridge = 8000;
+              loki = 3100;
+              lokiGrpc = 9095;
+              grafana = 3000;
+            };
+
+            machineName = config.clan.core.settings.machine.name;
+            agents = roles.agent.machines;
             ntfyDelivery = settings.alertDelivery.ntfy;
             ntfyGenerator = config.clan.core.vars.generators.${ntfyDelivery.configGenerator} or null;
             ntfyBridgeConfig =
@@ -436,315 +539,39 @@ in
               else
                 ntfyGenerator.files."alertmanager-ntfy.yml".path;
 
-            dashboards = import ./dashboards { inherit lib; };
-            dashboardPath = pkgs.linkFarm "adeci-grafana-dashboards" (
+            yaml = pkgs.formats.yaml { };
+            rules = import ./rules.nix {
+              inherit lib;
+              alwaysOn = lib.attrNames (lib.filterAttrs (_: agent: agent.settings.alwaysOn) agents);
+              machineRules = lib.mapAttrs (_: agent: agent.settings.rules) agents;
+            };
+
+            dashboards = lib.foldl' lib.attrsets.unionOfDisjoint (import ./dashboards) (
+              lib.mapAttrsToList (_: agent: agent.settings.dashboards) agents
+            );
+            dashboardPath = pkgs.linkFarm "monitoring-grafana-dashboards" (
               lib.mapAttrsToList (name: dashboard: {
                 name = "${name}.json";
-                path = pkgs.writeText "adeci-grafana-${name}.json" (builtins.toJSON dashboard);
+                path = pkgs.writeText "monitoring-grafana-${name}.json" (builtins.toJSON dashboard);
               }) dashboards
             );
+            homeDashboard =
+              if dashboards ? ${settings.grafana.homeDashboard} then
+                settings.grafana.homeDashboard
+              else
+                throw "@adeci/monitoring: grafana.homeDashboard '${settings.grafana.homeDashboard}' is none of the dashboards: ${lib.concatStringsSep ", " (lib.attrNames dashboards)}";
+            grafanaUrl = config.services.grafana.settings.server.root_url;
 
-            alertRules = pkgs.writeText "adeci-monitoring-alerts.yml" ''
-              groups:
-                - name: fleet
-                  rules:
-                    - alert: HostStale
-                      expr: |
-                        (time() - max by (instance) (timestamp(node_uname_info))) > 180
-                      for: 0m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Host {{ $labels.instance }} has not reported metrics for 3+ minutes"
-                        description: "No samples received from {{ $labels.instance }} in the last 3 minutes. Agent down, network issue, or host offline."
-
-                    - alert: DiskSpaceHigh
-                      expr: |
-                        100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}
-                                 / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}) > 90
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is over 90% full"
-
-                    - alert: DiskSpaceCritical
-                      expr: |
-                        100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}
-                                 / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}) > 95
-                      for: 5m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is over 95% full"
-
-                    - alert: InodeExhaustionHigh
-                      expr: |
-                        100 * (1 - node_filesystem_files_free{fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}
-                                 / node_filesystem_files{fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}) > 90
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is over 90% inode-full"
-
-                    - alert: SystemdUnitFailed
-                      expr: node_systemd_unit_state{state="failed"} == 1
-                      for: 5m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Systemd unit {{ $labels.name }} on {{ $labels.instance }} has been failed for 5+ minutes"
-
-                - name: stack-health
-                  rules:
-                    - alert: AlloyWriteFailing
-                      expr: |
-                        sum by (instance) (rate(prometheus_remote_write_samples_failed_total[5m])) > 0
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Alloy agent on {{ $labels.instance }} is failing remote_write requests"
-
-                    - alert: PrometheusIngestBroken
-                      expr: |
-                        rate(prometheus_tsdb_wal_corruptions_total[5m]) > 0
-                        or
-                        rate(prometheus_remote_storage_samples_failed_total[5m]) > 0
-                      for: 5m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Prometheus TSDB or remote-storage ingest is failing"
-
-                    - alert: LokiIngestBroken
-                      expr: |
-                        sum(rate(loki_request_duration_seconds_count{route=~"api_prom_push|loki_api_v1_push",status_code=~"5.."}[5m])) > 0
-                      for: 5m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Loki push endpoint is returning 5xx errors"
-
-                - name: router-health
-                  rules:
-                    - alert: JanusDown
-                      expr: |
-                        up{instance="janus",job="integrations/unix"} == 0
-                      for: 3m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Janus unix exporter scrape is down"
-                        description: "Alloy is still reporting, but Janus' node/unix scrape is failing. Check alloy.service and the local unix exporter on Janus. If Janus is fully offline, HostStale should also fire."
-
-                    - alert: JanusSystemDegraded
-                      expr: |
-                        (max by(instance) (node_systemd_system_running{instance="janus"}) == 0)
-                        or
-                        (sum by(instance) (node_systemd_unit_state{instance="janus",state="failed"} == 1) > 0)
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus systemd is degraded or has failed units"
-                        description: "Run systemctl --failed and systemctl is-system-running on Janus. Core router services have separate critical alerts; this catches other failed units before they become outages."
-
-                    - alert: JanusCoreServiceDown
-                      expr: |
-                        node_systemd_unit_state{instance="janus",name=~"kea-dhcp4-server.service|unbound.service|nftables.service|tailscaled.service",state="active"} == 0
-                      for: 3m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Janus core unit {{ $labels.name }} is inactive"
-                        description: "A router data-plane or remote-access unit is not active. Check systemctl status {{ $labels.name }} on Janus."
-
-                    - alert: JanusTelemetryUnitDown
-                      expr: |
-                        node_systemd_unit_state{instance="janus",name=~"alloy.service|prometheus-kea-exporter.service|prometheus-mikrotik-exporter.service|prometheus-mikrotik-poe-exporter.service|prometheus-unbound-exporter.service|prometheus-smokeping-exporter.service|janus-network-probe.timer|janus-routeros-health.timer|janus-firewall-counters.timer",state="active"} == 0
-                      for: 5m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus telemetry unit {{ $labels.name }} is inactive"
-                        description: "A dashboard or alerting support unit is not active. Router forwarding may still work, but observability is degraded. Check systemctl status {{ $labels.name }} on Janus."
-
-                    - alert: JanusExporterScrapeDown
-                      expr: |
-                        up{instance="janus",job=~"alloy|kea-dhcp4|mikrotik|mikrotik-poe|unbound|smokeping"} == 0
-                      for: 5m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus exporter scrape {{ $labels.job }} is down"
-                        description: "Prometheus data for a Janus local exporter is unavailable. Check the matching systemd unit and local listener on Janus."
-
-                    - alert: RouterOSDeviceDown
-                      expr: |
-                        janus_network_probe_up{instance="janus",group="routeros"} == 0
-                      for: 5m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "RouterOS device {{ $labels.target }} is unreachable"
-                        description: "Janus cannot ping {{ $labels.target }} at {{ $labels.address }}. Check power, uplink, management VLAN, and the upstream switch path."
-
-                    - alert: RouterOSApiScrapeDown
-                      expr: |
-                        mikrotik_scrape_collector_success{instance="janus",job="mikrotik"} == 0
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "RouterOS API scrape failed for {{ $labels.device }}"
-                        description: "The Mikrotik exporter cannot collect API metrics for {{ $labels.device }}. Check the prometheus API user, RouterOS API service, and management VLAN reachability."
-
-                    - alert: RouterOSHealthScrapeDown
-                      expr: |
-                        janus_routeros_health_scrape_success{instance="janus"} == 0
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "RouterOS health scrape failed for {{ $labels.name }}"
-                        description: "Janus cannot read /system/health from this RouterOS device. Check the prometheus API user, RouterOS API service, and management VLAN reachability."
-
-                    - alert: RouterOSHighTemperature
-                      expr: |
-                        max by(name) (janus_routeros_temperature_celsius{instance="janus"}) > 75
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "RouterOS device {{ $labels.name }} is hot"
-                        description: "A RouterOS board, CPU, or PHY temperature is above 75C. Check rack airflow, PoE load, ambient temperature, and device placement."
-
-                    - alert: RouterOSUplinkErrors
-                      expr: |
-                        (
-                          sum by(name, interface) (
-                            (
-                              rate(mikrotik_interface_rx_error{instance="janus",job="mikrotik",name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[15m])
-                              or rate(mikrotik_interface_rx_error{instance="janus",job="mikrotik",name="axon",interface="sfp-sfpplus1"}[15m])
-                              or rate(mikrotik_interface_rx_error{instance="janus",job="mikrotik",name=~"zephyr|nimbus",interface="ether1"}[15m])
-                            )
-                            +
-                            (
-                              rate(mikrotik_interface_tx_error{instance="janus",job="mikrotik",name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[15m])
-                              or rate(mikrotik_interface_tx_error{instance="janus",job="mikrotik",name="axon",interface="sfp-sfpplus1"}[15m])
-                              or rate(mikrotik_interface_tx_error{instance="janus",job="mikrotik",name=~"zephyr|nimbus",interface="ether1"}[15m])
-                            )
-                          ) > 0.01
-                        )
-                        or
-                        (
-                          sum by(name, interface) (
-                            increase(mikrotik_interface_link_downs{instance="janus",job="mikrotik",name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[15m])
-                            or increase(mikrotik_interface_link_downs{instance="janus",job="mikrotik",name="axon",interface="sfp-sfpplus1"}[15m])
-                            or increase(mikrotik_interface_link_downs{instance="janus",job="mikrotik",name=~"zephyr|nimbus",interface="ether1"}[15m])
-                          ) > 0
-                        )
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "RouterOS uplink {{ $labels.name }} {{ $labels.interface }} has errors"
-                        description: "A switch/AP uplink has sustained RX/TX errors or link-down events. Check cable, SFP, PoE power, port negotiation, and the neighboring switch port."
-
-                    - alert: JanusFirewallCountersStale
-                      expr: |
-                        (time() - max by(instance) (node_systemd_timer_last_trigger_seconds{instance="janus",name="janus-firewall-counters.timer"})) > 120
-                      for: 2m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus firewall counters have not refreshed recently"
-                        description: "The janus-firewall-counters.timer should run every 15 seconds. Check the timer and janus-firewall-counters.service; firewall policy may still work, but firewall dashboards are stale."
-
-                    - alert: JanusInternetDown
-                      expr: |
-                        (max by(instance) (janus_network_probe_up{instance="janus",group="internet"}) == 0)
-                        or
-                        (min by(instance) (janus_network_probe_up{instance="janus",group="wan"}) == 0)
-                        or
-                        (max by(instance) (janus_dns_probe_up{instance="janus"}) == 0)
-                      for: 3m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Janus WAN, internet, or DNS probe is down"
-                        description: "The WAN gateway, all internet probes, or the local DNS probe has failed for multiple probe cycles. Check WAN link, ISP gateway, Unbound, and upstream DNS reachability."
-
-                    - alert: JanusHighPacketLoss
-                      expr: |
-                        100 * (1 - (
-                          sum by(instance) (rate(smokeping_response_duration_seconds_count{instance="janus",job="smokeping",group="internet"}[10m]))
-                          /
-                          clamp_min(sum by(instance) (rate(smokeping_requests_total{instance="janus",job="smokeping",group="internet"}[10m])), 0.001)
-                        )) > 25
-                      for: 10m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Janus internet packet loss is high"
-                        description: "Smokeping has seen more than 25% loss to internet targets for 10+ minutes. Check WAN link quality, modem/ONT, ISP status, and upstream packet loss before changing firewall policy."
-
-                    - alert: JanusHighLatency
-                      expr: |
-                        1000 * histogram_quantile(0.95, sum by(instance, le) (rate(smokeping_response_duration_seconds_bucket{instance="janus",job="smokeping",group="internet"}[10m]))) > 150
-                      for: 15m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus internet p95 latency is high"
-                        description: "Internet p95 ICMP latency has stayed above 150 ms. Check WAN congestion, bufferbloat, ISP path changes, and Router System resource panels."
-
-                    - alert: JanusHighTemperature
-                      expr: |
-                        max by(instance, chip) (node_hwmon_temp_celsius{instance="janus",chip=~"platform_coretemp_0|nvme_nvme0"}) > 80
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus temperature is high on {{ $labels.chip }}"
-                        description: "CPU or NVMe temperature is above 80C. Check airflow, dust, fan behavior, and sustained disk or CPU load before thermal throttling affects routing."
-
-                    - alert: JanusRootDiskFull
-                      expr: |
-                        100 * (1 - node_filesystem_avail_bytes{instance="janus",mountpoint="/",fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"} / node_filesystem_size_bytes{instance="janus",mountpoint="/",fstype!~"tmpfs|fuse.lxcfs|nsfs|overlay|squashfs|ramfs|devtmpfs"}) > 95
-                      for: 5m
-                      labels:
-                        severity: critical
-                      annotations:
-                        summary: "Janus root filesystem is almost full"
-                        description: "Root filesystem usage is above 95%. Free space before services fail to write state, logs, or Nix profiles."
-
-                    - alert: JanusConntrackPressure
-                      expr: |
-                        100 * node_nf_conntrack_entries{instance="janus"} / node_nf_conntrack_entries_limit{instance="janus"} > 80
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus conntrack table pressure is high"
-                        description: "Conntrack usage is above 80% of the kernel limit. Look for connection floods, P2P bursts, stuck clients, or an undersized nf_conntrack_max."
-
-                    - alert: JanusInterfaceFaults
-                      expr: |
-                        sum by(instance, device) (
-                          rate(node_network_receive_errs_total{instance="janus",device=~"enp5s0|eno1|br-mgmt|vlan10|vlan20|vlan30"}[15m])
-                          +
-                          rate(node_network_transmit_errs_total{instance="janus",device=~"enp5s0|eno1|br-mgmt|vlan10|vlan20|vlan30"}[15m])
-                        ) > 0.05
-                      for: 10m
-                      labels:
-                        severity: warning
-                      annotations:
-                        summary: "Janus interface {{ $labels.device }} has sustained errors"
-                        description: "A routed Janus interface is seeing sustained RX/TX errors. Firewall drops are intentionally excluded; check cable, switch port, SFP/NIC health, and link negotiation."
-            '';
+            # The server's own exporters carry its machine name, like every agent's.
+            localScrape = job: port: {
+              job_name = job;
+              static_configs = [
+                {
+                  targets = [ "127.0.0.1:${toString port}" ];
+                  labels.instance = machineName;
+                }
+              ];
+            };
           in
           {
             networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 80 ];
@@ -780,7 +607,7 @@ in
             services.prometheus = {
               enable = true;
               listenAddress = "127.0.0.1";
-              port = prometheusPort;
+              port = ports.prometheus;
               retentionTime = "${toString settings.retentionDays}d";
               extraFlags = [
                 "--web.enable-remote-write-receiver"
@@ -792,64 +619,31 @@ in
               alertmanagers = lib.optionals ntfyDelivery.enable [
                 {
                   static_configs = [
-                    { targets = [ "127.0.0.1:${toString alertmanagerPort}" ]; }
+                    { targets = [ "127.0.0.1:${toString ports.alertmanager}" ]; }
                   ];
                 }
               ];
               scrapeConfigs = [
-                {
-                  job_name = "prometheus";
-                  static_configs = [
-                    { targets = [ "127.0.0.1:${toString prometheusPort}" ]; }
-                  ];
-                }
-                {
-                  job_name = "loki";
-                  static_configs = [
-                    { targets = [ "127.0.0.1:${toString lokiPort}" ]; }
-                  ];
-                }
+                (localScrape "prometheus" ports.prometheus)
+                (localScrape "loki" ports.loki)
               ];
-              ruleFiles = [ alertRules ];
+              ruleFiles = [
+                (yaml.generate "fleet-rules.yml" rules.fleet)
+                (yaml.generate "machine-rules.yml" rules.machines)
+              ];
             };
 
             services.prometheus.alertmanager = lib.mkIf ntfyDelivery.enable {
               enable = true;
               listenAddress = "127.0.0.1";
-              port = alertmanagerPort;
-              configuration = {
-                global.resolve_timeout = "5m";
-                route = {
-                  receiver = "null";
-                  group_by = [
-                    "alertname"
-                    "instance"
-                    "severity"
-                  ];
-                  group_wait = "30s";
-                  group_interval = "5m";
-                  repeat_interval = "4h";
-                  routes = [
-                    {
-                      receiver = "ntfy-critical";
-                      matchers = [ ''severity="critical"'' ];
-                      continue = false;
-                      repeat_interval = "2h";
-                    }
-                  ];
-                };
-                receivers = [
-                  { name = "null"; }
-                  {
-                    name = "ntfy-critical";
-                    webhook_configs = [
-                      {
-                        url = "http://127.0.0.1:${toString alertmanagerNtfyPort}/hook";
-                        send_resolved = true;
-                      }
-                    ];
-                  }
-                ];
+              port = ports.alertmanager;
+              # A lone Alertmanager needs no gossip mesh, which fails to start before the network has an address.
+              extraFlags = [ "--cluster.listen-address=" ];
+              configuration = import ./alertmanager.nix {
+                inherit lib;
+                inherit (settings.alertDelivery) quietHours;
+                webhookUrl = "http://127.0.0.1:${toString ports.ntfyBridge}/hook";
+                timeZone = if config.time.timeZone == null then "UTC" else config.time.timeZone;
               };
             };
 
@@ -861,34 +655,11 @@ in
             services.prometheus.alertmanager-ntfy = lib.mkIf ntfyDelivery.enable {
               enable = true;
               extraConfigFiles = [ ntfyBridgeConfig ];
-              settings = {
-                http.addr = "127.0.0.1:${toString alertmanagerNtfyPort}";
-                ntfy = {
-                  baseurl = ntfyDelivery.baseUrl;
-                  async = false;
-                  notification = {
-                    inherit (ntfyDelivery) topic;
-                    priority = ''status == "firing" ? "high" : "default"'';
-                    tags = [
-                      {
-                        tag = "rotating_light";
-                        condition = ''status == "firing"'';
-                      }
-                      {
-                        tag = "white_check_mark";
-                        condition = ''status == "resolved"'';
-                      }
-                    ];
-                    templates = {
-                      title = ''{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ index .Labels "alertname" }}'';
-                      description = ''
-                        {{ index .Annotations "summary" }}
-
-                        {{ index .Annotations "description" }}
-                      '';
-                    };
-                  };
-                };
+              settings = import ./ntfy-bridge.nix {
+                inherit lib;
+                inherit (ntfyDelivery) baseUrl topic;
+                listenAddress = "127.0.0.1:${toString ports.ntfyBridge}";
+                clickUrl = if settings.grafana.enable then "${grafanaUrl}d/${dashboards.fleet.uid}" else null;
               };
             };
 
@@ -900,9 +671,9 @@ in
 
                 server = {
                   http_listen_address = "127.0.0.1";
-                  http_listen_port = lokiPort;
+                  http_listen_port = ports.loki;
                   grpc_listen_address = "127.0.0.1";
-                  grpc_listen_port = lokiGrpcPort;
+                  grpc_listen_port = ports.lokiGrpc;
                 };
 
                 common = {
@@ -965,7 +736,7 @@ in
                   news_feed_enabled = false;
                 };
 
-                dashboards.default_home_dashboard_path = "${dashboardPath}/network.json";
+                dashboards.default_home_dashboard_path = "${dashboardPath}/${homeDashboard}.json";
 
                 database = {
                   type = "postgres";
@@ -992,13 +763,13 @@ in
 
                 users = {
                   default_theme = "dark";
-                  home_page = "/d/atlas-network/network-router";
+                  home_page = "/d/${dashboards.${homeDashboard}.uid}";
                   viewers_can_edit = false;
                 };
 
                 server = {
                   http_addr = "127.0.0.1";
-                  http_port = grafanaPort;
+                  http_port = ports.grafana;
                   domain = settings.host;
                   root_url = "http://${settings.host}/grafana/";
                   serve_from_sub_path = true;
@@ -1017,7 +788,7 @@ in
                     name = "prometheus";
                     type = "prometheus";
                     uid = "prometheus";
-                    url = "http://127.0.0.1:${toString prometheusPort}";
+                    url = "http://127.0.0.1:${toString ports.prometheus}";
                     isDefault = true;
                     jsonData.manageAlerts = false;
                   }
@@ -1025,7 +796,7 @@ in
                     name = "loki";
                     type = "loki";
                     uid = "loki";
-                    url = "http://127.0.0.1:${toString lokiPort}";
+                    url = "http://127.0.0.1:${toString ports.loki}";
                     jsonData.manageAlerts = false;
                   }
                 ];
@@ -1033,10 +804,10 @@ in
                   apiVersion = 1;
                   providers = [
                     {
-                      name = "atlas";
+                      name = "monitoring";
                       orgId = 1;
-                      folder = "Atlas";
-                      folderUid = "atlas";
+                      folder = "Monitoring";
+                      folderUid = "monitoring";
                       type = "file";
                       disableDeletion = true;
                       allowUiUpdates = false;
@@ -1063,7 +834,7 @@ in
                 locations = {
                   "/prometheus/" = {
                     basicAuthFile = "/run/nginx/credentials/prometheus-auth-htpasswd";
-                    proxyPass = "http://127.0.0.1:${toString prometheusPort}/";
+                    proxyPass = "http://127.0.0.1:${toString ports.prometheus}/";
                     extraConfig = ''
                       client_max_body_size 32m;
                       proxy_read_timeout 120s;
@@ -1073,7 +844,7 @@ in
 
                   "/loki/" = {
                     basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
-                    proxyPass = "http://127.0.0.1:${toString lokiPort}/";
+                    proxyPass = "http://127.0.0.1:${toString ports.loki}/";
                     extraConfig = ''
                       client_max_body_size 32m;
                       proxy_read_timeout 120s;
@@ -1084,7 +855,7 @@ in
                 // lib.optionalAttrs settings.grafana.enable {
                   # No trailing slash: with serve_from_sub_path Grafana needs the full /grafana/ path, or it redirect-loops re-adding the prefix.
                   "/grafana/" = {
-                    proxyPass = "http://127.0.0.1:${toString grafanaPort}";
+                    proxyPass = "http://127.0.0.1:${toString ports.grafana}";
                     proxyWebsockets = true;
                   };
 
@@ -1109,9 +880,27 @@ in
   };
 
   perMachine.nixosModule =
-    { pkgs, ... }:
+    { lib, pkgs, ... }:
     {
-      clan.core.vars.generators = {
+      options.monitoring = {
+        scrapeTargets = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          description = "Local Prometheus endpoints, as `address:port` by job name, that the agent scrapes and ships to the server.";
+          example = {
+            kea = "127.0.0.1:9547";
+          };
+        };
+
+        textfileDirectory = lib.mkOption {
+          type = lib.types.str;
+          default = "/var/lib/alloy/textfile";
+          readOnly = true;
+          description = "Directory whose `*.prom` files the agent ships with the node metrics.";
+        };
+      };
+
+      config.clan.core.vars.generators = {
         prometheus-auth = {
           share = true;
           files = {

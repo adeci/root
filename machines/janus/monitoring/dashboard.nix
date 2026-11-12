@@ -1,20 +1,62 @@
+# The router's dashboard: internet quality, traffic per VLAN, DHCP, DNS, firewall and the RouterOS devices.
+{ network }:
 let
-  ui = import ./lib.nix;
+  ui = import ../../../clan-services/monitoring/dashboards/lib.nix;
 
-  janus = ''instance="janus"'';
+  janus = ''instance="${network.instance}"'';
   unbound = ''${janus},job="unbound"'';
   smokeping = ''${janus},job="smokeping"'';
   internetQuality = ''${smokeping},group="internet"'';
-  wan = "enp5s0";
-  lan = "eno1";
-  mgmt = "br-mgmt";
-  trusted = "vlan10";
-  iot = "vlan20";
-  guest = "vlan30";
+  inherit (network) wan lan vlans;
 
-  routedInterfaces = "${wan}|${lan}|${mgmt}|${trusted}|${iot}|${guest}";
-  linkInterfaces = "${wan}|${lan}|${mgmt}";
-  currentSubnets = "10|20|30|99";
+  oneOf = builtins.concatStringsSep "|";
+  routedInterfaces = oneOf (
+    [
+      wan
+      lan
+    ]
+    ++ map (vlan: vlan.interface) vlans
+  );
+  linkInterfaces = oneOf [
+    wan
+    lan
+    network.mgmt
+  ];
+  subnetIds = oneOf (map (vlan: toString vlan.id) vlans);
+
+  refIds = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  vlanPalette = [
+    "green"
+    "yellow"
+    "orange"
+    "purple"
+    "light-red"
+    "cyan"
+    "dark-green"
+    "dark-yellow"
+  ];
+  vlanCount = builtins.length vlans;
+  vlanColour =
+    index:
+    builtins.elemAt vlanPalette (
+      index - index / builtins.length vlanPalette * builtins.length vlanPalette
+    );
+
+  # One target per VLAN named after it, with refIds from the given position on.
+  vlanTargets =
+    firstRefId: query:
+    builtins.genList (
+      index:
+      let
+        vlan = builtins.elemAt vlans index;
+      in
+      ui.target (builtins.substring (firstRefId + index) 1 refIds) (query vlan) vlan.name
+    ) vlanCount;
+
+  # Every panel gives a VLAN the same colour.
+  vlanColours = builtins.genList (
+    index: ui.colorOverride (builtins.elemAt vlans index).name (vlanColour index)
+  ) vlanCount;
 
   rx =
     device: ''rate(node_network_receive_bytes_total{${janus},device="${device}"}[$__rate_interval])'';
@@ -53,33 +95,22 @@ let
   mikrotik = ''${janus},job="mikrotik"'';
   mikrotikPoe = ''${janus},job="mikrotik-poe"'';
 
-  routerosUplinkMetric = metric: ''
-    (
-      ${metric}{${mikrotik},name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}
-      or ${metric}{${mikrotik},name="axon",interface="sfp-sfpplus1"}
-      or ${metric}{${mikrotik},name=~"zephyr|nimbus",interface="ether1"}
-    )
-  '';
-  routerosUplinkRate = metric: ''
-    (
-      rate(${metric}{${mikrotik},name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"}[$__rate_interval])
-      or rate(${metric}{${mikrotik},name="axon",interface="sfp-sfpplus1"}[$__rate_interval])
-      or rate(${metric}{${mikrotik},name=~"zephyr|nimbus",interface="ether1"}[$__rate_interval])
-    )
-  '';
-  routerosUplinkErrors = ''
+  # Queries over the RouterOS ports on known cables, wrapped so they combine like one selector.
+  cabledPorts = query: "(${network.onPorts network.cabledPorts query})";
+  cabledRate = metric: cabledPorts (ports: "rate(${metric}{${mikrotik},${ports}}[$__rate_interval])");
+  cabledErrors = ''
     sum by (name, interface) (
-      ${routerosUplinkRate "mikrotik_interface_rx_error"}
-      + ${routerosUplinkRate "mikrotik_interface_tx_error"}
+      ${cabledRate "mikrotik_interface_rx_error"}
+      + ${cabledRate "mikrotik_interface_tx_error"}
     )
   '';
-  routerosUplinkDrops = ''
+  cabledDrops = ''
     sum by (name, interface) (
-      ${routerosUplinkRate "mikrotik_interface_rx_drop"}
-      + ${routerosUplinkRate "mikrotik_interface_tx_drop"}
+      ${cabledRate "mikrotik_interface_rx_drop"}
+      + ${cabledRate "mikrotik_interface_tx_drop"}
     )
   '';
-  routerosUplinkLinkDowns = "sum by (name, interface) (${routerosUplinkRate "mikrotik_interface_link_downs"})";
+  cabledLinkDowns = "sum by (name, interface) (${cabledRate "mikrotik_interface_link_downs"})";
   routerosTemp = ''
     max by (name) (janus_routeros_temperature_celsius{${janus}})
   '';
@@ -88,54 +119,42 @@ let
     * on(name) label_replace(mikrotik_scrape_collector_success{${mikrotik}}, "name", "$1", "device", "(.*)")
     * on(name) janus_routeros_health_scrape_success{${janus}}
   '';
-  routerosLinkProblem = ''
-    (
-      mikrotik_monitor_status{${mikrotik},name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2|ether2|ether3"} < bool 1
-      or mikrotik_monitor_status{${mikrotik},name="axon",interface="sfp-sfpplus1"} < bool 1
-      or mikrotik_monitor_status{${mikrotik},name=~"zephyr|nimbus",interface="ether1"} < bool 1
-      or 1000000 * mikrotik_monitor_rate{${mikrotik},name="nexus",interface=~"sfp-sfpplus1|sfp-sfpplus2"} < bool 10000000000
-      or 1000000 * mikrotik_monitor_rate{${mikrotik},name="axon",interface="sfp-sfpplus1"} < bool 10000000000
-      or 1000000 * mikrotik_monitor_rate{${mikrotik},name="nexus",interface=~"ether2|ether3"} < bool 1000000000
-      or 1000000 * mikrotik_monitor_rate{${mikrotik},name=~"zephyr|nimbus",interface="ether1"} < bool 1000000000
-    )
+  # mikrotik_monitor_rate is in Mb/s; SFP+ ports should link at 10 Gb/s, copper ports at 1 Gb/s.
+  linksDown = cabledPorts (ports: "mikrotik_monitor_status{${mikrotik},${ports}} == 0");
+  slowFibreLinks = cabledPorts (
+    ports: ''mikrotik_monitor_rate{${mikrotik},${ports},interface=~"sfp-sfpplus.+"} < 10000''
+  );
+  slowCopperLinks = cabledPorts (
+    ports: ''mikrotik_monitor_rate{${mikrotik},${ports},interface=~"ether.+"} < 1000''
+  );
+  linkRates = cabledPorts (ports: "mikrotik_monitor_rate{${mikrotik},${ports}}");
+  routerosLinkProblems = ''
+    (count(${linksDown}) or vector(0))
+    + (count(${slowFibreLinks}) or vector(0))
+    + (count(${slowCopperLinks}) or vector(0))
   '';
-  routerosLinkHealthy = "1 - clamp_max(sum(${routerosLinkProblem}) or vector(0), 1)";
+  routerosLinkHealthy = "1 - clamp_max(${routerosLinkProblems}, 1)";
 
   systemdActive =
     unit: ''max(node_systemd_unit_state{${janus},name="${unit}",state="active"}) or vector(0)'';
-  systemdAllActive =
-    units: builtins.concatStringsSep " * " (map (unit: "(${systemdActive unit})") units);
   failedUnits = ''sum(node_systemd_unit_state{${janus},state="failed"} == 1) or vector(0)'';
   systemDegraded = "(1 - max(node_systemd_system_running{${janus}})) or vector(1)";
-  firewallCountersStale = ''
-    ((time() - max(node_systemd_timer_last_trigger_seconds{${janus},name="janus-firewall-counters.timer"})) > bool 90)
-    or vector(1)
-  '';
-  firewallCountersFresh = "1 - (${firewallCountersStale})";
-  serviceProblemCount = "(${failedUnits}) + (${systemDegraded}) + (${firewallCountersStale})";
+  textfilesFresh =
+    files:
+    ''(max(time() - node_textfile_mtime_seconds{${janus},file=~"${files}"}) < bool 300) or vector(0)'';
+  firewallCountersFresh = textfilesFresh ".*/janus-firewall-counters.prom";
+  serviceProblemCount = "(${failedUnits}) + (${systemDegraded}) + (1 - (${firewallCountersFresh}))";
   firewallHealthy = "(${systemdActive "nftables.service"}) * (${firewallCountersFresh})";
-  telemetryHealthy = ''
-    (${
-      systemdAllActive [
-        "alloy.service"
-        "prometheus-kea-exporter.service"
-        "prometheus-mikrotik-exporter.service"
-        "prometheus-mikrotik-poe-exporter.service"
-        "prometheus-smokeping-exporter.service"
-        "prometheus-unbound-exporter.service"
-        "janus-routeros-health.timer"
-      ]
-    }) * (${firewallCountersFresh})
-  '';
+  telemetryHealthy = "(min(up{${janus}}) or vector(0)) * (${textfilesFresh ".*"})";
   cpuTemp = ''max(node_hwmon_temp_celsius{${janus},chip="platform_coretemp_0"})'';
   nvmeTemp = ''max(node_hwmon_temp_celsius{${janus},chip="nvme_nvme0"})'';
   diskBusyMax = "max(${diskBusy}) or vector(0)";
 
   dhcpAssigned =
-    subnetId: ''kea_dhcp4_addresses_assigned_total{${janus},pool="",subnet_id="${subnetId}"}'';
+    vlan: ''kea_dhcp4_addresses_assigned_total{${janus},pool="",subnet_id="${toString vlan.id}"}'';
   dhcpPoolUsage =
-    subnetId:
-    ''100 * kea_dhcp4_addresses_assigned_total{${janus},pool!="",subnet_id="${subnetId}"} / kea_dhcp4_addresses_total{${janus},pool!="",subnet_id="${subnetId}"}'';
+    vlan:
+    ''100 * kea_dhcp4_addresses_assigned_total{${janus},pool!="",subnet_id="${toString vlan.id}"} / kea_dhcp4_addresses_total{${janus},pool!="",subnet_id="${toString vlan.id}"}'';
 
   unboundRate = metric: "sum(rate(${metric}{${unbound}}[$__rate_interval])) or vector(0)";
   unboundCacheHitRatio = ''
@@ -246,19 +265,13 @@ let
       targets = [
         (ui.target "A" (bps (total wan)) "wan")
         (ui.target "B" (bps (total lan)) "lan trunk")
-        (ui.target "C" (bps (total trusted)) "trusted")
-        (ui.target "D" (bps (total iot)) "iot")
-        (ui.target "E" (bps (total guest)) "guest")
-        (ui.target "F" (bps (total mgmt)) "mgmt")
-      ];
+      ]
+      ++ vlanTargets 2 (vlan: bps (total vlan.interface));
       overrides = [
         (ui.colorOverride "wan" "blue")
-        (ui.colorOverride "lan trunk" "purple")
-        (ui.colorOverride "trusted" "green")
-        (ui.colorOverride "iot" "yellow")
-        (ui.colorOverride "guest" "orange")
-        (ui.colorOverride "mgmt" "cyan")
-      ];
+        (ui.colorOverride "lan trunk" "super-light-blue")
+      ]
+      ++ vlanColours;
     })
     (ui.timeseries {
       id = 202;
@@ -314,18 +327,8 @@ let
       w = 8;
       h = 8;
       threshold = ui.thresholds.neutral;
-      targets = [
-        (ui.target "A" (dhcpAssigned "10") "trusted")
-        (ui.target "B" (dhcpAssigned "20") "iot")
-        (ui.target "C" (dhcpAssigned "30") "guest")
-        (ui.target "D" (dhcpAssigned "99") "mgmt")
-      ];
-      overrides = [
-        (ui.colorOverride "trusted" "green")
-        (ui.colorOverride "iot" "yellow")
-        (ui.colorOverride "guest" "orange")
-        (ui.colorOverride "mgmt" "blue")
-      ];
+      targets = vlanTargets 0 dhcpAssigned;
+      overrides = vlanColours;
     })
     (ui.barGauge {
       id = 302;
@@ -335,12 +338,7 @@ let
       w = 8;
       h = 8;
       unit = "percent";
-      targets = [
-        (ui.target "A" (dhcpPoolUsage "10") "trusted")
-        (ui.target "B" (dhcpPoolUsage "20") "iot")
-        (ui.target "C" (dhcpPoolUsage "30") "guest")
-        (ui.target "D" (dhcpPoolUsage "99") "mgmt")
-      ];
+      targets = vlanTargets 0 dhcpPoolUsage;
     })
     (ui.timeseries {
       id = 303;
@@ -383,15 +381,14 @@ let
       h = 6;
       targets = [
         (ui.target "A"
-          ''sum(kea_dhcp4_addresses_declined_total{${janus},pool="",subnet_id=~"${currentSubnets}"})''
+          ''sum(kea_dhcp4_addresses_declined_total{${janus},pool="",subnet_id=~"${subnetIds}"})''
           "declined"
         )
-        (ui.target "B"
-          ''sum(kea_dhcp4_reservation_conflicts_total{${janus},subnet_id=~"${currentSubnets}"})''
+        (ui.target "B" ''sum(kea_dhcp4_reservation_conflicts_total{${janus},subnet_id=~"${subnetIds}"})''
           "reservation conflicts"
         )
         (ui.target "C"
-          ''sum(kea_dhcp4_allocations_failed_total{${janus},subnet_id=~"${currentSubnets}"}) or vector(0)''
+          ''sum(kea_dhcp4_allocations_failed_total{${janus},subnet_id=~"${subnetIds}"}) or vector(0)''
           "allocation failures"
         )
       ];
@@ -746,7 +743,7 @@ let
           "trusted forward"
         )
         (ui.target "B"
-          ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter=~"forward_accept_(iot|guest|vault|tenant)_to_wan"}[$__rate_interval])) or on() vector(0)''
+          ''sum(rate(janus_firewall_counter_packets_total{${firewall},counter=~"forward_accept_.+_to_wan"}[$__rate_interval])) or on() vector(0)''
           "internet-only wan"
         )
         (ui.target "C"
@@ -777,7 +774,7 @@ let
       y = 102;
       w = 24;
       h = 10;
-      expr = ''{instance="janus",transport="kernel"} |= "janus-fw "'';
+      expr = ''{${janus},transport="kernel"} |= "janus-fw "'';
     })
   ];
 
@@ -843,7 +840,7 @@ let
       threshold = ui.thresholds.linkSpeedBps;
       displayMode = "basic";
       targets = [
-        (ui.target "A" "1000000 * ${routerosUplinkMetric "mikrotik_monitor_rate"}" "{{name}} {{interface}}")
+        (ui.target "A" "1000000 * ${linkRates}" "{{name}} {{interface}}")
       ];
     })
     (ui.barGauge {
@@ -883,7 +880,7 @@ let
       w = 6;
       h = 6;
       unit = "watt";
-      expr = ''sum(mikrotik_poe_wattage{${mikrotikPoe},name="nexus"}) or vector(0)'';
+      expr = "sum(mikrotik_poe_wattage{${mikrotikPoe}}) or vector(0)";
       threshold = ui.thresholds.neutral;
       fixedColor = "blue";
       sparkline = true;
@@ -898,9 +895,9 @@ let
       unit = "pps";
       threshold = ui.thresholds.goodWhenZero;
       targets = [
-        (ui.target "A" "sum(${routerosUplinkErrors}) or vector(0)" "errors")
-        (ui.target "B" "sum(${routerosUplinkDrops}) or vector(0)" "drops")
-        (ui.target "C" "sum(${routerosUplinkLinkDowns}) or vector(0)" "link downs")
+        (ui.target "A" "sum(${cabledErrors}) or vector(0)" "errors")
+        (ui.target "B" "sum(${cabledDrops}) or vector(0)" "drops")
+        (ui.target "C" "sum(${cabledLinkDowns}) or vector(0)" "link downs")
       ];
       overrides = [
         (ui.colorOverride "errors" "red")
@@ -994,7 +991,7 @@ ui.dashboard {
       y = 1;
       w = 3;
       h = 4;
-      expr = ''sum(kea_dhcp4_addresses_assigned_total{${janus},pool="",subnet_id=~"${currentSubnets}"})'';
+      expr = ''sum(kea_dhcp4_addresses_assigned_total{${janus},pool="",subnet_id=~"${subnetIds}"})'';
       threshold = ui.thresholds.neutral;
       sparkline = true;
     })
@@ -1052,18 +1049,8 @@ ui.dashboard {
       h = 8;
       unit = "bps";
       threshold = ui.thresholds.neutral;
-      targets = [
-        (ui.target "A" (bps (total trusted)) "trusted")
-        (ui.target "B" (bps (total iot)) "iot")
-        (ui.target "C" (bps (total guest)) "guest")
-        (ui.target "D" (bps (total mgmt)) "mgmt")
-      ];
-      overrides = [
-        (ui.colorOverride "trusted" "green")
-        (ui.colorOverride "iot" "yellow")
-        (ui.colorOverride "guest" "orange")
-        (ui.colorOverride "mgmt" "blue")
-      ];
+      targets = vlanTargets 0 (vlan: bps (total vlan.interface));
+      overrides = vlanColours;
     })
 
     (ui.timeseries {

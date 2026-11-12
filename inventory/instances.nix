@@ -39,68 +39,57 @@ in
     roles.client.tags = [ "adeci-net" ];
   };
 
-  monitoring = {
-    module = {
-      name = "@adeci/monitoring";
-      input = "self";
-    };
-    roles = {
-      agent = {
-        tags = [ "adeci-net" ];
-        machines = {
-          aegis.settings = minimalJournal;
-          atropos.settings = minimalJournal;
-          clotho.settings = minimalJournal;
-          kasha.settings = minimalJournal;
-          lachesis.settings = minimalJournal;
-          modus.settings = minimalJournal;
-          praxis.settings = minimalJournal;
-          proteus.settings = minimalJournal;
-
-          janus.settings = {
-            extraCollectors = [ "conntrack" ];
-            extraLabels.role = "router";
-            extraScrapeTargets = [
-              {
-                job = "kea-dhcp4";
-                target = "127.0.0.1:9547";
-              }
-              {
-                job = "unbound";
-                target = "127.0.0.1:9167";
-              }
-              {
-                job = "smokeping";
-                target = "127.0.0.1:9374";
-              }
-              {
-                job = "mikrotik";
-                target = "127.0.0.1:9436";
-              }
-              {
-                job = "mikrotik-poe";
-                target = "127.0.0.1:9437";
-              }
-            ];
+  monitoring =
+    let
+      ntfyHost = "ntfy.decio.us";
+      ntfyPort = (import ./resources/cloudflare.nix).tunnels.sequoia.${ntfyHost}.port;
+    in
+    {
+      module = {
+        name = "@adeci/monitoring";
+        input = "self";
+      };
+      roles = {
+        agent = {
+          tags = {
+            adeci-net = { };
+            portable.settings.alwaysOn = false;
           };
+          machines = {
+            aegis.settings = minimalJournal;
+            atropos.settings = minimalJournal;
+            clotho.settings = minimalJournal;
+            kasha.settings = minimalJournal;
+            lachesis.settings = minimalJournal;
+            modus.settings = minimalJournal;
+            praxis.settings = minimalJournal;
+            proteus.settings = minimalJournal;
 
-          leviathan.settings.extraScrapeTargets = [
-            {
-              job = "dcgm";
-              target = "127.0.0.1:9400";
-            }
-          ];
+            janus.settings = import ../machines/janus/monitoring {
+              homelan = import ./resources/homelan.nix;
+              routeros = import ./resources/routeros;
+            };
+
+            leviathan.settings = import ../machines/leviathan/monitoring.nix;
+          };
+        };
+        server.machines.sequoia.settings = {
+          host = "sequoia.${tailnet.domain}";
+          grafana = {
+            enable = true;
+            homeDashboard = "network";
+          };
+          retentionDays = 30;
+          loki.retentionHours = 168;
+          alertDelivery.ntfy = {
+            enable = true;
+            baseUrl = "http://127.0.0.1:${toString ntfyPort}";
+            topic = "atlas-alerts";
+            configGenerator = "ntfy-alerts";
+          };
         };
       };
-      server.machines.sequoia.settings = {
-        host = "sequoia.${tailnet.domain}";
-        grafana.enable = true;
-        retentionDays = 30;
-        loki.retentionHours = 168;
-        alertDelivery.ntfy.enable = true;
-      };
     };
-  };
 
   nixbot =
     let

@@ -10,13 +10,13 @@ let
   ntfyPort = self.resources.cloudflare.tunnels.sequoia.${ntfyHost}.port;
 
   topics = {
-    atlas = "atlas-alerts";
+    alerts = config.services.prometheus.alertmanager-ntfy.settings.ntfy.notification.topic;
   };
 
   subscribers = [
     {
       name = "alex";
-      topics.${topics.atlas} = "ro";
+      topics.${topics.alerts} = "ro";
     }
   ];
 
@@ -24,7 +24,7 @@ let
     {
       name = "alertmanager";
       tokenLabel = "Alertmanager";
-      topics.${topics.atlas} = "wo";
+      topics.${topics.alerts} = "wo";
     }
   ];
 
@@ -82,8 +82,15 @@ in
 {
   clan.core.vars.generators.ntfy-alerts = {
     files = subscriberPasswordFiles // {
-      "ntfy.env".secret = true;
-      "alertmanager-ntfy.yml".secret = true;
+      # Running services keep the old credentials until they restart.
+      "ntfy.env" = {
+        secret = true;
+        restartUnits = [ "ntfy-sh.service" ];
+      };
+      "alertmanager-ntfy.yml" = {
+        secret = true;
+        restartUnits = [ "alertmanager-ntfy.service" ];
+      };
     };
     runtimeInputs = [
       pkgs.apacheHttpd

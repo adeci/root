@@ -6,7 +6,7 @@
 }:
 let
   atlasHost = "atlas.decio.us";
-  grafanaPort = 3000;
+  grafanaPort = config.services.grafana.settings.server.http_port;
   tailnetCidr = self.resources.tailscale.cidr;
 in
 {

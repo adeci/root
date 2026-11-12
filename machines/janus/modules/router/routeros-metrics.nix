@@ -8,6 +8,7 @@
 let
   mainConfigPath = "/run/prometheus-mikrotik-exporter/config.yml";
   poeConfigPath = "/run/prometheus-mikrotik-poe-exporter/config.yml";
+  poeExporterAddress = "127.0.0.1:9437";
 
   inherit (self.resources.routeros) exporter;
   exporterPassword = config.clan.core.vars.generators.${exporter.generator}.files.${exporter.file};
@@ -28,9 +29,13 @@ let
     }
   );
 
+  poeDevices = lib.filterAttrs (
+    _: device: lib.any (port: port ? poe) (lib.attrValues (device.ports or { }))
+  ) self.resources.routeros.devices;
+
   poeBaseConfig = pkgs.writeText "routeros-poe-exporter-base.json" (
     builtins.toJSON {
-      devices = mkDevices { inherit (self.resources.routeros.devices) nexus; };
+      devices = mkDevices poeDevices;
       features.poe = true;
     }
   );
@@ -52,7 +57,7 @@ let
 
       DEVICES = json.loads(Path("${healthDevices}").read_text())
       PASSWORD = Path(os.environ["CREDENTIALS_DIRECTORY"] + "/routeros-password").read_text().strip()
-      OUT = Path("/var/lib/alloy/textfile/janus-routeros-health.prom")
+      OUT = Path("${config.monitoring.textfileDirectory}/janus-routeros-health.prom")
 
       def encode_length(length):
           if length < 0x80:
@@ -237,6 +242,15 @@ in
     };
   };
 
+  monitoring.scrapeTargets = {
+    mikrotik =
+      let
+        inherit (config.services.prometheus.exporters) mikrotik;
+      in
+      "${mikrotik.listenAddress}:${toString mikrotik.port}";
+    mikrotik-poe = poeExporterAddress;
+  };
+
   systemd.services.prometheus-mikrotik-poe-exporter = {
     description = "Prometheus exporter for RouterOS PoE metrics";
     wantedBy = [ "multi-user.target" ];
@@ -257,7 +271,7 @@ in
       ];
       RuntimeDirectory = "prometheus-mikrotik-poe-exporter";
       RuntimeDirectoryMode = "0700";
-      ExecStart = "${pkgs.prometheus-mikrotik-exporter}/bin/mikrotik-exporter -config-file=${poeConfigPath} -port=127.0.0.1:9437 -log-format=json -log-level=info";
+      ExecStart = "${pkgs.prometheus-mikrotik-exporter}/bin/mikrotik-exporter -config-file=${poeConfigPath} -port=${poeExporterAddress} -log-format=json -log-level=info";
       Restart = "always";
       RestartSec = "10s";
       NoNewPrivileges = true;
@@ -281,7 +295,7 @@ in
       PrivateTmp = true;
       ProtectHome = true;
       ProtectSystem = "strict";
-      ReadWritePaths = [ "/var/lib/alloy/textfile" ];
+      ReadWritePaths = [ config.monitoring.textfileDirectory ];
     };
   };
 

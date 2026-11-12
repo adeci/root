@@ -199,6 +199,15 @@ in
     };
   };
 
+  monitoring.scrapeTargets =
+    let
+      inherit (config.services.prometheus.exporters) kea unbound;
+    in
+    {
+      kea-dhcp4 = "${kea.listenAddress}:${toString kea.port}";
+      unbound = "${unbound.listenAddress}:${toString unbound.port}";
+    };
+
   clan.core.state.kea-dhcp = {
     folders = [ "/var/lib/kea" ];
     preRestoreScript = ''
