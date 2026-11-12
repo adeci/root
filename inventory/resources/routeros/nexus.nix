@@ -2,7 +2,11 @@
 {
   model = "CRS328-24P-4S+RM";
 
-  identity = "nexus";
+  lan = {
+    mac = "08:55:31:21:A7:0D";
+    ip = "10.99.0.2";
+    vlan = "mgmt";
+  };
 
   managementPort = "ether1"; # standalone, not in bridge, keeps DHCP client
 

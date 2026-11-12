@@ -1,13 +1,6 @@
 let
   homelan = import ../homelan.nix;
 
-  devices = {
-    nexus = import ./nexus.nix;
-    axon = import ./axon.nix;
-    zephyr = import ./zephyr.nix;
-    nimbus = import ./nimbus.nix;
-  };
-
   vlanIdsFor =
     vlanNames:
     builtins.listToAttrs (
@@ -17,11 +10,12 @@ let
       }) vlanNames
     );
 
-  # Defaults: the API at the device's homelan reservation, on RouterOS's API port.
+  # Defaults: identity from the device's name, the API at its LAN reservation on RouterOS's API port.
   expandDevice =
-    device:
+    name: device:
     {
-      host = homelan.hosts.${device.identity}.ip;
+      identity = name;
+      host = device.lan.ip;
       port = 8728;
     }
     // device
@@ -30,7 +24,7 @@ let
     );
 in
 {
-  devices = builtins.mapAttrs (_: expandDevice) devices;
+  devices = builtins.mapAttrs expandDevice (import ./devices.nix);
 
   # Read-only API account for metrics scraping; its password lives in this machine's vars.
   exporter = {

@@ -2,7 +2,11 @@
 {
   model = "CRS310-8G+2S+IN";
 
-  identity = "axon";
+  lan = {
+    mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1 MAC (standalone management port)
+    ip = "10.99.0.3";
+    vlan = "mgmt";
+  };
 
   managementPort = "sfp-sfpplus1";
   fallbackPort = "ether1"; # fallback IP goes here for local laptop recovery

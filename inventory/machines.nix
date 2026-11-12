@@ -81,6 +81,10 @@
       mac = "e4:3d:1a:cd:96:60";
       ip = "10.10.0.20";
       vlan = "trusted";
+      extra.idrac = {
+        mac = "b0:7b:25:f0:b0:c8";
+        ip = "10.10.0.21";
+      };
     };
   };
 

@@ -2,7 +2,11 @@
 {
   model = "cAP-ax";
 
-  identity = "zephyr";
+  lan = {
+    mac = "04:F4:1C:E9:EF:E5";
+    ip = "10.99.0.5";
+    vlan = "mgmt";
+  };
 
   managementPort = "ether1";
 

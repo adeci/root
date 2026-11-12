@@ -1,41 +1,12 @@
 let
   machines = import ../machines.nix;
+  routerosDevices = import ./routeros/devices.nix;
 
-  # Devices that aren't clan machines; machines bring their own reservation.
+  # Devices that are neither clan machines nor managed switches/APs; those bring their own reservation.
   devices = {
-    axon = {
-      mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1 MAC (standalone management port)
-      ip = "10.99.0.3";
-      vlan = "mgmt";
-    };
-
-    nexus = {
-      mac = "08:55:31:21:A7:0D";
-      ip = "10.99.0.2";
-      vlan = "mgmt";
-    };
-
-    nimbus = {
-      mac = "04:F4:1C:EA:18:83";
-      ip = "10.99.0.6";
-      vlan = "mgmt";
-    };
-
-    zephyr = {
-      mac = "04:F4:1C:E9:EF:E5";
-      ip = "10.99.0.5";
-      vlan = "mgmt";
-    };
-
     aero = {
       mac = "d4:93:90:10:8c:d1";
       ip = "10.10.0.40";
-      vlan = "trusted";
-    };
-
-    leviathan-idrac = {
-      mac = "b0:7b:25:f0:b0:c8";
-      ip = "10.10.0.21";
       vlan = "trusted";
     };
 
@@ -62,14 +33,30 @@ let
 
   withLan = builtins.filter (name: machines.${name} ? lan) (builtins.attrNames machines);
 
-  hosts =
-    devices
-    // builtins.listToAttrs (
-      map (name: {
-        inherit name;
-        value = machines.${name}.lan;
-      }) withLan
-    );
+  # A machine's reservation, plus one per extra interface (e.g. a BMC) named <machine>-<label>.
+  machineHosts = builtins.listToAttrs (
+    builtins.concatMap (
+      name:
+      let
+        inherit (machines.${name}) lan;
+      in
+      [
+        {
+          inherit name;
+          value = builtins.removeAttrs lan [ "extra" ];
+        }
+      ]
+      ++ map (label: {
+        name = "${name}-${label}";
+        value = {
+          inherit (lan) vlan;
+        }
+        // lan.extra.${label};
+      }) (builtins.attrNames (lan.extra or { }))
+    ) withLan
+  );
+
+  hosts = devices // machineHosts // builtins.mapAttrs (_: device: device.lan) routerosDevices;
 in
 {
   domain = "lan";
