@@ -1,5 +1,4 @@
-# One entry per clan machine; the clan inventory, tailnet addresses and LAN reservations derive from it.
-# Tailscale assigns the tailnet addresses; a reinstall can change them.
+# One entry per clan machine, the source of the clan inventory, LAN reservations and tailnet addresses (Tailscale assigns those; a reinstall can change them).
 {
   aegis = {
     tags = [

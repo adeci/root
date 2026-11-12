@@ -11,8 +11,7 @@ let
       contextWindow = model.contextWindow or weight.nativeContextWindow;
     };
 
-  # VibeThinker emits <think> blocks but ships plain Qwen ChatML metadata.
-  # Use llama.cpp's QwQ ChatML template so reasoning streams as reasoning_content.
+  # VibeThinker emits <think> blocks but ships plain Qwen ChatML metadata; llama.cpp's QwQ ChatML template streams them as reasoning_content.
   vibeThinkerRuntime = {
     group = "swarm";
     slots = 4;

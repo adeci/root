@@ -14,8 +14,7 @@ let
   };
 in
 {
-  # The printer uploads over plaintext FTP into Paperless' consumption dir.
-  # Keep this isolated so it can be deleted when scanner transport changes.
+  # The printer uploads over plaintext FTP into Paperless' consumption dir; isolated to delete when scanner transport changes.
 
   clan.core.vars.generators.paperless-xerox-ingest = {
     files = {
@@ -73,9 +72,7 @@ in
     '';
   };
 
-  # NixOS' iptables firewall only has a typed allow-list for ports, not
-  # source-specific rules, so use the official escape hatch here instead of
-  # opening FTP globally.
+  # Typed firewall options can't restrict by source; raw rules admit only the printer instead of opening FTP to all.
   networking.firewall.extraCommands = ''
     ${pkgs.iptables}/bin/iptables -A nixos-fw -s ${homelan.hosts.printer.ip} -p tcp --dport 21 -j ACCEPT
     ${pkgs.iptables}/bin/iptables -A nixos-fw -s ${homelan.hosts.printer.ip} -p tcp --dport ${toString ftpPassivePorts.from}:${toString ftpPassivePorts.to} -j ACCEPT

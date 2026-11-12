@@ -1,8 +1,4 @@
-{
-  lib,
-  self,
-  ...
-}:
+{ lib, self, ... }:
 let
   topology = import ./topology.nix { inherit lib self; };
 

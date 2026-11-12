@@ -1,8 +1,5 @@
 # Sized for 256-core servers.
-{
-  wlib,
-  ...
-}:
+{ wlib, ... }:
 {
   imports = [ wlib.wrapperModules.htop ];
 

@@ -36,11 +36,7 @@
       };
 
     perInstance =
-      {
-        instanceName,
-        settings,
-        ...
-      }:
+      { instanceName, settings, ... }:
       {
         nixosModule =
           { config, pkgs, ... }:
@@ -115,11 +111,7 @@
       }:
       let
         client =
-          {
-            config,
-            lib,
-            ...
-          }:
+          { config, lib, ... }:
           let
             inherit (config.clan.core.settings) domain;
             serverNames = lib.attrNames roles.server.machines;

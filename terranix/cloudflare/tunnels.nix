@@ -55,8 +55,7 @@ in
       triggers_replace = [ tunnelId ];
 
       provisioner.local-exec = {
-        # terraform_data echoes input into output without preserving sensitivity.
-        # Keep only the tunnel ID there; pass the token directly to the provisioner.
+        # terraform_data echoes its input unredacted, so only the tunnel ID goes there; the token goes straight to the provisioner.
         environment.TUNNEL_TOKEN = "\${sensitive(cloudflare_zero_trust_tunnel_cloudflared.${machine}.tunnel_token)}";
         command = ''
           printf '%s\n' "$TUNNEL_TOKEN" | ${lib.getExe clan-cli} vars set ${machine} ${tunnelToken.generator}/${tunnelToken.file}

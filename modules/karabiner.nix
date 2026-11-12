@@ -69,8 +69,7 @@
     {
       imports = [ self.modules.darwin.mac-setup ];
 
-      # nix-darwin's module needs Karabiner-Elements 14.13.0, which the pinned
-      # package provides.
+      # nix-darwin's module needs Karabiner-Elements 14.13.0.
       services.karabiner-elements = {
         enable = true;
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.karabiner-elements;

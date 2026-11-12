@@ -22,9 +22,7 @@ let
 
   kittyConf = pkgs.writeText "kitty.conf" (toKittyConf config.settings);
 
-  # Finder, Spotlight and LaunchServices start Contents/MacOS/kitty directly,
-  # bypassing bin/kitty. Give the app bundle its own launcher that passes the
-  # same --config. Built separately so the compiler output is code-signed.
+  # Finder, Spotlight and LaunchServices run Contents/MacOS/kitty directly, so the bundle gets its own launcher with the same --config, built separately so it's code-signed.
   appLauncher =
     pkgs.runCommand "kitty-app-launcher" { nativeBuildInputs = [ pkgs.makeBinaryWrapper ]; }
       ''

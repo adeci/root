@@ -1,5 +1,4 @@
-# Karabiner-Elements 14.13.0: nix-darwin's services.karabiner-elements has not
-# worked since 15.0 (nix-darwin/nix-darwin#1041). Enzime pins the same.
+# Pinned to 14.13.0: nix-darwin's services.karabiner-elements has been broken since 15.0 (nix-darwin/nix-darwin#1041).
 { pkgs, ... }:
 pkgs.karabiner-elements.overrideAttrs (old: {
   version = "14.13.0";

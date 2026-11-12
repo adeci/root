@@ -1,6 +1,4 @@
-# leviathan's microVMs, nested: e1000e NICs behind a virtual IOMMU stand in for
-# the V100s, fixture files for the host's vars. Moonshine and Tailscale need real
-# hardware and keys. On demand, not a check: nix build .#leviathan-microvms-test -L
+# leviathan's microVMs nested, e1000e NICs behind a virtual IOMMU standing in for the V100s; on demand, not a check.
 { pkgs, self }:
 let
   inherit (pkgs) lib;

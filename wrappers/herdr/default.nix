@@ -1,15 +1,10 @@
-{
-  wlib,
-  pkgs,
-  ...
-}:
+{ wlib, pkgs, ... }:
 {
   imports = [ wlib.modules.default ];
 
   package = pkgs.herdr;
 
-  # Only the config moves; herdr keeps session.json, logs and sockets in
-  # ~/.config/herdr. The server is spawned by the client and inherits this.
+  # Only the config moves (session.json, logs and sockets stay in ~/.config/herdr); the client-spawned server inherits this.
   env.HERDR_CONFIG_PATH = "${./config.toml}";
 
   # For the lazygit popup in config.toml.

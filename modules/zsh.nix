@@ -15,7 +15,7 @@ let
       wrappers.zsh = {
         enable = true;
         git = lib.mkIf config.wrappers.git.enable config.wrappers.git.wrapper;
-        # Only machines that sync shell history declare atuinSync.
+        # The option exists only on machines that sync shell history.
         atuinSyncAddress = lib.mkDefault (config.atuinSync.address or null);
       };
       wrappers.git = {

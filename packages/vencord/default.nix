@@ -1,6 +1,4 @@
-# Pinned here instead of following nixpkgs: Discord's 2026-11-04 rspack update
-# broke 1.15.11 (black window, "i.A is not a constructor"). Recipe from nixpkgs'
-# pkgs/by-name/ve/vencord.
+# nixpkgs' pkgs/by-name/ve/vencord recipe, pinned since Discord's 2026-11-04 rspack update broke its 1.15.11 (black window, "i.A is not a constructor").
 {
   lib,
   stdenv,

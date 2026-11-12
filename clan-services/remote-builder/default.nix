@@ -72,8 +72,7 @@
             ...
           }:
           let
-            # Missing public keys are skipped so new clients can be generated
-            # before servers authorize them on the next deploy.
+            # Clients without a public key yet are skipped; servers authorize them on their next deploy.
             clientKeys = builtins.filter (key: key != "") (
               lib.mapAttrsToList (
                 machineName: _:
@@ -146,8 +145,7 @@
             inherit (config.clan.core.settings) domain;
             servers = lib.removeAttrs roles.server.machines [ machineName ];
 
-            # Nix builds i686 on x86_64 Linux on its own. Emulated systems come from
-            # binfmt, not nix.settings, which itself depends on distributedBuilds.
+            # x86_64 Linux builds i686 natively; emulated systems are read from binfmt, as nix.settings depends on distributedBuilds.
             system = pkgs.stdenv.hostPlatform.system;
             nativeSystems = [
               system

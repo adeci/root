@@ -9,9 +9,6 @@
         blender
         openscad
         audacity
-        # WebKit's gamepad support calls libmanette → hidapi. hid_get_device_info()
-        # returns an invalid non-NULL pointer (0x31) for some hidraw devices.
-        # packages.prusa-slicer carries the LD_PRELOAD shim.
         packages.prusa-slicer
         obs-studio
         gimp

@@ -1,5 +1,4 @@
-# Fixed-output builds share the host network; keep CI code off loopback, the
-# LAN and the tailnet. DNS stays open for fetchers.
+# Fixed-output builds share the host network: keep CI code off loopback, the LAN and the tailnet, but leave DNS open for fetchers.
 {
   networking.firewall.extraCommands = ''
     ip46tables -N nixbld-egress 2>/dev/null || ip46tables -F nixbld-egress

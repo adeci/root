@@ -1,5 +1,5 @@
 {
-  # Requires rbw with an "anthropic-api-key" entry.
+  # Reads its API key from an "anthropic-api-key" entry in the Bitwarden vault.
   nixos =
     { pkgs, self, ... }:
     {

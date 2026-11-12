@@ -1,8 +1,4 @@
-{
-  inputs,
-  lib,
-  ...
-}:
+{ inputs, lib, ... }:
 let
   # routeros is a separate workspace with its own state.
   terranixDir = ../terranix;
@@ -73,8 +69,7 @@ in
             pkgs.jq
             clan-cli
           ];
-          # The decryption key is returned even without stored metadata: a
-          # state written before the metadata existed still needs it.
+          # Returns the decryption key even without stored metadata: states saved before the metadata existed still need it.
           text = # bash
             ''
               echo '{"magic":"OpenTofu-External-Key-Provider","version":1}'

@@ -134,8 +134,7 @@ in
         rrset-cache-size = "32m";
       };
 
-      # systemd-resolved is off here, so Unbound itself forwards tailnet names
-      # to MagicDNS for local services.
+      # With systemd-resolved off, Unbound forwards tailnet names to MagicDNS for local services.
       forward-zone = [
         {
           name = "ts.net.";

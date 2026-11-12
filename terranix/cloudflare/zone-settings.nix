@@ -1,5 +1,4 @@
-# HSTS here covers proxied hostnames only; DNS-only records bypass Cloudflare,
-# so their origin must send the header itself.
+# HSTS here covers proxied hostnames only; DNS-only records bypass Cloudflare, so their origin must send the header itself.
 {
   config,
   self,

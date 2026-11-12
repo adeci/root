@@ -13,8 +13,7 @@ let
   staging = "/var/cache/zipline";
 in
 {
-  # Clan's PostgreSQL state declaration backs up the database, including users,
-  # file metadata and settings. Objects live in B2; staging is not backup state.
+  # Only the database (users, file metadata, settings) is backed up; objects live in B2.
   clan.core.postgresql.enable = true;
   clan.core.postgresql.users.zipline = { };
   clan.core.postgresql.databases.zipline = {
@@ -34,8 +33,7 @@ in
     restartUnits = [ "zipline.service" ];
   };
 
-  # Initial dashboard administrator only; ordinary user API tokens
-  # are managed separately after signing in.
+  # Initial dashboard admin only; user API tokens are managed after signing in.
   clan.core.vars.generators.zipline-admin = {
     files."credentials.json".secret = true;
     runtimeInputs = [ pkgs.openssl ];
@@ -81,8 +79,7 @@ in
       FILES_MAX_FILE_SIZE = "2gb";
       FILES_MAX_FILES_PER_UPLOAD = 1;
       FILES_ASSUME_MIMETYPES = "true";
-      # Zipline 4.8 serves raw files with CSP sandbox and nosniff, and limits
-      # partial sessions to four per user with a 30-minute idle expiry.
+      # Zipline 4.8 sandboxes raw files (CSP, nosniff) and caps users at four partial sessions with a 30-min idle expiry.
       CHUNKS_ENABLED = "true";
       CHUNKS_SIZE = "25mb";
       CHUNKS_MAX = "25mb";
@@ -104,9 +101,7 @@ in
       ];
       TimeoutStartSec = 120;
     };
-    # Interrupted uploads are disposable. The cache is disk-backed, never /run
-    # or tmpfs. Reserve >=12 GiB per uploader account for four <=2 GiB partial
-    # sessions plus assembly. These app limits are not a filesystem quota.
+    # Interrupted uploads are disposable; reserve >=12 GiB of disk (not tmpfs) per uploader, as app limits aren't a quota.
     preStart = ''
       ${lib.getExe pkgs.findutils} ${staging} -mindepth 1 -delete
     '';
@@ -140,8 +135,7 @@ in
         client_body_timeout 120s;
       '';
       locations = {
-        # Only the local startup helper may create the initial administrator.
-        # Public visitors must never be able to claim an uninitialized instance.
+        # Only the local startup helper may create the first admin, so visitors can't claim a fresh instance.
         "= /api/setup".return = "403";
         "/api/upload" = {
           proxyPass = "http://127.0.0.1:${toString port}";

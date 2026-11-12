@@ -25,9 +25,7 @@ let
   hfTokenPath = config.clan.core.vars.generators.huggingface-read-token.files.token.path;
 
   llamaCppChatTemplates = {
-    # Keep reasoning parser and template from the same llama.cpp revision.
-    # VibeThinker uses Qwen ChatML and emits <think> tags, but its GGUF
-    # template does not advertise thinking markers. QwQ's template does.
+    # Same llama.cpp revision as the reasoning parser; QwQ's template declares the <think> markers some ChatML GGUFs omit.
     qwen-qwq-thinking = "${llamaCpp.src}/models/templates/Qwen-QwQ-32B.jinja";
   };
 

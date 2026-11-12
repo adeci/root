@@ -32,8 +32,7 @@
     backslash = "nextsong";
   };
 
-  # The touchscreen (NVTK0603) often comes back from suspend as PROP=2
-  # (touchpad) instead of PROP=1 (touchscreen); reloading i2c_hid_acpi fixes it.
+  # The NVTK0603 touchscreen often resumes as PROP=2 (touchpad), not PROP=1; reloading i2c_hid_acpi fixes it.
   systemd.services.fix-touchscreen = {
     description = "Reload i2c_hid_acpi to fix touchscreen after suspend";
     after = [

@@ -1,5 +1,4 @@
-# Split DNS: the homelan's private domains resolve through the trusted VLAN's
-# gateway, which tailnet clients reach over the subnet routes approved below.
+# Split DNS: the homelan's private domains resolve through the trusted VLAN's gateway, reached over the subnet routes approved below.
 {
   config,
   lib,

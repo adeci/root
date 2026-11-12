@@ -1,5 +1,4 @@
-# Zipline 4.8.0 recipe and fixed-output hashes from nixpkgs; unlike 4.6.x,
-# this release uses Drizzle migrations rather than Prisma engines.
+# nixpkgs' Zipline 4.8.0 recipe and fixed-output hashes; unlike 4.6.x, this release uses Drizzle migrations rather than Prisma engines.
 {
   lib,
   stdenv,

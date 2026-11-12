@@ -1,10 +1,6 @@
 {
   nixos =
-    {
-      config,
-      lib,
-      ...
-    }:
+    { config, lib, ... }:
     let
       cfg = config.microvmGuest;
     in

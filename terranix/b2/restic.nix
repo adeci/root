@@ -81,8 +81,7 @@ in
       triggers_replace = [ (config.resource.b2_application_key.${resourceName} "application_key_id") ];
 
       provisioner.local-exec = {
-        # terraform_data echoes input into output without preserving sensitivity.
-        # Keep only the key ID there; pass the secret directly to the provisioner.
+        # terraform_data echoes its input unredacted, so only the key ID goes there; the secret goes straight to the provisioner.
         environment = {
           B2_APPLICATION_KEY_ID = config.resource.b2_application_key.${resourceName} "application_key_id";
           B2_APPLICATION_KEY = "\${sensitive(b2_application_key.${resourceName}.application_key)}";

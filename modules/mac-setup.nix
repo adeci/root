@@ -1,7 +1,5 @@
 {
-  # One-time System Settings steps a Mac needs after its first switch: privacy
-  # grants and approvals macOS only takes from a person. Features declare their
-  # own steps; mac-install walks through /etc/mac-setup.json.
+  # One-time System Settings steps macOS only takes from a person; features declare them and the installer walks through /etc/mac-setup.json.
   darwin =
     { config, lib, ... }:
     let

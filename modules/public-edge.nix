@@ -1,10 +1,6 @@
 {
   nixos =
-    {
-      config,
-      lib,
-      ...
-    }:
+    { config, lib, ... }:
     let
       inherit (config.publicEdge) streams;
       safeName =

@@ -1,7 +1,4 @@
-{
-  wlib,
-  ...
-}:
+{ wlib, ... }:
 {
   imports = [ wlib.wrapperModules.git ];
   settings = {

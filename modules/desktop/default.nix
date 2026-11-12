@@ -182,7 +182,6 @@
           FXPreferredViewStyle = "Nlsv";
           _FXSortFoldersFirst = true;
           NewWindowTarget = "Home";
-          # Only files on the desktop, no drives or servers.
           ShowHardDrivesOnDesktop = false;
           ShowExternalHardDrivesOnDesktop = false;
           ShowRemovableMediaOnDesktop = false;
@@ -250,9 +249,7 @@
         };
       };
 
-      # nix-darwin rsyncs changed app bundles into /Applications/Nix Apps. macOS
-      # keeps the old signature in LaunchServices and kills the next Finder or
-      # Spotlight launch with "Launch Constraint Violation". Re-register the copies.
+      # Re-register the bundles nix-darwin rsyncs into /Applications/Nix Apps: LaunchServices keeps their old signature and kills the next launch with "Launch Constraint Violation".
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           if [[ -d "/Applications/Nix Apps" ]]; then

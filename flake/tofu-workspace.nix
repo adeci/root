@@ -1,5 +1,4 @@
-# Scripts for one tofu workspace: each runs in .terraform/<workspace> with the
-# generated config installed and the B2 state backend's credentials exported.
+# Scripts that run in .terraform/<workspace> with the generated config installed and the B2 state backend's credentials exported.
 {
   pkgs,
   clan-cli,

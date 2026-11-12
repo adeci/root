@@ -1,8 +1,4 @@
-# Management: ether1 stays standalone with DHCP client (safe, same as switches).
-# No vlan_filtering needed — traffic is already separated by sub-interfaces.
-#
-# The switch port facing the WAP must be a hybrid port: native VLAN for
-# management (untagged) + tagged VLANs for WiFi traffic.
+# ether1 keeps untagged DHCP management and carries the WiFi VLANs as tagged sub-interfaces (no vlan_filtering), so the facing switch port must be hybrid.
 {
   config,
   self,
@@ -156,8 +152,7 @@ in
     ) device.wifi
   ) waps;
 
-  # wifi1/wifi2 pre-exist after netinstall; the import blocks below bring them
-  # into state on first apply.
+  # wifi1/wifi2 pre-exist after netinstall; the import blocks below bring them into state on first apply.
   resource.routeros_wifi = lib.concatMapAttrs (
     name: device:
     let

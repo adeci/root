@@ -113,8 +113,7 @@ let
 
         systemd = {
           services = {
-            # Moonshine needs the gamer's session bus and the GPU's render node,
-            # which the NVIDIA driver creates a few seconds into boot.
+            # Needs the gamer's session bus and the render node the NVIDIA driver creates seconds into boot.
             moonshine = {
               requires = [
                 "user@${toString uid}.service"

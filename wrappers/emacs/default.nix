@@ -52,17 +52,13 @@ in
     };
   };
 
-  # term-sessions shells out to zmx; consult-ripgrep runs rg. The daemon's
-  # PATH is the system profile, not the shell's.
+  # term-sessions shells out to zmx and consult-ripgrep runs rg; the daemon's PATH is the system profile, not the shell's.
   runtimePkgs = [
     pkgs.ripgrep
     pkgs.zmx
   ];
 
-  # The launcher shows only the client, as "Emacs": it reaches the daemon
-  # and starts one if none is running. Its "New Instance" action still opens
-  # a standalone Emacs. share/applications arrives as one symlink into the
-  # emacs package, so filesToExclude can't drop entries; rebuild the directory.
+  # The launcher shows only the client, as "Emacs" (it starts a daemon if none runs); share/applications is a single symlink filesToExclude can't prune, so rebuild it.
   buildCommand.launcherEntries = {
     after = [ "symlinkScript" ];
     data = ''

@@ -43,18 +43,14 @@ let
   hybridPortsUntaggedForVlan =
     device: vlanName: lib.filter (p: portVlan device p == vlanName) (hybridPorts device);
 
-  # A trunk managementPort stays standalone (like WAP ether1); VLAN
-  # sub-interfaces feed its tagged traffic into the bridge, and the management
-  # IP comes from untagged mgmt on the hybrid uplink. This lets a single-cable
-  # switch be configured in one terraform apply.
+  # A trunk managementPort stays standalone, its tagged VLANs bridged through sub-interfaces and its IP on untagged mgmt, so a single-cable switch configures in one apply.
   isMgmtTrunk = device: device.managementPort != null && isTrunk device device.managementPort;
 
   uplinkSubIf = port: vlanId: "${port}-v${toString vlanId}";
 
   nonMgmtVlans = device: lib.filterAttrs (n: _: n != "mgmt") device.vlans;
 
-  # Resource references, not plain names, so the sub-interfaces exist before
-  # the bridge VLAN entries that name them.
+  # Resource references, not plain names, so the sub-interfaces exist before the bridge VLAN entries that name them.
   uplinkSubIfsForVlan =
     name: device: vlanName:
     if isMgmtTrunk device && vlanName != "mgmt" then

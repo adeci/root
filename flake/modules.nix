@@ -1,9 +1,4 @@
-# Each published module gets a `key`, so a feature imported by both a machine
-# and another feature is still only included once, and a `_class`, so
-# importing a darwin half into a NixOS machine fails with a clear error. Both
-# go on the module itself, not on a wrapper: modules are collected
-# breadth-first, so a wrapper would push every feature a level deeper and
-# reorder how definitions merge.
+# Each module gets a `key`, so a feature imported twice is included once, and a `_class`, so wrong-class imports fail; both go on the module itself, as a wrapper would reorder merging.
 { lib, ... }:
 let
   mkModules =

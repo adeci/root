@@ -1,5 +1,5 @@
 let
-  # SSH uses the TPM agent (Linux) or Secretive (Mac) instead.
+  # SSH goes through hardware-backed agents, not 1Password's.
   shared = {
     programs._1password.enable = true;
     programs._1password-gui.enable = true;

@@ -14,8 +14,7 @@ let
     disabledTests = (old.disabledTests or [ ]) ++ [
       # Nixpkgs already tries to skip this but the actual CTest name has the "Scenario:" prefix
       "Scenario: GetPluginCudalessDir returns cudaless directory in plugin directory"
-      # Diag ignore-error-code parsing fails since the Oct 2026 nixpkgs update; we
-      # only use the hostengine and exporter. Drop with nixpkgs#567739 (dcgm 4.6.1).
+      # Diag ignore-error-code parsing broke in Oct 2026 nixpkgs (Diag unused here); drop with nixpkgs#567739 (dcgm 4.6.1).
       "Ignore error codes validation tests"
       "PluginLib::SetIgnoreErrorCodesParam"
     ];
@@ -103,7 +102,7 @@ in
   ];
 
   systemd.services = {
-    # DCGM is local-only, Alloy scrapes dcgm-exporter
+    # DCGM stays local; the metrics agent scrapes the exporter.
     dcgm-hostengine = {
       description = "NVIDIA DCGM host engine";
       wantedBy = [ "multi-user.target" ];

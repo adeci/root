@@ -1,7 +1,5 @@
 {
-  # launchd starts the app itself because macOS grants Accessibility to the
-  # process launchd spawns. The config's store path is part of the agent, so a
-  # config change restarts AeroSpace on switch.
+  # launchd starts the app since macOS grants Accessibility to the process launchd spawns; the config's store path in the agent restarts it on change.
   darwin =
     {
       config,

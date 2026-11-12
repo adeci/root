@@ -25,8 +25,7 @@
         # Trackpad stays natural. Scroll Reverser flips only physical mouse wheels.
         NSGlobalDomain."com.apple.swipescrolldirection" = true;
 
-        # 2.0 is what macOS wrote when the Mouse tracking speed slider was set to
-        # 8/10 in System Settings.
+        # 2.0 is what macOS wrote with the Mouse tracking speed slider at 8/10 in System Settings.
         ".GlobalPreferences"."com.apple.mouse.scaling" = 2.0;
 
         CustomUserPreferences = {
@@ -38,8 +37,7 @@
             ReverseX = false;
             ReverseY = true;
             ShowDiscreteScrollOptions = true;
-            # Sparkle reads these over the app's Info.plist. The app never asks
-            # for permission to check, so these alone silence the update window.
+            # Sparkle reads these over the app's Info.plist; the app never asks permission to check, so these alone silence the update window.
             SUAutomaticallyUpdate = false;
             SUEnableAutomaticChecks = false;
           };

@@ -25,8 +25,7 @@ let
             ControlPersist 10m
             ControlPath ~/.ssh/cm-%C
         ''
-        # The catch-all goes after every feature's specific Host blocks: ssh
-        # takes the first value it finds for each option.
+        # The catch-all goes after every feature's specific Host blocks: ssh takes the first value it finds for each option.
         (lib.mkAfter ''
           Host *
             AddKeysToAgent yes
@@ -71,8 +70,7 @@ in
       ];
 
       users.mutableUsers = false;
-      # Secrets go in through a systemd unit that restarts consumers itself;
-      # restarts requested from the activation script are deprecated.
+      # Secrets install through a systemd unit that restarts consumers itself; activation-script restarts are deprecated.
       sops.useSystemdActivation = true;
 
       services.openssh = {
@@ -137,8 +135,7 @@ in
         }
       );
 
-      # nix-darwin owns the primary account, so users.users sets its login shell
-      # (no dscl by hand) and keys. macOS gives the first account uid 501.
+      # nix-darwin owns the primary account, so users.users sets its login shell (no dscl by hand) and keys; macOS gives the first account uid 501.
       users.knownUsers = [ user ];
       users.users.${user}.uid = lib.mkDefault 501;
 
@@ -153,8 +150,7 @@ in
         '';
       };
 
-      # macOS sshd sets no locale; without this, ssh sessions (and tmux started
-      # from them) run in the C locale and mangle non-ASCII/Nerd Font glyphs.
+      # macOS sshd sets no locale, so ssh sessions (and tmux started from them) would mangle non-ASCII/Nerd Font glyphs in the C locale.
       environment.variables.LANG = "en_US.UTF-8";
 
       system.activationScripts.postActivation.text = # bash

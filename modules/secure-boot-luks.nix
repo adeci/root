@@ -1,8 +1,5 @@
 {
-  # The machine sets disko.devices.disk.main.device and secureBootLuks.initrd,
-  # and loads its NIC driver in the initrd. Once Secure Boot is on, seal the
-  # disk to its state (PCR 7) by hand:
-  #   systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/disk/by-partlabel/disk-<host>-root
+  # The machine sets disko.devices.disk.main.device, secureBootLuks.initrd and its initrd NIC driver; with Secure Boot on, seal the disk: systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/disk/by-partlabel/disk-<host>-root
   nixos =
     {
       config,
@@ -48,8 +45,7 @@
         };
 
         disko.devices.disk.main = {
-          # Partition labels derive from this name; the clan installer stick uses
-          # "main" too, so the default would make /dev/disk/by-partlabel ambiguous.
+          # Partition labels derive from this name; the default "main" would collide with other disko-made disks such as installer sticks.
           name = config.networking.hostName;
           type = "disk";
           content = {
@@ -81,8 +77,7 @@
                     "luks2"
                   ];
                   settings = {
-                    # Falls back to the passphrase prompt (console or initrd SSH)
-                    # until a TPM2 key is enrolled, or if the TPM refuses.
+                    # Falls back to the passphrase prompt (console or initrd SSH) until a TPM2 key is enrolled, or if the TPM refuses.
                     crypttabExtraOpts = [ "tpm2-device=auto" ];
                   };
                   content = {
@@ -99,8 +94,7 @@
         boot.loader.systemd-boot.enable = lib.mkForce false;
         boot.loader.efi.canTouchEfiVariables = true;
 
-        # systemd-boot enrolls the generated keys only if the firmware is in Secure
-        # Boot setup mode.
+        # systemd-boot enrolls the generated keys only if the firmware is in Secure Boot setup mode.
         boot.lanzaboote = {
           enable = true;
           pkiBundle = "/var/lib/sbctl";

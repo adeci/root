@@ -1,8 +1,4 @@
-{
-  self,
-  workInputs,
-  ...
-}:
+{ self, workInputs, ... }:
 {
   imports = with self.modules.darwin; [
     self.users.alex-work.darwinModule

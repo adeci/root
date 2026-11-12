@@ -1,5 +1,4 @@
-# Recipe from nixpkgs' pkgs/by-name/ve/vesktop. When package.json moves to
-# another Electron major, bump the electron pin below; preBuild fails until then.
+# nixpkgs' pkgs/by-name/ve/vesktop recipe; when package.json moves to another Electron major, bump the electron pin below (preBuild fails until then).
 {
   lib,
   pkgs,
@@ -25,8 +24,7 @@
 let
   inherit (self'.packages) vencord;
 
-  # The release package.json pins. This nixpkgs has no electron_45, so use
-  # upstream's release build through the builder behind electron_*-bin.
+  # The Electron the release's package.json pins; this nixpkgs has no electron_45, so take upstream's build through the builder behind electron_*-bin.
   electron =
     pkgs.callPackage "${pkgs.path}/pkgs/development/tools/electron/binary/generic.nix" { } "45.2.3"
       {
@@ -76,8 +74,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.getLib stdenv.cc.cc)
   ];
 
-  # Always load the vencord package: never downloaded files or a stale
-  # vencordDir profile override.
+  # Always load the store's Vencord, never downloaded files or a stale vencordDir profile override.
   postPatch = ''
     substituteInPlace src/main/vencordFilesDir.ts \
       --replace-fail 'State.store.vencordDir || join(SESSION_DATA_DIR, "vencordFiles")' '"${vencord}"'
@@ -132,8 +129,7 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  # Speech-dispatcher TTS unless NIXOS_SPEECH=False; native Wayland when
-  # NIXOS_OZONE_WL and WAYLAND_DISPLAY are set.
+  # Speech-dispatcher TTS unless NIXOS_SPEECH=False; native Wayland when NIXOS_OZONE_WL and WAYLAND_DISPLAY are set.
   postFixup = ''
     makeWrapper ${electron}/bin/electron $out/bin/vesktop \
       --add-flags $out/opt/Vesktop/resources/app.asar \

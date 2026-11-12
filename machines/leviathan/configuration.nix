@@ -1,8 +1,4 @@
-{
-  pkgs,
-  self,
-  ...
-}:
+{ pkgs, self, ... }:
 {
 
   imports = with self.modules.nixos; [
@@ -49,7 +45,7 @@
     "w /sys/kernel/mm/transparent_hugepage/khugepaged/defrag - - - - 1"
   ];
 
-  # Keep two weeks of builds for harmonia to serve.
+  # Keep two weeks of builds for the binary cache to serve.
   nix.gc = {
     automatic = true;
     dates = "daily";
@@ -63,16 +59,12 @@
   services.guix.enable = true;
   services.eternal-terminal.enable = true;
 
-  # A fuse filesystem that dynamically populates contents of /bin
-  # and /usr/bin/ so that it contains all executables from the PATH
-  # of the requesting process.
+  # FUSE-backed /bin and /usr/bin that show every executable on the requesting process's PATH.
   services.envfs.enable = true;
 
   programs = {
 
-    # I got tired of facing NixOS issues
-    # Let's be more pragmatic and try to run binaries sometimes
-    # at the cost of sweeping bugs under the rug.
+    # Tired of fighting NixOS: run foreign binaries pragmatically, even if it sweeps bugs under the rug.
     nix-ld = {
       enable = true;
       libraries = with pkgs; [

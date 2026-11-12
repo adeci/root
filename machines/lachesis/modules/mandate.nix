@@ -50,9 +50,7 @@ in
     8443
   ];
 
-  # Snapshots of the stores, the owner side's state and the gateway's live
-  # set, never the sessions in private/. Media refs are dropped from the
-  # copies: some carry keys that fetch from the services' CDNs on their own.
+  # Snapshots stores, owner state and gateway live set, not sessions; drops media refs, some of which embed CDN keys.
   clan.core.state.mandate = {
     folders = [ backupDir ];
     preBackupScript = # bash

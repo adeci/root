@@ -49,8 +49,7 @@
           mv "$seed.tmp" "$seed"
         '';
 
-      # The NVIDIA driver blocks unbinding a GPU anything still has open, so refuse
-      # instead while any process, CUDA or graphics, holds its /dev/nvidia<minor>.
+      # The NVIDIA driver blocks unbinding a GPU anything still has open, so refuse while any process, CUDA or graphics, holds its /dev/nvidia<minor>.
       releaseGpu =
         name: gpu:
         pkgs.writeShellScript "microvm-${name}-release-gpu" ''
@@ -260,8 +259,7 @@
                   "microvm@${name}".serviceConfig = {
                     Slice = "microvm.slice";
                     Restart = "no";
-                    # Skip microvm.nix's shutdown when the guest already powered off;
-                    # it would wait on an empty $MAINPID and fail the unit.
+                    # Skip microvm.nix's shutdown when the guest already powered off; it would wait on an empty $MAINPID and fail the unit.
                     ExecStop = [
                       ""
                       (pkgs.writeShellScript "microvm-${name}-shutdown" ''

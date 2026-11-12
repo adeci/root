@@ -131,11 +131,7 @@ in
       };
 
     perInstance =
-      {
-        settings,
-        roles,
-        ...
-      }:
+      { settings, roles, ... }:
       {
         nixosModule =
           {
@@ -770,8 +766,7 @@ in
               };
             };
 
-            # Grafana's NixOS module requires an explicit secret_key as of 26.05.
-            # Generate one so dashboard/datasource secrets stay stable across rebuilds.
+            # Grafana's NixOS module requires an explicit secret_key since 26.05; a generated one keeps stored secrets stable across rebuilds.
             clan.core.vars.generators = lib.optionalAttrs settings.grafana.enable {
               grafana-secret = {
                 files.key = { };
@@ -982,10 +977,7 @@ in
                 metrics.enabled = false;
                 public_dashboards.enabled = false;
 
-                # Tailscale-only endpoint: network auth already gates access.
-                # Anonymous Editor is intentional while the Atlas pages are
-                # being designed. Provisioned dashboards stay read-only; use
-                # Save as in the UI for scratch copies, then promote to git.
+                # Tailnet-only, so anonymous Editor is fine while the dashboards are designed; provisioned ones stay read-only (Save as, then promote to git).
                 "auth.anonymous" = {
                   enabled = true;
                   org_role = "Editor";
@@ -1090,9 +1082,7 @@ in
                   };
                 }
                 // lib.optionalAttrs settings.grafana.enable {
-                  # No trailing slash on proxyPass: Grafana has serve_from_sub_path
-                  # = true and needs to see the full /grafana/... path, otherwise
-                  # it redirect-loops trying to re-add the prefix.
+                  # No trailing slash: with serve_from_sub_path Grafana needs the full /grafana/ path, or it redirect-loops re-adding the prefix.
                   "/grafana/" = {
                     proxyPass = "http://127.0.0.1:${toString grafanaPort}";
                     proxyWebsockets = true;
@@ -1110,8 +1100,7 @@ in
               "loki-auth-htpasswd:${config.clan.core.vars.generators.loki-auth.files.htpasswd.path}"
             ];
 
-            # nginx preStart runs as root and has access to $CREDENTIALS_DIRECTORY;
-            # symlink makes the auth files readable to the worker processes.
+            # preStart runs as root with $CREDENTIALS_DIRECTORY; the symlink lets nginx's workers read the auth files.
             systemd.services.nginx.preStart = lib.mkAfter ''
               ln -sfn "$CREDENTIALS_DIRECTORY" /run/nginx/credentials
             '';

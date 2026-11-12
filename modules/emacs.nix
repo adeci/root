@@ -13,8 +13,7 @@
       services.emacs = {
         enable = true;
         package = config.wrappers.emacs.wrapper;
-        # The graphical session imports WAYLAND_DISPLAY and SHELL into the user
-        # manager; frames and ghostel's shell need them.
+        # Frames and in-Emacs terminals need the WAYLAND_DISPLAY and SHELL the graphical session imports into the user manager.
         startWithGraphical = true;
       };
 

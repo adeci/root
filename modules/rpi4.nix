@@ -12,9 +12,7 @@
       ];
 
       boot = {
-        # nixos-hardware defaults to the downstream Raspberry Pi kernel, which is
-        # often uncached. The generic aarch64 kernel boots Pi 4 and avoids local
-        # kernel builds on small ARM machines.
+        # nixos-hardware's downstream Raspberry Pi kernel is often uncached; the generic aarch64 one boots a Pi 4 without local kernel builds.
         kernelPackages = lib.mkForce pkgs.linuxPackages;
 
         loader = {

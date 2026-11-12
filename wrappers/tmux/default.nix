@@ -1,8 +1,4 @@
-{
-  wlib,
-  pkgs,
-  ...
-}:
+{ wlib, pkgs, ... }:
 let
   fingers = "${pkgs.tmuxPlugins.fingers}/share/tmux-plugins/tmux-fingers/tmux-fingers.tmux";
 in

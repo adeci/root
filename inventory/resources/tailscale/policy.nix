@@ -48,8 +48,7 @@
       dst = [ "modus" ];
       ip = [ "tcp:22" ];
     }
-    # Agent machines, e.g. Grok Bot: only mandate's agent port on lachesis,
-    # never the owner side.
+    # Agent machines, e.g. Grok Bot: only mandate's agent port on lachesis, never the owner side.
     {
       src = [ "tag:agent" ];
       dst = [ "lachesis" ];

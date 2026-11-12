@@ -20,9 +20,7 @@ in
     public_key = keyNamed name;
   });
 
-  # Hetzner creates it from Ubuntu; nixos-anywhere then replaces the OS, so
-  # create-time fields must never force a replacement (which wipes the disk
-  # and changes the public IP).
+  # nixos-anywhere replaces the Ubuntu image; never let create-time fields force a replacement (wipes disk, new IP).
   resource.hcloud_server.conduit = {
     name = "conduit";
     server_type = "cpx11";
@@ -48,8 +46,7 @@ in
     };
   };
 
-  # Reach conduit over Tailscale (`ssh root@conduit`); this is for DNS checks
-  # and rescue only. `nix run .#tf-output -- -raw conduit_ip`.
+  # For DNS checks and rescue only; reach conduit itself over the tailnet.
   output.conduit_ip = {
     value = config.resource.hcloud_server.conduit "ipv4_address";
     description = "Public IPv4 of conduit";

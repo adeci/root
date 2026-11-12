@@ -1,6 +1,4 @@
-# The release zip carries macOS AppleDouble metadata (._IntroShot.png). Info-ZIP
-# unzip extracts it as a regular file the code signature's seal doesn't list,
-# so Gatekeeper reports the app as damaged.
+# unzip extracts the release zip's AppleDouble files (._IntroShot.png) as regular files outside the code signature's seal, so Gatekeeper calls the app damaged.
 { pkgs, ... }:
 pkgs.scroll-reverser.overrideAttrs (old: {
   postInstall = (old.postInstall or "") + ''
