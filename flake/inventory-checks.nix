@@ -1,11 +1,12 @@
 # Inventory mistakes, each as "<file> (<where>): <what is wrong>"; empty when the inventory is consistent.
 {
   lib,
-  machines,
+  data,
   resources,
   instances,
 }:
 let
+  inherit (data) machines;
   inherit (resources)
     b2
     cloudflare
@@ -21,14 +22,10 @@ let
     links
     ;
 
-  machinesFile = "inventory/machines.nix";
-  homelanFile = "inventory/resources/homelan.nix";
-  ingressFile = "inventory/resources/ingress.nix";
-  cloudflareFile = "inventory/resources/cloudflare.nix";
-  b2File = "inventory/resources/b2.nix";
-  routerosFile = "inventory/resources/routeros/default.nix";
-  routerosModelsFile = "inventory/resources/routeros/models.nix";
-  routerosDeviceFile = name: "inventory/resources/routeros/${name}.nix";
+  inventoryFile = "inventory/inventory.nix";
+  ingressFile = "inventory/ingress.nix";
+  cloudflareFile = "inventory/cloudflare.nix";
+  b2File = "inventory/b2.nix";
   instancesFile = "inventory/instances.nix";
 
   machineClasses = [
@@ -68,7 +65,7 @@ let
   unknownMachine =
     file: location: name:
     lib.optional (!(machines ? ${name})) (
-      problemAt file location "${name} is not a machine in ${machinesFile}"
+      problemAt file location "${name} is not a machine in ${inventoryFile}"
     );
 
   unknownEdge =
@@ -118,19 +115,21 @@ let
 
   # Where each LAN host's reservation is written; a machine's extra interfaces become hosts named <machine>-<label>.
   hostPlaces =
-    lib.mapAttrs (name: _: place homelanFile "devices.${name}") hosts
+    lib.mapAttrs (name: _: place inventoryFile "appliances.${name}.lan") data.appliances
+    // lib.mapAttrs (name: _: place inventoryFile "vms.${name}.lan") data.vms
     // lib.concatMapAttrs (
       name: machine:
       lib.optionalAttrs (machine ? lan) (
         {
-          ${name} = place machinesFile "${name}.lan";
+          ${name} = place inventoryFile "machines.${name}.lan";
         }
         // lib.mapAttrs' (
-          label: _: lib.nameValuePair "${name}-${label}" (place machinesFile "${name}.lan.extra.${label}")
+          label: _:
+          lib.nameValuePair "${name}-${label}" (place inventoryFile "machines.${name}.lan.extra.${label}")
         ) (machine.lan.extra or { })
       )
     ) machines
-    // lib.mapAttrs (name: _: place (routerosDeviceFile name) "lan") routeros.devices;
+    // lib.mapAttrs (name: _: place inventoryFile "routeros.devices.${name}.lan") routeros.devices;
 
   # Each host's value from valueOf, skipping hosts where it is null.
   hostEntries =
@@ -150,17 +149,17 @@ let
     concatMapAttrsToList (
       name: vlan:
       lib.optional (!(inPrefix vlan vlan.gateway)) (
-        problemAt homelanFile "vlans.${name}.gateway"
+        problemAt inventoryFile "lan.vlans.${name}.gateway"
           "${vlan.gateway} is outside the VLAN's prefix ${vlan.prefix}"
       )
       ++ lib.optional (!(inPrefix vlan vlan.dhcpPool.start && inPrefix vlan vlan.dhcpPool.end)) (
-        problemAt homelanFile "vlans.${name}.dhcpPool"
+        problemAt inventoryFile "lan.vlans.${name}.dhcpPool"
           "${vlan.dhcpPool.start}-${vlan.dhcpPool.end} is outside the VLAN's prefix ${vlan.prefix}"
       )
     ) vlans
     ++ duplicated "VLAN id" (
       lib.mapAttrsToList (name: vlan: {
-        place = place homelanFile "vlans.${name}.id";
+        place = place inventoryFile "lan.vlans.${name}.id";
         value = vlan.id;
       }) vlans
     );
@@ -178,7 +177,7 @@ let
         if !(host ? vlan) then
           [ (report "vlan is missing") ]
         else if !(vlans ? ${host.vlan}) then
-          [ (report "vlan ${host.vlan} is not a VLAN in ${homelanFile}") ]
+          [ (report "vlan ${host.vlan} is not a VLAN in ${inventoryFile}") ]
         else
           lib.optionals (host ? ip) (
             lib.optional (!(inPrefix vlan host.ip)) (
@@ -200,11 +199,11 @@ let
     concatMapAttrsToList (
       name: machine:
       lib.optional (!(lib.elem (machine.class or "nixos") machineClasses)) (
-        problemAt machinesFile "${name}.class"
+        problemAt inventoryFile "machines.${name}.class"
           "${builtins.toJSON machine.class} is neither \"nixos\" nor \"darwin\""
       )
       ++ lib.optional (machine ? tailnet && !(inCidr tailscale.cidr machine.tailnet)) (
-        problemAt machinesFile "${name}.tailnet"
+        problemAt inventoryFile "machines.${name}.tailnet"
           "${machine.tailnet} is outside the tailnet's ${tailscale.cidr}"
       )
     ) machines
@@ -212,7 +211,7 @@ let
       concatMapAttrsToList (
         name: machine:
         lib.optional (machine ? tailnet) {
-          place = place machinesFile "${name}.tailnet";
+          place = place inventoryFile "machines.${name}.tailnet";
           value = machine.tailnet;
         }
       ) machines
@@ -271,15 +270,16 @@ let
         unknownMachine b2File "buckets.${name}.credentials.machine" bucket.credentials.machine
       )
     ) b2.buckets
-    ++ unknownMachine routerosFile "exporter.machine" routeros.exporter.machine
+    ++ unknownMachine inventoryFile "routeros.exporter.machine" routeros.exporter.machine
     ++ concatMapAttrsToList (
       name: device:
       lib.optional (!(routeros.models ? ${device.model})) (
-        problemAt (routerosDeviceFile name) "model"
-          "${device.model} is not a model in ${routerosModelsFile}"
+        problemAt inventoryFile "routeros.devices.${name}.model"
+          "${device.model} is not a model in ${inventoryFile}"
       )
     ) routeros.devices
-    ++ unknownMachine homelanFile "router.machine" router.machine
+    ++ unknownMachine inventoryFile "router.machine" router.machine
+    ++ concatMapAttrsToList (name: vm: unknownMachine inventoryFile "vms.${name}.host" vm.host) data.vms
     ++ concatMapAttrsToList (
       name: record:
       lib.optionals (record ? edge) (unknownEdge "dns.${name}.edge" record.edge)
@@ -301,7 +301,7 @@ let
     ) (instance.roles or { })
   ) instances;
 
-  linkPlace = link: place homelanFile "links \"${link.a} <-> ${link.b}\"";
+  linkPlace = link: place inventoryFile "links \"${link.a} <-> ${link.b}\"";
 
   # A cable end: "<device>:<port>" or a bare device, with the kind of device it names (null when unknown).
   cableEnd =
@@ -403,7 +403,7 @@ let
       [
         (report (
           if machines ? ${end.device} then
-            "${end.device} has no lan in ${machinesFile}"
+            "${end.device} has no lan in ${inventoryFile}"
           else
             "${end.device} is not ${router.machine}, isp, a RouterOS device or a LAN host"
         ))
@@ -457,7 +457,7 @@ let
   roleProblems = concatMapAttrsToList (
     role: port:
     let
-      report = problemAt homelanFile "router.roles.${role}";
+      report = problemAt inventoryFile "router.roles.${role}";
     in
     if !(router.ports ? ${port}) then
       [ (report "${router.machine} has no port ${port} in router.ports") ]
@@ -477,10 +477,39 @@ let
     )
     ++ portlessProblems
     ++ roleProblems;
+
+  # Names one inventory entry uses to point at another.
+  nameProblems =
+    concatMapAttrsToList (
+      name: record:
+      lib.optional (record ? lan && !(hostPlaces ? ${record.lan})) (
+        problemAt inventoryFile "lan.dns.records.\"${name}\".lan"
+          "${record.lan} is not a LAN host in ${inventoryFile}"
+      )
+      ++ lib.optional (record ? tailnet && !(machines.${record.tailnet} or { } ? tailnet)) (
+        problemAt inventoryFile "lan.dns.records.\"${name}\".tailnet"
+          "${record.tailnet} is not a machine with a tailnet address in ${inventoryFile}"
+      )
+    ) data.lan.dns.records
+    ++ concatMapAttrsToList (
+      name: device:
+      map (
+        ssid:
+        problemAt inventoryFile "routeros.devices.${name}.wifi" "${ssid} is not an SSID in ${inventoryFile}"
+      ) (lib.filter (ssid: !(data.routeros.ssids ? ${ssid})) (device.wifi or [ ]))
+      ++ map (
+        vlan:
+        problemAt inventoryFile "routeros.devices.${name}.vlans" "${vlan} is not a VLAN in ${inventoryFile}"
+      ) (lib.filter (vlan: !(data.lan.vlans ? ${vlan})) (device.vlans or [ ]))
+    ) data.routeros.devices;
 in
-vlanProblems
-++ hostProblems
-++ machineProblems
-++ referenceProblems
-++ instanceProblems
-++ cablingProblems
+# A broken name breaks the checks that follow it, so it is reported on its own.
+if nameProblems != [ ] then
+  nameProblems
+else
+  vlanProblems
+  ++ hostProblems
+  ++ machineProblems
+  ++ referenceProblems
+  ++ instanceProblems
+  ++ cablingProblems

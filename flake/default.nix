@@ -4,10 +4,10 @@
     ./clan.nix
     ./devshell.nix
     ./formatter.nix
+    ./inventory.nix
     ./mac-install
     ./modules.nix
     ./packages.nix
-    ./resources.nix
     ./routeros.nix
     ./terranix.nix
     ./tests.nix

@@ -36,7 +36,7 @@ in
     meta.domain = domain;
     inventory = mkInventory {
       inherit domain;
-      machines = import ../inventory/machines.nix;
+      inherit (import ../inventory/inventory.nix) machines;
       instances = import ../inventory/instances.nix;
     };
     modules = services;

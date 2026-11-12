@@ -1,7 +1,7 @@
-# Monitoring agent settings for the router: its alert rules and dashboard, derived from the homelan inventory.
-{ homelan, routeros }:
+# Monitoring agent settings for the router: its alert rules and dashboard, derived from the inventory.
+inventory:
 let
-  network = import ./network.nix { inherit homelan routeros; };
+  network = import ./network.nix inventory;
 in
 {
   extraCollectors = [ "conntrack" ];

@@ -1,14 +1,16 @@
 # How the router's metrics name its interfaces, VLANs and the RouterOS ports on known cables.
-{ homelan, routeros }:
+inventory:
 let
-  inherit (homelan.router) ports roles;
+  inherit (inventory.router) ports roles;
 
   vlans = builtins.sort (a: b: a.id < b.id) (
-    map (name: {
-      inherit name;
-      inherit (homelan.vlans.${name}) id cidr;
-      interface = homelan.vlans.${name}.interface or "vlan${toString homelan.vlans.${name}.id}";
-    }) (builtins.attrNames homelan.vlans)
+    builtins.attrValues (
+      builtins.mapAttrs (name: vlan: {
+        inherit name;
+        inherit (vlan) id cidr;
+        interface = vlan.interface or "vlan${toString vlan.id}";
+      }) inventory.lan.vlans
+    )
   );
 
   # A cable end "<device>:<port>" on a RouterOS device, or null for any other end.
@@ -18,7 +20,7 @@ let
       parts = builtins.match "([^:]+):(.+)" end;
       device = builtins.elemAt parts 0;
     in
-    if parts != null && routeros.devices ? ${device} then
+    if parts != null && inventory.routeros.devices ? ${device} then
       {
         inherit device;
         port = builtins.elemAt parts 1;
@@ -41,7 +43,7 @@ let
     if a != null then a else routerosEnd link.b;
 in
 {
-  instance = homelan.router.machine;
+  instance = inventory.router.machine;
   wan = ports.${roles.wan};
   lan = ports.${roles.lan};
   mgmt = ports.${roles.mgmt};
@@ -51,10 +53,10 @@ in
     builtins.concatMap (link: [
       (routerosEnd link.a)
       (routerosEnd link.b)
-    ]) homelan.links
+    ]) inventory.links
   );
   # One RouterOS port by device for each known cable.
-  cablePorts = portsByDevice (map firstRouterosEnd homelan.links);
+  cablePorts = portsByDevice (map firstRouterosEnd inventory.links);
 
   # Builds one query per device from its `name` and `interface` matchers, joined with `or`.
   onPorts =

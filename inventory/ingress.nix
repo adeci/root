@@ -1,6 +1,6 @@
 # Keyed by edge machine. A stream forwards its listen port to upstream and opens it on the edge's firewalls.
 let
-  inherit (import ./tailscale) domain;
+  inherit ((import ./inventory.nix).tailnet) domain;
 in
 {
   edges = {

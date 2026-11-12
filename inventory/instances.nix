@@ -1,5 +1,5 @@
 let
-  tailnet = import ./resources/tailscale;
+  inventory = import ./inventory.nix;
 
   minimalJournal = {
     journal = {
@@ -42,7 +42,7 @@ in
   monitoring =
     let
       ntfyHost = "ntfy.decio.us";
-      ntfyPort = (import ./resources/cloudflare.nix).tunnels.sequoia.${ntfyHost}.port;
+      ntfyPort = (import ./cloudflare.nix).tunnels.sequoia.${ntfyHost}.port;
     in
     {
       module = {
@@ -65,16 +65,13 @@ in
             praxis.settings = minimalJournal;
             proteus.settings = minimalJournal;
 
-            janus.settings = import ../machines/janus/monitoring {
-              homelan = import ./resources/homelan.nix;
-              routeros = import ./resources/routeros;
-            };
+            janus.settings = import ../machines/janus/monitoring inventory;
 
             leviathan.settings = import ../machines/leviathan/monitoring.nix;
           };
         };
         server.machines.sequoia.settings = {
-          host = "sequoia.${tailnet.domain}";
+          host = "sequoia.${inventory.tailnet.domain}";
           grafana = {
             enable = true;
             homeDashboard = "network";
@@ -103,7 +100,7 @@ in
 
       roles.server.machines.leviathan.settings = {
         inherit domain;
-        listenPort = (import ./resources/cloudflare.nix).tunnels.leviathan.${domain}.port;
+        listenPort = (import ./cloudflare.nix).tunnels.leviathan.${domain}.port;
         # aarch64 only builds on bramble (Pi 4) and times out.
         buildSystems = [ "x86_64-linux" ];
         # leviathan is shared with other users and the LLM host; keep CI bounded.
@@ -169,7 +166,7 @@ in
 
   restic =
     let
-      b2 = import ./resources/b2.nix;
+      b2 = import ./b2.nix;
       bucket = b2.buckets.resticBackups;
     in
     {
