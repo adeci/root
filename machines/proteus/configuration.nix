@@ -4,9 +4,7 @@
     self.users.alex.nixosModule
 
     base
-    nvim-dev
     zsh
-    llm-tools
     auto-pressure-gc
     auto-timezone
     desktop
@@ -18,4 +16,6 @@
     keyd
     steam-deck
   ];
+
+  boot.loader.grub.configurationLimit = 5;
 }
