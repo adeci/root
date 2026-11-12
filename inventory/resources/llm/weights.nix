@@ -1,18 +1,8 @@
+# Sources are Hugging Face repos pinned to a revision.
 {
   vibethinker-3b-bf16 = {
     displayName = "VibeThinker 3B BF16";
-    family = "vibethinker";
-    quant = "BF16";
-    format = "gguf";
-    tags = [
-      "chat"
-      "reasoning"
-      "math"
-      "coding"
-      "lossless"
-    ];
     source = {
-      provider = "huggingface";
       repo = "prithivMLmods/VibeThinker-3B-GGUF";
       revision = "c94abbc502a2fb1aa54afc5048dafaeb84a7ba4e";
       files."VibeThinker-3B.BF16.gguf" = {
@@ -22,22 +12,11 @@
     };
     entrypoint = "VibeThinker-3B.BF16.gguf";
     nativeContextWindow = 131072;
-    nativeMaxOutputTokens = 65536;
-    sizeGiB = 5.8;
   };
 
   qwen3-6-27b-q8 = {
     displayName = "Qwen3.6 27B Q8";
-    family = "qwen3.6";
-    quant = "Q8_0";
-    format = "gguf";
-    tags = [
-      "chat"
-      "coding"
-      "dense"
-    ];
     source = {
-      provider = "huggingface";
       repo = "unsloth/Qwen3.6-27B-GGUF";
       revision = "82d411acf4a06cfb8d9b073a5211bf410bfc29bf";
       files."Qwen3.6-27B-Q8_0.gguf" = {
@@ -47,22 +26,11 @@
     };
     entrypoint = "Qwen3.6-27B-Q8_0.gguf";
     nativeContextWindow = 262144;
-    nativeMaxOutputTokens = 81920;
-    sizeGiB = 26.6;
   };
 
   qwen3-6-35b-a3b-q8 = {
     displayName = "Qwen3.6 35B A3B Q8";
-    family = "qwen3.6";
-    quant = "Q8_0";
-    format = "gguf";
-    tags = [
-      "chat"
-      "coding"
-      "moe"
-    ];
     source = {
-      provider = "huggingface";
       repo = "unsloth/Qwen3.6-35B-A3B-GGUF";
       revision = "a483e9e6cbd595906af30beda3187c2663a1118c";
       files."Qwen3.6-35B-A3B-Q8_0.gguf" = {
@@ -72,22 +40,11 @@
     };
     entrypoint = "Qwen3.6-35B-A3B-Q8_0.gguf";
     nativeContextWindow = 262144;
-    nativeMaxOutputTokens = 81920;
-    sizeGiB = 34.4;
   };
 
   qwen3-coder-next-q4 = {
     displayName = "Qwen3 Coder Next Q4_K_M";
-    family = "qwen3-coder-next";
-    quant = "Q4_K_M";
-    format = "gguf";
-    tags = [
-      "chat"
-      "coding"
-      "agentic"
-    ];
     source = {
-      provider = "huggingface";
       repo = "Qwen/Qwen3-Coder-Next-GGUF";
       revision = "b82fb7382639d97b38fa7672e526c760c2fb358e";
       files = {
@@ -111,22 +68,11 @@
     };
     entrypoint = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
     nativeContextWindow = 262144;
-    nativeMaxOutputTokens = 65536;
-    sizeGiB = 45.1;
   };
 
   qwen3-coder-next-q5 = {
     displayName = "Qwen3 Coder Next Q5_K_M";
-    family = "qwen3-coder-next";
-    quant = "Q5_K_M";
-    format = "gguf";
-    tags = [
-      "chat"
-      "coding"
-      "agentic"
-    ];
     source = {
-      provider = "huggingface";
       repo = "Qwen/Qwen3-Coder-Next-GGUF";
       revision = "b82fb7382639d97b38fa7672e526c760c2fb358e";
       files = {
@@ -150,7 +96,5 @@
     };
     entrypoint = "Qwen3-Coder-Next-Q5_K_M/Qwen3-Coder-Next-Q5_K_M-00001-of-00004.gguf";
     nativeContextWindow = 262144;
-    nativeMaxOutputTokens = 65536;
-    sizeGiB = 52.8;
   };
 }
