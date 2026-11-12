@@ -1,4 +1,4 @@
-{ self, ... }:
+{ pkgs, self, ... }:
 {
   imports = with self.modules.darwin; [
     self.users.alex.darwinModule
@@ -23,6 +23,8 @@
   networking.computerName = "icarus";
 
   gitSigning.key = "icarus-se";
+
+  environment.systemPackages = [ pkgs.tart ];
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 7;
