@@ -47,7 +47,13 @@
       imports = [
         self.modules.darwin.wrappers
         self.modules.darwin.mac-setup
+        self.modules.darwin.code-signing
       ];
+
+      codeSigning.binaries.borders = {
+        source = "${self.packages.${pkgs.stdenv.hostPlatform.system}.jankyborders}/bin/borders";
+        identifier = "git.felix.borders";
+      };
 
       macSetup.steps = [
         {
@@ -61,7 +67,7 @@
             }
             {
               service = "kTCCServiceAccessibility";
-              client = "${config.services.jankyborders.package}/bin/borders";
+              client = config.codeSigning.binaries.borders.path;
             }
           ];
           restart = [
@@ -93,7 +99,7 @@
 
       services.jankyborders = {
         enable = true;
-        package = self.packages.${pkgs.stdenv.hostPlatform.system}.jankyborders;
+        inherit (config.codeSigning.binaries.borders) package;
         active_color = "0xff00C0A3";
         inactive_color = "0xff292e42";
         width = 2.0;
