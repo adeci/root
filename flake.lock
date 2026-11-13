@@ -107,6 +107,21 @@
     },
     "crane_2": {
       "locked": {
+        "lastModified": 1793669695,
+        "narHash": "sha256-9EtV4I6Ohw0tjidL31TMOKHhW/QGVG8NuGiemzIaNCs=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "788369ed71ed9d84ef72cb056e4d920050d5b32c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
+    "crane_3": {
+      "locked": {
         "lastModified": 1793836618,
         "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
         "owner": "ipetkov",
@@ -120,7 +135,7 @@
         "type": "github"
       }
     },
-    "crane_3": {
+    "crane_4": {
       "locked": {
         "lastModified": 1789760033,
         "narHash": "sha256-jtT4yxZpR8seYnlCMMWSSPlFN92zO6ICuZ8pJrmi86k=",
@@ -180,6 +195,33 @@
       "original": {
         "owner": "nix-community",
         "repo": "disko",
+        "type": "github"
+      }
+    },
+    "earwig": {
+      "inputs": {
+        "crane": "crane_2",
+        "nixbot": [
+          "nixbot"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794643713,
+        "narHash": "sha256-lbFHewsuljZUWMkNM/gIFlB7nJCQYnwmrWDn4OplktA=",
+        "owner": "adeci",
+        "repo": "earwig",
+        "rev": "afb34cdb97e73a4020108ffa4db8f136880529ee",
+        "type": "github"
+      },
+      "original": {
+        "owner": "adeci",
+        "repo": "earwig",
         "type": "github"
       }
     },
@@ -244,7 +286,7 @@
     },
     "harmonia": {
       "inputs": {
-        "crane": "crane_2",
+        "crane": "crane_3",
         "nix": "nix",
         "nix-darwin": [
           "nix-darwin"
@@ -305,7 +347,7 @@
     },
     "lanzaboote": {
       "inputs": {
-        "crane": "crane_3",
+        "crane": "crane_4",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -632,6 +674,7 @@
       "inputs": {
         "bootvine": "bootvine",
         "clan-core": "clan-core",
+        "earwig": "earwig",
         "emacs-overlay": "emacs-overlay",
         "flake-parts": "flake-parts",
         "harmonia": "harmonia",

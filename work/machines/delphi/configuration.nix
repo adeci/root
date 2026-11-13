@@ -23,6 +23,7 @@
     btrfs
     smartd
     desktop
+    earwig
     librewolf
     bootvine
     keyring-tpm

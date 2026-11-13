@@ -76,6 +76,11 @@
 
     bootvine.url = "git+https://codeberg.org/wvhulle/bootvine";
     bootvine.inputs.nixpkgs.follows = "nixpkgs";
+
+    earwig.url = "github:adeci/earwig";
+    earwig.inputs.nixpkgs.follows = "nixpkgs";
+    earwig.inputs.treefmt-nix.follows = "treefmt-nix";
+    earwig.inputs.nixbot.follows = "nixbot";
   };
 
   outputs =

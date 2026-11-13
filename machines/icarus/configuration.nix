@@ -7,6 +7,7 @@
     zsh
     auto-pressure-gc
     desktop
+    earwig
     laptop
     nvim-dev
     librewolf
