@@ -43,6 +43,7 @@
           // Replaces the shared touchpad section, which niri does not merge.
           touchpad {
               tap
+              dwt
               natural-scroll
               // About 53% of libinput's default curve; tuned on this XPS 14.
               accel-speed -0.25

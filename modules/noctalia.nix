@@ -1,9 +1,17 @@
 {
   nixos =
-    { lib, ... }:
     {
+      config,
+      lib,
+      self,
+      ...
+    }:
+    {
+      imports = [ self.modules.nixos.wrappers ];
+
       programs.noctalia = {
         enable = true;
+        package = config.wrappers.noctalia.wrapper;
         systemd.enable = true;
       };
 
@@ -11,12 +19,6 @@
         requisite = [ "graphical-session.target" ];
         startLimitIntervalSec = 30;
         startLimitBurst = 5;
-        # The shell runs helpers through `sh -c`; give it the session's PATH.
-        path = [
-          "/run/wrappers"
-          "/etc/profiles/per-user/%u"
-          "/run/current-system/sw"
-        ];
         serviceConfig = {
           Restart = lib.mkForce "always";
           RestartSec = 1;

@@ -47,7 +47,6 @@ in
       output "LG Display 0x02D8 Unknown" {
           mode "1366x768@60.019"
           scale 1
-          transform "normal"
       }
 
       input {

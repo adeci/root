@@ -55,21 +55,18 @@
       output "PNP(HSX) YHB03P24 0x00888888" {
           mode "1600x2560@143.999"
           scale 2
-          transform "normal"
           position x=640 y=1440
       }
 
       output "Microstep MSI MD272QPW PB1H252600064" {
           mode "2560x1440@59.951"
           scale 1
-          transform "normal"
           position x=0 y=0
       }
 
       output "Microstep MSI MAG321CQR KA3H071804955" {
           mode "2560x1440@144"
           scale 1
-          transform "normal"
           position x=0 y=0
           layout {
               default-column-width {
