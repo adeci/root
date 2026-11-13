@@ -5,9 +5,9 @@ as a CI server for GitHub repositories.
 
 ## Roles
 
-- `server` (NixOS only): runs nixbot with a local PostgreSQL and a
-  loopback-only nginx vhost on `listenPort`. Something on the machine, such as
-  a tunnel or reverse proxy, must forward the public `domain` to that vhost.
+- `server` (NixOS only): runs nixbot with a local PostgreSQL behind a
+  loopback-only nginx vhost; a tunnel or reverse proxy on the machine must
+  forward the public `domain` to it.
 
 ## Notes
 

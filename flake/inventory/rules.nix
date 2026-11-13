@@ -1,9 +1,10 @@
-# The rules inventory/network.nix must follow that the types in schema.nix can't express: facts that span several entries. Each failing rule is one problem default.nix lists.
+# Rules for network.nix that types can't express.
 { config, lib, ... }:
 let
   inherit (config.lan) cables hosts vlans;
   inherit (config) appliances router;
   inherit (config.routeros) models;
+  inherit (import ./lib.nix { inherit lib; }) addressNumber carriedVlans inBlock;
 
   # A value and the path in network.nix it is written at.
   valueAt = path: value: { inherit path value; };
@@ -22,9 +23,7 @@ let
       }
     ) (lib.groupBy (holder: holder.value) values);
 
-  # Whether an address is in a VLAN's subnet.
-  inVlan = vlan: lib.hasPrefix "${vlan.prefix}.";
-  lastOctet = ip: lib.toIntBase10 (lib.last (lib.splitString "." ip));
+  inVlan = vlan: inBlock vlan.cidr;
 
   # Every LAN reservation's host name, at the path that makes it.
   reservations =
@@ -65,12 +64,6 @@ let
     else
       true;
 
-  # What a port carries: the VLAN it sends untagged, if any, and the VLANs it tags.
-  carriedVlans = untagged: tagged: {
-    inherit untagged;
-    tagged = lib.sort lib.lessThan (lib.unique tagged);
-  };
-
   # What a port carries, in words.
   describeCarried =
     carried:
@@ -80,28 +73,6 @@ let
       lib.concatStringsSep " and " (
         lib.optional (carried.untagged != null) "${carried.untagged} untagged"
         ++ lib.optional (carried.tagged != [ ]) "${lib.concatStringsSep "+" carried.tagged} tagged"
-      );
-
-  # What an appliance's port carries. The management port keeps the appliance's own VLAN untagged, tagging its wifi VLANs or, as a trunk, its other VLANs.
-  appliancePortCarries =
-    name: portName:
-    let
-      appliance = appliances.${name};
-      port = appliance.ports.${portName};
-      bridged = vlan: lib.elem vlan appliance.vlans;
-    in
-    if portName == appliance.managementPort then
-      carriedVlans appliance.lan.vlan (
-        if appliance.wifi != [ ] then
-          map (network: config.wifi.${network}.vlan) appliance.wifi
-        else
-          lib.optionals port.trunk (lib.remove appliance.lan.vlan appliance.vlans)
-      )
-    else if port.trunk then
-      carriedVlans null appliance.vlans
-    else
-      carriedVlans (if bridged port.vlan then port.vlan else null) (
-        lib.filter bridged (lib.optionals port.hybrid port.tagged)
       );
 
   # What a router port carries, by the label on its case.
@@ -118,13 +89,15 @@ let
   carriedWhereItLeads =
     cable:
     if appliances ? ${cable.to} then
-      appliancePortCarries cable.to cable.toPort
+      appliances.${cable.to}.ports.${cable.toPort}.carries
     else if cable.to == router.machine then
       routerPortCarries cable.toPort
     else if cable.toPort == null && hosts ? ${cable.to} then
       carriedVlans hosts.${cable.to}.vlan [ ]
     else
       null;
+
+  accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != [ ]) appliances;
 
   # The rules
 
@@ -159,9 +132,10 @@ let
     name: host:
     let
       pool = vlans.${host.vlan}.dhcpPool;
+      address = addressNumber host.ip;
     in
     {
-      assertion = lastOctet host.ip < lastOctet pool.start || lastOctet host.ip > lastOctet pool.end;
+      assertion = address < addressNumber pool.start || address > addressNumber pool.end;
       message = "${reservedAt.${name}}: ${host.ip} is inside ${host.vlan}'s DHCP pool ${pool.start}-${pool.end}";
     }
   ) hosts;
@@ -199,7 +173,7 @@ let
         portsMentioned =
           lib.mapAttrsToList (port: _: valueAt "appliances.${name}.ports.${port}" port) appliance.ports
           ++ [ (valueAt "appliances.${name}.managementPort" appliance.managementPort) ]
-          ++ lib.optional (appliance.fallbackPort != null) (
+          ++ lib.optional (appliance.fallbackPort != appliance.managementPort) (
             valueAt "appliances.${name}.fallbackPort" appliance.fallbackPort
           );
       in
@@ -209,6 +183,28 @@ let
       }) portsMentioned
     ) appliances
   );
+
+  # A trunk tags every VLAN of its switch, so a `tagged` list on it would go unused.
+  trunksListNoTaggedVlans = lib.concatLists (
+    lib.mapAttrsToList (
+      name: appliance:
+      lib.mapAttrsToList (port: settings: {
+        assertion = !settings.trunk || settings.tagged == [ ];
+        message = "appliances.${name}.ports.${port}: a trunk carries every VLAN tagged; drop its `tagged` list";
+      }) appliance.ports
+    ) appliances
+  );
+
+  accessPointsHaveOnePrimaryWifi = lib.mapAttrsToList (
+    name: accessPoint:
+    let
+      primaries = lib.filter (network: config.wifi.${network}.primary) accessPoint.wifi;
+    in
+    {
+      assertion = lib.length primaries == 1;
+      message = "appliances.${name}.wifi: an access point broadcasts exactly one primary network, not ${toString (lib.length primaries)}";
+    }
+  ) accessPoints;
 
   cablesLeadToExistingPorts = map (cable: {
     assertion = leadsToExistingPort cable;
@@ -260,7 +256,7 @@ let
   cablesAgreeOnVlans = map (
     cable:
     let
-      here = appliancePortCarries cable.appliance cable.port;
+      here = appliances.${cable.appliance}.ports.${cable.port}.carries;
       there = carriedWhereItLeads cable;
     in
     {
@@ -283,6 +279,8 @@ in
     uniqueTailnetAddresses
     tailnetRecordsResolve
     appliancePortsExist
+    trunksListNoTaggedVlans
+    accessPointsHaveOnePrimaryWifi
     cablesLeadToExistingPorts
     onePlugPerPort
     hostsCabledWithoutNicHaveOneCable

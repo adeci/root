@@ -1,4 +1,4 @@
-# MikroTik hardware by model: its RouterOS architecture, extra packages, ports and radios. schema.nix checks each appliance against it and publishes it as self.inventory.routeros.models.
+# MikroTik hardware by model.
 let
   # A model's interface names: etherN, then sfp-sfpplusN.
   withPorts =

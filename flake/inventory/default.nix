@@ -1,7 +1,6 @@
-# Turns the data in inventory/ into self.inventory in three steps: check it against schema.nix, rules.nix and references.nix, list every problem, publish it.
+# Checks inventory/ and publishes it as self.inventory.
 { lib, ... }:
 let
-  # 1. Check the data: network.nix against schema.nix and rules.nix, the other data files against references.nix.
   inventory =
     (lib.evalModules {
       modules = [
@@ -14,7 +13,7 @@ let
           {
             b2 = import ../../inventory/b2.nix;
             cloudflare = import ../../inventory/cloudflare.nix;
-            ingress = import ../../inventory/ingress.nix;
+            ingress = import ../../inventory/ingress.nix config;
             clanInstances = import ../../inventory/clan-instances.nix config;
             tailscalePolicy = import ../../inventory/tailscale-policy.nix config;
           }
@@ -22,7 +21,6 @@ let
       ];
     }).config;
 
-  # 2. List every problem: each rule that doesn't hold.
   problems = map (rule: rule.message) (lib.filter (rule: !rule.assertion) inventory.assertions);
 
   # schema.nix types everything but the rules and the other data files.
@@ -36,7 +34,7 @@ let
   ];
 in
 {
-  # 3. Publish self.inventory. Reading it fails while there are problems, listing them all; it reads every typed value first, so a type error fails even where nothing uses the value.
+  # Reading it fails while there are problems, listing them all; a type error fails even where nothing reads the value.
   flake.inventory =
     if problems == [ ] then
       builtins.deepSeq typed (removeAttrs inventory [ "assertions" ])

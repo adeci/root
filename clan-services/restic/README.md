@@ -12,6 +12,7 @@ Backs up each machine's `clan.core.state` folders with
 
 ## Notes
 
-- The repository password is generated. The `credentials` file (for example
-  `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for S3) is only declared:
-  set it with `clan vars set <machine> <generator>/<file>`.
+- Only the repository password is generated: set the `credentials` file (for
+  S3, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) with `clan vars set`.
+- Restoring some folders restores every folder of the states holding them, and
+  runs only those states' restore commands.

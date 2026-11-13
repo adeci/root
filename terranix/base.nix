@@ -1,25 +1,45 @@
 {
   config,
   lib,
+  pkgs,
   self,
   self',
   ...
 }:
 let
   inherit (self.inventory) b2;
+  inherit (self'.packages) clan-cli;
+
+  getClanSecret = pkgs.writeShellApplication {
+    name = "get-clan-secret";
+    runtimeInputs = [
+      pkgs.jq
+      clan-cli
+    ];
+    text = builtins.readFile ./get-clan-secret.sh;
+  };
+
+  passphraseProvider = pkgs.writeShellApplication {
+    name = "opentofu-external-key-provider";
+    runtimeInputs = [
+      pkgs.jq
+      clan-cli
+    ];
+    text = builtins.readFile ./opentofu-external-key-provider.sh;
+  };
 in
 {
   options.clanSecrets = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];
-    description = "Clan secrets this workspace reads; read each with `clanSecret \"<name>\"`.";
+    description = "Clan secrets this workspace reads; read each with `clanSecret \"<name>\"` from ./lib.nix.";
   };
 
   config = {
+    # The workspace builder sets the state's key.
     terraform.backend.s3 = {
       endpoints.s3 = "https://${b2.s3Endpoint}";
       bucket = b2.stateBucket;
-      key = "tofu.tfstate";
       inherit (b2) region;
 
       # B2 isn't *real* S3 so skip AWS-specific checks
@@ -32,7 +52,7 @@ in
 
     terraform.encryption = {
       key_provider.external.passphrase = {
-        command = [ (lib.getExe self'.packages.provide-tf-passphrase) ];
+        command = [ (lib.getExe passphraseProvider) ];
       };
       key_provider.pbkdf2.state_encryption_password = {
         chain = lib.tf.ref "key_provider.external.passphrase";
@@ -52,21 +72,9 @@ in
 
     data.external = lib.genAttrs config.clanSecrets (secret: {
       program = [
-        (lib.getExe self'.packages.get-clan-secret)
+        (lib.getExe getClanSecret)
         secret
       ];
     });
-
-    _module.args = {
-      clanSecret = secret: config.data.external.${secret} "result.secret";
-
-      # A command that stores its input in a machine's clan var.
-      setClanVar =
-        machine: var:
-        "${lib.getExe self'.packages.clan-cli} vars set ${machine} ${var.generator}/${var.file}";
-
-      # Hostnames, zones and machine names as Terraform resource names.
-      safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
-    };
   };
 }

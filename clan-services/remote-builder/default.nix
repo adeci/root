@@ -73,13 +73,13 @@
           }:
           let
             # Clients without a public key yet are skipped; servers authorize them on their next deploy.
-            clientKeys = builtins.filter (key: key != "") (
+            clientKeys = lib.filter (key: key != "") (
               lib.mapAttrsToList (
-                machineName: _:
+                clientName: _:
                 lib.strings.trim (
                   clanLib.getPublicValue {
                     flake = config.clan.core.settings.directory;
-                    machine = machineName;
+                    machine = clientName;
                     generator = instanceName;
                     file = "id_ed25519.pub";
                     default = "";
@@ -153,8 +153,8 @@
             ++ (config.boot.binfmt.emulatedSystems or [ ])
             ++ lib.optional (system == "x86_64-linux") "i686-linux";
 
-            machines = lib.mapAttrsToList (name: server: {
-              hostName = "${name}.${domain}";
+            buildMachines = lib.mapAttrsToList (serverName: server: {
+              hostName = "${serverName}.${domain}";
               inherit (server.settings)
                 systems
                 maxJobs
@@ -166,25 +166,29 @@
               sshKey = config.clan.core.vars.generators.${instanceName}.files.id_ed25519.path;
             }) servers;
 
-            autoMachines =
+            offloadMachines =
               {
-                all = machines;
+                all = buildMachines;
                 none = [ ];
-                foreign = lib.filter (m: m.systems != [ ]) (
-                  map (m: m // { systems = lib.subtractLists nativeSystems m.systems; }) machines
+                foreign = lib.filter (machine: machine.systems != [ ]) (
+                  map (
+                    machine: machine // { systems = lib.subtractLists nativeSystems machine.systems; }
+                  ) buildMachines
                 );
               }
               .${settings.offload};
 
-            machineLine =
-              m:
+            machinesFileLine =
+              machine:
               lib.concatStringsSep " " [
-                "${m.protocol}://${m.sshUser}@${m.hostName}"
-                (lib.concatStringsSep "," m.systems)
-                m.sshKey
-                (toString m.maxJobs)
-                (toString m.speedFactor)
-                (if m.supportedFeatures == [ ] then "-" else lib.concatStringsSep "," m.supportedFeatures)
+                "${machine.protocol}://${machine.sshUser}@${machine.hostName}"
+                (lib.concatStringsSep "," machine.systems)
+                machine.sshKey
+                (toString machine.maxJobs)
+                (toString machine.speedFactor)
+                (
+                  if machine.supportedFeatures == [ ] then "-" else lib.concatStringsSep "," machine.supportedFeatures
+                )
                 "-"
                 "-"
               ];
@@ -207,22 +211,24 @@
                 '';
             };
 
-            nix.buildMachines = autoMachines;
-            nix.distributedBuilds = autoMachines != [ ];
-            environment.etc."nix/machines-all".text = lib.concatMapStrings (m: machineLine m + "\n") machines;
+            nix.buildMachines = offloadMachines;
+            nix.distributedBuilds = offloadMachines != [ ];
+            environment.etc."nix/machines-all".text = lib.concatMapStrings (
+              machine: machinesFileLine machine + "\n"
+            ) buildMachines;
 
             programs.ssh.extraConfig = lib.mkBefore (
-              lib.concatMapStringsSep "\n" (m: ''
-                Host ${m.hostName}
+              lib.concatMapStringsSep "\n" (machine: ''
+                Host ${machine.hostName}
                   StrictHostKeyChecking accept-new
 
                 # Nix manages its own SSH connections: disable any ControlMaster a user/system ssh config enables for this host.
                 # An unreachable builder should fail the build in seconds, not after the TCP timeout.
-                Match host ${m.hostName} user nix
+                Match host ${machine.hostName} user nix
                   ControlMaster no
                   ControlPath none
                   ConnectTimeout 10
-              '') machines
+              '') buildMachines
             );
           };
       in

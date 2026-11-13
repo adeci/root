@@ -1,4 +1,4 @@
-_: {
+{
   _class = "clan.service";
 
   manifest = {
@@ -70,28 +70,23 @@ _: {
         ...
       }:
       let
-        session =
+        atuinLogin =
           { config, pkgs }:
           let
             inherit (config.clan.core.vars.generators.${instanceName}) files;
           in
-          {
-            configDir = pkgs.writeTextDir "config.toml" ''
-              sync_address = "${config.atuinSync.address}"
-            '';
-
-            login = pkgs.writeShellApplication {
-              name = "atuin-login";
-              runtimeInputs = [ pkgs.atuin ];
-              text = ''
-                atuin status >/dev/null 2>&1 && exit 0
-                atuin login \
-                  --username "$(<${files.username.path})" \
-                  --password "$(<${files.password.path})" \
-                  --key "$(<${files.key.path})"
-                atuin sync
+          pkgs.writeShellApplication {
+            name = "atuin-login";
+            runtimeInputs = [ pkgs.atuin ];
+            runtimeEnv = {
+              ATUIN_CONFIG_DIR = pkgs.writeTextDir "config.toml" ''
+                sync_address = "${config.atuinSync.address}"
               '';
+              USERNAME_FILE = files.username.path;
+              PASSWORD_FILE = files.password.path;
+              KEY_FILE = files.key.path;
             };
+            text = builtins.readFile ./login.sh;
           };
 
         shared =
@@ -99,10 +94,10 @@ _: {
           let
             serverNames = lib.attrNames roles.server.machines;
             serverName = lib.head serverNames;
-            server = roles.server.machines.${serverName}.settings;
+            serverSettings = roles.server.machines.${serverName}.settings;
             address =
-              if server.address != null then
-                server.address
+              if serverSettings.address != null then
+                serverSettings.address
               else
                 "${serverName}.${config.clan.core.settings.domain}";
           in
@@ -121,7 +116,7 @@ _: {
                 }
               ];
 
-              atuinSync.address = "http://${address}:${toString server.port}";
+              atuinSync.address = "http://${address}:${toString serverSettings.port}";
 
               clan.core.vars.generators.${instanceName} = {
                 share = true;
@@ -148,7 +143,7 @@ _: {
             ...
           }:
           let
-            inherit (session { inherit config pkgs; }) configDir login;
+            login = atuinLogin { inherit config pkgs; };
           in
           {
             imports = [ shared ];
@@ -156,7 +151,6 @@ _: {
             systemd.user.services.atuin-login = {
               description = "Atuin sync login";
               wantedBy = [ "default.target" ];
-              environment.ATUIN_CONFIG_DIR = "${configDir}";
               serviceConfig = {
                 Type = "oneshot";
                 ExecStart = lib.getExe login;
@@ -175,14 +169,13 @@ _: {
             ...
           }:
           let
-            inherit (session { inherit config pkgs; }) configDir login;
+            login = atuinLogin { inherit config pkgs; };
           in
           {
             imports = [ shared ];
 
             launchd.user.agents.atuin-login.serviceConfig = {
               ProgramArguments = [ (lib.getExe login) ];
-              EnvironmentVariables.ATUIN_CONFIG_DIR = "${configDir}";
               RunAtLoad = true;
               # The server may not be reachable yet at login; retry every minute until it is.
               KeepAlive.SuccessfulExit = false;

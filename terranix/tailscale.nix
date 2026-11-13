@@ -2,13 +2,13 @@
   config,
   lib,
   self,
-  clanSecret,
-  safeName,
+  self',
   ...
 }:
 let
   inherit (self.inventory) lan tailscalePolicy;
   inherit (self.inventory.tailnet) deviceTags;
+  inherit (import ./lib.nix { inherit config lib self'; }) clanSecret safeName;
   router = self.inventory.router.machine;
 in
 {

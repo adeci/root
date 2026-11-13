@@ -1,4 +1,4 @@
-# The machines and the home network. flake/inventory/schema.nix says what each entry may contain; everything else reads the checked result as self.inventory.
+# The machines and the home network.
 {
   lan = {
     domain = "lan";
@@ -6,6 +6,7 @@
     vlans = {
       trusted = {
         id = 10;
+        # The only subnet route: vault and tenant hosts join the tailnet themselves.
         tailnet = true;
       };
       iot.id = 20;
@@ -257,7 +258,6 @@
       ports = {
         ether1.cable = "janus:eth5";
         ether2 = {
-          hybrid = true;
           vlan = "mgmt";
           tagged = [
             "trusted"
@@ -268,7 +268,6 @@
           cable = "zephyr:ether1";
         };
         ether3 = {
-          hybrid = true;
           vlan = "mgmt";
           tagged = [
             "trusted"
@@ -288,7 +287,6 @@
           cable = "janus:sfpPlus2";
         };
         sfp-sfpplus2 = {
-          hybrid = true;
           vlan = "mgmt";
           tagged = [
             "trusted"

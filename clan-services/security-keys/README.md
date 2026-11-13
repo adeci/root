@@ -1,7 +1,6 @@
 # Security Keys
 
-Deploys FIDO2 SSH key handles to their owners' `~/.ssh/` and configures SSH to
-use them.
+Deploys FIDO2 SSH key handles and points SSH at them.
 
 ## Roles
 

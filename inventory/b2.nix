@@ -1,5 +1,5 @@
-# The Backblaze B2 buckets, read as self.inventory.b2. One B2 account, so every bucket shares its region.
 let
+  # One account, so every bucket shares it.
   region = "us-east-005";
 in
 {

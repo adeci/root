@@ -1,6 +1,7 @@
-# The public edges and the streams they forward, read as self.inventory.ingress. Keyed by edge machine; a stream forwards its listen port to upstream and opens it on the edge's firewalls.
+# Public edges and the streams they forward.
+{ tailnet, ... }:
 let
-  inherit ((import ./network.nix).tailnet) domain;
+  inherit (tailnet) domain;
 in
 {
   edges = {

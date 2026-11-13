@@ -2,13 +2,12 @@
   config,
   lib,
   self,
-  clanSecret,
-  safeName,
-  setClanVar,
+  self',
   ...
 }:
 let
   inherit (self.inventory) b2;
+  inherit (import ./lib.nix { inherit config lib self'; }) clanSecret safeName setClanVar;
 
   # Private and encrypted; hidden file versions go after a week.
   privateBucket = name: purpose: {
@@ -44,6 +43,39 @@ let
     "readBucketEncryption"
   ];
 
+  # Writes a key to a machine's clan var as an env file; terraform_data echoes its input unredacted, so only the key ID goes there.
+  keyToClanVar =
+    {
+      keyName,
+      machine,
+      var,
+      idVariable,
+      secretVariable,
+    }:
+    let
+      key = config.resource.b2_application_key.${keyName};
+    in
+    {
+      input = {
+        application_key_id = key "application_key_id";
+      };
+      triggers_replace = [ (key "application_key_id") ];
+
+      provisioner.local-exec = {
+        environment = {
+          B2_APPLICATION_KEY_ID = key "application_key_id";
+          B2_APPLICATION_KEY = "\${sensitive(b2_application_key.${keyName}.application_key)}";
+        };
+        command = ''
+          set -eu
+          printf '${idVariable}=%s\n${secretVariable}=%s\n' \
+            "$B2_APPLICATION_KEY_ID" \
+            "$B2_APPLICATION_KEY" \
+            | ${setClanVar machine var}
+        '';
+      };
+    };
+
   resticBucket = b2.buckets.resticBackups;
   resticInstance = self.clan.inventory.instances.restic or null;
   resticClients = if resticInstance == null then { } else resticInstance.roles.client.machines or { };
@@ -62,7 +94,6 @@ let
   ziplineBucket = b2.buckets.ziplineShares;
   ziplineMachine = ziplineBucket.credentials.machine;
   ziplineKeyName = "zipline_${safeName ziplineMachine}";
-  ziplineKey = config.resource.b2_application_key.${ziplineKeyName};
 in
 {
   terraform.required_providers.b2 = {
@@ -101,54 +132,24 @@ in
       };
     };
 
-  # terraform_data echoes its input unredacted, so only the key ID goes there; the secret goes straight to the provisioner.
   resource.terraform_data =
     lib.mapAttrs' (
       machine: _:
-      let
-        key = config.resource.b2_application_key.${resticKeyName machine};
-      in
-      lib.nameValuePair "restic_b2_credentials_${safeName machine}" {
-        input = {
-          application_key_id = key "application_key_id";
-        };
-        triggers_replace = [ (key "application_key_id") ];
-
-        provisioner.local-exec = {
-          environment = {
-            B2_APPLICATION_KEY_ID = key "application_key_id";
-            B2_APPLICATION_KEY = "\${sensitive(b2_application_key.${resticKeyName machine}.application_key)}";
-          };
-          command = ''
-            set -eu
-            printf 'AWS_ACCESS_KEY_ID=%s\nAWS_SECRET_ACCESS_KEY=%s\n' \
-              "$B2_APPLICATION_KEY_ID" \
-              "$B2_APPLICATION_KEY" \
-              | ${setClanVar machine (resticClientSettings machine).credentials}
-          '';
-        };
-      }
+      lib.nameValuePair "restic_b2_credentials_${safeName machine}" (keyToClanVar {
+        keyName = resticKeyName machine;
+        inherit machine;
+        var = (resticClientSettings machine).credentials;
+        idVariable = "AWS_ACCESS_KEY_ID";
+        secretVariable = "AWS_SECRET_ACCESS_KEY";
+      })
     ) resticClients
     // {
-      "zipline_b2_credentials_${safeName ziplineMachine}" = {
-        input = {
-          application_key_id = ziplineKey "application_key_id";
-        };
-        triggers_replace = [ (ziplineKey "application_key_id") ];
-
-        provisioner.local-exec = {
-          environment = {
-            B2_APPLICATION_KEY_ID = ziplineKey "application_key_id";
-            B2_APPLICATION_KEY = "\${sensitive(b2_application_key.${ziplineKeyName}.application_key)}";
-          };
-          command = ''
-            set -eu
-            printf 'DATASOURCE_S3_ACCESS_KEY_ID=%s\nDATASOURCE_S3_SECRET_ACCESS_KEY=%s\n' \
-              "$B2_APPLICATION_KEY_ID" \
-              "$B2_APPLICATION_KEY" \
-              | ${setClanVar ziplineMachine ziplineBucket.credentials}
-          '';
-        };
+      "zipline_b2_credentials_${safeName ziplineMachine}" = keyToClanVar {
+        keyName = ziplineKeyName;
+        machine = ziplineMachine;
+        var = ziplineBucket.credentials;
+        idVariable = "DATASOURCE_S3_ACCESS_KEY_ID";
+        secretVariable = "DATASOURCE_S3_SECRET_ACCESS_KEY";
       };
     };
 

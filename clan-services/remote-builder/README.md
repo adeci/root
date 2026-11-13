@@ -1,13 +1,12 @@
 # Remote Builder
 
-Configures nix remote building with per-client SSH keys and a dedicated `nix`
-build user. Each client generates its own key pair, and servers authorize
-every client's public key automatically.
+Nix remote building over SSH as a dedicated `nix` user, with a key pair
+generated per client.
 
 ## Roles
 
-- `server` (NixOS only): creates the trusted `nix` user and authorizes the
-  clients' keys plus `externalKeys` for it.
+- `server` (NixOS only): creates the trusted `nix` user and authorizes every
+  client's public key, plus `externalKeys`, on it.
 - `client`: registers every other server, at `<server>.<clan domain>`, as a nix
   build machine for the builds `offload` selects.
 
@@ -15,5 +14,5 @@ every client's public key automatically.
 
 - Servers skip clients whose key has not been generated yet: run
   `clan vars generate <client>` before deploying servers that should trust it.
-- `/etc/nix/machines-all` always lists every server, for opting in per build
-  with `--builders @/etc/nix/machines-all --max-jobs 0`.
+- `--builders @/etc/nix/machines-all --max-jobs 0` lets one build use every
+  server, whatever `offload` says.

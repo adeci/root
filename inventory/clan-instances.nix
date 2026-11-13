@@ -1,5 +1,9 @@
-# The clan service instances, read as self.inventory.clanInstances; given the inventory for settings derived from it.
-inventory:
+{
+  b2,
+  cloudflare,
+  tailnet,
+  ...
+}@inventory:
 let
   minimalJournal = {
     journal = {
@@ -42,7 +46,7 @@ in
   monitoring =
     let
       ntfyHost = "ntfy.decio.us";
-      ntfyPort = (import ./cloudflare.nix).tunnels.sequoia.${ntfyHost}.port;
+      ntfyPort = cloudflare.tunnels.sequoia.${ntfyHost}.port;
     in
     {
       module = {
@@ -71,7 +75,7 @@ in
           };
         };
         server.machines.sequoia.settings = {
-          host = "sequoia.${inventory.tailnet.domain}";
+          host = "sequoia.${tailnet.domain}";
           grafana = {
             enable = true;
             homeDashboard = "network";
@@ -100,7 +104,7 @@ in
 
       roles.server.machines.leviathan.settings = {
         inherit domain;
-        listenPort = (import ./cloudflare.nix).tunnels.leviathan.${domain}.port;
+        listenPort = cloudflare.tunnels.leviathan.${domain}.port;
         # aarch64 only builds on bramble (Pi 4) and times out.
         buildSystems = [ "x86_64-linux" ];
         # leviathan is shared with other users and the LLM host; keep CI bounded.
@@ -166,7 +170,6 @@ in
 
   restic =
     let
-      b2 = import ./b2.nix;
       bucket = b2.buckets.resticBackups;
     in
     {

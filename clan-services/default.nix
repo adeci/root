@@ -1,11 +1,18 @@
 { inputs }:
+let
+  # Other clans use these services too, so each one carries this flake's inputs.
+  service = module: {
+    imports = [ module ];
+    _module.args = { inherit inputs; };
+  };
+in
 {
-  "@adeci/tailscale" = import ./tailscale;
-  "@adeci/harmonia" = import ./harmonia { inherit inputs; };
-  "@adeci/remote-builder" = import ./remote-builder;
-  "@adeci/security-keys" = import ./security-keys;
-  "@adeci/monitoring" = import ./monitoring;
-  "@adeci/restic" = import ./restic;
-  "@adeci/nixbot" = import ./nixbot { inherit inputs; };
-  "@adeci/atuin" = import ./atuin;
+  "@adeci/atuin" = service ./atuin;
+  "@adeci/harmonia" = service ./harmonia;
+  "@adeci/monitoring" = service ./monitoring;
+  "@adeci/nixbot" = service ./nixbot;
+  "@adeci/remote-builder" = service ./remote-builder;
+  "@adeci/restic" = service ./restic;
+  "@adeci/security-keys" = service ./security-keys;
+  "@adeci/tailscale" = service ./tailscale;
 }

@@ -1,4 +1,4 @@
-# The rules for the other data files: the machines and edges b2.nix, cloudflare.nix, ingress.nix and clan-instances.nix name must exist, and an edge's ports must not clash. Each failing rule is one problem default.nix lists.
+# Rules for the data files besides network.nix.
 { config, lib, ... }:
 let
   inherit (config)
@@ -26,6 +26,17 @@ let
   usedMoreThanOnce =
     values: lib.unique (lib.filter (value: lib.count (other: other == value) values > 1) values);
 
+  edges = lib.unique (lib.attrNames ingress.edges ++ lib.attrNames ingress.streams);
+
+  # What an edge opens: its static firewall rules and its streams' listen ports.
+  edgePorts =
+    edge:
+    map (rule: { inherit (rule) protocol port; }) (ingress.edges.${edge}.firewall.staticRules or [ ])
+    ++ map (stream: {
+      inherit (stream) protocol;
+      port = stream.listen;
+    }) (ingress.streams.${edge} or [ ]);
+
   # The rules
 
   tunnelMachines = map (name: mustBeMachine "inventory/cloudflare.nix tunnels.${name}" name) (
@@ -52,6 +63,19 @@ let
       )
     ) cloudflare.dns
   );
+
+  dnsStreams = lib.mapAttrsToList (
+    name: record:
+    let
+      inherit (record.ingressStream) edge;
+    in
+    {
+      assertion = lib.any (stream: stream.name == record.ingressStream.name) (
+        ingress.streams.${edge} or [ ]
+      );
+      message = "inventory/cloudflare.nix dns.${name}.ingressStream: ${edge} has no stream ${record.ingressStream.name}";
+    }
+  ) (lib.filterAttrs (_: record: record ? ingressStream) cloudflare.dns);
 
   # A stream's upstream: <machine>.<tailnet domain>:<port>.
   upstreamPattern = "([^.]+)\\.${lib.escapeRegex config.tailnet.domain}:([0-9]{1,5})";
@@ -84,22 +108,32 @@ let
     }
   ) ingress.streams;
 
+  validEdgePorts = lib.concatMap (
+    edge:
+    map (open: {
+      assertion =
+        lib.elem open.protocol [
+          "tcp"
+          "udp"
+        ]
+        && builtins.isInt open.port
+        && open.port >= 1
+        && open.port <= 65535;
+      message = "inventory/ingress.nix ${edge}: ${toString open.protocol}/${toString open.port} is not a tcp or udp port from 1 to 65535";
+    }) (edgePorts edge)
+  ) edges;
+
   # An edge's static firewall rules and its streams share one protocol/port space.
   uniqueEdgePorts = map (
     edge:
     let
-      reused = usedMoreThanOnce (
-        map (rule: "${rule.protocol}/${toString rule.port}") (
-          ingress.edges.${edge}.firewall.staticRules or [ ]
-        )
-        ++ map (stream: "${stream.protocol}/${toString stream.listen}") (ingress.streams.${edge} or [ ])
-      );
+      reused = usedMoreThanOnce (map (open: "${open.protocol}/${toString open.port}") (edgePorts edge));
     in
     {
       assertion = reused == [ ];
       message = "inventory/ingress.nix ${edge}: ports ${toString reused} are used more than once";
     }
-  ) (lib.unique (lib.attrNames ingress.edges ++ lib.attrNames ingress.streams));
+  ) edges;
 
   # Clan ignores role members that aren't machines.
   instanceMachines = lib.concatLists (
@@ -122,8 +156,10 @@ in
     edgeMachines
     bucketMachines
     dnsEdges
+    dnsStreams
     streamUpstreams
     uniqueStreamNames
+    validEdgePorts
     uniqueEdgePorts
     instanceMachines
   ];

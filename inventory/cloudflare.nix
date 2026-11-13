@@ -1,16 +1,13 @@
-# The Cloudflare zones, tunnels, DNS records, redirects and firewall rules, read as self.inventory.cloudflare.
 let
   conduitEdge = "conduit";
 
-  edgeA = name: {
+  minecraftA = name: {
     zone = "adeci.net";
     inherit name;
     type = "A";
     edge = conduitEdge;
     proxied = false;
   };
-
-  minecraftA = edgeA;
 
   minecraftSrv = host: stream: {
     zone = "adeci.net";
@@ -89,6 +86,6 @@ in
   # Hostnames Cloudflare answers with a redirect; nothing serves them.
   redirects = {
     "macbootstrap.decio.us" =
-      "https://raw.githubusercontent.com/adeci/root/main/flake/mac-install/bootstrap.sh";
+      "https://raw.githubusercontent.com/adeci/root/main/packages/mac-install/bootstrap.sh";
   };
 }

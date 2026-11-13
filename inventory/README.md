@@ -6,8 +6,8 @@ The facts about the machines and the home network, checked and published as `sel
 
 1. **Data**: the files in this directory. `network.nix` holds the home network and the machines on it; `b2.nix`, `cloudflare.nix`, `ingress.nix`, `clan-instances.nix` and `tailscale-policy.nix` hold the rest. `users/` holds the user accounts, which `flake/users.nix` reads directly.
 2. **Checks**: `flake/inventory/` reads them in. `schema.nix` types every entry in `network.nix`, `rules.nix` checks facts that span entries, and `references.nix` checks the machines and edges the other files name.
-3. **Result**: `self.inventory`, the checked data with its defaults filled in and read-only values derived from it, such as `lan.hosts`, `lan.cables` and each appliance's `vlanIds`. Reading it fails while anything is wrong, listing every problem.
-4. **Readers**: clan's machines and service instances (`flake/clan.nix`), the machines' own modules (`self.inventory`), the Terraform configs behind `tf-plan` and `net-plan` (`terranix/`), the netinstall apps (`flake/routeros.nix`) and the work flake (`inputs.root.inventory`). Flake-parts modules read it as `config.flake.inventory`.
+3. **Result**: `self.inventory`, the checked data with its defaults filled in and read-only values derived from it, such as `lan.hosts`, `lan.cables` and each switch's `vlanPorts`. Reading it fails while anything is wrong, listing every problem.
+4. **Readers**: clan's machines and service instances (`flake/clan.nix`), the machines' own modules (`self.inventory`), the Terraform configs behind `tf-plan` and `net-plan` (`terranix/`), the netinstall apps (`flake/routeros-netinstall.nix`) and the work flake (`inputs.root.inventory`). Flake-parts modules read it as `config.flake.inventory`.
 
 Check your edits with `nix build .#checks.x86_64-linux.inventory`.
 

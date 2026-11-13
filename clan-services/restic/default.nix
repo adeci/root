@@ -1,4 +1,4 @@
-_: {
+{
   _class = "clan.service";
 
   manifest = {
@@ -109,84 +109,43 @@ _: {
               else
                 "${settings.repositoryBase}/${machineName}";
 
-            stateEntries = lib.attrValues config.clan.core.state;
-            stateFolders = lib.unique (lib.flatten (map (state: state.folders) stateEntries));
-            hasState = config.clan.core.state != { };
+            states = lib.attrValues config.clan.core.state;
 
-            runStateCommands =
-              label: attr:
-              lib.concatMapStringsSep "\n" (
-                state:
-                let
-                  command = state.${attr};
-                in
-                lib.optionalString (command != null) ''
-                  echo "Running ${label} command for ${state.name}"
-                  if ! /run/current-system/sw/bin/${command}; then
-                    echo "${label} command failed for ${state.name}" >&2
-                    failed=1
-                  fi
-                ''
-              ) stateEntries;
-
-            backupPrepareCommand = lib.concatLines [
-              "#!${pkgs.bash}/bin/bash"
-              "set -euo pipefail"
-              "failed=0"
-              (runStateCommands "pre-backup" "preBackupCommand")
-              ''
-                if [[ "$failed" -ne 0 ]]; then
-                  exit 1
-                fi
-              ''
-            ];
-
-            backupCleanupCommand = lib.concatLines [
-              "#!${pkgs.bash}/bin/bash"
-              "set -euo pipefail"
-              "failed=0"
-              (runStateCommands "post-backup" "postBackupCommand")
-              ''
-                if [[ "$failed" -ne 0 ]]; then
-                  exit 1
-                fi
-              ''
-            ];
-
-            restoreStateManifest = pkgs.writeText "restic-state-folders.tsv" (
-              lib.concatMapStringsSep "\n" (
-                state: lib.concatMapStringsSep "\n" (folder: "${state.name}\t${folder}") state.folders
-              ) stateEntries
+            # One "<state>\t<folder>" line per state folder.
+            stateFolders = pkgs.writeText "restic-state-folders.tsv" (
+              lib.concatMapStrings (
+                state: lib.concatMapStrings (folder: "${state.name}\t${folder}\n") state.folders
+              ) states
             );
 
-            runRestoreCommands =
-              label: attr:
-              lib.concatMapStringsSep "\n" (
+            # One "<state>\t<hook>\t<command>" line per state command, hook being e.g. pre-backup.
+            stateCommands = pkgs.writeText "restic-state-commands.tsv" (
+              lib.concatMapStrings (
                 state:
                 let
-                  command = state.${attr};
+                  commands = {
+                    pre-backup = state.preBackupCommand;
+                    post-backup = state.postBackupCommand;
+                    pre-restore = state.preRestoreCommand;
+                    post-restore = state.postRestoreCommand;
+                  };
                 in
-                lib.optionalString (command != null) ''
-                  if state_selected ${lib.escapeShellArg state.name}; then
-                    echo "Running ${label} command for ${state.name}"
-                    /run/current-system/sw/bin/${command}
-                  fi
-                ''
-              ) stateEntries;
+                lib.concatStrings (
+                  lib.mapAttrsToList (
+                    hook: command: lib.optionalString (command != null) "${state.name}\t${hook}\t${command}\n"
+                  ) commands
+                )
+              ) states
+            );
 
-            snapshotListFilter = pkgs.writeText "restic-snapshot-list.jq" ''
-              [
-                .[] | {
-                  name: "${jobName}::" + (.short_id // (.id[0:12])),
-                  date: .time,
-                  hostname: .hostname,
-                  paths: .paths
-                }
-              ]
-            '';
+            backupHooks = pkgs.writeShellApplication {
+              name = "restic-backup-hooks";
+              runtimeEnv.STATE_COMMANDS = stateCommands;
+              text = builtins.readFile ./backup-hooks.sh;
+            };
           in
           {
-            config = lib.mkIf hasState {
+            config = lib.mkIf (states != [ ]) {
               clan.core.vars.generators.${settings.credentials.generator} = {
                 files.${settings.credentials.file}.secret = true;
               };
@@ -201,11 +160,13 @@ _: {
 
               services.restic.backups.${jobName} = {
                 inherit repository;
-                paths = stateFolders;
-                inherit (settings) exclude;
-                inherit (settings) timerConfig;
-                inherit (settings) pruneOpts;
-                inherit (settings) checkOpts;
+                paths = lib.unique (lib.concatMap (state: state.folders) states);
+                inherit (settings)
+                  exclude
+                  timerConfig
+                  pruneOpts
+                  checkOpts
+                  ;
                 extraBackupArgs = settings.extraBackupArgs ++ [
                   "--tag clan"
                   "--tag ${machineName}"
@@ -215,7 +176,8 @@ _: {
                 environmentFile =
                   config.clan.core.vars.generators.${settings.credentials.generator}.files.${settings.credentials.file}.path;
                 passwordFile = config.clan.core.vars.generators.${settings.passwordGenerator}.files.password.path;
-                inherit backupPrepareCommand backupCleanupCommand;
+                backupPrepareCommand = "${lib.getExe backupHooks} pre-backup";
+                backupCleanupCommand = "${lib.getExe backupHooks} post-backup";
               };
 
               clan.core.backups.providers.restic = {
@@ -238,67 +200,19 @@ _: {
                   runtimeInputs = [ pkgs.jq ];
                   text = ''
                     /run/current-system/sw/bin/restic-${jobName} snapshots --json \
-                      | jq --from-file ${snapshotListFilter}
+                      | jq --arg job ${jobName} --from-file ${./list.jq}
                   '';
                 })
 
                 (pkgs.writeShellApplication {
                   name = "restic-restore";
                   runtimeInputs = [ pkgs.coreutils ];
-                  text = ''
-                    if [[ "''${NAME:-}" == "" ]]; then
-                      echo "No backup name given via NAME environment variable" >&2
-                      exit 1
-                    fi
-
-                    snapshot="''${NAME##*::}"
-                    if [[ "$snapshot" == "$NAME" ]]; then
-                      echo "Backup name must look like '${jobName}::<snapshot-id>'" >&2
-                      exit 1
-                    fi
-
-                    RESTORE_FOLDERS=()
-                    if [[ "''${FOLDERS:-}" != "" ]]; then
-                      IFS=':' read -ra RESTORE_FOLDERS <<< "''${FOLDERS}"
-                    fi
-
-                    state_selected() {
-                      local state="$1"
-                      local manifest_state folder requested
-
-                      if [[ "''${#RESTORE_FOLDERS[@]}" -eq 0 ]]; then
-                        return 0
-                      fi
-
-                      while IFS=$'\t' read -r manifest_state folder; do
-                        [[ "$manifest_state" == "$state" ]] || continue
-                        for requested in "''${RESTORE_FOLDERS[@]}"; do
-                          case "$requested" in
-                            "$folder"|"$folder"/*) return 0 ;;
-                          esac
-                        done
-                      done < ${restoreStateManifest}
-
-                      return 1
-                    }
-
-                    include_args=()
-                    while IFS=$'\t' read -r state folder; do
-                      state_selected "$state" || continue
-                      include_args+=(--include "$folder" --include "$folder/**")
-                    done < ${restoreStateManifest}
-
-                    if [[ "''${#include_args[@]}" -eq 0 ]]; then
-                      echo "No clan.core.state folders matched FOLDERS" >&2
-                      exit 1
-                    fi
-
-                    ${runRestoreCommands "pre-restore" "preRestoreCommand"}
-
-                    /run/current-system/sw/bin/restic-${jobName} restore "$snapshot" --target / "''${include_args[@]}"
-
-                    ${runRestoreCommands "post-restore" "postRestoreCommand"}
-                  '';
+                  runtimeEnv = {
+                    JOB_NAME = jobName;
+                    STATE_FOLDERS = stateFolders;
+                    STATE_COMMANDS = stateCommands;
+                  };
+                  text = builtins.readFile ./restore.sh;
                 })
               ];
             };

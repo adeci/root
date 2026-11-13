@@ -1,4 +1,3 @@
-# The tailnet's access policy, read as self.inventory.tailscalePolicy; given the inventory for the addresses it names.
 { lan, tailnet, ... }:
 let
   # The owner's tailnet login.

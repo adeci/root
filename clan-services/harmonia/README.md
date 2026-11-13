@@ -1,16 +1,14 @@
 # Harmonia
 
 Serves the local nix store as a binary cache with
-[harmonia](https://github.com/nix-community/harmonia). Signing keys are
-generated and clients trust them through the inventory, so no keys are
-distributed by hand.
+[harmonia](https://github.com/nix-community/harmonia), signed with a generated
+key that clients trust through the inventory, so no keys are distributed by
+hand.
 
 ## Roles
 
-- `server` (NixOS only): runs the harmonia cache on `port`, opened in the
-  firewall, and signs what it serves with its generated key.
-- `client`: configures nix to use every server as a substituter and trust its
-  public key.
+- `server` (NixOS only): serves the cache on `port`, opened in the firewall.
+- `client`: uses every server as a substituter and trusts its public key.
 
 ## Notes
 

@@ -1,5 +1,5 @@
-{ inputs }:
-_: {
+{ inputs, ... }:
+{
   _class = "clan.service";
 
   manifest = {
@@ -123,10 +123,7 @@ _: {
               repo: "${instanceName}-effects-${lib.replaceStrings [ ":" "/" ] [ "-" "-" ] repo}";
           in
           {
-            imports = [
-              inputs.nixbot.nixosModules.nixbot
-              ./build-egress.nix
-            ];
+            imports = [ inputs.nixbot.nixosModules.nixbot ];
 
             clan.core.vars.generators = {
               "${instanceName}-webhook-secret" = {
@@ -212,6 +209,10 @@ _: {
                 }
               '';
             };
+
+            # Fixed-output builds share the host network: keep CI code off loopback, the LAN and the tailnet.
+            networking.firewall.extraCommands = builtins.readFile ./build-egress-start.sh;
+            networking.firewall.extraStopCommands = builtins.readFile ./build-egress-stop.sh;
 
             services.nixbot = {
               enable = true;

@@ -1,4 +1,4 @@
-_: {
+{
   _class = "clan.service";
 
   manifest = {
@@ -36,7 +36,7 @@ _: {
             settings.auth-key-generator
           else
             "tailscale-${instanceName}";
-        varsModule =
+        shared =
           { pkgs, ... }:
           {
             clan.core.vars.generators.${generatorName} = {
@@ -59,7 +59,7 @@ _: {
         nixosModule =
           { config, lib, ... }:
           {
-            imports = [ varsModule ];
+            imports = [ shared ];
             services.tailscale = {
               enable = true;
               authKeyFile = config.clan.core.vars.generators.${generatorName}.files.auth_key.path;
@@ -74,7 +74,7 @@ _: {
         darwinModule =
           { config, lib, ... }:
           {
-            imports = [ varsModule ];
+            imports = [ shared ];
             services.tailscale.enable = true;
             launchd.daemons.tailscale-connect.serviceConfig = {
               ProgramArguments = [

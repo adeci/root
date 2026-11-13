@@ -1,5 +1,4 @@
-{ inputs }:
-{ clanLib, ... }:
+{ clanLib, inputs, ... }:
 {
   _class = "clan.service";
 
@@ -125,21 +124,22 @@
             ];
 
             nix.settings.substituters = map (
-              name:
+              serverName:
               let
-                serverSettings = roles.server.machines.${name}.settings;
-                address = if serverSettings.address != null then serverSettings.address else "${name}.${domain}";
+                serverSettings = roles.server.machines.${serverName}.settings;
+                address =
+                  if serverSettings.address != null then serverSettings.address else "${serverName}.${domain}";
                 priority = if settings.priority != null then settings.priority else serverSettings.priority;
               in
               "http://${address}:${toString serverSettings.port}?priority=${toString priority}"
             ) serverNames;
 
             nix.settings.trusted-public-keys = map (
-              name:
+              serverName:
               lib.strings.trim (
                 clanLib.getPublicValue {
                   flake = config.clan.core.settings.directory;
-                  generator = "${instanceName}-${name}";
+                  generator = "${instanceName}-${serverName}";
                   file = "signing-key.pub";
                 }
               )

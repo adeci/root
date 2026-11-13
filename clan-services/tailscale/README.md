@@ -7,11 +7,9 @@ admin console.
 
 ## Roles
 
-- `peer`: on NixOS, passes the auth key and `flags` to the upstream
-  `services.tailscale` module, with `extraSetFlags` defaulting to
-  `--accept-routes=false` plus `flags`. On nix-darwin, which has no enrollment
-  support, a launchd job runs `tailscale up` with the auth key,
-  `--accept-routes=false` and `flags`.
+- `peer`: enrolls the machine with the instance's auth key and applies `flags`.
+  On nix-darwin, which has no enrollment support, a launchd job runs
+  `tailscale up` instead.
 
 ## Notes
 

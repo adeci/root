@@ -1,45 +1,19 @@
-# What each entry in inventory/network.nix may contain, in the same sections and order; derived values are read-only options next to what they derive from.
+# The shape of network.nix and its derived values.
 { config, lib, ... }:
 let
   inherit (lib) mkOption types;
+  inherit (import ./lib.nix { inherit lib; })
+    carriedVlans
+    inBlock
+    ipv4Address
+    macAddress
+    parseCableEnd
+    ;
 
   # The whole inventory. Inside an entry's own submodule, `config` is that entry.
   inventory = config;
 
   models = import ./routeros-models.nix;
-
-  # Types the sections below share.
-
-  octets = address: map lib.toIntBase10 (lib.splitString "." address);
-
-  addressNumber =
-    address:
-    let
-      octet = lib.elemAt (octets address);
-    in
-    ((octet 0 * 256 + octet 1) * 256 + octet 2) * 256 + octet 3;
-
-  powerOfTwo = n: if n == 0 then 1 else 2 * powerOfTwo (n - 1);
-
-  # Whether an address falls inside a block written as <address>/<prefix length>.
-  inBlock =
-    block: address:
-    let
-      parts = lib.splitString "/" block;
-      size = powerOfTwo (32 - lib.toIntBase10 (lib.last parts));
-    in
-    builtins.div (addressNumber address) size == builtins.div (addressNumber (lib.head parts)) size;
-
-  ipv4Address = lib.mkOptionType {
-    name = "ipv4Address";
-    description = "IPv4 address";
-    check =
-      address:
-      builtins.isString address
-      && builtins.match "([0-9]{1,3}\\.){3}[0-9]{1,3}" address != null
-      && lib.all (octet: octet <= 255) (octets address);
-    merge = lib.options.mergeEqualOption;
-  };
 
   tailnetAddress = lib.mkOptionType {
     name = "tailnetAddress";
@@ -48,28 +22,12 @@ let
     merge = lib.options.mergeEqualOption;
   };
 
-  macAddress = types.strMatching "([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}";
-
   # Each of these accepts only the names the inventory defines.
   vlanName = types.enum (lib.attrNames inventory.lan.vlans);
   hostName = types.enum (lib.attrNames inventory.lan.hosts);
   routerPortLabel = types.enum (lib.attrNames inventory.router.ports);
   machineName = types.enum (lib.attrNames inventory.machines);
   wifiName = types.enum (lib.attrNames inventory.wifi);
-
-  # Where a cable leads, as { name, port }, port being null when it names none; null when malformed.
-  parseCableEnd =
-    end:
-    let
-      parts = builtins.match "([^:]+)(:([^:]+))?" end;
-    in
-    if parts == null then
-      null
-    else
-      {
-        name = lib.elemAt parts 0;
-        port = lib.elemAt parts 2;
-      };
 
   # Machines and every LAN host; a machine without a reservation can still be cabled.
   cableEndNames = lib.sort lib.lessThan (
@@ -149,10 +107,16 @@ in
                   default = false;
                   description = "Whether the router advertises the VLAN to the tailnet as a subnet route.";
                 };
+                vlanDevice = mkOption {
+                  type = types.str;
+                  readOnly = true;
+                  default = "vlan${toString config.id}";
+                  description = "The router's 802.1Q device for the VLAN on the LAN trunk.";
+                };
                 interface = mkOption {
                   type = types.str;
-                  default = "vlan${toString config.id}";
-                  description = "The router's interface for the VLAN's subnet.";
+                  default = config.vlanDevice;
+                  description = "The router's interface holding the VLAN's gateway: its vlanDevice, or a bridge the device joins.";
                 };
               };
             }
@@ -301,6 +265,13 @@ in
           description = "The port carrying the mgmt VLAN, untagged.";
         };
       };
+
+      interfaces = mkOption {
+        type = types.attrsOf types.str;
+        readOnly = true;
+        default = lib.mapAttrs (_: label: inventory.router.ports.${label}) inventory.router.roles;
+        description = "Its Linux interface name for each role.";
+      };
     };
 
     # machines
@@ -403,17 +374,18 @@ in
 
     appliances =
       let
-        # One port of an appliance, given the appliance's name and defaultVlan.
+        # One port of an appliance, given the appliance's name and settings.
         port =
-          appliance:
+          applianceName: appliance:
           types.submodule (
             { name, config, ... }:
             let
               leadsTo = parseCableEnd config.cable;
               # A cable written on another appliance's port that leads to this one.
               incoming = lib.findFirst (
-                cable: cable.to == appliance.name && cable.toPort == name
+                cable: cable.to == applianceName && cable.toPort == name
               ) null inventory.lan.cables;
+              bridged = vlan: lib.elem vlan appliance.vlans;
             in
             {
               options = {
@@ -422,20 +394,48 @@ in
                   default = appliance.defaultVlan;
                   description = "The VLAN the port carries untagged.";
                 };
-                hybrid = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Whether the port also carries the `tagged` VLANs.";
-                };
                 tagged = mkOption {
                   type = types.listOf vlanName;
                   default = [ ];
-                  description = "The VLANs a hybrid port carries tagged.";
+                  description = "The VLANs the port also carries, tagged.";
                 };
                 trunk = mkOption {
                   type = types.bool;
                   default = false;
-                  description = "Whether the port carries every VLAN of the switch, all tagged.";
+                  description = "Whether the port carries every VLAN of the switch, tagged; on the management port the appliance's own VLAN stays untagged.";
+                };
+                carries = mkOption {
+                  type = types.attrs;
+                  readOnly = true;
+                  default =
+                    if name == appliance.managementPort then
+                      carriedVlans appliance.lan.vlan (
+                        if appliance.wifi != [ ] then
+                          appliance.wifiVlans
+                        else
+                          lib.optionals config.trunk (lib.remove appliance.lan.vlan appliance.vlans)
+                      )
+                    else if config.trunk then
+                      carriedVlans null appliance.vlans
+                    else
+                      carriedVlans (if bridged config.vlan then config.vlan else null) (lib.filter bridged config.tagged);
+                  description = "What the port carries, as { untagged, tagged }. The management port carries the appliance's own VLAN untagged and tags its Wi-Fi VLANs or, as a trunk, the switch's other VLANs. Any other port carries only VLANs the switch bridges.";
+                };
+                mode = mkOption {
+                  type = types.enum [
+                    "access"
+                    "hybrid"
+                    "trunk"
+                  ];
+                  readOnly = true;
+                  default =
+                    if config.carries.tagged == [ ] then
+                      "access"
+                    else if config.carries.untagged == null then
+                      "trunk"
+                    else
+                      "hybrid";
+                  description = "How the port carries VLANs: one untagged (access), only tagged (trunk), or both (hybrid).";
                 };
                 poe = mkOption {
                   type = types.nullOr (
@@ -511,9 +511,9 @@ in
                   description = "The port it is managed through. It stays out of the bridge and keeps a DHCP client for the management address.";
                 };
                 fallbackPort = mkOption {
-                  type = types.nullOr types.str;
-                  default = null;
-                  description = "The port that takes fallbackAddress, when that isn't the management port.";
+                  type = types.str;
+                  default = config.managementPort;
+                  description = "The port that takes fallbackAddress and also keeps a DHCP client.";
                 };
                 fallbackAddress = mkOption {
                   type = types.str;
@@ -524,16 +524,27 @@ in
                   default = [ ];
                   description = "The VLANs a switch bridges; empty on an access point.";
                 };
-                vlanIds = mkOption {
-                  type = types.attrsOf types.int;
-                  readOnly = true;
-                  default = lib.genAttrs config.vlans (vlan: inventory.lan.vlans.${vlan}.id);
-                  description = "The 802.1Q tag of each VLAN in `vlans`, by name.";
-                };
                 defaultVlan = mkOption {
                   type = types.nullOr vlanName;
                   default = null;
                   description = "The VLAN a switch port carries untagged unless the port names another.";
+                };
+                bridgePorts = mkOption {
+                  type = types.listOf types.str;
+                  readOnly = true;
+                  default = lib.optionals (config.vlans != [ ]) (
+                    lib.remove config.managementPort models.${config.model}.ports
+                  );
+                  description = "The ports a switch bridges: all but the management port, in the model's order.";
+                };
+                vlanPorts = mkOption {
+                  type = types.attrsOf types.attrs;
+                  readOnly = true;
+                  default = lib.genAttrs config.vlans (vlan: {
+                    tagged = lib.filter (port: lib.elem vlan config.ports.${port}.carries.tagged) config.bridgePorts;
+                    untagged = lib.filter (port: config.ports.${port}.carries.untagged == vlan) config.bridgePorts;
+                  });
+                  description = "Each VLAN in `vlans` with the bridge ports that carry it, as { tagged, untagged }.";
                 };
                 wifi = mkOption {
                   type = types.listOf wifiName;
@@ -546,11 +557,28 @@ in
                   default = lib.genAttrs config.wifi (network: inventory.wifi.${network});
                   description = "The settings of each network in `wifi`, by name.";
                 };
+                primaryWifi = mkOption {
+                  type = types.nullOr wifiName;
+                  readOnly = true;
+                  default = lib.findFirst (network: inventory.wifi.${network}.primary) null config.wifi;
+                  description = "The network in `wifi` that each radio's main interface broadcasts.";
+                };
+                otherWifi = mkOption {
+                  type = types.listOf wifiName;
+                  readOnly = true;
+                  default = lib.filter (network: !inventory.wifi.${network}.primary) config.wifi;
+                  description = "The other networks in `wifi`, each a virtual interface on every radio.";
+                };
+                wifiVlans = mkOption {
+                  type = types.listOf vlanName;
+                  readOnly = true;
+                  default = lib.sort lib.lessThan (
+                    lib.unique (map (network: inventory.wifi.${network}.vlan) config.wifi)
+                  );
+                  description = "The VLANs its Wi-Fi networks join.";
+                };
                 ports = mkOption {
-                  type = types.attrsOf (port {
-                    inherit name;
-                    inherit (config) defaultVlan;
-                  });
+                  type = types.attrsOf (port name config);
                   description = "Its ports by interface name: ether1, sfp-sfpplus1 and so on.";
                 };
               };
@@ -623,6 +651,16 @@ in
         description = "MikroTik hardware by model, from routeros-models.nix, each with its full list of ports.";
       };
 
+      admin = mkOption {
+        type = types.attrs;
+        readOnly = true;
+        default = {
+          user = "admin";
+          secret = "routeros-password";
+        };
+        description = "The account netinstall creates and Terraform manages the appliances with; its password is a clan secret.";
+      };
+
       exporter = mkOption {
         type = types.attrs;
         readOnly = true;
@@ -636,7 +674,7 @@ in
       };
     };
 
-    # the other data files (not network.nix): untyped for now; default.nix reads them in and references.nix checks the names they use
+    # the other data files, untyped; references.nix checks the names they use
 
     b2 = mkOption {
       type = types.raw;
@@ -650,7 +688,7 @@ in
 
     ingress = mkOption {
       type = types.raw;
-      description = "inventory/ingress.nix: the public edge machines and the streams they forward.";
+      description = "inventory/ingress.nix: the public edges and the streams they forward.";
     };
 
     clanInstances = mkOption {

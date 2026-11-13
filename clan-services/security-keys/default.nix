@@ -1,4 +1,4 @@
-_: {
+{
   _class = "clan.service";
 
   manifest = {
@@ -54,15 +54,21 @@ _: {
             ...
           }:
           let
-            allKeyNames = map (k: k.name) settings.keys;
-            deployKeys = builtins.filter (k: builtins.elem k.name settings.use) settings.keys;
-            unknownKeys = builtins.filter (name: !builtins.elem name allKeyNames) settings.use;
+            allKeyNames = map (key: key.name) settings.keys;
+            deployKeys = lib.filter (key: lib.elem key.name settings.use) settings.keys;
+            unknownKeys = lib.filter (name: !lib.elem name allKeyNames) settings.use;
+            identityFile = key: "${config.users.users.${key.owner}.home}/.ssh/id_ed25519_sk_${key.name}";
+            deployHandle = pkgs.writeShellApplication {
+              name = "deploy-fido2-handle";
+              runtimeInputs = [ pkgs.coreutils ];
+              text = builtins.readFile ./deploy-handle.sh;
+            };
           in
           {
             assertions = [
               {
                 assertion = unknownKeys == [ ];
-                message = "security-keys: unknown key(s) in 'use': ${lib.concatStringsSep ", " unknownKeys}. Must be defined in role-level 'keys'.";
+                message = "@adeci/security-keys: unknown key(s) in 'use': ${lib.concatStringsSep ", " unknownKeys}. Must be defined in role-level 'keys'.";
               }
             ];
             # Identical on every machine, so it holds all key handles.
@@ -90,24 +96,17 @@ _: {
 
             system.activationScripts."deploy-fido2-handles" = lib.concatMapStringsSep "\n" (
               key:
-              let
-                handlePath = config.clan.core.vars.generators.${instanceName}.files.${key.name}.path;
-                homeDir = config.users.users.${key.owner}.home;
-              in
-              ''
-                install -d -m 700 -o ${key.owner} ${homeDir}/.ssh
-                install -m 600 -o ${key.owner} ${handlePath} ${homeDir}/.ssh/id_ed25519_sk_${key.name}
-                if [ "$(tail -c1 ${homeDir}/.ssh/id_ed25519_sk_${key.name})" != "" ]; then
-                  echo >> ${homeDir}/.ssh/id_ed25519_sk_${key.name}
-                fi
-              ''
+              lib.escapeShellArgs [
+                (lib.getExe deployHandle)
+                key.owner
+                config.clan.core.vars.generators.${instanceName}.files.${key.name}.path
+                (identityFile key)
+              ]
             ) deployKeys;
 
-            programs.ssh.extraConfig = lib.concatStringsSep "\n" (
-              map (
-                key: "IdentityFile ${config.users.users.${key.owner}.home}/.ssh/id_ed25519_sk_${key.name}"
-              ) deployKeys
-            );
+            programs.ssh.extraConfig = lib.concatMapStringsSep "\n" (
+              key: "IdentityFile ${identityFile key}"
+            ) deployKeys;
           };
       };
   };
