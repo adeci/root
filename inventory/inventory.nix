@@ -259,6 +259,12 @@
       vlan = "trusted";
     };
 
+    kat-laptop.lan = {
+      mac = "74:d4:dd:05:4c:2a";
+      ip = "10.10.0.41";
+      vlan = "trusted";
+    };
+
     printer.lan = {
       mac = "9c:93:4e:2e:6e:e1";
       ip = "10.10.0.50";
@@ -412,6 +418,21 @@
             poe = "auto-on";
             comment = "WAP — nimbus (PoE+)";
           };
+          "ether4" = {
+            comment = "Laptop — kat-laptop";
+          };
+          "ether6" = {
+            comment = "Server — sequoia";
+          };
+          "ether9" = {
+            comment = "Printer";
+          };
+          "ether10" = {
+            comment = "BMC — leviathan iDRAC";
+          };
+          "ether18" = {
+            comment = "Server — bramble";
+          };
         };
 
         fallbackAddress = "172.16.0.2/24";
@@ -449,9 +470,21 @@
             vlan = "vault";
             comment = "Server — lachesis";
           };
+          "ether2" = {
+            comment = "Windows PC — aero";
+          };
+          "ether3" = {
+            comment = "Server — clotho";
+          };
           "ether4" = {
             vlan = "guest";
-            comment = "Penumbra guest device";
+            comment = "Dock — malum (work Mac)";
+          };
+          "ether5" = {
+            comment = "Server — atropos";
+          };
+          "ether7" = {
+            comment = "Dock — praxis";
           };
         };
 
@@ -546,8 +579,36 @@
       b = "nimbus:ether1";
     }
     {
+      a = "nexus:ether4";
+      b = "kat-laptop";
+    }
+    {
+      a = "nexus:ether6";
+      b = "sequoia";
+    }
+    {
+      a = "nexus:ether9";
+      b = "printer";
+    }
+    {
+      a = "nexus:ether10";
+      b = "leviathan-idrac";
+    }
+    {
       a = "axon:ether1";
       b = "lachesis";
+    }
+    {
+      a = "axon:ether2";
+      b = "aero";
+    }
+    {
+      a = "axon:ether3";
+      b = "clotho";
+    }
+    {
+      a = "axon:ether5";
+      b = "atropos";
     }
   ];
 }
