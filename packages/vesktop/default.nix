@@ -1,8 +1,9 @@
-# nixpkgs' pkgs/by-name/ve/vesktop recipe; when package.json moves to another Electron major, bump the electron pin below (preBuild fails until then).
+# nixpkgs' vesktop recipe.
 {
   lib,
-  pkgs,
-  self',
+  callPackage,
+  path,
+  self,
   stdenv,
   fetchFromGitHub,
   fetchurl,
@@ -19,18 +20,15 @@
   pnpm_12,
   fetchPnpmDeps,
   pnpmConfigHook,
-  ...
 }:
 let
-  inherit (self'.packages) vencord;
+  inherit (self.packages.${stdenv.hostPlatform.system}) vencord;
 
   # The Electron the release's package.json pins; this nixpkgs has no electron_45, so take upstream's build through the builder behind electron_*-bin.
-  electron =
-    pkgs.callPackage "${pkgs.path}/pkgs/development/tools/electron/binary/generic.nix" { } "45.2.3"
-      {
-        x86_64-linux = "a87fe741f6d121285117e574da6c9a2e65210d410123bbc04713b099add0263b";
-        headers = "0jpkayhvf7779fch0z85cwkpkx0x6vddbixlx6cch3xfj2xfvkqx";
-      };
+  electron = callPackage "${path}/pkgs/development/tools/electron/binary/generic.nix" { } "45.2.3" {
+    x86_64-linux = "a87fe741f6d121285117e574da6c9a2e65210d410123bbc04713b099add0263b";
+    headers = "0jpkayhvf7779fch0z85cwkpkx0x6vddbixlx6cch3xfj2xfvkqx";
+  };
 
   splash = fetchurl {
     url = "https://raw.githubusercontent.com/adeci/wallpapers/refs/heads/main/nixos.gif";

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Primes a fresh Mac for `mac-install` from an admin machine: installs Nix, turns on Remote Login and authorizes the fleet's SSH keys for root and this user.
+# Primes a fresh Mac for mac-install.
 
 set -euo pipefail
 

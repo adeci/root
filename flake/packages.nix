@@ -1,12 +1,11 @@
-{ inputs, lib, ... }:
+{
+  inputs,
+  lib,
+  self,
+  ...
+}:
 let
-  featureDirs =
-    dir:
-    builtins.attrNames (
-      lib.filterAttrs (
-        name: type: type == "directory" && builtins.pathExists (dir + "/${name}/default.nix")
-      ) (builtins.readDir dir)
-    );
+  inherit (import ./lib.nix { inherit lib; }) nixEntries availablePackages;
 
   # Heavy GUI builds, not worth routine checks.
   skipChecks = [
@@ -19,70 +18,25 @@ let
   ];
 in
 {
-  imports = [ inputs.wrapper-modules.flakeModules.wrappers ];
-
-  flake.wrappers = lib.genAttrs (featureDirs ../wrappers) (name: {
-    imports = [ (../wrappers + "/${name}") ];
-    _module.args = {
-      inherit inputs;
-      inherit (inputs) self;
-    };
-  });
-
   perSystem =
-    {
-      config,
-      pkgs,
-      system,
-      self',
-      inputs',
-      ...
-    }:
+    { config, pkgs, ... }:
     let
-      # Packages that can't even evaluate on this platform count as unavailable.
-      availableHere = lib.filterAttrs (
-        _: drv:
-        let
-          r = builtins.tryEval (lib.meta.availableOn pkgs.stdenv.hostPlatform drv);
-        in
-        r.success && r.value
-      );
+      callPackage = pkgs.newScope { inherit self inputs; };
 
-      packages = availableHere (
-        lib.genAttrs (featureDirs ../packages) (
-          name:
-          pkgs.callPackage (../packages + "/${name}") {
-            inherit
-              inputs
-              inputs'
-              lib
-              self'
-              pkgs
-              ;
-            inherit (inputs) self;
-          }
-        )
-      );
-
-      wrappers = availableHere (
-        lib.genAttrs (featureDirs ../wrappers) (name: inputs.self.wrappers.${name}.wrap { inherit pkgs; })
+      packages = availablePackages pkgs.stdenv.hostPlatform (
+        lib.mapAttrs (_: path: callPackage path { }) (nixEntries ../packages)
       );
     in
     {
-      # Machines use this instance too.
-      _module.args.pkgs = import inputs.nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
       inherit packages;
 
-      wrappers.control_type = "build";
-      wrappers.packages = lib.mapAttrs (_: _: true) wrappers;
+      apps.mac-install.program = packages.mac-install;
+      apps.update-locks.program = packages.update-locks;
 
+      # Packages from packages/ and the exported wrappers build in `nix flake check`.
       checks = lib.mapAttrs' (name: lib.nameValuePair "package-${name}") (
         removeAttrs (
-          packages // lib.genAttrs (builtins.attrNames wrappers) (name: config.packages.${name})
+          packages // lib.getAttrs (lib.attrNames config.wrappers.packages) config.packages
         ) skipChecks
       );
     };

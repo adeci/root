@@ -1,3 +1,4 @@
+{ lib, ... }:
 {
   imports = [
     ./checks.nix
@@ -5,13 +6,19 @@
     ./devshell.nix
     ./formatter.nix
     ./inventory
-    ./mac-install
     ./modules.nix
     ./packages.nix
     ./routeros.nix
+    ./routeros-netinstall.nix
     ./terranix.nix
     ./tests.nix
-    ./update-locks.nix
     ./users.nix
+    ./wrappers.nix
   ];
+
+  # Helpers the work flake reuses; an option, so several files can add to it.
+  options.flake.lib = lib.mkOption {
+    type = lib.types.lazyAttrsOf lib.types.raw;
+    default = { };
+  };
 }

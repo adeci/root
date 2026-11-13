@@ -1,32 +1,27 @@
-# Each module gets a `key`, so a feature imported twice is included once, and a `_class`, so wrong-class imports fail; both go on the module itself, as a wrapper would reorder merging.
 { lib, ... }:
 let
+  inherit (import ./lib.nix { inherit lib; }) nixEntries;
+
   mkModules =
     dir:
     let
-      features =
-        lib.mapAttrs' (entry: _: lib.nameValuePair (lib.removeSuffix ".nix" entry) (dir + "/${entry}"))
-          (
-            lib.filterAttrs (
-              entry: type:
-              (type == "regular" && lib.hasSuffix ".nix" entry)
-              || (type == "directory" && builtins.pathExists (dir + "/${entry}/default.nix"))
-            ) (builtins.readDir dir)
-          );
+      features = nixEntries dir;
 
+      # `key` keeps a feature imported twice to one copy; `_class` rejects wrong-class imports.
+      # Set on the module itself: wrapping it would reorder merging.
       identify =
         class: path: module:
         let
-          id = {
+          identity = {
             _class = class;
             key = "${toString path}#${class}";
             _file = "${toString path}#${class}";
           };
         in
         if lib.isFunction module then
-          lib.setFunctionArgs (args: module args // id) (lib.functionArgs module)
+          lib.setFunctionArgs (args: module args // identity) (lib.functionArgs module)
         else
-          module // id;
+          module // identity;
 
       forClass =
         class:
@@ -44,12 +39,6 @@ in
     type = lib.types.lazyAttrsOf (lib.types.lazyAttrsOf lib.types.raw);
     default = { };
     description = "Machine features by class: self.modules.nixos.<name>, self.modules.darwin.<name>.";
-  };
-
-  # Helpers other flakes reuse; declared so more than one flake module can add to it.
-  options.flake.lib = lib.mkOption {
-    type = lib.types.lazyAttrsOf lib.types.raw;
-    default = { };
   };
 
   config.flake = {

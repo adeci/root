@@ -1,4 +1,4 @@
-"""What the person running this sees, and the answers they give."""
+"""Terminal prompts and output."""
 
 import contextlib
 import os

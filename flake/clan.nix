@@ -1,7 +1,12 @@
-{ config, inputs, ... }:
+{
+  config,
+  inputs,
+  self,
+  ...
+}:
 let
   services = import ../clan-services { inherit inputs; };
-  inherit (config.flake.inventory.tailnet) domain;
+  inherit (config.flake.inventory) tailnet;
 
   # Clan inventory from a machine table: each machine's tags and class, deployed over the tailnet.
   mkInventory =
@@ -20,10 +25,16 @@ let
     };
 in
 {
-  # Machines share the perSystem nixpkgs instance.
+  imports = [ inputs.clan-core.flakeModules.default ];
+
   perSystem =
-    { pkgs, ... }:
+    { pkgs, system, ... }:
     {
+      # One nixpkgs for machines, packages and tests.
+      _module.args.pkgs = import inputs.nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
       clan.pkgs = pkgs;
     };
 
@@ -31,18 +42,17 @@ in
   flake.clanServices = services;
   flake.lib.mkInventory = mkInventory;
 
+  # Each machines/<name>/ is a machine: clan imports its configuration.nix and disko.nix.
   clan = {
     meta.name = "adeci";
-    meta.domain = domain;
+    meta.domain = tailnet.domain;
     inventory = mkInventory {
-      inherit domain;
+      inherit (tailnet) domain;
       inherit (config.flake.inventory) machines;
       instances = config.flake.inventory.clanInstances;
     };
     modules = services;
-    specialArgs = {
-      inherit (inputs) self;
-      inherit inputs;
-    };
+    # Every module gets self and inputs.
+    specialArgs = { inherit self inputs; };
   };
 }

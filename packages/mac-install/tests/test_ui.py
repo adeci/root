@@ -1,4 +1,4 @@
-"""The terminal side, on a pseudo-terminal: its other end is the person typing."""
+"""ui against a pseudo-terminal."""
 
 import os
 import pty

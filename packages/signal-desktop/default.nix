@@ -1,1 +1,1 @@
-{ pkgs, ... }: import ../electron-libsecret.nix pkgs pkgs.signal-desktop
+{ callPackage, signal-desktop }: (callPackage ../lib.nix { }).withLibsecret signal-desktop

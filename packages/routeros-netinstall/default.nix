@@ -1,12 +1,20 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  fetchurl,
+  iproute2,
+  iptables,
+  python3,
+  stdenvNoCC,
+  writeShellApplication,
+}:
 let
   version = "7.22.1";
 
   # Statically linked, so it runs without patchelf.
-  netinstall-cli = pkgs.stdenvNoCC.mkDerivation {
+  netinstall-cli = stdenvNoCC.mkDerivation {
     pname = "netinstall-cli";
     inherit version;
-    src = pkgs.fetchurl {
+    src = fetchurl {
       url = "https://download.mikrotik.com/routeros/${version}/netinstall-${version}.tar.gz";
       hash = "sha256-qy+4b4X7p4nICpeD12PpjrsWtdeFjQDSAip8Unj2zbU=";
     };
@@ -23,12 +31,12 @@ let
     wifi-qcom-arm64 = "sha256-6npDjebffBOnASLOiAWNjCyppdGdsAPd20HDjs6+dZU=";
   };
 in
-pkgs.writeShellApplication {
+writeShellApplication {
   name = "routeros-netinstall";
   runtimeInputs = [
-    pkgs.iproute2
-    pkgs.iptables
-    pkgs.python3
+    iproute2
+    iptables
+    python3
   ];
   text = ''
     exec python3 ${./netinstall.py} --version ${version} --netinstall-cli ${netinstall-cli}/bin/netinstall-cli "$@"
@@ -36,7 +44,7 @@ pkgs.writeShellApplication {
   # One of this version's package files, e.g. `npk "arm64" "wifi-qcom"`.
   passthru.npk =
     arch: name:
-    pkgs.fetchurl {
+    fetchurl {
       url = "https://download.mikrotik.com/routeros/${version}/${name}-${version}-${arch}.npk";
       hash = npkHashes."${name}-${arch}";
     };

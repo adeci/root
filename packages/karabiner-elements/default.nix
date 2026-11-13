@@ -1,8 +1,8 @@
-# Pinned to 14.13.0: nix-darwin's services.karabiner-elements has been broken since 15.0 (nix-darwin/nix-darwin#1041).
-{ pkgs, ... }:
-pkgs.karabiner-elements.overrideAttrs (old: {
+{ fetchurl, karabiner-elements }:
+karabiner-elements.overrideAttrs (old: {
+  # nix-darwin's services.karabiner-elements is broken since 15.0 (nix-darwin/nix-darwin#1041).
   version = "14.13.0";
-  src = pkgs.fetchurl {
+  src = fetchurl {
     inherit (old.src) url;
     hash = "sha256-gmJwoht/Tfm5qMecmq1N6PSAIfWOqsvuHU8VDJY8bLw=";
   };

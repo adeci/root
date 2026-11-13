@@ -1,4 +1,4 @@
-# nixpkgs' pkgs/by-name/ve/vencord recipe, pinned since Discord's 2026-11-04 rspack update broke its 1.15.11 (black window, "i.A is not a constructor").
+# nixpkgs' vencord recipe.
 {
   lib,
   stdenv,
@@ -11,10 +11,10 @@
   applyPatches,
   inputs,
   plugins ? import ./plugins.nix { inherit inputs applyPatches; },
-  ...
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "vencord";
+  # Discord's 2026-11-04 rspack update broke nixpkgs' 1.15.11.
   version = "1.15.16";
 
   src = fetchFromGitHub {

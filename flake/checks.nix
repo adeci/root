@@ -1,15 +1,20 @@
-{ lib, self, ... }:
+{
+  inputs,
+  lib,
+  self,
+  ...
+}:
 let
   # Builds each of a flake's NixOS and darwin machines whose platform is `system`.
   mkMachineChecks =
     flake: system:
     let
-      onSystem = lib.filterAttrs (_name: machine: machine.pkgs.stdenv.hostPlatform.system == system);
+      onSystem = lib.filterAttrs (_: machine: machine.pkgs.stdenv.hostPlatform.system == system);
     in
-    lib.mapAttrs' (n: machine: lib.nameValuePair "nixos-${n}" machine.config.system.build.toplevel) (
-      onSystem flake.nixosConfigurations
-    )
-    // lib.mapAttrs' (n: machine: lib.nameValuePair "darwin-${n}" machine.system) (
+    lib.mapAttrs' (
+      name: machine: lib.nameValuePair "nixos-${name}" machine.config.system.build.toplevel
+    ) (onSystem flake.nixosConfigurations)
+    // lib.mapAttrs' (name: machine: lib.nameValuePair "darwin-${name}" machine.system) (
       onSystem flake.darwinConfigurations
     );
 in
@@ -23,18 +28,20 @@ in
       system,
       ...
     }:
+    let
+      callPackage = pkgs.newScope { inherit self inputs; };
+    in
     {
-      # Packages add their own checks where they're defined.
       checks =
         mkMachineChecks self system
-        // lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") config.devShells
+        // lib.mapAttrs' (name: lib.nameValuePair "devShell-${name}") config.devShells
         // {
           # Reading the inventory runs its checks.
           inventory = pkgs.writeText "inventory" (lib.concatLines (lib.attrNames self.inventory));
         }
         // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
           # Alert rules, routing and the ntfy bridge, all of which run on the Linux monitoring server.
-          monitoring = import ../clan-services/monitoring/tests { inherit lib pkgs; };
+          monitoring = callPackage ../clan-services/monitoring/tests { };
         };
     };
 }

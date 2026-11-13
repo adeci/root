@@ -1,1 +1,1 @@
-{ pkgs, ... }: import ../electron-libsecret.nix pkgs pkgs.element-desktop
+{ callPackage, element-desktop }: (callPackage ../lib.nix { }).withLibsecret element-desktop

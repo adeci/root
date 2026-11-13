@@ -1,10 +1,9 @@
-# LibreWolf's own macOS build. Tiling window managers can't subscribe to nixpkgs' wrapped build's accessibility notifications, so its windows go unmanaged.
+# Upstream's build: tiling WMs can't track nixpkgs' wrapped app.
 {
   lib,
   stdenvNoCC,
   fetchurl,
   undmg,
-  ...
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "librewolf";

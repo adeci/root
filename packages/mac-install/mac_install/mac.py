@@ -1,4 +1,4 @@
-"""Commands, here and as root on the Mac over SSH, and the host key that SSH trusts."""
+"""Local and remote commands, and the host key."""
 
 import base64
 import contextlib

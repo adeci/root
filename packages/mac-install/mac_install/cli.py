@@ -1,5 +1,3 @@
-"""mac-install: a Mac's first nix-darwin install, from the machine that manages it."""
-
 import argparse
 import os
 import sys

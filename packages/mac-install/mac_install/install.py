@@ -1,4 +1,4 @@
-"""A Mac's first install, and the System Settings steps it still needs."""
+"""First install and remaining System Settings steps."""
 
 import json
 import shlex

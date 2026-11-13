@@ -78,11 +78,7 @@
   outputs =
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [
-        inputs.clan-core.flakeModules.default
-        inputs.treefmt-nix.flakeModule
-        ./flake
-      ];
+      imports = [ ./flake ];
       debug = builtins ? currentSystem; # debug mode in repl
       systems = import inputs.systems;
     };
