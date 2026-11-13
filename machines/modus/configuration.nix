@@ -14,6 +14,7 @@
     base
     latest-kernel
     nvim-dev
+    emacs
     zsh
     llm-tools
     auto-timezone
