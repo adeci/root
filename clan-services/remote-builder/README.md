@@ -5,8 +5,8 @@ generated per client.
 
 ## Roles
 
-- `server` (NixOS only): creates the trusted `nix` user and authorizes every
-  client's public key, plus `externalKeys`, on it.
+- `server` (NixOS or nix-darwin): creates the trusted `nix` user and authorizes
+  every client's public key, plus `externalKeys`, on it.
 - `client`: registers every other server, at `<server>.<clan domain>`, as a nix
   build machine for the builds `offload` selects.
 

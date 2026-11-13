@@ -63,14 +63,9 @@
         roles,
         ...
       }:
-      {
-        nixosModule =
-          {
-            config,
-            pkgs,
-            lib,
-            ...
-          }:
+      let
+        shared =
+          { config, lib, ... }:
           let
             # Clients without a public key yet are skipped; servers authorize them on their next deploy.
             clientKeys = lib.filter (key: key != "") (
@@ -89,17 +84,44 @@
             );
           in
           {
+            users.users.nix.openssh.authorizedKeys.keys = clientKeys ++ settings.externalKeys;
+            nix.settings.trusted-users = [ "nix" ];
+          };
+      in
+      {
+        nixosModule =
+          { pkgs, ... }:
+          {
+            imports = [ shared ];
+
             users.users.nix = {
               isSystemUser = true;
               home = "/var/empty";
               group = "nix";
               shell = pkgs.bashInteractive;
-              openssh.authorizedKeys.keys = clientKeys ++ settings.externalKeys;
             };
             users.groups.nix = { };
-
-            nix.settings.trusted-users = [ "nix" ];
           };
+
+        darwinModule = {
+          imports = [ shared ];
+
+          # nix-darwin only creates and changes the users it owns.
+          users.knownUsers = [ "nix" ];
+          users.users.nix = {
+            uid = 550;
+            home = "/var/empty";
+            # zsh reads nix-darwin's /etc/zshenv even for `ssh … nix-daemon --stdio`, which puts nix-daemon on PATH.
+            shell = "/bin/zsh";
+          };
+
+          # Remote Login limited to "Only these users" admits only members of com.apple.access_ssh.
+          system.activationScripts.postActivation.text = ''
+            if /usr/bin/dscl . -read /Groups/com.apple.access_ssh >/dev/null 2>&1; then
+              /usr/sbin/dseditgroup -o edit -a nix -t user com.apple.access_ssh
+            fi
+          '';
+        };
       };
   };
 
