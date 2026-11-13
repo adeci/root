@@ -1,7 +1,7 @@
 # Two game-streaming seats, one V100 each, on nexus's tenant VLAN port.
 { self, ... }:
 let
-  inherit (self.resources.homelan) hosts;
+  inherit (self.inventory.lan) hosts;
 
   # Powers off when idle so leviathan gets the GPU back.
   gamingSeat =

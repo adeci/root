@@ -2,8 +2,8 @@
 { pkgs, self }:
 let
   inherit (pkgs) lib;
-  inherit (self.resources.homelan) hosts;
-  inherit (self.resources.homelan.vlans) tenant;
+  inherit (self.inventory.lan) hosts;
+  inherit (self.inventory.lan.vlans) tenant;
   sshKeys = import "${pkgs.path}/nixos/tests/ssh-keys.nix" pkgs;
 
   seats = [

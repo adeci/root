@@ -22,6 +22,6 @@
     ./modules/paperless-xerox-ingest.nix
   ];
 
-  cloudflared.token = self.resources.cloudflare.tunnelToken;
-  acme.tokenGenerator = self.resources.cloudflare.acmeTokenGenerator;
+  cloudflared.token = self.inventory.cloudflare.tunnelToken;
+  acme.tokenGenerator = self.inventory.cloudflare.acmeTokenGenerator;
 }

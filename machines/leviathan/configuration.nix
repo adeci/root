@@ -21,7 +21,7 @@
   ];
 
   system.primaryUser = self.users.alex.username;
-  cloudflared.token = self.resources.cloudflare.tunnelToken;
+  cloudflared.token = self.inventory.cloudflare.tunnelToken;
 
   time.timeZone = "America/New_York";
 

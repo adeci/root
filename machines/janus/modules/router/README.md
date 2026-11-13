@@ -26,8 +26,7 @@ Tailscale
 ## Files
 
 - `default.nix` wires the router modules and Tailscale route advertisement.
-- `topology.nix` takes the chassis ports and their WAN/LAN/mgmt roles from the homelan resource's `router`, and derives VLAN interface names and shared interface sets.
-- `validation.nix` asserts that LAN DNS aliases are unique and don't clash with host names.
+- `topology.nix` takes the chassis ports and their WAN/LAN/mgmt roles from `self.inventory.router`, and derives VLAN interface names and shared interface sets.
 - `networkd.nix` owns all physical/VLAN/bridge interfaces.
 - `firewall.nix` owns nftables forwarding/NAT policy, named counters, counter export, and rate-limited drop logging; it asserts that every VLAN has a forward zone.
 - `dhcp-dns.nix` owns Kea DHCP, Unbound DNS, local Kea/Unbound metrics, and Kea state.

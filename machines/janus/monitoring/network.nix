@@ -1,4 +1,4 @@
-# How the router's metrics name its interfaces, VLANs and the RouterOS ports on known cables.
+# How the router's metrics name its interfaces, VLANs and the appliance ports on known cables.
 inventory:
 let
   inherit (inventory.router) ports roles;
@@ -7,40 +7,30 @@ let
     builtins.attrValues (
       builtins.mapAttrs (name: vlan: {
         inherit name;
-        inherit (vlan) id cidr;
-        interface = vlan.interface or "vlan${toString vlan.id}";
+        inherit (vlan) id cidr interface;
       }) inventory.lan.vlans
     )
   );
 
-  # A cable end "<device>:<port>" on a RouterOS device, or null for any other end.
-  routerosEnd =
-    end:
-    let
-      parts = builtins.match "([^:]+):(.+)" end;
-      device = builtins.elemAt parts 0;
-    in
-    if parts != null && inventory.routeros.devices ? ${device} then
-      {
-        inherit device;
-        port = builtins.elemAt parts 1;
-      }
-    else
-      null;
+  # A portable machine comes and goes, so the port it docks into isn't expected to stay up.
+  steadyCables = builtins.filter (
+    cable: !(builtins.elem "portable" (inventory.machines.${cable.to}.tags or [ ]))
+  ) inventory.lan.cables;
+
+  # The port each cable is written on, so a cable is reported once.
+  nearEnds = map (cable: {
+    device = cable.appliance;
+    inherit (cable) port;
+  }) steadyCables;
+
+  # The far ends that are appliance ports too.
+  farEnds = map (cable: {
+    device = cable.to;
+    port = cable.toPort;
+  }) (builtins.filter (cable: inventory.appliances ? ${cable.to}) steadyCables);
 
   portsByDevice =
-    ends:
-    builtins.mapAttrs (_: map (end: end.port)) (
-      builtins.groupBy (end: end.device) (builtins.filter (end: end != null) ends)
-    );
-
-  # The first RouterOS end of each cable, so a cable is reported once.
-  firstRouterosEnd =
-    link:
-    let
-      a = routerosEnd link.a;
-    in
-    if a != null then a else routerosEnd link.b;
+    ends: builtins.mapAttrs (_: map (end: end.port)) (builtins.groupBy (end: end.device) ends);
 in
 {
   instance = inventory.router.machine;
@@ -48,15 +38,10 @@ in
   lan = ports.${roles.lan};
   mgmt = ports.${roles.mgmt};
   inherit vlans;
-  # RouterOS ports by device, at either end of a known cable.
-  cabledPorts = portsByDevice (
-    builtins.concatMap (link: [
-      (routerosEnd link.a)
-      (routerosEnd link.b)
-    ]) inventory.links
-  );
-  # One RouterOS port by device for each known cable.
-  cablePorts = portsByDevice (map firstRouterosEnd inventory.links);
+  # Appliance ports by appliance, at either end of a known cable.
+  cabledPorts = portsByDevice (nearEnds ++ farEnds);
+  # One appliance port by appliance for each known cable.
+  cablePorts = portsByDevice nearEnds;
 
   # Builds one query per device from its `name` and `interface` matchers, joined with `or`.
   onPorts =

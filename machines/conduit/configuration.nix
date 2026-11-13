@@ -13,7 +13,7 @@
     ./modules/zipline.nix
   ];
 
-  publicEdge.streams = self.resources.ingress.streams.conduit;
+  publicEdge.streams = self.inventory.ingress.streams.conduit;
 
   time.timeZone = "America/New_York";
 

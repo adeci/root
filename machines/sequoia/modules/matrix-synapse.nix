@@ -9,7 +9,7 @@ let
   serverName = "decio.us";
   matrixDomain = "matrix.decio.us";
   synapsePort = 8008;
-  tunnels = self.resources.cloudflare.tunnels.sequoia;
+  tunnels = self.inventory.cloudflare.tunnels.sequoia;
 
   users = {
     alex = {

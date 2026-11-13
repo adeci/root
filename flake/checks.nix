@@ -29,10 +29,8 @@ in
         mkMachineChecks self system
         // lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") config.devShells
         // {
-          # Reading every resource runs the inventory checks.
-          inventory = pkgs.writeText "inventory" (
-            lib.concatLines (lib.mapAttrsToList (name: resource: builtins.seq resource name) self.resources)
-          );
+          # Reading the inventory runs its checks.
+          inventory = pkgs.writeText "inventory" (lib.concatLines (lib.attrNames self.inventory));
         }
         // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
           # Alert rules, routing and the ntfy bridge, all of which run on the Linux monitoring server.

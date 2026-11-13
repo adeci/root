@@ -8,8 +8,8 @@
 let
   routerosTargets = lib.mapAttrsToList (name: device: {
     inherit name;
-    address = device.host;
-  }) self.resources.routeros.devices;
+    address = device.lan.ip;
+  }) self.inventory.appliances;
 
   smokepingConfig = pkgs.writeText "janus-smokeping.yml" ''
     ---

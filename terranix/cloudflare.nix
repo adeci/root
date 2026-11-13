@@ -8,7 +8,7 @@
   ...
 }:
 let
-  inherit (self.resources.cloudflare)
+  inherit (self.inventory.cloudflare)
     zones
     tunnels
     tunnelToken
@@ -42,7 +42,7 @@ let
   edgeAddress =
     edgeName:
     let
-      edge = self.resources.ingress.edges.${edgeName};
+      edge = self.inventory.ingress.edges.${edgeName};
     in
     if edge.provider == "hcloud" then
       config.resource.hcloud_server.${edgeName} "ipv4_address"
@@ -53,7 +53,7 @@ let
     ref:
     let
       matches = lib.filter (stream: stream.name == ref.name) (
-        self.resources.ingress.streams.${ref.edge} or [ ]
+        self.inventory.ingress.streams.${ref.edge} or [ ]
       );
     in
     if lib.length matches == 1 then

@@ -44,7 +44,7 @@ let
         }
         {
           target = "trusted";
-          destination = topology.homelan.hosts.printer.ip;
+          destination = self.inventory.lan.hosts.printer.ip;
           tcpPorts = [
             515 # LPD
             631 # IPP
@@ -335,7 +335,7 @@ let
   );
   zoneChains = lib.concatStringsSep "\n" (lib.mapAttrsToList mkZoneChain forwardZones);
   vlansWithoutZone = lib.subtractLists (lib.mapAttrsToList (_: zone: zone.interface) forwardZones) (
-    lib.mapAttrsToList (_: topology.subnetInterface) topology.vlans
+    lib.mapAttrsToList (_: vlan: vlan.interface) topology.vlans
   );
 in
 {

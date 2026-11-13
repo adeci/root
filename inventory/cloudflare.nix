@@ -1,3 +1,4 @@
+# The Cloudflare zones, tunnels, DNS records, redirects and firewall rules, read as self.inventory.cloudflare.
 let
   conduitEdge = "conduit";
 

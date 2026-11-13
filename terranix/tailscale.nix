@@ -7,9 +7,9 @@
   ...
 }:
 let
-  inherit (self.resources) homelan;
-  inherit (self.resources.tailscale) deviceTags policy;
-  router = homelan.router.machine;
+  inherit (self.inventory) lan tailscalePolicy;
+  inherit (self.inventory.tailnet) deviceTags;
+  router = self.inventory.router.machine;
 in
 {
   terraform.required_providers.tailscale = {
@@ -29,7 +29,7 @@ in
   };
 
   resource.tailscale_acl.policy = {
-    acl = builtins.toJSON policy;
+    acl = builtins.toJSON tailscalePolicy;
   };
 
   data.tailscale_device = lib.genAttrs (lib.attrNames deviceTags ++ [ router ]) (hostname: {
@@ -43,20 +43,18 @@ in
     depends_on = [ "tailscale_acl.policy" ];
   }) deviceTags;
 
-  # Split DNS: the homelan's private domains resolve through the trusted VLAN's gateway, reached over the subnet routes approved below.
+  # Split DNS: the LAN's private domains resolve through the trusted VLAN's gateway, reached over the subnet routes approved below.
   resource.tailscale_dns_split_nameservers = lib.mapAttrs' (
     domain: _:
     lib.nameValuePair (safeName domain) {
       inherit domain;
-      nameservers = [ homelan.vlans.trusted.gateway ];
+      nameservers = [ lan.vlans.trusted.gateway ];
     }
-  ) homelan.dns.records;
+  ) lan.dns;
 
-  # Approves the homelan VLANs marked `tailnet`; the router advertises the same set.
+  # Approves the LAN's VLANs marked `tailnet`; the router advertises the same set.
   resource.tailscale_device_subnet_routes.${router} = {
     device_id = config.data.tailscale_device.${router} "node_id";
-    routes = map (vlan: vlan.cidr) (
-      lib.attrValues (lib.filterAttrs (_: vlan: vlan.tailnet or false) homelan.vlans)
-    );
+    routes = map (vlan: vlan.cidr) (lib.attrValues (lib.filterAttrs (_: vlan: vlan.tailnet) lan.vlans));
   };
 }

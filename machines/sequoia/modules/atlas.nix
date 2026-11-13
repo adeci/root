@@ -7,7 +7,7 @@
 let
   atlasHost = "atlas.decio.us";
   grafanaPort = config.services.grafana.settings.server.http_port;
-  tailnetCidr = self.resources.tailscale.cidr;
+  tailnetCidr = self.inventory.tailnet.cidr;
 in
 {
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [

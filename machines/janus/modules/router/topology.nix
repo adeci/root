@@ -1,15 +1,13 @@
 { lib, self }:
 let
-  inherit (self.resources) homelan;
-  inherit (homelan) vlans;
-  inherit (homelan.router) ports roles;
+  inherit (self.inventory.lan) vlans;
+  inherit (self.inventory.router) ports roles;
 
   wan = ports.${roles.wan};
   lan = ports.${roles.lan};
   mgmt = ports.${roles.mgmt};
 
   vlanInterface = vlan: "vlan${toString vlan.id}";
-  subnetInterface = vlan: vlan.interface or (vlanInterface vlan);
 
   routedVlans = lib.filterAttrs (name: _: name != "mgmt") vlans;
   routedVlanInterfaces = lib.mapAttrsToList (_: vlanInterface) routedVlans;
@@ -22,8 +20,8 @@ let
 
   interfaceSet = interfaces: lib.concatMapStringsSep ", " (interface: ''"${interface}"'') interfaces;
 
-  tailnetVlans = lib.filterAttrs (_: vlan: vlan.tailnet or false) vlans;
-  tailnetInterfaces = lib.mapAttrsToList (_: subnetInterface) tailnetVlans;
+  tailnetVlans = lib.filterAttrs (_: vlan: vlan.tailnet) vlans;
+  tailnetInterfaces = lib.mapAttrsToList (_: vlan: vlan.interface) tailnetVlans;
 
   tailscaleRouteFlag = "--advertise-routes=${
     lib.concatMapStringsSep "," (vlan: vlan.cidr) (lib.attrValues tailnetVlans)
@@ -35,10 +33,8 @@ in
     wan
     lan
     mgmt
-    homelan
     vlans
     vlanInterface
-    subnetInterface
     routedVlans
     routedVlanInterfaces
     serviceInterfaces

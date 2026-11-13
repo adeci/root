@@ -7,7 +7,7 @@
 }:
 let
   ntfyHost = "ntfy.decio.us";
-  ntfyPort = self.resources.cloudflare.tunnels.sequoia.${ntfyHost}.port;
+  ntfyPort = self.inventory.cloudflare.tunnels.sequoia.${ntfyHost}.port;
 
   topics = {
     alerts = config.services.prometheus.alertmanager-ntfy.settings.ntfy.notification.topic;

@@ -10,28 +10,29 @@ let
   poeConfigPath = "/run/prometheus-mikrotik-poe-exporter/config.yml";
   poeExporterAddress = "127.0.0.1:9437";
 
-  inherit (self.resources.routeros) exporter;
+  inherit (self.inventory) appliances;
+  inherit (self.inventory.routeros) exporter;
   exporterPassword = config.clan.core.vars.generators.${exporter.generator}.files.${exporter.file};
 
   mkDevices =
     devices:
     lib.mapAttrsToList (name: device: {
       inherit name;
-      address = device.host;
-      port = toString (device.port or 8728);
+      address = device.api.address;
+      port = toString device.api.port;
       inherit (exporter) user;
     }) devices;
 
   mainBaseConfig = pkgs.writeText "routeros-exporter-base.json" (
     builtins.toJSON {
-      devices = mkDevices self.resources.routeros.devices;
+      devices = mkDevices appliances;
       features.monitor = true;
     }
   );
 
   poeDevices = lib.filterAttrs (
-    _: device: lib.any (port: port ? poe) (lib.attrValues (device.ports or { }))
-  ) self.resources.routeros.devices;
+    _: device: lib.any (port: port.poe != null) (lib.attrValues device.ports)
+  ) appliances;
 
   poeBaseConfig = pkgs.writeText "routeros-poe-exporter-base.json" (
     builtins.toJSON {
@@ -41,7 +42,7 @@ let
   );
 
   healthDevices = pkgs.writeText "routeros-health-devices.json" (
-    builtins.toJSON (mkDevices self.resources.routeros.devices)
+    builtins.toJSON (mkDevices appliances)
   );
 
   routerosHealthProbe = pkgs.writeTextFile {

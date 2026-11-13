@@ -6,12 +6,12 @@
   ...
 }:
 let
-  inherit (self.resources) homelan;
+  inherit (self.inventory) lan;
   cfg = config.services.paperless;
   ai = config.paperlessAi;
 
   paperlessHost = "paperless.decio.us";
-  tailnetCidr = self.resources.tailscale.cidr;
+  tailnetCidr = self.inventory.tailnet.cidr;
 
   dataDir = "/srv/paperless";
   workflows = ./paperless-workflows.py;
@@ -124,7 +124,7 @@ in
       virtualHosts.${paperlessHost} = {
         useACMEHost = "decio.us";
         extraConfig = ''
-          allow ${homelan.vlans.trusted.cidr};
+          allow ${lan.vlans.trusted.cidr};
           allow ${tailnetCidr};
           deny all;
           client_max_body_size 512M;

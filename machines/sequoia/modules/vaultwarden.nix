@@ -7,7 +7,7 @@
 }:
 let
   domain = "vault.decio.us";
-  inherit (self.resources.cloudflare.tunnels.sequoia.${domain}) port;
+  inherit (self.inventory.cloudflare.tunnels.sequoia.${domain}) port;
   stateDirectory =
     if lib.versionOlder config.system.stateVersion "24.11" then "bitwarden_rs" else "vaultwarden";
   dataDir = "/var/lib/${stateDirectory}";

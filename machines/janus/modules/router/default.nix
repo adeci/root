@@ -4,7 +4,6 @@ let
 in
 {
   imports = [
-    ./validation.nix
     ./networkd.nix
     ./firewall.nix
     ./dhcp-dns.nix

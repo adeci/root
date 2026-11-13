@@ -1,7 +1,7 @@
 { config, inputs, ... }:
 let
   services = import ../clan-services { inherit inputs; };
-  inherit (config.flake.resources.tailscale) domain;
+  inherit (config.flake.inventory.tailnet) domain;
 
   # Clan inventory from a machine table: each machine's tags and class, deployed over the tailnet.
   mkInventory =
@@ -36,8 +36,8 @@ in
     meta.domain = domain;
     inventory = mkInventory {
       inherit domain;
-      inherit (import ../inventory/inventory.nix) machines;
-      instances = import ../inventory/instances.nix;
+      inherit (config.flake.inventory) machines;
+      instances = config.flake.inventory.clanInstances;
     };
     modules = services;
     specialArgs = {

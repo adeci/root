@@ -6,11 +6,11 @@
   ...
 }:
 let
-  inherit (self.resources) b2;
+  inherit (self.inventory) b2;
   bucket = b2.buckets.ziplineShares;
   inherit (bucket) credentials;
   port = 3002;
-  record = self.resources.cloudflare.dns.shares;
+  record = self.inventory.cloudflare.dns.shares;
   origin = "${record.name}.${record.zone}";
   staging = "/var/cache/zipline";
 in

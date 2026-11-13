@@ -6,7 +6,7 @@
   ...
 }:
 let
-  inherit (self.resources) b2;
+  inherit (self.inventory) b2;
 in
 {
   options.clanSecrets = lib.mkOption {

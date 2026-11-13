@@ -1,4 +1,9 @@
-{ inputs, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 let
   routerosAdmin = {
     user = "admin";
@@ -80,7 +85,8 @@ in
         '';
       };
 
-      inherit (inputs.self.resources.routeros) devices models;
+      inherit (config.flake.inventory) appliances;
+      inherit (config.flake.inventory.routeros) models;
       netinstall = self'.packages.routeros-netinstall;
 
       # Reinstalls a device with its model's packages, leaving a DHCP client on each port it is managed through.
@@ -90,7 +96,10 @@ in
           app = "net-netinstall-${name}";
           inherit (models.${device.model}) arch;
           packages = [ "routeros" ] ++ models.${device.model}.extraPackages or [ ];
-          dhcpClients = [ device.managementPort ] ++ lib.optional (device ? fallbackPort) device.fallbackPort;
+          dhcpClients = lib.remove null [
+            device.managementPort
+            device.fallbackPort
+          ];
           flags = [
             "--device ${name}"
             "--model ${lib.escapeShellArg device.model}"
@@ -114,7 +123,7 @@ in
         );
 
       netinstallApps = lib.optionalAttrs (self'.packages ? routeros-netinstall) (
-        lib.mapAttrs' netinstallApp devices
+        lib.mapAttrs' netinstallApp appliances
       );
     in
     {

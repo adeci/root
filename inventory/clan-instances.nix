@@ -1,6 +1,6 @@
+# The clan service instances, read as self.inventory.clanInstances; given the inventory for settings derived from it.
+inventory:
 let
-  inventory = import ./inventory.nix;
-
   minimalJournal = {
     journal = {
       mode = "explicit";

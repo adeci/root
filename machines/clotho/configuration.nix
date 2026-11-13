@@ -15,12 +15,12 @@
 
   secureBootLuks.initrd =
     let
-      host = self.resources.homelan.hosts.clotho;
+      host = self.inventory.lan.hosts.clotho;
     in
     {
       macAddress = host.mac;
       address = "${host.ip}/24";
-      inherit (self.resources.homelan.vlans.${host.vlan}) gateway;
+      inherit (self.inventory.lan.vlans.${host.vlan}) gateway;
       authorizedKeys = self.users.alex.sshKeys;
     };
 

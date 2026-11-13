@@ -8,7 +8,7 @@
   ...
 }:
 let
-  inherit (self.resources) b2;
+  inherit (self.inventory) b2;
 
   # Private and encrypted; hidden file versions go after a week.
   privateBucket = name: purpose: {

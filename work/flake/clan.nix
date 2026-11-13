@@ -1,6 +1,6 @@
 { inputs, ... }:
 let
-  inherit (inputs.root.resources.tailscale) domain;
+  inherit (inputs.root.inventory.tailnet) domain;
 in
 {
   perSystem =
@@ -18,7 +18,7 @@ in
     inventory = inputs.root.lib.mkInventory {
       inherit domain;
       machines = import ../inventory/machines.nix;
-      instances = import ../inventory/instances.nix;
+      instances = import ../inventory/clan-instances.nix;
     };
     modules."@adeci/tailscale" = inputs.root.clanServices."@adeci/tailscale";
     # Shared modules see the main flake as self and inputs.

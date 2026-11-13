@@ -1,11 +1,12 @@
-{ addresses, homelan }:
+# The tailnet's access policy, read as self.inventory.tailscalePolicy; given the inventory for the addresses it names.
+{ lan, tailnet, ... }:
 let
   # The owner's tailnet login.
   owner = "alex.decious@gmail.com";
 in
 {
   hosts = {
-    inherit (addresses)
+    inherit (tailnet.addresses)
       leviathan
       modus
       lachesis
@@ -20,7 +21,7 @@ in
     }
     {
       src = [ "autogroup:member" ];
-      dst = [ homelan.vlans.trusted.cidr ];
+      dst = [ lan.vlans.trusted.cidr ];
       ip = [ "*" ];
     }
     {
@@ -100,15 +101,15 @@ in
     {
       src = owner;
       accept = [
-        "${homelan.hosts.leviathan-idrac.ip}:443"
-        "${homelan.hosts.sequoia.ip}:443"
+        "${lan.hosts.leviathan-idrac.ip}:443"
+        "${lan.hosts.sequoia.ip}:443"
         "tag:adeci-installer:22"
         "lachesis:443"
       ];
       deny = [
         "tag:work:22"
-        "${homelan.vlans.iot.gateway}:80"
-        "${homelan.hosts.nexus.ip}:80"
+        "${lan.vlans.iot.gateway}:80"
+        "${lan.hosts.nexus.ip}:80"
       ];
     }
     {
@@ -119,8 +120,8 @@ in
       ];
       deny = [
         "${owner}:22"
-        "${homelan.hosts.sequoia.ip}:443"
-        "${homelan.hosts.leviathan-idrac.ip}:443"
+        "${lan.hosts.sequoia.ip}:443"
+        "${lan.hosts.leviathan-idrac.ip}:443"
       ];
     }
     {
@@ -130,7 +131,7 @@ in
         "lachesis:22"
         "lachesis:443"
         "leviathan:22"
-        "${homelan.hosts.sequoia.ip}:443"
+        "${lan.hosts.sequoia.ip}:443"
         "tag:work:22"
       ];
     }
@@ -148,8 +149,8 @@ in
         "leviathan:22"
         "lachesis:443"
         "lachesis:8443"
-        "${homelan.hosts.sequoia.ip}:443"
-        "${homelan.hosts.leviathan-idrac.ip}:443"
+        "${lan.hosts.sequoia.ip}:443"
+        "${lan.hosts.leviathan-idrac.ip}:443"
         "${owner}:22"
       ];
     }

@@ -2,7 +2,7 @@
 { pkgs, self }:
 let
   inherit (pkgs) lib;
-  inherit (self.resources.homelan) hosts vlans;
+  inherit (self.inventory.lan) hosts vlans;
   prefixLength = lib.toInt (lib.last (lib.splitString "/" vlans.trusted.cidr));
 
   llmPort = 8199;

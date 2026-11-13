@@ -8,20 +8,11 @@
 let
   topology = import ./topology.nix { inherit lib self; };
 
-  devices = topology.homelan.hosts;
-  dnsRecords = topology.homelan.dns.records;
-  dnsDevices = lib.filterAttrs (_: host: host.publishDns or true) devices;
-  tailnetCidr = self.resources.tailscale.cidr;
-
-  localAliases = lib.concatMapAttrs (
-    _hostName: host:
-    builtins.listToAttrs (
-      map (alias: {
-        name = alias;
-        value = host.ip;
-      }) (host.aliases or [ ])
-    )
-  ) dnsDevices;
+  inherit (self.inventory) lan;
+  devices = lan.hosts;
+  dnsRecords = lan.dnsAddresses;
+  dnsDevices = lib.filterAttrs (_: host: host.publishDns) devices;
+  tailnetCidr = self.inventory.tailnet.cidr;
 
   routerLanWaitArgs = lib.escapeShellArgs (
     map (interface: "--interface=${interface}:routable") topology.serviceInterfaces
@@ -35,9 +26,7 @@ in
   services.kea.dhcp4 = {
     enable = true;
     settings = {
-      interfaces-config.interfaces = lib.mapAttrsToList (
-        _: vlan: topology.subnetInterface vlan
-      ) topology.vlans;
+      interfaces-config.interfaces = lib.mapAttrsToList (_: vlan: vlan.interface) topology.vlans;
 
       lease-database = {
         type = "memfile";
@@ -67,9 +56,8 @@ in
           devicesOnVlan = lib.filterAttrs (_: device: device.vlan == name) devices;
         in
         {
-          inherit (vlan) id;
+          inherit (vlan) id interface;
           subnet = vlan.cidr;
-          interface = topology.subnetInterface vlan;
           pools = [ { pool = "${vlan.dhcpPool.start} - ${vlan.dhcpPool.end}"; } ];
           option-data = [
             {
@@ -82,7 +70,7 @@ in
             }
             {
               name = "domain-name";
-              data = topology.homelan.domain;
+              data = lan.domain;
             }
           ];
           reservations = lib.mapAttrsToList (
@@ -91,7 +79,9 @@ in
               ip-address = device.ip;
               inherit hostname;
             }
-            // (if device ? clientId then { client-id = device.clientId; } else { hw-address = device.mac; })
+            // (
+              if device.clientId != null then { client-id = device.clientId; } else { hw-address = device.mac; }
+            )
           ) devicesOnVlan;
         }
       ) topology.vlans;
@@ -112,19 +102,16 @@ in
         ++ map (vlan: "${vlan.cidr} allow") (lib.attrValues topology.vlans);
 
         local-zone = [
-          ''"${topology.homelan.domain}." static''
+          ''"${lan.domain}." static''
         ]
         ++ lib.mapAttrsToList (name: _: ''"${name}." transparent'') dnsRecords;
         local-data =
-          lib.mapAttrsToList (
-            name: device: ''"${name}.${topology.homelan.domain}. A ${device.ip}"''
-          ) dnsDevices
-          ++ lib.mapAttrsToList (name: ip: ''"${name}.${topology.homelan.domain}. A ${ip}"'') localAliases
+          lib.mapAttrsToList (name: device: ''"${name}.${lan.domain}. A ${device.ip}"'') dnsDevices
           ++ lib.mapAttrsToList (name: ip: ''"${name}. A ${ip}"'') dnsRecords;
         local-data-ptr = lib.mapAttrsToList (
-          name: device: ''"${device.ip} ${name}.${topology.homelan.domain}"''
+          name: device: ''"${device.ip} ${name}.${lan.domain}"''
         ) dnsDevices;
-        domain-insecure = [ topology.homelan.domain ] ++ lib.attrNames dnsRecords;
+        domain-insecure = [ lan.domain ] ++ lib.attrNames dnsRecords;
 
         extended-statistics = true;
         do-ip6 = false;

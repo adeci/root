@@ -5,7 +5,7 @@
   ...
 }:
 let
-  inherit (self.resources) ingress;
+  inherit (self.inventory) ingress;
 
   hcloudEdges = lib.filterAttrs (_: edge: edge.provider == "hcloud") ingress.edges;
   validProtocols = [
