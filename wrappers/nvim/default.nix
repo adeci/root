@@ -42,7 +42,13 @@ in
   '';
 
   config = {
-    settings.config_directory = "${./config}";
+    settings = {
+      config_directory = "${./config}";
+      aliases = [
+        "vi"
+        "vim"
+      ];
+    };
 
     # No plugin needs a remote host; the node one alone is ~180 MiB.
     hosts = {

@@ -30,8 +30,6 @@ alias nom='noglob nom'
 alias rm='rm -i'
 alias rz='exec zsh'
 alias tree='eza --tree --icons'
-alias vi='"$EDITOR"'
-alias vim='"$EDITOR"'
 alias wget='noglob wget'
 
 HISTFILE="$HOME/.zsh_history"
