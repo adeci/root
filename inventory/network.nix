@@ -103,6 +103,11 @@
       tailnet = "100.115.94.1";
     };
 
+    daedalus = {
+      class = "darwin";
+      tags = [ "adeci-net" ];
+    };
+
     icarus = {
       class = "darwin";
       tags = [
