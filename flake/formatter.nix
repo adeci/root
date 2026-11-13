@@ -53,6 +53,9 @@
           "*.age"
           "*.list"
           "*.desktop"
+          # clan writes these.
+          "sops/**"
+          "vars/**"
         ];
       };
     };
