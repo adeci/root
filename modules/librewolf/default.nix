@@ -49,16 +49,11 @@ in
 
       home.links.".librewolf/librewolf.overrides.cfg" = pkgs.writeText "librewolf.overrides.cfg" prefs;
 
-      # macOS confirms a browser change in a dialog, so this only asks while LibreWolf isn't the default. The app is registered first: this runs before Launch Services has seen a freshly copied bundle.
+      # Registers the app first, as Launch Services may not have seen a freshly copied bundle yet.
       system.activationScripts.postActivation.text = ''
         ${asUser} /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f "/Applications/Nix Apps/LibreWolf.app" || true
-        ${asUser} /usr/bin/osascript -l JavaScript -e '
-          ObjC.import("CoreServices");
-          const id = "net.librewolf.librewolf";
-          if (ObjC.castRefToObject($.LSCopyDefaultHandlerForURLScheme($("https"))).js !== id)
-            $.LSSetDefaultHandlerForURLScheme($("http"), $(id));
-        ' >/dev/null || true
+        ${asUser} /usr/bin/osascript -l JavaScript ${./default-browser.js} net.librewolf.librewolf >/dev/null || true
       '';
     };
 }

@@ -6,7 +6,6 @@
   ...
 }:
 let
-
   # security.wrappers needs an ELF; the configured btop script execs this.
   btopPerfmon = pkgs.runCommandLocal "btop-perfmon" { meta.mainProgram = "btop"; } ''
     mkdir -p $out/bin
@@ -31,15 +30,15 @@ in
     niri
     noctalia
     niri-autologin
-    keyd
+    keyboard
     zram
     laptop
     printing
-    social
+    chat-apps
     yubikey
     mullvad
     rbw
-    cheat
+    command-lookup
   ];
 
   wrappers.niri.machineConfig = # kdl
@@ -65,14 +64,14 @@ in
 
   # tp_smapi lacks .ko.cer files; drop once NixOS/nixpkgs#578004 lands.
   boot.kernelPackages = pkgs.linuxPackages.extend (
-    kfinal: kprev: {
-      tp_smapi = kprev.tp_smapi.overrideAttrs {
+    final: prev: {
+      tp_smapi = prev.tp_smapi.overrideAttrs {
         installPhase = ''
           runHook preInstall
           mv hdaps.ko hdapsd.ko
           sed -i 's/^hdaps\.o$/hdapsd.o/' modules.order
-          make -C ${kfinal.kernel.dev}/lib/modules/${kfinal.kernel.modDirVersion}/build \
-            M="$PWD" ${lib.escapeShellArgs kfinal.kernelModuleMakeFlags} \
+          make -C ${final.kernel.dev}/lib/modules/${final.kernel.modDirVersion}/build \
+            M="$PWD" ${lib.escapeShellArgs final.kernelModuleMakeFlags} \
             INSTALL_MOD_PATH="$out" INSTALL_MOD_DIR=kernel/drivers/firmware DEPMOD=true \
             modules_install
           runHook postInstall
@@ -97,9 +96,8 @@ in
     };
   };
 
-  hardware.graphics.extraPackages = with pkgs; [
-    intel-vaapi-driver # i965, the only VA-API driver that supports Sandy Bridge
-  ];
+  # i965, the only VA-API driver that supports Sandy Bridge.
+  hardware.graphics.extraPackages = [ pkgs.intel-vaapi-driver ];
 
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "i965";

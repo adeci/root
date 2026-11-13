@@ -2,27 +2,28 @@ let
   shared =
     { config, lib, ... }:
     let
-      inherit (config.system) primaryUser;
-      inherit (config.system.primaryUserProfile) git;
+      user = config.system.primaryUser;
+      profile = config.system.primaryUserProfile;
     in
     {
       environment.pathsToLink = [ "/share/zsh" ];
 
       programs.nix-index-database.comma.enable = true;
 
-      users.users.${primaryUser}.shell = config.wrappers.zsh.wrapper;
+      users.users.${user}.shell = config.wrappers.zsh.wrapper;
 
       wrappers.zsh = {
         enable = true;
         git = lib.mkIf config.wrappers.git.enable config.wrappers.git.wrapper;
+        tmux = lib.mkIf config.wrappers.tmux.enable config.wrappers.tmux.wrapper;
         # The option exists only on machines that sync shell history.
         atuinSyncAddress = lib.mkDefault (config.atuinSync.address or null);
       };
       wrappers.git = {
         enable = true;
-        settings.user = {
-          name = lib.mkDefault git.name;
-          email = lib.mkDefault git.email;
+        settings.user = lib.mkIf (profile.git != null) {
+          name = lib.mkDefault profile.git.name;
+          email = lib.mkDefault profile.git.email;
         };
       };
       wrappers.tmux.enable = true;

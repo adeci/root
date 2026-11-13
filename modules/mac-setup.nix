@@ -1,43 +1,47 @@
 {
-  # One-time System Settings steps macOS only takes from a person; features declare them and the installer walks through /etc/mac-setup.json.
+  # System Settings steps only a person can take.
   darwin =
-    { config, lib, ... }:
+    {
+      config,
+      lib,
+      self,
+      ...
+    }:
     let
-      inherit (lib) mkOption types;
       user = config.system.primaryUser;
-      tccDb = {
+      tccDatabase = {
         system = "/Library/Application Support/com.apple.TCC/TCC.db";
-        user = "${config.users.users.${user}.home}/Library/Application Support/com.apple.TCC/TCC.db";
+        user = "${config.system.primaryUserHome}/Library/Application Support/com.apple.TCC/TCC.db";
       };
 
       grantCheck =
         grant:
-        "/usr/bin/sqlite3 ${lib.escapeShellArg tccDb.${grant.scope}} "
+        "/usr/bin/sqlite3 ${lib.escapeShellArg tccDatabase.${grant.scope}} "
         + lib.escapeShellArg "select auth_value from access where service = '${grant.service}' and client = '${grant.client}'"
         + " 2>/dev/null | /usr/bin/grep -qx 2";
 
-      step = types.submodule {
+      stepType = lib.types.submodule {
         options = {
-          name = mkOption { type = types.str; };
-          url = mkOption {
-            type = types.str;
+          name = lib.mkOption { type = lib.types.str; };
+          url = lib.mkOption {
+            type = lib.types.str;
             description = "System Settings deep link opened on the Mac.";
           };
-          instructions = mkOption { type = types.str; };
-          grants = mkOption {
-            type = types.listOf (
-              types.submodule {
+          instructions = lib.mkOption { type = lib.types.str; };
+          grants = lib.mkOption {
+            type = lib.types.listOf (
+              lib.types.submodule {
                 options = {
-                  service = mkOption {
-                    type = types.str;
+                  service = lib.mkOption {
+                    type = lib.types.str;
                     example = "kTCCServiceAccessibility";
                   };
-                  client = mkOption {
-                    type = types.str;
+                  client = lib.mkOption {
+                    type = lib.types.str;
                     description = "Bundle id, or the executable's path for bare binaries.";
                   };
-                  scope = mkOption {
-                    type = types.enum [
+                  scope = lib.mkOption {
+                    type = lib.types.enum [
                       "system"
                       "user"
                     ];
@@ -50,13 +54,13 @@
             default = [ ];
             description = "Privacy grants that mark the step done.";
           };
-          check = mkOption {
-            type = types.nullOr types.str;
+          check = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
             default = null;
             description = "Shell run as root on the Mac that succeeds once the step is done; replaces the grants check.";
           };
-          restart = mkOption {
-            type = types.listOf types.str;
+          restart = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [ ];
             example = [ "gui/org.nixos.aerospace" ];
             description = "launchd services restarted afterwards: gui/<label> in the user's session, system/<label> otherwise.";
@@ -65,28 +69,30 @@
       };
     in
     {
-      options.macSetup.steps = mkOption {
-        type = types.listOf step;
+      imports = [ self.modules.darwin.primary-user ];
+
+      options.macSetup.steps = lib.mkOption {
+        type = lib.types.listOf stepType;
         default = [ ];
-        description = "Manual System Settings steps, in order.";
+        description = "Manual System Settings steps, in order; mac-install walks them through /etc/mac-setup.json.";
       };
 
       config = {
         environment.etc."mac-setup.json".text = builtins.toJSON {
           inherit user;
           inherit (config.users.users.${user}) uid;
-          steps = map (s: {
-            inherit (s)
+          steps = map (step: {
+            inherit (step)
               name
               url
               instructions
               restart
               ;
             check =
-              if s.check != null then
-                s.check
-              else if s.grants != [ ] then
-                lib.concatMapStringsSep " && " grantCheck s.grants
+              if step.check != null then
+                step.check
+              else if step.grants != [ ] then
+                lib.concatMapStringsSep " && " grantCheck step.grants
               else
                 null;
           }) config.macSetup.steps;

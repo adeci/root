@@ -2,17 +2,17 @@
   nixos =
     { pkgs, ... }:
     {
-      environment.systemPackages = with pkgs; [
-        prismlauncher
-        steam-tui
-        gamescope
-        moonlight-qt
+      environment.systemPackages = [
+        pkgs.prismlauncher
+        pkgs.steam-tui
+        pkgs.gamescope
+        pkgs.moonlight-qt
       ];
       programs.steam.enable = true;
       programs.steam.gamescopeSession.enable = true;
-      programs.steam.extraCompatPackages = with pkgs; [
-        mangohud
-        proton-ge-bin
+      programs.steam.extraCompatPackages = [
+        pkgs.mangohud
+        pkgs.proton-ge-bin
       ];
       programs.gamescope = {
         enable = true;

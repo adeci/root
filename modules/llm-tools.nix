@@ -1,9 +1,11 @@
 let
-  shared =
+  module =
+    class:
     {
       config,
       inputs,
       pkgs,
+      self,
       ...
     }:
     let
@@ -18,6 +20,12 @@ let
       '';
     in
     {
+      imports = [
+        self.modules.${class}.wrappers
+        self.modules.${class}.home-links
+        self.modules.${class}.kagi-search
+      ];
+
       wrappers.herdr.enable = true;
 
       environment.systemPackages = [
@@ -40,25 +48,6 @@ let
     };
 in
 {
-  nixos =
-    { self, ... }:
-    {
-      imports = [
-        self.modules.nixos.wrappers
-        self.modules.nixos.home-links
-        self.modules.nixos.llm-config
-        shared
-      ];
-    };
-
-  darwin =
-    { self, ... }:
-    {
-      imports = [
-        self.modules.darwin.wrappers
-        self.modules.darwin.home-links
-        self.modules.darwin.llm-config
-        shared
-      ];
-    };
+  nixos = module "nixos";
+  darwin = module "darwin";
 }

@@ -1,5 +1,4 @@
 {
-  # zmx sessions keep shells alive across Emacs daemon restarts.
   nixos =
     {
       config,
@@ -17,6 +16,7 @@
         startWithGraphical = true;
       };
 
+      # zmx sessions keep shells alive across Emacs daemon restarts.
       environment.systemPackages = [ pkgs.zmx ];
       fonts.packages = [ pkgs.nerd-fonts.caskaydia-mono ];
     };

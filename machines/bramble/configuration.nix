@@ -1,9 +1,9 @@
 { self, ... }:
 {
   imports = with self.modules.nixos; [
-    self.users.alex.nixosModule
+    raspberry-pi-4
 
-    rpi4
+    self.users.alex.nixosModule
 
     base
     zsh
@@ -13,6 +13,4 @@
 
   nixpkgs.hostPlatform = "aarch64-linux";
   nix.settings.cores = 2;
-  networking.hostName = "bramble";
-  time.timeZone = "America/New_York";
 }

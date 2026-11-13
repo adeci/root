@@ -10,16 +10,14 @@
     laptop
     nvim-dev
     librewolf
-    llm-config
     llm-tools
-    karabiner
+    keyboard
     mouse
     aerospace
     secretive
     mac-security
   ];
 
-  networking.hostName = "icarus";
   networking.computerName = "icarus";
 
   gitSigning.key = "icarus-se";

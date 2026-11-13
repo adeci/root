@@ -1,4 +1,20 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
+let
+  disableXhc0Wakeup = pkgs.writeShellApplication {
+    name = "disable-xhc0-wakeup";
+    runtimeInputs = [ pkgs.gnugrep ];
+    text = builtins.readFile ./disable-xhc0-wakeup.sh;
+  };
+
+  fixTouchscreen = pkgs.writeShellApplication {
+    name = "fix-touchscreen";
+    runtimeInputs = [
+      pkgs.gnugrep
+      pkgs.kmod
+    ];
+    text = builtins.readFile ./fix-touchscreen.sh;
+  };
+in
 {
   # The USB keyboard (258a:000c) otherwise blocks suspend.
   services.udev.extraRules = ''
@@ -12,12 +28,7 @@
     after = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
-      # Writing the name toggles, so a restart (e.g. a switch after a bash bump) would re-enable it.
-      ExecStart = pkgs.writeShellScript "disable-xhc0-wakeup" ''
-        if ${pkgs.gnugrep}/bin/grep -q '^XHC0\s.*\*enabled' /proc/acpi/wakeup; then
-          echo XHC0 > /proc/acpi/wakeup
-        fi
-      '';
+      ExecStart = lib.getExe disableXhc0Wakeup;
       RemainAfterExit = true;
     };
   };
@@ -45,25 +56,7 @@
     ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = pkgs.writeShellScript "fix-touchscreen" ''
-        modprobe=${pkgs.kmod}/bin/modprobe
-        grep=${pkgs.gnugrep}/bin/grep
-
-        for attempt in 1 2; do
-          $modprobe -r i2c_hid_acpi 2>/dev/null || true
-          sleep 2
-          $modprobe i2c_hid_acpi
-          sleep 2
-
-          if $grep -A8 'NVTK0603' /proc/bus/input/devices | $grep -q 'PROP=1'; then
-            echo "Touchscreen restored (attempt $attempt)"
-            exit 0
-          fi
-        done
-
-        echo "Touchscreen not restored after 2 attempts" >&2
-        exit 1
-      '';
+      ExecStart = lib.getExe fixTouchscreen;
     };
   };
 }

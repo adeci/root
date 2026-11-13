@@ -1,5 +1,4 @@
 {
-  # Autologin on every greetd start, including after logout.
   nixos =
     { config, self, ... }:
     {
@@ -10,6 +9,7 @@
 
       services.greetd = {
         enable = true;
+        # The default session, not initial_session: it logs in again after logout too.
         settings.default_session = {
           command = "niri-session";
           user = config.system.primaryUser;

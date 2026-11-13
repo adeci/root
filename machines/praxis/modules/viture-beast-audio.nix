@@ -1,5 +1,5 @@
-# WirePlumber cannot match ELD metadata, so this machine-specific VITURE PCM match uses the connector path.
-_: {
+# Matched by connector path: WirePlumber cannot read ELD.
+{
   services.pipewire.wireplumber.extraConfig."51-viture-beast-sink" = {
     "monitor.alsa.rules" = [
       {

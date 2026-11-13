@@ -9,7 +9,6 @@
     mac-security
   ];
 
-  networking.hostName = "daedalus";
   networking.computerName = "daedalus";
 
   # Headless: never sleeps, and comes back by itself after a power cut or a freeze.

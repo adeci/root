@@ -7,9 +7,12 @@ let
 in
 {
   nixos =
-    { config, ... }:
+    { config, self, ... }:
     {
-      imports = [ shared ];
+      imports = [
+        self.modules.nixos.primary-user
+        shared
+      ];
 
       programs._1password-gui.polkitPolicyOwners = [ config.system.primaryUser ];
     };

@@ -1,4 +1,4 @@
--- LSP maps are the 0.12 defaults: grn gra grr gri grt grx gO K [d ]d gK i_CTRL-S.
+-- LSP keys are nvim 0.12's defaults (grn, gra, grr, K).
 
 vim.g.mapleader = " "
 

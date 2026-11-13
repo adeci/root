@@ -1,4 +1,4 @@
-# The same account as alex, with work keys and the work identity.
+# alex's account with work keys and identity.
 let
   alex = import ./alex.nix;
   email = "alex.decious@shopify.com";

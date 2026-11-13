@@ -13,7 +13,7 @@ let
         lib.mapAttrsToList (
           key: value:
           if builtins.isList value then
-            map (v: "${key} ${toString v}") value
+            map (item: "${key} ${toString item}") value
           else
             [ "${key} ${toString value}" ]
         ) settings
@@ -33,8 +33,6 @@ in
 {
   imports = [ wlib.modules.default ];
 
-  config.package = lib.mkDefault pkgs.kitty;
-
   options.settings = lib.mkOption {
     type = lib.types.attrsOf (
       lib.types.oneOf [
@@ -49,86 +47,90 @@ in
     description = "kitty.conf settings as an attrset.";
   };
 
-  config.flags."--config" = "${kittyConf}";
+  config = {
+    package = lib.mkDefault pkgs.kitty;
 
-  config.buildCommand.darwinAppLauncher = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-    after = [ "symlinkScript" ];
-    data = ''
-      launcher=${placeholder config.outputName}/Applications/kitty.app/Contents/MacOS/kitty
-      rm "$launcher"
-      cp ${appLauncher} "$launcher"
-    '';
-  };
+    flags."--config" = "${kittyConf}";
 
-  config.settings = {
-    font_family = "CaskaydiaMono Nerd Font Mono";
-    bold_font = "auto";
-    italic_font = "auto";
-    bold_italic_font = "auto";
-    font_size = if pkgs.stdenv.hostPlatform.isDarwin then "12.0" else "10.0";
+    buildCommand.darwinAppLauncher = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+      after = [ "symlinkScript" ];
+      data = ''
+        launcher=${placeholder config.outputName}/Applications/kitty.app/Contents/MacOS/kitty
+        rm "$launcher"
+        cp ${appLauncher} "$launcher"
+      '';
+    };
 
-    cursor_shape = "block";
-    cursor_blink_interval = "0.5";
-    cursor_stop_blinking_after = "0";
-    cursor_trail = "3";
-    cursor_trail_decay = "0.1 0.4";
+    settings = {
+      font_family = "CaskaydiaMono Nerd Font Mono";
+      bold_font = "auto";
+      italic_font = "auto";
+      bold_italic_font = "auto";
+      font_size = if pkgs.stdenv.hostPlatform.isDarwin then "12.0" else "10.0";
 
-    enable_audio_bell = "no";
-    copy_on_select = "yes";
-    confirm_os_window_close = "0";
-    hide_window_decorations = "titlebar-only";
-    filter_notification = "all";
-    paste_actions = "no-op";
-    clipboard_control = "write-clipboard write-primary read-clipboard read-primary";
-    enabled_layouts = "tall";
-    shell_integration = "enabled";
+      cursor_shape = "block";
+      cursor_blink_interval = "0.5";
+      cursor_stop_blinking_after = "0";
+      cursor_trail = "3";
+      cursor_trail_decay = "0.1 0.4";
 
-    map = [
-      "alt+1 goto_tab 1"
-      "alt+2 goto_tab 2"
-      "alt+3 goto_tab 3"
-      "alt+4 goto_tab 4"
-      "alt+5 goto_tab 5"
-      "alt+6 goto_tab 6"
-      "alt+7 goto_tab 7"
-      "alt+8 goto_tab 8"
-      "alt+9 goto_tab 9"
-      "ctrl+shift+w close_tab"
-      "ctrl+t new_tab_with_cwd"
-      "ctrl+shift+t new_tab"
-    ];
+      enable_audio_bell = "no";
+      copy_on_select = "yes";
+      confirm_os_window_close = "0";
+      hide_window_decorations = "titlebar-only";
+      filter_notification = "all";
+      paste_actions = "no-op";
+      clipboard_control = "write-clipboard write-primary read-clipboard read-primary";
+      enabled_layouts = "tall";
+      shell_integration = "enabled";
 
-    # Tokyo Night Night (background overridden to pure black)
-    background = "#000000";
-    foreground = "#c0caf5";
-    selection_background = "#283457";
-    selection_foreground = "#c0caf5";
-    url_color = "#73daca";
-    cursor = "#c0caf5";
-    cursor_text_color = "#1a1b26";
-    active_tab_background = "#7aa2f7";
-    active_tab_foreground = "#16161e";
-    inactive_tab_background = "#292e42";
-    inactive_tab_foreground = "#545c7e";
-    active_border_color = "#7aa2f7";
-    inactive_border_color = "#292e42";
-    color0 = "#15161e";
-    color1 = "#f7768e";
-    color2 = "#9ece6a";
-    color3 = "#e0af68";
-    color4 = "#7aa2f7";
-    color5 = "#bb9af7";
-    color6 = "#7dcfff";
-    color7 = "#a9b1d6";
-    color8 = "#414868";
-    color9 = "#ff899d";
-    color10 = "#9fe044";
-    color11 = "#faba4a";
-    color12 = "#8db0ff";
-    color13 = "#c7a9ff";
-    color14 = "#a4daff";
-    color15 = "#c0caf5";
-    color16 = "#ff9e64";
-    color17 = "#db4b4b";
+      map = [
+        "alt+1 goto_tab 1"
+        "alt+2 goto_tab 2"
+        "alt+3 goto_tab 3"
+        "alt+4 goto_tab 4"
+        "alt+5 goto_tab 5"
+        "alt+6 goto_tab 6"
+        "alt+7 goto_tab 7"
+        "alt+8 goto_tab 8"
+        "alt+9 goto_tab 9"
+        "ctrl+shift+w close_tab"
+        "ctrl+t new_tab_with_cwd"
+        "ctrl+shift+t new_tab"
+      ];
+
+      # Tokyo Night Night (background overridden to pure black)
+      background = "#000000";
+      foreground = "#c0caf5";
+      selection_background = "#283457";
+      selection_foreground = "#c0caf5";
+      url_color = "#73daca";
+      cursor = "#c0caf5";
+      cursor_text_color = "#1a1b26";
+      active_tab_background = "#7aa2f7";
+      active_tab_foreground = "#16161e";
+      inactive_tab_background = "#292e42";
+      inactive_tab_foreground = "#545c7e";
+      active_border_color = "#7aa2f7";
+      inactive_border_color = "#292e42";
+      color0 = "#15161e";
+      color1 = "#f7768e";
+      color2 = "#9ece6a";
+      color3 = "#e0af68";
+      color4 = "#7aa2f7";
+      color5 = "#bb9af7";
+      color6 = "#7dcfff";
+      color7 = "#a9b1d6";
+      color8 = "#414868";
+      color9 = "#ff899d";
+      color10 = "#9fe044";
+      color11 = "#faba4a";
+      color12 = "#8db0ff";
+      color13 = "#c7a9ff";
+      color14 = "#a4daff";
+      color15 = "#c0caf5";
+      color16 = "#ff9e64";
+      color17 = "#db4b4b";
+    };
   };
 }

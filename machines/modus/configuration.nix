@@ -22,24 +22,24 @@
     smartd
     desktop
     librewolf
-    desktop-unlock
+    plymouth
     keyring-tpm
     niri
     noctalia
     niri-autologin
-    keyd
+    keyboard
     zram
     laptop
     printing
-    social
+    chat-apps
     gaming
-    creative
+    creative-apps
     yubikey
     ssh-tpm-agent
     mullvad
     virt-manager
     rbw
-    cheat
+    command-lookup
     tailscale-travel
   ];
 

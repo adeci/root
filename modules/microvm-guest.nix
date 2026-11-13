@@ -2,7 +2,7 @@
   nixos =
     { config, lib, ... }:
     let
-      cfg = config.microvmGuest;
+      guest = config.microvmGuest;
     in
     {
       options.microvmGuest.adminKeys = lib.mkOption {
@@ -34,10 +34,7 @@
 
       options.microvmGuest.secrets = lib.mkOption {
         default = { };
-        description = ''
-          Secrets the VM needs, each provided by its host from a clan vars
-          generator, root-only at `path`.
-        '';
+        description = "Secrets the VM needs, each provided by its host from a clan vars generator, root-only at `path`.";
         type = lib.types.attrsOf (
           lib.types.submodule (
             { name, config, ... }:
@@ -70,7 +67,7 @@
                 path = lib.mkOption {
                   type = lib.types.str;
                   readOnly = true;
-                  default = "${cfg.seed.mountPoint}/${config.seedPath}";
+                  default = "${guest.seed.mountPoint}/${config.seedPath}";
                 };
               };
             }
@@ -82,7 +79,7 @@
         assertions = lib.mapAttrsToList (secretName: secret: {
           assertion = (secret.prompt == null) != (secret.script == null);
           message = "microvmGuest.secrets.${secretName}: set one of prompt or script";
-        }) config.microvmGuest.secrets;
+        }) guest.secrets;
 
         microvmGuest.secrets.ssh-host-key = {
           script = ''
@@ -110,11 +107,11 @@
               size = 1024;
             }
             {
-              inherit (cfg.seed) image;
+              inherit (guest.seed) image;
               mountPoint = null;
               autoCreate = false;
               readOnly = true;
-              size = cfg.seed.sizeMiB;
+              size = guest.seed.sizeMiB;
             }
           ];
         };
@@ -125,8 +122,8 @@
             neededForBoot = true;
           })
           // {
-            ${cfg.seed.mountPoint} = {
-              device = "/dev/disk/by-label/${cfg.seed.label}";
+            ${guest.seed.mountPoint} = {
+              device = "/dev/disk/by-label/${guest.seed.label}";
               fsType = "ext4";
               options = [ "ro" ];
             };
@@ -152,12 +149,12 @@
         };
 
         users.mutableUsers = false;
-        users.users.root.openssh.authorizedKeys.keys = cfg.adminKeys;
+        users.users.root.openssh.authorizedKeys.keys = guest.adminKeys;
         services.openssh = {
           enable = true;
           hostKeys = [
             {
-              inherit (config.microvmGuest.secrets.ssh-host-key) path;
+              inherit (guest.secrets.ssh-host-key) path;
               type = "ed25519";
             }
           ];

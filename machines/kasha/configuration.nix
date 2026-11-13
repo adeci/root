@@ -5,12 +5,11 @@
   ...
 }:
 {
-
   imports = with self.modules.nixos; [
+    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
+
     self.users.alex.nixosModule
     self.users.natalya.nixosModule
-
-    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x13-amd
 
     base
     zsh
@@ -28,18 +27,12 @@
 
   boot.loader = {
     timeout = 0;
-    grub = {
-      timeoutStyle = "hidden";
-    };
+    grub.timeoutStyle = "hidden";
   };
 
-  environment.systemPackages = with pkgs; [
-    firefox
-  ];
+  environment.systemPackages = [ pkgs.firefox ];
 
-  environment.gnome.excludePackages = with pkgs; [
-    epiphany
-  ];
+  environment.gnome.excludePackages = [ pkgs.epiphany ];
 
   hardware.bluetooth = {
     enable = true;

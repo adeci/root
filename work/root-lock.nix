@@ -1,4 +1,4 @@
-# Inherited inputs are pinned in this lock, not root's; list each that drifts so eval fails instead of building stale.
+# Root's inputs whose pin here differs from root's lock.
 root:
 let
   workLock = builtins.fromJSON (builtins.readFile ./flake.lock);

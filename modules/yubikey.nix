@@ -16,10 +16,10 @@
         });
       '';
 
-      environment.systemPackages = with pkgs; [
-        yubikey-manager
-        yubikey-personalization
-        libfido2
+      environment.systemPackages = [
+        pkgs.yubikey-manager
+        pkgs.yubikey-personalization
+        pkgs.libfido2
       ];
 
       systemd.user.services.yubikey-touch-detector = {

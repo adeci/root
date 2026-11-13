@@ -1,18 +1,18 @@
-{ self, workInputs, ... }:
+{ self, work, ... }:
 {
   imports = with self.modules.darwin; [
     self.users.alex-work.darwinModule
 
-    workInputs.self.modules.darwin.managed-device
-    workInputs.self.modules.darwin.apps
-    workInputs.self.modules.darwin.shell
-    workInputs.self.modules.darwin.zsh
+    work.modules.darwin.managed-device
+    work.modules.darwin.apps
+    work.modules.darwin.shell
+    work.modules.darwin.plain-git
 
     base
     desktop
     nvim-dev
-    llm-config
-    karabiner
+    kagi-search
+    keyboard
     mouse
     aerospace
     linux-rosetta-builder

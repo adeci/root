@@ -94,15 +94,13 @@ zstyle :prompt:pure:custom:suffix color '#ff9e64'
 zstyle :prompt:pure:environment:nix-shell show no
 prompt pure
 
-# Pure normally hides user@host for local, non-root shells.
-# Keep it visible so every prompt identifies the current machine.
+# Pure hides user@host in local non-root shells; every prompt should name the machine.
 psvar[13]=1
 
 # Real hostname, even when $HOST is overridden
 PROMPT=${PROMPT//@%m/@${$(uname -n)%%.*}}
 
-# Keep long paths and worktree names from monopolizing the preprompt. Pure has
-# no path length style, so this overrides its internal path renderers.
+# Pure has no path length style, so these override its path renderers to keep the preprompt short.
 PURE_PROMPT_PATH_MAX_COLUMNS=${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
 PURE_PROMPT_PATH_MIN_COLUMNS=${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
 PURE_PROMPT_PATH_FRACTION=${PURE_PROMPT_PATH_FRACTION:-45}
@@ -180,13 +178,10 @@ prompt_pure_precustom() {
 RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
 
 if [[ ${${INSIDE_EMACS-}%%,*} == ghostel && -r ${EMACS_GHOSTEL_PATH-}/etc/shell/ghostel.zsh ]]; then
-  # Emacs ghostel: the wrapper pins ZDOTDIR, which skips ghostel's
-  # auto-injection. Its script reports the cwd (OSC 7) and its own marks.
+  # The wrapper pins ZDOTDIR, which skips ghostel's auto-injection; its script reports the cwd (OSC 7) and marks.
   source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.zsh"
 else
-  # OSC 133 marks — broken in tmux with multi-line prompts (pure prompt
-  # triggers CSI 0 J which wipes the marks). Kept for terminals used
-  # without tmux.
+  # OSC 133 marks for terminals without tmux: pure's multi-line prompt sends CSI 0 J, which wipes them in tmux.
   _osc133_prompt() { print -Pn "\e]133;A\e\\"; }
   _osc133_command() { print -Pn "\e]133;C\e\\"; }
   precmd_functions+=(_osc133_prompt)

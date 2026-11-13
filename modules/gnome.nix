@@ -11,7 +11,7 @@
     {
       services.displayManager.gdm.enable = true;
       services.desktopManager.gnome.enable = true;
-      environment.systemPackages = with pkgs; [ gnome-tweaks ];
+      environment.systemPackages = [ pkgs.gnome-tweaks ];
       programs.dconf = {
         enable = true;
         profiles.user.databases = [

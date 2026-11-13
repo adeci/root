@@ -2,6 +2,7 @@
   description = "Alex";
   uid = 3801;
   shell = "zsh";
+  timeZone = "America/New_York";
   groups = [
     "wheel"
     "networkmanager"

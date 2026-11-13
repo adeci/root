@@ -133,9 +133,8 @@
       ...
     }:
     let
-      user = config.system.primaryUser;
       asUser = config.system.asPrimaryUser;
-      screenshots = "${config.users.users.${user}.home}/Pictures/Screenshots";
+      screenshots = "${config.system.primaryUserHome}/Pictures/Screenshots";
     in
     {
       imports = [

@@ -1,5 +1,4 @@
 let
-  # A plain system git instead of the git wrapper.
   shared =
     { lib, ... }:
     {

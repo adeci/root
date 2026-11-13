@@ -1,5 +1,5 @@
 {
-  nixos = _: {
+  nixos = {
     services.printing = {
       enable = true;
       browsedConf = ''

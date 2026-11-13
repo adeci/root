@@ -5,13 +5,13 @@
       packages = self.packages.${pkgs.stdenv.hostPlatform.system};
     in
     {
-      environment.systemPackages = with pkgs; [
-        blender
-        openscad
-        audacity
+      environment.systemPackages = [
+        pkgs.blender
+        pkgs.openscad
+        pkgs.audacity
         packages.prusa-slicer
-        obs-studio
-        gimp
+        pkgs.obs-studio
+        pkgs.gimp
       ];
     };
 }

@@ -8,8 +8,8 @@
       ...
     }:
     let
-      username = config.system.primaryUser;
-      socket = "/run/user/${toString config.users.users.${username}.uid}/ssh-tpm-agent.sock";
+      user = config.system.primaryUser;
+      socket = "/run/user/${toString config.users.users.${user}.uid}/ssh-tpm-agent.sock";
       ssh-tpm-agent = pkgs.ssh-tpm-agent.overrideAttrs {
         doCheck = false; # keyring tests need kernel keyring unavailable in sandbox
       };
@@ -26,7 +26,7 @@
 
       security.tpm2.enable = true;
       security.tpm2.tctiEnvironment.enable = true;
-      users.users.${username}.extraGroups = [ config.security.tpm2.tssGroup ];
+      users.users.${user}.extraGroups = [ config.security.tpm2.tssGroup ];
 
       environment.systemPackages = [
         ssh-tpm-agent

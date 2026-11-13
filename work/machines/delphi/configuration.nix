@@ -1,35 +1,35 @@
 {
   pkgs,
   self,
-  workInputs,
+  work,
   ...
 }:
 {
   imports = with self.modules.nixos; [
-    workInputs.nixos-hardware-xps14.nixosModules.dell-xps-14-da14260
+    work.inputs.nixos-hardware-xps14.nixosModules.dell-xps-14-da14260
 
     self.users.alex-work.nixosModule
 
-    workInputs.self.modules.nixos.apps
-    workInputs.self.modules.nixos.enrollment
-    workInputs.self.modules.nixos.shell
-    workInputs.self.modules.nixos.zsh
+    work.modules.nixos.apps
+    work.modules.nixos.enrollment
+    work.modules.nixos.shell
+    work.modules.nixos.plain-git
 
     base
     nvim-dev
-    llm-config
+    kagi-search
     auto-timezone
     auto-pressure-gc
     btrfs
     smartd
     desktop
     librewolf
-    desktop-unlock
+    plymouth
     keyring-tpm
     niri
     noctalia
     niri-autologin
-    keyd
+    keyboard
     zram
     laptop
     printing

@@ -4,14 +4,14 @@
       config,
       pkgs,
       self,
-      workInputs,
+      work,
       ...
     }:
     {
       imports = [
         self.modules.nixos.primary-user
         # Run `enroll` once after the first activation.
-        workInputs.shopify-framework.nixosModules.default
+        work.inputs.shopify-framework.nixosModules.default
       ];
 
       shopify-framework = {

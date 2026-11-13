@@ -2,27 +2,14 @@
 {
   imports = with self.modules.nixos; [
     self.users.alex.nixosModule
+
     base
     zsh
     auto-pressure-gc
     zram
     secure-boot-luks
+    initrd-ssh-unlock
+
     ./modules/mandate.nix
   ];
-
-  # Onboard Intel NIC, needed in the initrd for SSH unlock.
-  boot.initrd.availableKernelModules = [ "e1000e" ];
-
-  secureBootLuks.initrd =
-    let
-      host = self.inventory.lan.hosts.lachesis;
-    in
-    {
-      macAddress = host.mac;
-      address = "${host.ip}/24";
-      inherit (self.inventory.lan.vlans.${host.vlan}) gateway;
-      authorizedKeys = self.users.alex.sshKeys;
-    };
-
-  time.timeZone = "America/New_York";
 }

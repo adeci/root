@@ -1,5 +1,4 @@
-# tmux-style keys where herdr has an equivalent action; prefix+? lists
-# everything that is bound.
+# tmux-style keys; prefix+? lists every binding.
 onboarding = false
 
 [theme]
@@ -12,8 +11,7 @@ version_check = false
 [keys]
 prefix = "ctrl+space"
 
-# Workspaces are herdr's sessions, so they take tmux-style session keys:
-# shift+s starts one and `(`/`)` walk them.
+# Workspaces are herdr's sessions, so they take tmux's session keys: shift+s starts one, `(`/`)` walk them.
 new_workspace = ["prefix+shift+n", "prefix+shift+s"]
 previous_workspace = "prefix+("
 next_workspace = "prefix+)"
@@ -30,15 +28,12 @@ swap_pane_down = "prefix+alt+j"
 swap_pane_up = "prefix+alt+k"
 swap_pane_right = "prefix+alt+l"
 
-# Tab toggles back to the previous pane anywhere, like a tmux-style
-# last-session key; `o` cycles panes as in tmux, so the notification jump
-# moves to O.
+# Tab toggles to the previous pane like tmux's last-session key; `o` cycles panes, so the notification jump moves to O.
 last_pane = "prefix+tab"
 cycle_pane_next = "prefix+o"
 open_notification_target = "prefix+shift+o"
 
-# tmux-style splits: `-` stacks, `|` sits side by side; tmux's own `"` and
-# `%` stay as muscle memory.
+# `-` stacks and `|` sits side by side; tmux's own `"` and `%` stay as muscle memory.
 split_horizontal = ["prefix+minus", "prefix+\""]
 split_vertical = ["prefix+|", "prefix+%"]
 
@@ -70,8 +65,6 @@ height = "90%"
 # `c` opens a tab without asking for a name, as in tmux.
 prompt_new_tab_name = false
 
-# Desktop notification (notify-send) when an agent finishes or needs input.
-# Off by default; "terminal" delivery needs a host terminal that allows OSC
-# notifications.
+# Agent done or waiting: notify-send ("terminal" needs a host terminal that allows OSC notifications).
 [ui.toast]
 delivery = "system"

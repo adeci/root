@@ -1,8 +1,8 @@
 {
-  # launchd starts the app since macOS grants Accessibility to the process launchd spawns; the config's store path in the agent restarts it on change.
   darwin =
     {
       config,
+      lib,
       pkgs,
       self,
       ...
@@ -12,33 +12,22 @@
 
       kitty-home = pkgs.writeShellScript "kitty-home" ''exec ${kitty} -d "$HOME"'';
 
-      kitty-here = pkgs.writeShellScript "kitty-here" ''
-        APP_PID=$(osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true' 2>/dev/null)
-        if [ -n "$APP_PID" ]; then
-          SHELL_PID=$(ps -eo pid=,ppid=,comm= | awk -v ppid="$APP_PID" '$2==ppid && /fish$|bash$|zsh$/ {print $1; exit}')
-          if [ -n "$SHELL_PID" ]; then
-            CWD=$(lsof -a -p "$SHELL_PID" -d cwd -Fn 2>/dev/null | awk '/^n\//{ print substr($0,2)}')
-            if [ -n "$CWD" ] && [ -d "$CWD" ]; then
-              exec ${kitty} -d "$CWD"
-            fi
-          fi
-        fi
-        exec ${kitty}
-      '';
+      kitty-here = pkgs.writeShellApplication {
+        name = "kitty-here";
+        runtimeEnv.KITTY = kitty;
+        text = builtins.readFile ./kitty-here.sh;
+      };
 
-      # Closing a window lets macOS focus the app's next one, possibly on another workspace; come back to where the close started.
-      close-here = pkgs.writeShellScript "close-here" ''
-        aerospace=${pkgs.aerospace}/bin/aerospace
-        workspace=$($aerospace list-workspaces --focused)
-        $aerospace close --quit-if-last-window
-        sleep 0.1
-        $aerospace workspace "$workspace"
-      '';
+      close-here = pkgs.writeShellApplication {
+        name = "close-here";
+        runtimeInputs = [ pkgs.aerospace ];
+        text = builtins.readFile ./close-here.sh;
+      };
 
       aerospaceConfig = pkgs.writeText "aerospace.toml" (
         builtins.replaceStrings
           [ "@KITTY_HOME@" "@KITTY_HERE@" "@CLOSE_HERE@" ]
-          [ (toString kitty-home) (toString kitty-here) (toString close-here) ]
+          [ (toString kitty-home) (lib.getExe kitty-here) (lib.getExe close-here) ]
           (builtins.readFile ./config.toml)
       );
 
@@ -82,6 +71,7 @@
 
       environment.systemPackages = [ pkgs.aerospace ];
 
+      # macOS grants Accessibility to the process launchd spawns; the config's store path here restarts it on change.
       launchd.user.agents.aerospace.serviceConfig = {
         ProgramArguments = [
           "/Applications/Nix Apps/AeroSpace.app/Contents/MacOS/AeroSpace"

@@ -1,5 +1,5 @@
 {
-  nixos = _: {
+  nixos = {
     boot.kernel.sysctl = {
       "vm.swappiness" = 60;
       "vm.dirty_ratio" = 15;

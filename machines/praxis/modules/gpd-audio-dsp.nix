@@ -11,9 +11,7 @@ let
     hash = "sha256-uoILGqNfjeBv9CiKaG6vdPsVCQKRCXez6tis86oYlJY=";
   };
 
-  configPackage = pkgs.runCommand "gpd-pocket-4-pipewire" { } ''
-    mkdir -p $out/share/pipewire/pipewire.conf.d
-    cat > $out/share/pipewire/pipewire.conf.d/sink-gpd-pocket-4.conf << EOF
+  configPackage = pkgs.writeTextDir "share/pipewire/pipewire.conf.d/sink-gpd-pocket-4.conf" ''
     context.modules = [
     {
         name = libpipewire-module-filter-chain
@@ -165,16 +163,15 @@ let
         }
     }
     ]
-    EOF
   '';
 in
 {
   services.pipewire = {
     enable = true;
     configPackages = [ configPackage ];
-    extraLv2Packages = with pkgs; [
-      bankstown-lv2
-      lsp-plugins
+    extraLv2Packages = [
+      pkgs.bankstown-lv2
+      pkgs.lsp-plugins
     ];
   };
 }

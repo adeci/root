@@ -39,13 +39,9 @@
       # X11 input translation for Wayland desktop mode
       programs.steam.extest.enable = true;
 
-      programs.steam.extraCompatPackages = with pkgs; [
-        proton-ge-bin
-      ];
+      programs.steam.extraCompatPackages = [ pkgs.proton-ge-bin ];
 
-      environment.systemPackages = with pkgs; [
-        mangohud
-      ];
+      environment.systemPackages = [ pkgs.mangohud ];
 
       boot.consoleLogLevel = 0;
       boot.kernelParams = [ "quiet" ];

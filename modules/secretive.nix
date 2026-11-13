@@ -8,11 +8,13 @@
       ...
     }:
     let
-      home = config.users.users.${config.system.primaryUser}.home;
-      socket = "${home}/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
+      socket = "${config.system.primaryUserHome}/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
     in
     {
-      imports = [ self.modules.darwin.git-signing ];
+      imports = [
+        self.modules.darwin.primary-user
+        self.modules.darwin.git-signing
+      ];
 
       gitSigning.agentSocket = lib.mkDefault socket;
 

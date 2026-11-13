@@ -13,7 +13,7 @@
     noctalia
     amd-gpu
     zram
-    keyd
+    keyboard
     steam-deck
   ];
 

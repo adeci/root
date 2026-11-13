@@ -1,27 +1,34 @@
 let
-  shared =
+  module =
+    class:
     {
       config,
       lib,
       pkgs,
+      self,
       ...
     }:
     let
-      cfg = config.gitSigning;
-      user = config.system.primaryUserProfile;
+      signing = config.gitSigning;
+      profile = config.system.primaryUserProfile;
 
       # Signs through this machine's own agent, also in sessions that forward another machine's.
       sshKeygen = pkgs.writeShellScript "ssh-keygen-device" ''
-        SSH_AUTH_SOCK=${lib.escapeShellArg cfg.agentSocket} exec ${pkgs.openssh}/bin/ssh-keygen "$@"
+        SSH_AUTH_SOCK=${lib.escapeShellArg signing.agentSocket} exec ${pkgs.openssh}/bin/ssh-keygen "$@"
       '';
 
       allowedSigners = pkgs.writeText "allowed-signers" (
         lib.concatMapStrings (key: ''
-          ${user.git.email} namespaces="git" ${key}
-        '') user.sshKeys
+          ${profile.git.email} namespaces="git" ${key}
+        '') profile.sshKeys
       );
     in
     {
+      imports = [
+        self.modules.${class}.wrappers
+        self.modules.${class}.primary-user
+      ];
+
       options.gitSigning = {
         key = lib.mkOption {
           type = lib.types.nullOr lib.types.str;
@@ -34,9 +41,9 @@ let
         };
       };
 
-      config = lib.mkIf (cfg.key != null) {
+      config = lib.mkIf (signing.key != null) {
         wrappers.git.settings = {
-          user.signingkey = "key::${user.keyNamed cfg.key}";
+          user.signingkey = "key::${profile.keyNamed signing.key}";
           gpg = {
             format = "ssh";
             ssh.program = "${sshKeygen}";
@@ -49,23 +56,6 @@ let
     };
 in
 {
-  nixos =
-    { self, ... }:
-    {
-      imports = [
-        self.modules.nixos.wrappers
-        self.modules.nixos.primary-user
-        shared
-      ];
-    };
-
-  darwin =
-    { self, ... }:
-    {
-      imports = [
-        self.modules.darwin.wrappers
-        self.modules.darwin.primary-user
-        shared
-      ];
-    };
+  nixos = module "nixos";
+  darwin = module "darwin";
 }

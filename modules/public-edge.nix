@@ -101,9 +101,8 @@
 
           services.nginx = {
             enable = true;
+            # A variable proxy_pass lets nginx reload while MagicDNS is down; Quad100 resolves its names.
             streamConfig = lib.mkAfter ''
-              # Variable-backed proxy_pass makes nginx reload independent from
-              # current Tailnet DNS availability. Quad100 resolves MagicDNS names.
               resolver 100.100.100.100 valid=30s ipv6=off;
 
               ${lib.concatMapStringsSep "\n" mkServer streams}

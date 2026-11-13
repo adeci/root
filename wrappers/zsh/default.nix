@@ -3,13 +3,10 @@
   wlib,
   pkgs,
   lib,
-  self,
   ...
 }:
 let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
-
-  wrappedTmux = self.wrappers.tmux.wrap { inherit pkgs; };
 
   atuinConfigDir = pkgs.writeTextDir "config.toml" (
     ''
@@ -31,23 +28,31 @@ in
 {
   imports = [ wlib.wrapperModules.zsh ];
 
-  options.extraInit = lib.mkOption {
-    type = lib.types.lines;
-    default = "";
-    description = "Extra shell init appended to zshrc";
-  };
+  options = {
+    extraInit = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Extra shell init appended to zshrc";
+    };
 
-  options.git = lib.mkOption {
-    type = lib.types.nullOr lib.types.package;
-    default = null;
-    description = "git first on PATH; null leaves git to the system.";
-  };
+    git = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = null;
+      description = "git first on PATH; null leaves git to the system.";
+    };
 
-  options.atuinSyncAddress = lib.mkOption {
-    type = lib.types.nullOr lib.types.str;
-    default = null;
-    example = "http://atuin.example.com:8888";
-    description = "Atuin server to sync shell history with; null keeps history local.";
+    tmux = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = null;
+      description = "tmux on PATH; null leaves tmux to the system.";
+    };
+
+    atuinSyncAddress = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "http://atuin.example.com:8888";
+      description = "Atuin server to sync shell history with; null keeps history local.";
+    };
   };
 
   config = {
@@ -95,8 +100,8 @@ in
               pkgs.zoxide
               pkgs.direnv
               pkgs.atuin
-              wrappedTmux
             ]
+            ++ lib.optional (config.tmux != null) config.tmux
             ++ lib.optionals isLinux [
               pkgs.usbutils
               pkgs.unrar

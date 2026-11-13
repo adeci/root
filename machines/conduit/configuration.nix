@@ -1,6 +1,5 @@
 { self, ... }:
 {
-
   imports = with self.modules.nixos; [
     self.users.alex.nixosModule
 
@@ -15,8 +14,5 @@
 
   publicEdge.streams = self.inventory.ingress.streams.conduit;
 
-  time.timeZone = "America/New_York";
-
   services.journald.settings.Journal.SystemMaxUse = "200M";
-
 }

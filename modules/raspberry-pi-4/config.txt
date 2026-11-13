@@ -1,0 +1,14 @@
+[pi4]
+kernel=u-boot-rpi4.bin
+enable_gic=1
+armstub=armstub8-gic.bin
+disable_overscan=1
+arm_boost=1
+
+[cm4]
+otg_mode=1
+
+[all]
+arm_64bit=1
+enable_uart=1
+avoid_warnings=1

@@ -1,7 +1,5 @@
 { self, ... }:
 {
-  time.timeZone = "America/New_York";
-
   imports = with self.modules.nixos; [
     self.users.alex.nixosModule
 

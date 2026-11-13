@@ -1,15 +1,13 @@
+let
+  module =
+    class:
+    { self, ... }:
+    {
+      imports = [ self.modules.${class}.wrappers ];
+      wrappers.nvim.languageServers = true;
+    };
+in
 {
-  nixos =
-    { self, ... }:
-    {
-      imports = [ self.modules.nixos.wrappers ];
-      wrappers.nvim.languageServers = true;
-    };
-
-  darwin =
-    { self, ... }:
-    {
-      imports = [ self.modules.darwin.wrappers ];
-      wrappers.nvim.languageServers = true;
-    };
+  nixos = module "nixos";
+  darwin = module "darwin";
 }

@@ -61,9 +61,11 @@ in
     {
       imports = [
         self.modules.darwin.home-links
+        self.modules.darwin.primary-user
         shared
       ];
 
+      # The group macOS gives every account.
       clan.core.vars.generators.kagi-search.files.session-link.group = "staff";
     };
 }

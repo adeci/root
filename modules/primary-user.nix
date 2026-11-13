@@ -1,17 +1,17 @@
 let
-  profiles =
+  shared =
     { config, lib, ... }:
     {
       options.system = {
         userProfiles = lib.mkOption {
           type = lib.types.attrsOf lib.types.raw;
           default = { };
-          description = "User registry entries of the machine's accounts, by username.";
+          description = "Profiles of the machine's accounts, by user name.";
         };
         primaryUserProfile = lib.mkOption {
           type = lib.types.raw;
           readOnly = true;
-          description = "User registry entry of the primary user.";
+          description = "Profile of the primary user.";
         };
       };
 
@@ -19,16 +19,25 @@ let
     };
 in
 {
-  # nix-darwin already has system.primaryUser.
+  # nix-darwin already has system.primaryUser and system.primaryUserHome.
   nixos =
-    { lib, ... }:
+    { config, lib, ... }:
     {
-      imports = [ profiles ];
+      imports = [ shared ];
 
-      options.system.primaryUser = lib.mkOption {
-        type = lib.types.str;
-        description = "Name of the machine's main interactive user.";
+      options.system = {
+        primaryUser = lib.mkOption {
+          type = lib.types.str;
+          description = "Name of the machine's main interactive user.";
+        };
+        primaryUserHome = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          description = "Home directory of the primary user.";
+        };
       };
+
+      config.system.primaryUserHome = config.users.users.${config.system.primaryUser}.home;
     };
 
   darwin =
@@ -37,7 +46,7 @@ in
       user = config.system.primaryUser;
     in
     {
-      imports = [ profiles ];
+      imports = [ shared ];
 
       options.system.asPrimaryUser = lib.mkOption {
         type = lib.types.str;

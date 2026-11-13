@@ -1,4 +1,4 @@
-# Noctalia's base config. Changes made in Settings or with `noctalia msg` land in ~/.local/state/noctalia/settings.toml and override this file; copy what you want to keep here.
+# Settings changes override this from ~/.local/state/noctalia/settings.toml.
 
 [shell]
 polkit_agent = true

@@ -1,11 +1,6 @@
 ;;; init.el --- Emacs configuration -*- lexical-binding: t; -*-
 
-;;; Commentary:
-
-;; Built into Emacs as default.el by wrappers/emacs/default.nix.  Nix
-;; installs every package a `use-package' form below names; built-in
-;; features are switched on with plain calls instead.  To try a change
-;; before deploying, edit this file in the checkout and M-x eval-buffer.
+;; Nix installs the package each `use-package' form names.
 
 ;;; Code:
 
@@ -17,8 +12,7 @@
 
 ;;;; Look
 
-;; fixed-pitch and variable-pitch would otherwise fall back to other fonts in
-;; the tab bar, help and manuals.
+;; fixed-pitch and variable-pitch would otherwise fall back to other fonts in the tab bar, help and manuals.
 (dolist (face '(default fixed-pitch variable-pitch))
   (set-face-attribute face nil :family "CaskaydiaMono Nerd Font Mono"))
 (set-face-attribute 'default nil :height 110 :weight 'semibold)
@@ -98,8 +92,7 @@
   :custom
   (term-sessions-preferred-frontend 'ghostel)
   :init
-  ;; Shells read EMACS_GHOSTEL_PATH to find ghostel's shell integration, but
-  ;; sessions start through `ghostel-exec', which doesn't set it.
+  ;; Shells find ghostel's integration through EMACS_GHOSTEL_PATH, which `ghostel-exec' doesn't set.
   (setenv "EMACS_GHOSTEL_PATH"
           (file-name-directory (locate-library "ghostel"))))
 

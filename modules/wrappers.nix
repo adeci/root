@@ -1,13 +1,11 @@
+let
+  module =
+    { self, ... }:
+    {
+      imports = map (wrapper: wrapper.install) (builtins.attrValues self.wrappers);
+    };
+in
 {
-  nixos =
-    { self, ... }:
-    {
-      imports = map (wrapper: wrapper.install) (builtins.attrValues self.wrappers);
-    };
-
-  darwin =
-    { self, ... }:
-    {
-      imports = map (wrapper: wrapper.install) (builtins.attrValues self.wrappers);
-    };
+  nixos = module;
+  darwin = module;
 }

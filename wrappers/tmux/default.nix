@@ -5,10 +5,12 @@ in
 {
   imports = [ wlib.modules.default ];
 
-  package = pkgs.tmux;
+  config = {
+    package = pkgs.tmux;
 
-  flags."-f" = "${pkgs.writeText "tmux.conf" ''
-    source-file ${./tmux.conf}
-    run-shell ${fingers}
-  ''}";
+    flags."-f" = "${pkgs.writeText "tmux.conf" ''
+      source-file ${./tmux.conf}
+      run-shell ${fingers}
+    ''}";
+  };
 }

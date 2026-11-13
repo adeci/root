@@ -4,10 +4,10 @@
     {
       services.mullvad-vpn.enable = true;
 
-      environment.systemPackages = with pkgs; [
-        mullvad
-        mullvad-compass
-        mullvad-browser
+      environment.systemPackages = [
+        pkgs.mullvad
+        pkgs.mullvad-compass
+        pkgs.mullvad-browser
       ];
     };
 }

@@ -45,7 +45,6 @@
       };
 
       launchd.user.agents.scroll-reverser.serviceConfig = {
-        Label = "org.nixos.scroll-reverser";
         ProgramArguments = [ "/Applications/Nix Apps/Scroll Reverser.app/Contents/MacOS/Scroll Reverser" ];
         RunAtLoad = true;
         KeepAlive = {

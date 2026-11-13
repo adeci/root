@@ -1,4 +1,4 @@
-# The Pi firmware reads the first FAT partition, which also holds U-Boot's extlinux generations.
+# The Pi firmware and extlinux share the FAT partition.
 {
   disko.devices = {
     disk.main = {

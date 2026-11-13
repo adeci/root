@@ -1,6 +1,5 @@
 { pkgs, self, ... }:
 {
-
   imports = with self.modules.nixos; [
     self.users.alex.nixosModule
     self.users.brittonr.nixosModule
@@ -15,6 +14,7 @@
     smartd
     cloudflared
     auto-pressure-gc
+
     ./modules/microvms.nix
     ./modules/palworld
     ./modules/v100-compute.nix
@@ -22,8 +22,6 @@
 
   system.primaryUser = self.users.alex.username;
   cloudflared.token = self.inventory.cloudflare.tunnelToken;
-
-  time.timeZone = "America/New_York";
 
   swapDevices = [
     {
@@ -33,7 +31,7 @@
   ];
 
   environment.systemPackages = [ pkgs.numactl ];
-  wrappers.big-htop.enable = true;
+  wrappers.htop.enable = true;
   wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
 
   # THP tuned for ZGC.
@@ -61,17 +59,12 @@
   # FUSE-backed /bin and /usr/bin that show every executable on the requesting process's PATH.
   services.envfs.enable = true;
 
-  programs = {
-
-    # Tired of fighting NixOS: run foreign binaries pragmatically, even if it sweeps bugs under the rug.
-    nix-ld = {
-      enable = true;
-      libraries = with pkgs; [
-        stdenv.cc.cc.lib
-        zlib # numpy
-      ];
-    };
-
+  # Tired of fighting NixOS: run foreign binaries pragmatically, even if it sweeps bugs under the rug.
+  programs.nix-ld = {
+    enable = true;
+    libraries = [
+      pkgs.stdenv.cc.cc.lib
+      pkgs.zlib # numpy
+    ];
   };
-
 }

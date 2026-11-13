@@ -8,7 +8,7 @@
 }:
 let
   domain = "mandate.decio.us";
-  certDir = config.security.acme.certs.${domain}.directory;
+  certificateDirectory = config.security.acme.certs.${domain}.directory;
   connectors = [
     "whatsapp"
     "discord"
@@ -17,8 +17,20 @@ let
     "gmessages"
     "fastmail"
   ];
-  state = "/var/lib/private/mandate";
-  backupDir = "/var/lib/mandate-backup";
+  backupDirectory = "/var/lib/mandate-backup";
+
+  preBackup = pkgs.writeShellApplication {
+    name = "mandate-pre-backup";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.sqlite
+    ];
+    runtimeEnv = {
+      STATE_DIRECTORY = "/var/lib/private/mandate";
+      BACKUP_DIRECTORY = backupDirectory;
+    };
+    text = builtins.readFile ./mandate-pre-backup.sh;
+  };
 in
 {
   imports = [
@@ -39,8 +51,8 @@ in
     agentListen = ":8443";
     tls = {
       mode = "cert";
-      cert = "${certDir}/fullchain.pem";
-      key = "${certDir}/key.pem";
+      cert = "${certificateDirectory}/fullchain.pem";
+      key = "${certificateDirectory}/key.pem";
     };
     connectors = lib.genAttrs connectors (_: { });
   };
@@ -50,25 +62,10 @@ in
     8443
   ];
 
-  # Snapshots stores, owner state and gateway live set, not sessions; drops media refs, some of which embed CDN keys.
+  # Snapshots stores, owner state and gateway live set, not sessions.
   clan.core.state.mandate = {
-    folders = [ backupDir ];
-    preBackupScript = # bash
-      ''
-        umask 0077
-        ${pkgs.coreutils}/bin/install -d -m 0700 ${backupDir}
-        ${pkgs.coreutils}/bin/rm -rf ${backupDir}/*
-        for db in ${state}/connectors/*/data.db; do
-          if [ -f "$db" ]; then
-            out=${backupDir}/$(basename "$(dirname "$db")").db
-            ${pkgs.sqlite}/bin/sqlite3 "$db" ".backup $out"
-            if [ -n "$(${pkgs.sqlite}/bin/sqlite3 "$out" "SELECT 1 FROM sqlite_master WHERE name = 'media'")" ]; then
-              ${pkgs.sqlite}/bin/sqlite3 "$out" "UPDATE media SET ref = NULL; VACUUM;"
-            fi
-          fi
-        done
-        if [ -d ${state}/owner ]; then ${pkgs.coreutils}/bin/cp -r ${state}/owner ${backupDir}/owner; fi
-        if [ -f ${state}/gateway/live.json ]; then ${pkgs.coreutils}/bin/cp ${state}/gateway/live.json ${backupDir}/gateway-live.json; fi
-      '';
+    folders = [ backupDirectory ];
+    # clan-core makes this text the body of its pre-backup-mandate script.
+    preBackupScript = lib.getExe preBackup;
   };
 }

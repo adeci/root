@@ -6,40 +6,40 @@
   ...
 }:
 let
-  grammars = with pkgs.vimPlugins.nvim-treesitter-parsers; [
-    nix
-    rust
-    go
-    gomod
-    bash
-    lua
-    toml
-    yaml
-    json
-    markdown
-    markdown_inline
-    typescript
-    tsx
-    python
-    qmljs
-    just
-    query
-    vim
-    regex
-    printf
-    comment
-    diff
-    dockerfile
+  plugins = pkgs.vimPlugins;
+  parsers = pkgs.vimPlugins.nvim-treesitter-parsers;
+
+  grammars = [
+    parsers.nix
+    parsers.rust
+    parsers.go
+    parsers.gomod
+    parsers.bash
+    parsers.lua
+    parsers.toml
+    parsers.yaml
+    parsers.json
+    parsers.markdown
+    parsers.markdown_inline
+    parsers.typescript
+    parsers.tsx
+    parsers.python
+    parsers.qmljs
+    parsers.just
+    parsers.query
+    parsers.vim
+    parsers.regex
+    parsers.printf
+    parsers.comment
+    parsers.diff
+    parsers.dockerfile
   ];
 in
 {
   imports = [ wlib.wrapperModules.neovim ];
 
-  options.languageServers = lib.mkEnableOption ''
-    the small language servers and formatters on nvim's PATH. Heavy servers
-    (rust-analyzer, vtsls, pyright, clangd, bashls) come from project
-    devshells; init.lua enables whichever are found
-  '';
+  # Heavy servers (rust-analyzer, vtsls, pyright, clangd, bashls) come from project devshells; init.lua enables whichever are found.
+  options.languageServers = lib.mkEnableOption "the small language servers and formatters on nvim's PATH";
 
   config = {
     settings = {
@@ -57,37 +57,35 @@ in
       ruby.nvim-host.enable = false;
     };
 
-    specs = with pkgs.vimPlugins; {
+    specs = {
       plugins = [
-        oil-nvim
-        fzf-lua
-        gitsigns-nvim
-        mini-nvim
-        tokyonight-nvim
+        plugins.oil-nvim
+        plugins.fzf-lua
+        plugins.gitsigns-nvim
+        plugins.mini-nvim
+        plugins.tokyonight-nvim
         # Only its lsp/*.lua defaults, used by vim.lsp.enable.
-        nvim-lspconfig
+        plugins.nvim-lspconfig
       ];
-      treesitter = builtins.concatMap (g: [
-        g
-        g.passthru.associatedQuery
+      treesitter = builtins.concatMap (grammar: [
+        grammar
+        grammar.passthru.associatedQuery
       ]) grammars;
     };
 
-    runtimePkgs =
-      with pkgs;
-      [
-        fd
-        fzf
-        git
-        ripgrep
-      ]
-      ++ lib.optionals config.languageServers [
-        gopls
-        lua-language-server
-        nixd
-        nixfmt
-        shellcheck
-        shfmt
-      ];
+    runtimePkgs = [
+      pkgs.fd
+      pkgs.fzf
+      pkgs.git
+      pkgs.ripgrep
+    ]
+    ++ lib.optionals config.languageServers [
+      pkgs.gopls
+      pkgs.lua-language-server
+      pkgs.nixd
+      pkgs.nixfmt
+      pkgs.shellcheck
+      pkgs.shfmt
+    ];
   };
 }

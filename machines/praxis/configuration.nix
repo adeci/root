@@ -10,9 +10,6 @@
 
     self.users.alex.nixosModule
 
-    ./modules/gpd-hacks.nix
-    ./modules/gpd-audio-dsp.nix
-    ./modules/viture-beast-audio.nix
     base
     latest-kernel
     nvim-dev
@@ -27,21 +24,25 @@
     niri
     noctalia
     niri-autologin
-    keyd
+    keyboard
     amd-gpu
     zram
     laptop
     printing
-    social
+    chat-apps
     gaming
-    creative
+    creative-apps
     yubikey
     ssh-tpm-agent
     mullvad
     virt-manager
     rbw
-    cheat
+    command-lookup
     tailscale-travel
+
+    ./modules/gpd-hacks.nix
+    ./modules/gpd-audio-dsp.nix
+    ./modules/viture-beast-audio.nix
   ];
 
   gitSigning.key = "praxis-tpm";
@@ -95,11 +96,7 @@
   # gsim module
   networking.modemmanager.enable = true;
 
-  boot = {
-    kernelParams = [
-      "pcie_ports=native"
-    ];
-  };
+  boot.kernelParams = [ "pcie_ports=native" ];
 
   environment.systemPackages = [
     # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it

@@ -10,112 +10,76 @@
       ...
     }:
     let
-      cfg = config.microvmHost;
-      seedDir = "/run/microvm-seeds";
+      host = config.microvmHost;
+      seedDirectory = "/run/microvm-seeds";
       systemctl = lib.getExe' config.systemd.package "systemctl";
-      holders = lib.escapeShellArgs cfg.gpu.holders;
+      holders = lib.escapeShellArgs host.gpu.holders;
 
-      secretsOf = vm: config.microvm.vms.${vm}.config.config.microvmGuest.secrets;
-      seedOf = vm: config.microvm.vms.${vm}.config.config.microvmGuest.seed;
+      secretsOf = name: config.microvm.vms.${name}.config.config.microvmGuest.secrets;
+      seedOf = name: config.microvm.vms.${name}.config.config.microvmGuest.seed;
       generatorOf =
-        vm: name: secret:
-        if secret.shared then "microvm-${name}" else "microvm-${vm}-${name}";
+        name: secretName: secret:
+        if secret.shared then "microvm-${secretName}" else "microvm-${name}-${secretName}";
 
       writeSeed =
         name:
         let
           seed = seedOf name;
           secrets = secretsOf name;
+          secretFiles = host.secretFiles.${name};
         in
-        pkgs.writeShellScript "microvm-${name}-seed" ''
-          set -eu
-          seed=${seed.image}
-          install -d -m 0750 -g kvm ${seedDir}
-          tmp=$(mktemp -d -p /run)
-          trap 'rm -rf "$tmp" "$seed.tmp"' EXIT
-          ${lib.concatMapStringsSep "\n" (dir: ''mkdir "$tmp/${dir}"'') (
-            lib.unique (lib.mapAttrsToList (_: secret: dirOf secret.seedPath) secrets)
-          )}
-          ${lib.concatStrings (
-            lib.mapAttrsToList (secret: file: ''
-              install -m 0400 ${file} "$tmp/${secrets.${secret}.seedPath}" ||
-                { echo "${name}: secret ${secret} is not generated" >&2; exit 1; }
-            '') cfg.secretFiles.${name}
-          )}
-          truncate -s ${toString seed.sizeMiB}M "$seed.tmp"
-          mkfs.ext4 -q -F -L ${seed.label} -d "$tmp" "$seed.tmp"
-          chown microvm:kvm "$seed.tmp"
-          chmod 0400 "$seed.tmp"
-          mv "$seed.tmp" "$seed"
-        '';
+        pkgs.writeShellApplication {
+          name = "microvm-${name}-seed";
+          runtimeInputs = [
+            pkgs.coreutils
+            pkgs.e2fsprogs
+          ];
+          runtimeEnv = {
+            VM_NAME = name;
+            SEED_DIRECTORY = seedDirectory;
+            SEED_IMAGE = seed.image;
+            SEED_LABEL = seed.label;
+            SEED_SIZE_MIB = seed.sizeMiB;
+            # Bash associative arrays, keyed by secret name.
+            SECRET_FILES = secretFiles;
+            SECRET_SEED_PATHS = lib.mapAttrs (secretName: _: secrets.${secretName}.seedPath) secretFiles;
+          };
+          text = builtins.readFile ./write-seed.sh;
+        };
 
-      # The NVIDIA driver blocks unbinding a GPU anything still has open, so refuse while any process, CUDA or graphics, holds its /dev/nvidia<minor>.
-      releaseGpu =
-        name: gpu:
-        pkgs.writeShellScript "microvm-${name}-release-gpu" ''
-          set -eu
-          ${lib.optionalString (holders != "") "${systemctl} stop ${holders}"}
-          ${lib.optionalString (cfg.gpu.hostDriver == "nvidia") ''
-            minor=$(sed -n 's/^Device Minor:[[:space:]]*//p' /proc/driver/nvidia/gpus/${gpu}/information)
-            users=$(find /proc/[0-9]*/fd -lname "/dev/nvidia$minor" 2>/dev/null | cut -d/ -f3 | sort -u)
-            if [ -n "$users" ]; then
-              echo "${gpu} is in use by:" >&2
-              ${pkgs.procps}/bin/ps -o pid=,user=,args= -p "$(echo $users | tr ' ' ,)" >&2 || true
-              ${lib.optionalString (holders != "") "${systemctl} start ${holders}"}
-              exit 1
-            fi
-          ''}
-        '';
+      # Both take the GPU's PCI address.
+      releaseGpu = pkgs.writeShellApplication {
+        name = "microvm-release-gpu";
+        runtimeInputs = [
+          config.systemd.package
+          pkgs.coreutils
+          pkgs.findutils
+          pkgs.gnused
+          pkgs.procps
+        ];
+        runtimeEnv = {
+          GPU_HOST_DRIVER = host.gpu.hostDriver;
+          GPU_HOLDERS = host.gpu.holders;
+        };
+        text = builtins.readFile ./release-gpu.sh;
+      };
 
-      reclaimGpu =
-        name: gpu:
-        pkgs.writeShellScript "microvm-${name}-reclaim-gpu" ''
-          set -eu
-          dev=/sys/bus/pci/devices/${gpu}
-          driver() { basename "$(readlink "$dev/driver" || true)"; }
-          echo > "$dev/driver_override"
-          if [ "$(driver)" != ${cfg.gpu.hostDriver} ]; then
-            [ ! -e "$dev/driver" ] || echo ${gpu} > "$dev/driver/unbind"
-            echo ${gpu} > /sys/bus/pci/drivers_probe
-            [ "$(driver)" = ${cfg.gpu.hostDriver} ] ||
-              { echo "${gpu} did not return to ${cfg.gpu.hostDriver}" >&2; exit 1; }
-          fi
-          ${lib.optionalString (holders != "") "${systemctl} restart ${holders}"}
-        '';
+      reclaimGpu = pkgs.writeShellApplication {
+        name = "microvm-reclaim-gpu";
+        runtimeInputs = [
+          config.systemd.package
+          pkgs.coreutils
+        ];
+        runtimeEnv = {
+          GPU_HOST_DRIVER = host.gpu.hostDriver;
+          GPU_HOLDERS = host.gpu.holders;
+        };
+        text = builtins.readFile ./reclaim-gpu.sh;
+      };
 
-      vmByMac = builtins.toJSON (
-        lib.mapAttrs' (name: vm: lib.nameValuePair (lib.toLower vm.mac) name) cfg.vms
-      );
-
-      wake =
-        pkgs.writers.writePython3 "microvm-wake"
-          {
-            flakeIgnore = [
-              "E231"
-              "E501"
-            ];
-          }
-          ''
-            import socket
-            import subprocess
-
-            vms = ${vmByMac}
-
-
-            def target(packet):
-                i = packet.find(b"\xff" * 6)
-                mac = packet[i + 6:i + 12]
-                if i >= 0 and packet[i + 6:i + 102] == mac * 16:
-                    return vms.get(mac.hex(":"))
-
-
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.bind(("", 9))
-            while True:
-                name = target(sock.recv(1024))
-                if name:
-                    subprocess.run(["${systemctl}", "start", "--no-block", f"microvm@{name}"])
-          '';
+      wake = pkgs.writers.writePython3 "microvm-wake" { } (builtins.readFile ./wake.py);
+      wakeOnLanPort = 9;
+      vmByMac = lib.mapAttrsToList (name: vm: "${vm.mac}=${name}") host.vms;
     in
     {
       imports = [ inputs.microvm.nixosModules.host ];
@@ -200,7 +164,7 @@
                 self.modules.nixos.microvm-guest
                 vm.config
               ];
-              microvmGuest.seed.image = "${seedDir}/${name}.img";
+              microvmGuest.seed.image = "${seedDirectory}/${name}.img";
               microvm = {
                 hypervisor = "cloud-hypervisor";
                 inherit (vm) vcpu;
@@ -225,12 +189,12 @@
                 }) vm.volumes;
               };
             };
-          }) cfg.vms;
+          }) host.vms;
 
           systemd = {
             network.networks."10-microvm-taps" = {
-              matchConfig.Name = map (name: "vm-${name}") (lib.attrNames cfg.vms);
-              networkConfig.Bridge = cfg.bridge;
+              matchConfig.Name = map (name: "vm-${name}") (lib.attrNames host.vms);
+              networkConfig.Bridge = host.bridge;
               bridgeConfig.Isolated = true;
               linkConfig.RequiredForOnline = "no";
             };
@@ -247,11 +211,10 @@
                     before = [ "microvm@${name}.service" ];
                     bindsTo = [ "microvm@${name}.service" ];
                     after = [ "sops-install-secrets.service" ];
-                    path = [ pkgs.e2fsprogs ];
                     serviceConfig = {
                       Type = "oneshot";
                       RemainAfterExit = true;
-                      ExecStart = writeSeed name;
+                      ExecStart = lib.getExe (writeSeed name);
                       ExecStop = "${pkgs.coreutils}/bin/rm -f ${(seedOf name).image}";
                     };
                   };
@@ -276,25 +239,25 @@
                   "microvm-pci-devices@${name}" = {
                     bindsTo = [ "microvm@${name}.service" ];
                     serviceConfig = {
-                      ExecStartPre = [ (releaseGpu name vm.gpu) ];
+                      ExecStartPre = [ "${lib.getExe releaseGpu} ${vm.gpu}" ];
                       ExecStartPost = lib.optional (holders != "") "-${systemctl} start ${holders}";
                       # However the VM ends, even if it fails before starting.
-                      ExecStopPost = [ (reclaimGpu name vm.gpu) ];
+                      ExecStopPost = [ "${lib.getExe reclaimGpu} ${vm.gpu}" ];
                     };
                   };
                 }
-              ) cfg.vms
+              ) host.vms
             );
           };
         }
 
-        (lib.mkIf (cfg.wakeOnLan != [ ]) {
-          networking.firewall.interfaces = lib.genAttrs cfg.wakeOnLan (_: {
-            allowedUDPPorts = [ 9 ];
+        (lib.mkIf (host.wakeOnLan != [ ]) {
+          networking.firewall.interfaces = lib.genAttrs host.wakeOnLan (_: {
+            allowedUDPPorts = [ wakeOnLanPort ];
           });
           systemd.services.microvm-wake = {
             wantedBy = [ "multi-user.target" ];
-            serviceConfig.ExecStart = wake;
+            serviceConfig.ExecStart = "${wake} ${toString wakeOnLanPort} ${toString vmByMac}";
           };
         })
 
@@ -302,10 +265,10 @@
           clan.core.vars.generators = lib.listToAttrs (
             lib.concatLists (
               lib.mapAttrsToList (
-                vm: _:
+                name: _:
                 lib.mapAttrsToList (
-                  name: secret:
-                  lib.nameValuePair (generatorOf vm name secret) {
+                  secretName: secret:
+                  lib.nameValuePair (generatorOf name secretName secret) {
                     files.value = { };
                     prompts = lib.optionalAttrs (secret.prompt != null) {
                       value = {
@@ -317,17 +280,18 @@
                     runtimeInputs = [ pkgs.coreutils ] ++ secret.runtimeInputs;
                     script = if secret.prompt != null then ''cat "$prompts/value" > "$out/value"'' else secret.script;
                   }
-                ) (secretsOf vm)
-              ) cfg.vms
+                ) (secretsOf name)
+              ) host.vms
             )
           );
 
           microvmHost.secretFiles = lib.mapAttrs (
-            vm: _:
+            name: _:
             lib.mapAttrs (
-              name: secret: config.clan.core.vars.generators.${generatorOf vm name secret}.files.value.path
-            ) (secretsOf vm)
-          ) cfg.vms;
+              secretName: secret:
+              config.clan.core.vars.generators.${generatorOf name secretName secret}.files.value.path
+            ) (secretsOf name)
+          ) host.vms;
         })
       ];
     };

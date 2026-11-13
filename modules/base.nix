@@ -60,7 +60,13 @@ let
 in
 {
   nixos =
-    { pkgs, self, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+      ...
+    }:
     {
       imports = [
         self.modules.nixos.wrappers
@@ -93,6 +99,8 @@ in
         pkgs.man-pages
         pkgs.man-pages-posix
       ];
+      # Machines that travel import auto-timezone instead.
+      time.timeZone = lib.mkDefault config.system.primaryUserProfile.timeZone;
       i18n.defaultLocale = "en_US.UTF-8";
       i18n.extraLocaleSettings = {
         LC_ADDRESS = "en_US.UTF-8";
@@ -114,13 +122,11 @@ in
       self,
       ...
     }:
-    let
-      user = config.system.primaryUser;
-    in
     {
       imports = [
         self.modules.darwin.wrappers
         self.modules.darwin.home-links
+        self.modules.darwin.primary-user
         shared
       ];
 
@@ -130,14 +136,10 @@ in
         // {
           trusted-users = [
             "root"
-            user
+            config.system.primaryUser
           ];
         }
       );
-
-      # nix-darwin owns the primary account, so users.users sets its login shell (no dscl by hand) and keys; macOS gives the first account uid 501.
-      users.knownUsers = [ user ];
-      users.users.${user}.uid = lib.mkDefault 501;
 
       # Only the keys declared in users.users.*.openssh.
       services.openssh = {
