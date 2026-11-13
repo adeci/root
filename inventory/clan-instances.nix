@@ -154,8 +154,18 @@ in
 
       daedalus.settings = {
         systems = [ "aarch64-darwin" ];
-        maxJobs = 4;
+        maxJobs = 2;
         supportedFeatures = [ "big-parallel" ];
+        linuxBuilder = {
+          systems = [ "aarch64-linux" ];
+          maxJobs = 4;
+          supportedFeatures = [
+            "benchmark"
+            "big-parallel"
+            "kvm"
+            "nixos-test"
+          ];
+        };
       };
 
       leviathan.settings = {

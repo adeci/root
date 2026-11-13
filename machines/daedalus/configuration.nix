@@ -7,6 +7,7 @@
     zsh
     auto-pressure-gc
     mac-security
+    linux-builder
   ];
 
   networking.computerName = "daedalus";
@@ -16,6 +17,14 @@
     sleep.computer = "never";
     restartAfterPowerFailure = true;
     restartAfterFreeze = true;
+  };
+
+  # 16 GB: the Linux VM gets 8 GiB, at most two Mac builds run at once, macOS keeps the rest.
+  nix.settings.max-jobs = 2;
+  nix.linux-builder.config.virtualisation = {
+    cores = 8;
+    darwin-builder.memorySize = 8 * 1024;
+    darwin-builder.diskSize = 40 * 1024;
   };
 
   nixpkgs.hostPlatform = "aarch64-darwin";
