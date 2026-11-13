@@ -1,4 +1,4 @@
-# Two game-streaming seats, one V100 each, on nexus's tenant VLAN port.
+# Game-streaming seats, one V100 each.
 { self, ... }:
 let
   inherit (self.inventory.lan) hosts;
@@ -16,6 +16,16 @@ let
       uid = 1000;
       # Moonshine runs each Moonlight app as this unit in the gamer's manager.
       stream = "/sys/fs/cgroup/user.slice/user-${toString uid}.slice/user@${toString uid}.service/moonshine.slice/moonshine-session.service";
+
+      idlePoweroff = pkgs.writeShellApplication {
+        name = "idle-poweroff";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.jq
+          config.systemd.package
+        ];
+        text = builtins.readFile ./idle-poweroff.sh;
+      };
     in
     {
       imports = [ self.modules.nixos.wrappers ];
@@ -125,25 +135,9 @@ let
               ];
             };
 
-            idle-poweroff = {
-              path = [
-                config.systemd.package
-                pkgs.jq
-              ];
-              serviceConfig.Type = "oneshot";
-              script = ''
-                mkdir -p /run/idle-poweroff
-                cd /run/idle-poweroff
-                rx=$(cat /sys/class/net/lan/statistics/rx_bytes)
-                downloaded=$((rx - $(cat rx 2>/dev/null || echo "$rx")))
-                echo "$rx" > rx
-                if [ ! -e busy ] || [ -e ${stream} ] || [ "$downloaded" -ge $((60 << 20)) ] ||
-                  loginctl list-sessions --json=short | jq -e 'any(.[]; .class == "user")' > /dev/null; then
-                  date +%s > busy
-                elif [ $(($(date +%s) - $(cat busy))) -ge ${toString (config.gamingSeat.idleMinutes * 60)} ]; then
-                  systemctl poweroff
-                fi
-              '';
+            idle-poweroff.serviceConfig = {
+              Type = "oneshot";
+              ExecStart = "${lib.getExe idlePoweroff} ${stream} ${toString (config.gamingSeat.idleMinutes * 60)}";
             };
           };
 

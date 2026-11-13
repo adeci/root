@@ -1,5 +1,3 @@
-"""Sends an Alertmanager webhook through alertmanager-ntfy and checks what reaches a fake ntfy."""
-
 import http.server
 import json
 import subprocess
@@ -55,7 +53,7 @@ def post_when_ready(payload):
 
 
 def expect(fingerprint, priority, tag, title):
-    message = next(m for m in received if m["headers"].get("x-sequence-id") == fingerprint)
+    message = next(candidate for candidate in received if candidate["headers"].get("x-sequence-id") == fingerprint)
     headers = message["headers"]
     problems = []
     if message["path"] != "/alerts":

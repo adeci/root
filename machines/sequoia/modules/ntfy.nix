@@ -6,8 +6,8 @@
   ...
 }:
 let
-  ntfyHost = "ntfy.decio.us";
-  ntfyPort = self.inventory.cloudflare.tunnels.sequoia.${ntfyHost}.port;
+  domain = "ntfy.decio.us";
+  inherit (self.inventory.cloudflare.tunnels.sequoia.${domain}) port;
 
   topics = {
     alerts = config.services.prometheus.alertmanager-ntfy.settings.ntfy.notification.topic;
@@ -29,48 +29,35 @@ let
   ];
 
   allUsers = subscribers ++ publishers;
-  dollar = "$";
-  safeShellName = name: builtins.replaceStrings [ "-" "." ] [ "_" "_" ] name;
 
-  mkUserSetup =
-    user:
-    let
-      var = safeShellName user.name;
-    in
-    ''
-      ${var}_password="$(openssl rand -base64 24 | tr -d '\n')"
-      ${var}_hash="$(htpasswd -bnB -C 10 ${lib.escapeShellArg user.name} "${dollar}${var}_password" | cut -d: -f2-)"
-    '';
+  # Each user's generated values live in shell variables like alex_password.
+  shellVariable =
+    user: value: "${builtins.replaceStrings [ "-" "." ] [ "_" "_" ] user.name}_${value}";
+  shellValue = user: value: "$" + shellVariable user value;
 
-  mkPublisherToken =
-    publisher:
-    let
-      var = safeShellName publisher.name;
-    in
-    ''
-      ${var}_token="$(ntfy token generate | tr -d '\n')"
-    '';
+  generatePasswordAndHash = user: ''
+    ${shellVariable user "password"}="$(openssl rand -base64 24 | tr -d '\n')"
+    ${shellVariable user "hash"}="$(htpasswd -bnB -C 10 ${lib.escapeShellArg user.name} "${shellValue user "password"}" | cut -d: -f2-)"
+  '';
+
+  generateToken = publisher: ''
+    ${shellVariable publisher "token"}="$(ntfy token generate | tr -d '\n')"
+  '';
 
   subscriberPasswordFile = subscriber: "${subscriber.name}-password";
 
-  mkSubscriberPasswordFile =
-    subscriber:
-    let
-      var = safeShellName subscriber.name;
-    in
-    ''
-      printf '%s\n' "${dollar}${var}_password" > "$out/${subscriberPasswordFile subscriber}"
-    '';
+  writePasswordFile = subscriber: ''
+    printf '%s\n' "${shellValue subscriber "password"}" > "$out/${subscriberPasswordFile subscriber}"
+  '';
 
-  mkAccessEntries =
+  accessEntries =
     user: lib.mapAttrsToList (topic: permission: "${user.name}:${topic}:${permission}") user.topics;
   authUsers = lib.concatMapStringsSep "," (
-    user: "${user.name}:${dollar}${safeShellName user.name}_hash:user"
+    user: "${user.name}:${shellValue user "hash"}:user"
   ) allUsers;
-  authAccess = lib.concatStringsSep "," (lib.concatMap mkAccessEntries allUsers);
+  authAccess = lib.concatStringsSep "," (lib.concatMap accessEntries allUsers);
   authTokens = lib.concatMapStringsSep "," (
-    publisher:
-    "${publisher.name}:${dollar}${safeShellName publisher.name}_token:${publisher.tokenLabel}"
+    publisher: "${publisher.name}:${shellValue publisher "token"}:${publisher.tokenLabel}"
   ) publishers;
 
   subscriberPasswordFiles = lib.listToAttrs (
@@ -101,10 +88,10 @@ in
       ''
         set -euo pipefail
 
-        ${lib.concatMapStringsSep "\n" mkUserSetup allUsers}
-        ${lib.concatMapStringsSep "\n" mkPublisherToken publishers}
+        ${lib.concatMapStringsSep "\n" generatePasswordAndHash allUsers}
+        ${lib.concatMapStringsSep "\n" generateToken publishers}
 
-        ${lib.concatMapStringsSep "\n" mkSubscriberPasswordFile subscribers}
+        ${lib.concatMapStringsSep "\n" writePasswordFile subscribers}
 
         {
           printf "NTFY_AUTH_USERS='%s'\n" "${authUsers}"
@@ -129,8 +116,8 @@ in
     enable = true;
     environmentFile = config.clan.core.vars.generators.ntfy-alerts.files."ntfy.env".path;
     settings = {
-      base-url = "https://${ntfyHost}";
-      listen-http = "127.0.0.1:${toString ntfyPort}";
+      base-url = "https://${domain}";
+      listen-http = "127.0.0.1:${toString port}";
       behind-proxy = true;
       auth-default-access = "deny-all";
       enable-login = true;

@@ -1,4 +1,4 @@
-"""Tags and workflows that file documents, with the AI while it is enabled; run by `paperless-manage shell`."""
+"""Run by `paperless-manage shell`."""
 
 import os
 

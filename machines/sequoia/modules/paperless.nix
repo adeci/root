@@ -6,19 +6,27 @@
   ...
 }:
 let
-  inherit (self.inventory) lan;
-  cfg = config.services.paperless;
-  ai = config.paperlessAi;
+  inherit (self.inventory) lan tailnet;
 
-  paperlessHost = "paperless.decio.us";
-  tailnetCidr = self.inventory.tailnet.cidr;
-
+  domain = "paperless.decio.us";
   dataDir = "/srv/paperless";
+
   workflows = ./paperless-workflows.py;
   # The workflows are applied again only when this changes, so edits made in the UI stay until then.
-  workflowsDeclaration = "${workflows} ai=${lib.boolToString ai.enable}";
+  workflowsDeclaration = "${workflows} ai=${lib.boolToString config.paperlessAi.enable}";
+
+  applyWorkflows = pkgs.writeShellApplication {
+    name = "paperless-workflows";
+    runtimeInputs = [
+      pkgs.coreutils
+      config.services.paperless.manage
+    ];
+    text = builtins.readFile ./paperless-workflows.sh;
+  };
 in
 {
+  imports = [ self.modules.nixos.primary-user ];
+
   options.paperlessAi = {
     enable = lib.mkEnableOption "AI filing: title, tags, correspondent, type and date from a language model";
 
@@ -63,8 +71,7 @@ in
     services.paperless = {
       enable = true;
       address = "127.0.0.1";
-      port = 28981;
-      domain = paperlessHost;
+      inherit domain;
       configureNginx = true;
 
       inherit dataDir;
@@ -81,11 +88,11 @@ in
         PAPERLESS_CONSUMER_RECURSIVE = true;
         PAPERLESS_CONSUMER_DELETE_DUPLICATES = true;
       }
-      // lib.optionalAttrs ai.enable {
+      // lib.optionalAttrs config.paperlessAi.enable {
         PAPERLESS_AI_ENABLED = true;
         PAPERLESS_AI_LLM_BACKEND = "openai-like";
-        PAPERLESS_AI_LLM_ENDPOINT = ai.endpoint;
-        PAPERLESS_AI_LLM_MODEL = ai.model;
+        PAPERLESS_AI_LLM_ENDPOINT = config.paperlessAi.endpoint;
+        PAPERLESS_AI_LLM_MODEL = config.paperlessAi.model;
         # A second worker keeps a slow AI request from holding up the next scan.
         PAPERLESS_TASK_WORKERS = 2;
       };
@@ -96,19 +103,12 @@ in
       wantedBy = [ "paperless-scheduler.service" ];
       requires = [ "paperless-scheduler.service" ];
       after = [ "paperless-scheduler.service" ];
-      path = [ cfg.manage ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        User = cfg.user;
+        User = config.services.paperless.user;
+        ExecStart = "${lib.getExe applyWorkflows} ${dataDir}/workflows-applied ${lib.escapeShellArg workflowsDeclaration} ${workflows}";
       };
-      script = ''
-        applied=${dataDir}/workflows-applied
-        if [[ "$(cat "$applied" 2>/dev/null)" != ${lib.escapeShellArg workflowsDeclaration} ]]; then
-          paperless-manage shell --no-imports --command "$(cat ${workflows})"
-          echo ${lib.escapeShellArg workflowsDeclaration} > "$applied"
-        fi
-      '';
     };
 
     networking.firewall.allowedTCPPorts = [
@@ -121,11 +121,11 @@ in
       recommendedProxySettings = true;
       serverTokens = false;
 
-      virtualHosts.${paperlessHost} = {
+      virtualHosts.${domain} = {
         useACMEHost = "decio.us";
         extraConfig = ''
           allow ${lan.vlans.trusted.cidr};
-          allow ${tailnetCidr};
+          allow ${tailnet.cidr};
           deny all;
           client_max_body_size 512M;
         '';

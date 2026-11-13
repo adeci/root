@@ -1,6 +1,9 @@
 { lib, self, ... }:
 let
-  topology = import ./topology.nix { inherit lib self; };
+  tailnetVlans = lib.filter (vlan: vlan.tailnet) (lib.attrValues self.inventory.lan.vlans);
+  advertiseRoutes = "--advertise-routes=${
+    lib.concatMapStringsSep "," (vlan: vlan.cidr) tailnetVlans
+  }";
 in
 {
   imports = [
@@ -12,10 +15,10 @@ in
   ];
 
   services.tailscale = {
-    extraUpFlags = [ topology.tailscaleRouteFlag ];
+    extraUpFlags = [ advertiseRoutes ];
     extraSetFlags = [
       "--accept-routes=false"
-      topology.tailscaleRouteFlag
+      advertiseRoutes
     ];
     useRoutingFeatures = "server";
   };

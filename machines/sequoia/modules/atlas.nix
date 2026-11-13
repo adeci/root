@@ -5,9 +5,10 @@
   ...
 }:
 let
-  atlasHost = "atlas.decio.us";
+  inherit (self.inventory) tailnet;
+
+  domain = "atlas.decio.us";
   grafanaPort = config.services.grafana.settings.server.http_port;
-  tailnetCidr = self.inventory.tailnet.cidr;
 in
 {
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
@@ -16,18 +17,18 @@ in
   ];
 
   services.grafana.settings.server = {
-    domain = lib.mkForce atlasHost;
-    root_url = lib.mkForce "https://${atlasHost}/";
+    domain = lib.mkForce domain;
+    root_url = lib.mkForce "https://${domain}/";
     serve_from_sub_path = lib.mkForce false;
   };
 
-  services.nginx.virtualHosts.${atlasHost} = {
+  services.nginx.virtualHosts.${domain} = {
     useACMEHost = "decio.us";
     forceSSL = true;
 
     extraConfig = ''
       allow 127.0.0.1;
-      allow ${tailnetCidr};
+      allow ${tailnet.cidr};
       deny all;
       client_max_body_size 32m;
     '';
@@ -51,11 +52,11 @@ in
   # Keep the monitoring ingest endpoints on the MagicDNS host, but move the UI off plain HTTP.
   services.nginx.virtualHosts.${config.networking.fqdn}.locations = {
     "/grafana/" = lib.mkForce {
-      return = "301 https://${atlasHost}/";
+      return = "301 https://${domain}/";
     };
 
     "= /" = lib.mkForce {
-      return = "301 https://${atlasHost}/";
+      return = "301 https://${domain}/";
     };
   };
 }

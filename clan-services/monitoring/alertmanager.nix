@@ -1,4 +1,3 @@
-# Alertmanager routing: every alert notifies through the ntfy bridge, warnings wait out the quiet hours.
 {
   lib,
   webhookUrl,

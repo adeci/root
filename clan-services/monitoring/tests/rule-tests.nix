@@ -1,6 +1,6 @@
-# promtool unit tests for the fleet rules, using one always-on "server" and one "laptop" that comes and goes.
+# "server" is always-on, "laptop" is not.
 let
-  minutes = n: "${toString n}m";
+  minutes = count: "${toString count}m";
 
   noAlert = alertname: time: {
     inherit alertname;

@@ -110,7 +110,7 @@ in
       unitConfig.ConditionPathExistsGlob = "/dev/nvidia[0-9]*";
       environment.LD_LIBRARY_PATH = "${driverLibraryPath}:/run/opengl-driver/lib";
       serviceConfig = {
-        ExecStart = "${dcgm}/bin/nv-hostengine --no-daemon --bind-interface 127.0.0.1 --port 5555 --service-account dcgm --home-dir /var/lib/dcgm";
+        ExecStart = "${lib.getExe' dcgm "nv-hostengine"} --no-daemon --bind-interface 127.0.0.1 --port 5555 --service-account dcgm --home-dir /var/lib/dcgm";
         Restart = "on-failure";
         RestartSec = "10s";
       };
@@ -124,7 +124,7 @@ in
       unitConfig.ConditionPathExistsGlob = "/dev/nvidia[0-9]*";
       environment.LD_LIBRARY_PATH = "${driverLibraryPath}:/run/opengl-driver/lib";
       serviceConfig = {
-        ExecStart = "${dcgmExporter}/bin/dcgm-exporter --address ${dcgmExporterAddress} --collectors ${pkgs.prometheus-dcgm-exporter.src}/etc/default-counters.csv --collect-interval 15000 --remote-hostengine-info 127.0.0.1:5555";
+        ExecStart = "${lib.getExe dcgmExporter} --address ${dcgmExporterAddress} --collectors ${pkgs.prometheus-dcgm-exporter.src}/etc/default-counters.csv --collect-interval 15000 --remote-hostengine-info 127.0.0.1:5555";
         DynamicUser = true;
         Restart = "on-failure";
         RestartSec = "10s";

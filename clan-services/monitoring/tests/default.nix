@@ -1,4 +1,3 @@
-# Unit tests for the alert rules, the Alertmanager routing and the ntfy bridge settings.
 { lib, pkgs }:
 let
   yaml = pkgs.formats.yaml { };

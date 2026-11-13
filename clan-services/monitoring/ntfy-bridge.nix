@@ -1,4 +1,3 @@
-# alertmanager-ntfy settings: severity picks the ntfy priority, and a resolution quietly replaces its alert's notification.
 {
   lib,
   listenAddress,

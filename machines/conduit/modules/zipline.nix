@@ -11,7 +11,7 @@ let
   inherit (bucket) credentials;
   port = 3002;
   record = self.inventory.cloudflare.dns.shares;
-  origin = "${record.name}.${record.zone}";
+  domain = "${record.name}.${record.zone}";
   staging = "/var/cache/zipline";
 in
 {
@@ -58,7 +58,7 @@ in
       CORE_HOSTNAME = "127.0.0.1";
       CORE_PORT = port;
       CORE_TEMP_DIRECTORY = staging;
-      CORE_DEFAULT_DOMAIN = origin;
+      CORE_DEFAULT_DOMAIN = domain;
       CORE_RETURN_HTTPS_URLS = "true";
       CORE_TRUST_PROXY = "true";
       CORE_TRUSTED_PROXIES = "127.0.0.1,::1";
@@ -128,7 +128,7 @@ in
     commonHttpConfig = ''
       limit_conn_zone $server_name zone=zipline_uploads:1m;
     '';
-    virtualHosts.${origin} = {
+    virtualHosts.${domain} = {
       enableACME = true;
       forceSSL = true;
       extraConfig = ''
@@ -143,8 +143,7 @@ in
           proxyPass = "http://127.0.0.1:${toString port}";
           proxyWebsockets = true;
           extraConfig = ''
-            # Zipline permits anonymous public-folder uploads. Reject that
-            # exception, while retaining session-authenticated dashboard use.
+            # Zipline allows anonymous public-folder uploads; require a token or a dashboard session.
             set $zipline_upload_auth "$http_authorization$cookie_zipline_session";
             if ($zipline_upload_auth = "") { return 401; }
             limit_conn zipline_uploads 1;

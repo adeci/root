@@ -12,15 +12,32 @@ let
   tunnels = self.inventory.cloudflare.tunnels.sequoia;
 
   users = {
-    alex = {
-      name = "alex";
-      admin = true;
-    };
-    watari = {
-      name = "watari";
-      admin = false;
-    };
+    alex.admin = true;
+    watari.admin = false;
   };
+
+  passwordFile =
+    name:
+    config.clan.core.vars.generators."matrix-password-${name}".files."matrix-password-${name}".path;
+
+  waitForPort = pkgs.writeShellApplication {
+    name = "matrix-synapse-wait-for-port";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.netcat
+    ];
+    text = builtins.readFile ./matrix-synapse-wait-for-port.sh;
+  };
+
+  registerUser =
+    name: user:
+    lib.concatStringsSep " " [
+      "+/run/current-system/sw/bin/matrix-synapse-register_new_matrix_user"
+      "--exists-ok"
+      "--password-file ${passwordFile name}"
+      "--user ${name}"
+      (if user.admin then "--admin" else "--no-admin")
+    ];
 
   element-web =
     pkgs.runCommand "element-web-with-config"
@@ -112,9 +129,9 @@ in
   clan.core.vars.generators = {
     "matrix-synapse" = {
       files."synapse-registration_shared_secret" = { };
-      runtimeInputs = with pkgs; [
-        coreutils
-        pwgen
+      runtimeInputs = [
+        pkgs.coreutils
+        pkgs.pwgen
       ];
       script = ''
         echo -n "$(pwgen -s 32 1)" > "$out"/synapse-registration_shared_secret
@@ -122,46 +139,28 @@ in
     };
   }
   // lib.mapAttrs' (
-    _: user:
-    lib.nameValuePair "matrix-password-${user.name}" {
-      files."matrix-password-${user.name}" = { };
-      runtimeInputs = with pkgs; [ xkcdpass ];
+    name: _:
+    lib.nameValuePair "matrix-password-${name}" {
+      files."matrix-password-${name}" = { };
+      runtimeInputs = [ pkgs.xkcdpass ];
       script = ''
-        xkcdpass -n 6 -d - > "$out"/${lib.escapeShellArg "matrix-password-${user.name}"}
+        xkcdpass -n 6 -d - > "$out"/${lib.escapeShellArg "matrix-password-${name}"}
       '';
     }
   ) users;
 
-  systemd.services.matrix-synapse =
-    let
-      usersScript = ''
-        while ! ${pkgs.netcat}/bin/nc -z -v 127.0.0.1 ${toString synapsePort}; do
-          if ! kill -0 "$MAINPID"; then exit 1; fi
-          sleep 1;
-        done
-      ''
-      + lib.concatMapStringsSep "\n" (user: ''
-        /run/current-system/sw/bin/matrix-synapse-register_new_matrix_user \
-          --exists-ok \
-          --password-file ${
-            config.clan.core.vars.generators."matrix-password-${user.name}".files."matrix-password-${user.name}".path
-          } \
-          --user "${user.name}" \
-          ${if user.admin then "--admin" else "--no-admin"}
-      '') (lib.attrValues users);
-    in
-    {
-      path = [ pkgs.curl ];
-      serviceConfig.ExecStartPre = lib.mkBefore [
-        "+${pkgs.coreutils}/bin/install -o matrix-synapse -g matrix-synapse ${
-          lib.escapeShellArg
-            config.clan.core.vars.generators.matrix-synapse.files."synapse-registration_shared_secret".path
-        } /run/synapse-registration-shared-secret"
-      ];
-      serviceConfig.ExecStartPost = [
-        "+${pkgs.writeShellScript "matrix-synapse-create-users" usersScript}"
-      ];
-    };
+  systemd.services.matrix-synapse.serviceConfig = {
+    ExecStartPre = lib.mkBefore [
+      "+${lib.getExe' pkgs.coreutils "install"} -o matrix-synapse -g matrix-synapse ${
+        lib.escapeShellArg
+          config.clan.core.vars.generators.matrix-synapse.files."synapse-registration_shared_secret".path
+      } /run/synapse-registration-shared-secret"
+    ];
+    ExecStartPost = [
+      "+${lib.getExe waitForPort} ${toString synapsePort}"
+    ]
+    ++ lib.mapAttrsToList registerUser users;
+  };
 
   services.nginx = {
     enable = true;

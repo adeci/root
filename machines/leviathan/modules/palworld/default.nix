@@ -18,20 +18,17 @@ let
     extraArgs = [ ];
   };
 
-  palworldInstances = import ./instances.nix;
-  instances = lib.mapAttrs (_: instance: defaultInstance // instance) palworldInstances;
+  instances = lib.mapAttrs (_: instance: defaultInstance // instance) (import ./instances.nix);
   enabledInstances = lib.filterAttrs (_: instance: instance.enable) instances;
   instanceNames = lib.attrNames instances;
 
   stateDir = name: "/var/lib/palworld/${name}";
   serverDir = name: "${stateDir name}/server";
-  defaultSettingsFile = name: "${serverDir name}/DefaultPalWorldSettings.ini";
   savedDir = name: "${serverDir name}/Pal/Saved";
-  settingsFile = name: "${savedDir name}/Config/LinuxServer/PalWorldSettings.ini";
   generatorName = name: "palworld-${name}";
   publicPort = instance: if instance.publicPort == null then instance.port else instance.publicPort;
 
-  mkArgs =
+  serverArgs =
     instance:
     [
       "-port=${toString instance.port}"
@@ -48,87 +45,35 @@ let
     ]
     ++ instance.extraArgs;
 
-  mkCommunitySetup =
-    instance:
-    if instance.community then
-      let
-        address = if instance.publicAddress == null then "" else instance.publicAddress;
-      in
-      ''
-        publicAddress=${lib.escapeShellArg address}
-        if ! publicIp="$(${pkgs.getent}/bin/getent ahostsv4 "$publicAddress" | ${pkgs.gawk}/bin/awk 'NR == 1 { print $1; exit }')"; then
-          echo "failed to resolve Palworld public address: $publicAddress" >&2
-          exit 1
-        fi
-        if [ -z "$publicIp" ]; then
-          echo "failed to resolve Palworld public address: $publicAddress" >&2
-          exit 1
-        fi
-        communityArgs=("-publicip=$publicIp")
-      ''
-    else
-      ''
-        publicIp=
-        communityArgs=()
-      '';
-
-  mkSettings =
+  settingsJson =
     name: instance:
-    {
-      ServerName = if instance.serverName == null then name else instance.serverName;
-      PublicPort = publicPort instance;
-    }
-    // instance.settings;
+    pkgs.writeText "palworld-${name}-settings.json" (
+      builtins.toJSON (
+        {
+          ServerName = if instance.serverName == null then name else instance.serverName;
+          PublicPort = publicPort instance;
+        }
+        // instance.settings
+      )
+    );
 
-  mkSettingsJson =
-    name: instance:
-    pkgs.writeText "palworld-${name}-settings.json" (builtins.toJSON (mkSettings name instance));
+  start = pkgs.writeShellApplication {
+    name = "palworld-start";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.getent
+      pkgs.python3
+      pkgs.steam-run
+      pkgs.steamcmd
+    ];
+    text = builtins.readFile ./start.sh;
+  };
 
-  # Palworld stores settings as one OptionSettings=(...) tuple, not normal INI keys.
-  patchSettings = pkgs.writeScript "palworld-patch-settings" ''
-    #!${pkgs.python3}/bin/python3
-    ${builtins.readFile ./patch-settings.py}
-  '';
-
-  mkUpdateScript =
-    name:
-    pkgs.writeShellScript "palworld-${name}-update" ''
-      set -euo pipefail
-      mkdir -p ${lib.escapeShellArg (serverDir name)}
-      exec ${pkgs.steamcmd}/bin/steamcmd \
-        +force_install_dir ${lib.escapeShellArg (serverDir name)} \
-        +login anonymous \
-        +app_update 2394010 validate \
-        +quit
-    '';
-
-  mkStartScript =
-    name: instance:
-    pkgs.writeShellScript "palworld-${name}-start" ''
-      set -euo pipefail
-      # Updating here rather than in ExecStartPre keeps the start job short,
-      # so deploys don't wait on steamcmd.
-      ${mkUpdateScript name}
-      ${mkCommunitySetup instance}
-      install -D -m 0600 \
-        ${lib.escapeShellArg (defaultSettingsFile name)} \
-        ${lib.escapeShellArg (settingsFile name)}
-      ${patchSettings} \
-        ${lib.escapeShellArg (settingsFile name)} \
-        ${mkSettingsJson name instance} \
-        "$CREDENTIALS_DIRECTORY/admin-password" \
-        "$CREDENTIALS_DIRECTORY/server-password" \
-        "$publicIp"
-      exec ${pkgs.steam-run}/bin/steam-run \
-        ${lib.escapeShellArg "${serverDir name}/PalServer.sh"} \
-        ${lib.escapeShellArgs (mkArgs instance)} \
-        "''${communityArgs[@]}"
-    '';
-
-  mkService =
+  service =
     name: instance:
     let
-      vars = config.clan.core.vars.generators.${generatorName name};
+      passwords = config.clan.core.vars.generators.${generatorName name}.files;
     in
     {
       description = "Palworld dedicated server (${name})";
@@ -139,11 +84,6 @@ let
       # Deploys start inactive servers asynchronously; manual restart performs an update.
       restartIfChanged = false;
       stopIfChanged = false;
-
-      path = [
-        pkgs.steamcmd
-        pkgs.steam-run
-      ];
 
       environment = {
         HOME = stateDir name;
@@ -156,10 +96,20 @@ let
         Group = "palworld";
         WorkingDirectory = stateDir name;
         LoadCredential = [
-          "admin-password:${vars.files.admin-password.path}"
-          "server-password:${vars.files.server-password.path}"
+          "admin-password:${passwords.admin-password.path}"
+          "server-password:${passwords.server-password.path}"
         ];
-        ExecStart = mkStartScript name instance;
+        # Updates the server first, here rather than in ExecStartPre so deploys don't wait on steamcmd.
+        ExecStart = lib.escapeShellArgs (
+          [
+            (lib.getExe start)
+            (serverDir name)
+            (settingsJson name instance)
+            "${./patch-settings.py}"
+            (if instance.community then instance.publicAddress else "")
+          ]
+          ++ serverArgs instance
+        );
         Restart = "on-failure";
         RestartSec = "30s";
         KillSignal = "SIGINT";
@@ -177,13 +127,13 @@ let
       };
     };
 
-  mkTmpfilesRules = name: _instance: [
+  tmpfilesRules = name: _instance: [
     "d ${stateDir name} 0750 palworld palworld - -"
     "d ${serverDir name} 0750 palworld palworld - -"
     "d ${savedDir name} 0750 palworld palworld - -"
   ];
 
-  mkVarsGenerator =
+  varsGenerator =
     name: _instance:
     lib.nameValuePair (generatorName name) {
       files.admin-password.secret = true;
@@ -203,7 +153,7 @@ in
 {
   assertions = import ./validation.nix { inherit lib instances enabledInstances; };
 
-  clan.core.vars.generators = lib.mapAttrs' mkVarsGenerator instances;
+  clan.core.vars.generators = lib.mapAttrs' varsGenerator instances;
   clan.core.state.palworld.folders = map savedDir instanceNames;
 
   users.groups.palworld = { };
@@ -218,10 +168,10 @@ in
   systemd.tmpfiles.rules = [
     "d /var/lib/palworld 0750 palworld palworld - -"
   ]
-  ++ lib.flatten (lib.mapAttrsToList mkTmpfilesRules instances);
+  ++ lib.flatten (lib.mapAttrsToList tmpfilesRules instances);
 
   systemd.services = lib.mapAttrs' (
-    name: instance: lib.nameValuePair "palworld-${name}" (mkService name instance)
+    name: instance: lib.nameValuePair "palworld-${name}" (service name instance)
   ) enabledInstances;
 
   networking.firewall.allowedUDPPorts = lib.concatMap (

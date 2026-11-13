@@ -9,11 +9,6 @@ let
     uid = "loki";
   };
 
-  grafana = {
-    type = "grafana";
-    uid = "-- Grafana --";
-  };
-
   thresholds = {
     neutral = {
       mode = "absolute";
@@ -175,24 +170,6 @@ let
       ];
     };
 
-    packetLoss = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 0.01;
-        }
-        {
-          color = "red";
-          value = 0.05;
-        }
-      ];
-    };
-
     packetLossPercent = {
       mode = "absolute";
       steps = [
@@ -230,34 +207,33 @@ let
     ];
   };
 
-  target = refId: expr: legendFormat: {
+  target = expr: legendFormat: {
     datasource = prometheus;
     editorMode = "code";
-    inherit expr legendFormat refId;
+    inherit expr legendFormat;
     range = true;
   };
 
   instantTarget =
-    refId: expr: legendFormat:
-    (target refId expr legendFormat)
+    expr: legendFormat:
+    target expr legendFormat
     // {
       instant = true;
       range = false;
     };
 
-  tableTarget =
-    refId: expr:
-    (instantTarget refId expr "")
-    // {
-      format = "table";
-    };
+  tableTarget = expr: instantTarget expr "" // { format = "table"; };
 
-  lokiTarget = refId: expr: {
-    datasource = loki;
-    editorMode = "code";
-    inherit expr refId;
-    queryType = "range";
-  };
+  # A panel's queries are named A, B, C… in order.
+  lettered =
+    targets:
+    builtins.genList (
+      index:
+      builtins.elemAt targets index
+      // {
+        refId = builtins.substring index 1 "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      }
+    ) (builtins.length targets);
 
   colorOverride = name: color: {
     matcher = {
@@ -273,15 +249,6 @@ let
         };
       }
     ];
-  };
-
-  grid = x: y: w: h: {
-    inherit
-      x
-      y
-      w
-      h
-      ;
   };
 
   baseFieldConfig =
@@ -311,12 +278,11 @@ let
       inherit overrides;
     };
 
+  # Panels give only their size; `dashboard` places them.
+
   stat =
     {
-      id,
       title,
-      x,
-      y,
       w,
       h,
       expr,
@@ -327,11 +293,11 @@ let
       sparkline ? false,
     }:
     {
-      inherit id title;
+      inherit title;
       type = "stat";
       datasource = prometheus;
-      gridPos = grid x y w h;
-      targets = [ ((if sparkline then target else instantTarget) "A" expr "") ];
+      gridPos = { inherit w h; };
+      targets = lettered [ ((if sparkline then target else instantTarget) expr "") ];
       fieldConfig = baseFieldConfig {
         inherit
           fixedColor
@@ -357,10 +323,7 @@ let
 
   statTargets =
     {
-      id,
       title,
-      x,
-      y,
       w,
       h,
       targets,
@@ -371,10 +334,11 @@ let
       fixedColor ? null,
     }:
     {
-      inherit id targets title;
+      inherit title;
       type = "stat";
       datasource = prometheus;
-      gridPos = grid x y w h;
+      gridPos = { inherit w h; };
+      targets = lettered targets;
       fieldConfig = baseFieldConfig {
         inherit
           fixedColor
@@ -401,28 +365,24 @@ let
 
   timeseries =
     {
-      id,
       title,
-      x,
-      y,
       w,
       h,
       targets,
       unit ? "short",
       threshold ? thresholds.pressure,
       overrides ? [ ],
-      legend ? true,
-      fillOpacity ? 0,
     }:
     {
-      inherit id title targets;
+      inherit title;
       type = "timeseries";
       datasource = prometheus;
-      gridPos = grid x y w h;
+      gridPos = { inherit w h; };
+      targets = lettered targets;
       fieldConfig =
-        (baseFieldConfig {
+        baseFieldConfig {
           inherit overrides threshold unit;
-        })
+        }
         // {
           defaults =
             (baseFieldConfig {
@@ -431,7 +391,7 @@ let
             // {
               custom = {
                 drawStyle = "line";
-                inherit fillOpacity;
+                fillOpacity = 0;
                 lineInterpolation = "smooth";
                 lineWidth = 1;
                 pointSize = 4;
@@ -447,7 +407,7 @@ let
           calcs = [ "lastNotNull" ];
           displayMode = "list";
           placement = "bottom";
-          showLegend = legend;
+          showLegend = true;
         };
         tooltip = {
           mode = "multi";
@@ -458,10 +418,7 @@ let
 
   barGauge =
     {
-      id,
       title,
-      x,
-      y,
       w,
       h,
       targets,
@@ -473,10 +430,11 @@ let
       displayMode ? "gradient",
     }:
     {
-      inherit id title targets;
+      inherit title;
       type = "bargauge";
       datasource = prometheus;
-      gridPos = grid x y w h;
+      gridPos = { inherit w h; };
+      targets = lettered targets;
       fieldConfig = baseFieldConfig {
         inherit
           fixedColor
@@ -504,58 +462,20 @@ let
       };
     };
 
-  row =
-    {
-      id,
-      title,
-      y,
-      collapsed ? true,
-      panels ? [ ],
-    }:
-    {
-      inherit collapsed id title;
-      type = "row";
-      gridPos = grid 0 y 24 1;
-      panels = if collapsed then panels else [ ];
-    };
-
-  text =
-    {
-      id,
-      title,
-      x,
-      y,
-      w,
-      h,
-      content,
-    }:
-    {
-      inherit id title;
-      type = "text";
-      datasource = grafana;
-      gridPos = grid x y w h;
-      options = {
-        inherit content;
-        mode = "markdown";
-      };
-    };
-
   table =
     {
-      id,
       title,
-      x,
-      y,
       w,
       h,
       targets,
       hiddenColumns ? [ ],
     }:
     {
-      inherit id title targets;
+      inherit title;
       type = "table";
       datasource = prometheus;
-      gridPos = grid x y w h;
+      gridPos = { inherit w h; };
+      targets = lettered targets;
       fieldConfig = {
         defaults = { };
         overrides = [ ];
@@ -579,20 +499,24 @@ let
 
   logs =
     {
-      id,
       title,
-      x,
-      y,
       w,
       h,
       expr,
     }:
     {
-      inherit id title;
+      inherit title;
       type = "logs";
       datasource = loki;
-      gridPos = grid x y w h;
-      targets = [ (lokiTarget "A" expr) ];
+      gridPos = { inherit w h; };
+      targets = lettered [
+        {
+          datasource = loki;
+          editorMode = "code";
+          inherit expr;
+          queryType = "range";
+        }
+      ];
       options = {
         dedupStrategy = "none";
         enableLogDetails = true;
@@ -605,30 +529,136 @@ let
       };
     };
 
+  # A section of the page; collapsed, it shows only its title until opened.
+  row =
+    {
+      title,
+      panels,
+      collapsed ? true,
+    }:
+    {
+      inherit collapsed panels title;
+      type = "row";
+    };
+
+  # Panels go left to right on the 24-wide grid, wrapping onto a new line as tall as its tallest panel.
+  flow =
+    top:
+    let
+      place =
+        line: panel:
+        let
+          inherit (panel.gridPos) w h;
+          wraps = line.x + w > 24;
+          x = if wraps then 0 else line.x;
+          y = if wraps then line.bottom else line.y;
+        in
+        {
+          inherit y;
+          x = x + w;
+          bottom = if y + h > line.bottom then y + h else line.bottom;
+          panels = line.panels ++ [
+            (
+              panel
+              // {
+                gridPos = panel.gridPos // {
+                  inherit x y;
+                };
+              }
+            )
+          ];
+        };
+    in
+    builtins.foldl' place {
+      x = 0;
+      y = top;
+      bottom = top;
+      panels = [ ];
+    };
+
+  # Rows stack down the page; Grafana keeps a collapsed row's panels inside it and an open row's after it.
+  stack =
+    let
+      addRow =
+        page: row:
+        let
+          content = flow (page.bottom + 1) row.panels;
+          header = row // {
+            gridPos = {
+              x = 0;
+              y = page.bottom;
+              w = 24;
+              h = 1;
+            };
+            panels = if row.collapsed then content.panels else [ ];
+          };
+        in
+        {
+          inherit (content) bottom;
+          panels = page.panels ++ [ header ] ++ (if row.collapsed then [ ] else content.panels);
+        };
+    in
+    rows:
+    (builtins.foldl' addRow {
+      bottom = 0;
+      panels = [ ];
+    } rows).panels;
+
+  # Panel ids count down the page from 1, the panels inside collapsed rows included.
+  number =
+    let
+      numberFrom =
+        first: panels:
+        builtins.genList (index: builtins.elemAt panels index // { id = first + index; }) (
+          builtins.length panels
+        );
+      addPanel =
+        numbered: panel:
+        let
+          id = numbered.next;
+          inside = panel.panels or [ ];
+        in
+        {
+          next = id + 1 + builtins.length inside;
+          panels = numbered.panels ++ [
+            (
+              panel
+              // {
+                inherit id;
+              }
+              // (if panel ? panels then { panels = numberFrom (id + 1) inside; } else { })
+            )
+          ];
+        };
+    in
+    panels:
+    (builtins.foldl' addPanel {
+      next = 1;
+      panels = [ ];
+    } panels).panels;
+
+  # `panels` are either all rows or no rows.
   dashboard =
     {
       uid,
       title,
       panels,
-      timeFrom ? "now-6h",
-      refresh ? "30s",
     }:
     {
       annotations.list = [ ];
       editable = false;
       fiscalYearStartMonth = 0;
       graphTooltip = 1;
-      inherit
-        panels
-        refresh
-        title
-        uid
-        ;
+      panels = number (
+        if builtins.all (panel: panel.type == "row") panels then stack panels else (flow 0 panels).panels
+      );
+      refresh = "30s";
+      inherit title uid;
       schemaVersion = 41;
       tags = [ "monitoring" ];
       templating.list = [ ];
       time = {
-        from = timeFrom;
+        from = "now-6h";
         to = "now";
       };
       timezone = "browser";
@@ -641,19 +671,14 @@ in
     barGauge
     colorOverride
     dashboard
-    instantTarget
-    loki
-    lokiTarget
     logs
     mappings
-    prometheus
     row
     stat
     statTargets
     table
     tableTarget
     target
-    text
     thresholds
     timeseries
     ;

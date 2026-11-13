@@ -12,32 +12,39 @@ let
     if lib.versionOlder config.system.stateVersion "24.11" then "bitwarden_rs" else "vaultwarden";
   dataDir = "/var/lib/${stateDirectory}";
   backupDir = "/var/backup/vaultwarden";
+
+  backup = pkgs.writeShellApplication {
+    name = "vaultwarden-backup";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.rsync
+      pkgs.sqlite
+    ];
+    text = builtins.readFile ./vaultwarden-backup.sh;
+  };
+
+  restore = pkgs.writeShellApplication {
+    name = "vaultwarden-restore";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.rsync
+    ];
+    text = builtins.readFile ./vaultwarden-restore.sh;
+  };
+  systemctl = lib.getExe' config.systemd.package "systemctl";
 in
 {
   clan.core.state.vaultwarden = {
     folders = [ backupDir ];
     preBackupScript = ''
-      ${pkgs.coreutils}/bin/install -d -m 0700 -o vaultwarden -g vaultwarden ${backupDir}
-
-      if [ ! -d ${dataDir} ]; then
-        echo "No Vaultwarden data dir, skipping backup snapshot"
-        exit 0
-      fi
-
-      if [ -f ${dataDir}/db.sqlite3 ]; then
-        ${pkgs.sqlite}/bin/sqlite3 ${dataDir}/db.sqlite3 ".backup '${backupDir}/db.sqlite3'"
-      fi
-      ${pkgs.rsync}/bin/rsync -a --delete --exclude 'db.sqlite3*' ${dataDir}/ ${backupDir}/
-      ${pkgs.coreutils}/bin/chown -R vaultwarden:vaultwarden ${backupDir}
+      ${lib.getExe backup} ${dataDir} ${backupDir}
     '';
     preRestoreScript = ''
-      ${config.systemd.package}/bin/systemctl stop vaultwarden.service
+      ${systemctl} stop vaultwarden.service
     '';
     postRestoreScript = ''
-      ${pkgs.coreutils}/bin/install -d -m 0700 -o vaultwarden -g vaultwarden ${dataDir}
-      ${pkgs.rsync}/bin/rsync -a --delete ${backupDir}/ ${dataDir}/
-      ${pkgs.coreutils}/bin/chown -R vaultwarden:vaultwarden ${dataDir}
-      ${config.systemd.package}/bin/systemctl start vaultwarden.service
+      ${lib.getExe restore} ${backupDir} ${dataDir}
+      ${systemctl} start vaultwarden.service
     '';
   };
 
@@ -61,10 +68,10 @@ in
     };
     files."vaultwarden.env" = { };
 
-    runtimeInputs = with pkgs; [
-      coreutils
-      pwgen
-      libargon2
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.pwgen
+      pkgs.libargon2
     ];
 
     script = ''

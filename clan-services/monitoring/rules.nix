@@ -1,4 +1,3 @@
-# Alert rules: fleet-wide ones limited to always-on machines, plus each agent's rules for its own metrics.
 {
   lib,
   alwaysOn,
@@ -17,7 +16,7 @@ let
     else
       rule;
 
-  onlyAlwaysOn = expr: "(${expr}) and on (instance) instance:always_on";
+  onlyAlwaysOn = expression: "(${expression}) and on (instance) instance:always_on";
 
   # Disks only: tmpfs, ramfs and FUSE mounts come and go with whoever uses them.
   disk = ''fstype=~"ext[234]|btrfs|xfs|f2fs|bcachefs|zfs|vfat"'';

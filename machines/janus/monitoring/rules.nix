@@ -1,5 +1,5 @@
-# Alerts about the router's own services, its internet link and the RouterOS switches and access points.
-{ network }:
+# Router alerts: its services, internet link and appliances.
+network:
 let
   router = ''instance="${network.instance}"'';
   mikrotik = ''${router}, job="mikrotik"'';
@@ -23,10 +23,10 @@ let
     );
 
   # mikrotik_monitor_rate is in Mb/s; SFP+ ports should link at 10 Gb/s, copper ports at 1 Gb/s.
-  slowFibreCables = network.onPorts network.cablePorts (
+  slowFibreCables = network.onPorts network.cableNearEnds (
     ports: ''mikrotik_monitor_rate{${mikrotik}, ${ports}, interface=~"sfp-sfpplus.+"} < 10000''
   );
-  slowCopperCables = network.onPorts network.cablePorts (
+  slowCopperCables = network.onPorts network.cableNearEnds (
     ports: ''mikrotik_monitor_rate{${mikrotik}, ${ports}, interface=~"ether.+"} < 1000''
   );
 in

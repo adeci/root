@@ -1,6 +1,15 @@
 { lib, self, ... }:
 let
-  topology = import ./topology.nix { inherit lib self; };
+  inherit (self.inventory.lan) vlans;
+  inherit (self.inventory.router) interfaces ports;
+
+  # No IPv6 on the LAN for now; Tailscale manages its own.
+  noIpv6 = {
+    LinkLocalAddressing = "no";
+    IPv6AcceptRA = false;
+  };
+
+  spareInterfaces = lib.subtractLists (lib.attrValues interfaces) (lib.attrValues ports);
 in
 {
   networking.networkmanager.enable = false;
@@ -12,79 +21,73 @@ in
   systemd.network.netdevs =
     lib.mapAttrs' (
       _: vlan:
-      lib.nameValuePair "20-${topology.vlanInterface vlan}" {
+      lib.nameValuePair "20-${vlan.vlanDevice}" {
         netdevConfig = {
-          Name = topology.vlanInterface vlan;
+          Name = vlan.vlanDevice;
           Kind = "vlan";
         };
         vlanConfig.Id = vlan.id;
       }
-    ) topology.vlans
+    ) vlans
     // {
-      "10-br-mgmt".netdevConfig = {
-        Name = "br-mgmt";
+      "10-${vlans.mgmt.interface}".netdevConfig = {
+        Name = vlans.mgmt.interface;
         Kind = "bridge";
       };
     };
 
   systemd.network.networks = {
     "10-wan" = {
-      matchConfig.Name = topology.wan;
-      networkConfig = topology.noIpv6 // {
+      matchConfig.Name = interfaces.wan;
+      networkConfig = noIpv6 // {
         DHCP = "ipv4";
       };
       dhcpV4Config.UseDNS = false;
     };
 
     "20-lan" = {
-      matchConfig.Name = topology.lan;
+      matchConfig.Name = interfaces.lan;
       linkConfig.RequiredForOnline = "carrier";
-      networkConfig = topology.noIpv6 // {
-        VLAN = topology.trunkVlanInterfaces;
+      networkConfig = noIpv6 // {
+        VLAN = map (vlan: vlan.vlanDevice) (lib.attrValues vlans);
       };
     };
 
+    # The mgmt VLAN arrives untagged on the mgmt port and tagged on the LAN trunk; one bridge joins both.
     "20-mgmt" = {
-      matchConfig.Name = topology.mgmt;
+      matchConfig.Name = interfaces.mgmt;
       linkConfig.RequiredForOnline = "no";
-      networkConfig = topology.noIpv6 // {
-        Bridge = "br-mgmt";
+      networkConfig = noIpv6 // {
+        Bridge = vlans.mgmt.interface;
       };
     };
 
-    "20-vlan99-bridge" = {
-      matchConfig.Name = topology.vlanInterface topology.vlans.mgmt;
+    "20-${vlans.mgmt.vlanDevice}-bridge" = {
+      matchConfig.Name = vlans.mgmt.vlanDevice;
       linkConfig.RequiredForOnline = "no";
-      networkConfig = topology.noIpv6 // {
-        Bridge = "br-mgmt";
+      networkConfig = noIpv6 // {
+        Bridge = vlans.mgmt.interface;
       };
-    };
-
-    "30-br-mgmt" = {
-      matchConfig.Name = "br-mgmt";
-      address = [ "${topology.vlans.mgmt.gateway}/24" ];
-      linkConfig.RequiredForOnline = "no";
-      networkConfig = topology.noIpv6;
     };
   }
   // lib.mapAttrs' (
-    _name: vlan:
-    lib.nameValuePair "30-${topology.vlanInterface vlan}" {
-      matchConfig.Name = topology.vlanInterface vlan;
-      address = [ "${vlan.gateway}/24" ];
+    _: vlan:
+    lib.nameValuePair "30-${vlan.interface}" {
+      matchConfig.Name = vlan.interface;
+      address = [ "${vlan.gateway}/${lib.last (lib.splitString "/" vlan.cidr)}" ];
       linkConfig.RequiredForOnline = "no";
-      networkConfig = topology.noIpv6;
+      networkConfig = noIpv6;
     }
-  ) topology.routedVlans
+  ) vlans
   // lib.listToAttrs (
     map (interface: {
       name = "90-spare-${interface}";
       value = {
         matchConfig.Name = interface;
         linkConfig.RequiredForOnline = "no";
-        networkConfig = topology.noIpv6;
+        networkConfig = noIpv6;
       };
-    }) topology.spareInterfaces
+    }) spareInterfaces
   );
 
   boot.kernel.sysctl = {

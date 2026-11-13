@@ -6,18 +6,13 @@
   ...
 }:
 let
-  topology = import ./topology.nix { inherit lib self; };
-
   inherit (self.inventory) lan;
-  devices = lan.hosts;
-  dnsRecords = lan.dnsAddresses;
-  dnsDevices = lib.filterAttrs (_: host: host.publishDns) devices;
-  tailnetCidr = self.inventory.tailnet.cidr;
-
-  routerLanWaitArgs = lib.escapeShellArgs (
-    map (interface: "--interface=${interface}:routable") topology.serviceInterfaces
-    ++ [ "--timeout=30" ]
-  );
+  inherit (lan) vlans hosts dnsAddresses;
+  publishedHosts = lib.filterAttrs (_: host: host.publishDns) hosts;
+  gatewayInterfaces = lib.mapAttrsToList (_: vlan: vlan.interface) vlans;
+  waitArguments = map (interface: "--interface=${interface}:routable") gatewayInterfaces ++ [
+    "--timeout=30"
+  ];
 in
 {
   services.resolved.enable = false;
@@ -26,7 +21,7 @@ in
   services.kea.dhcp4 = {
     enable = true;
     settings = {
-      interfaces-config.interfaces = lib.mapAttrsToList (_: vlan: vlan.interface) topology.vlans;
+      interfaces-config.interfaces = gatewayInterfaces;
 
       lease-database = {
         type = "memfile";
@@ -53,7 +48,7 @@ in
       subnet4 = lib.mapAttrsToList (
         name: vlan:
         let
-          devicesOnVlan = lib.filterAttrs (_: device: device.vlan == name) devices;
+          hostsOnVlan = lib.filterAttrs (_: host: host.vlan == name) hosts;
         in
         {
           inherit (vlan) id interface;
@@ -74,17 +69,15 @@ in
             }
           ];
           reservations = lib.mapAttrsToList (
-            hostname: device:
+            hostname: host:
             {
-              ip-address = device.ip;
+              ip-address = host.ip;
               inherit hostname;
             }
-            // (
-              if device.clientId != null then { client-id = device.clientId; } else { hw-address = device.mac; }
-            )
-          ) devicesOnVlan;
+            // (if host.clientId != null then { client-id = host.clientId; } else { hw-address = host.mac; })
+          ) hostsOnVlan;
         }
-      ) topology.vlans;
+      ) vlans;
     };
   };
 
@@ -93,25 +86,25 @@ in
     localControlSocketPath = "/run/unbound/unbound.ctl";
     settings = {
       server = {
-        interface = [ "127.0.0.1" ] ++ map (vlan: vlan.gateway) (lib.attrValues topology.vlans);
+        interface = [ "127.0.0.1" ] ++ map (vlan: vlan.gateway) (lib.attrValues vlans);
         access-control = [
           "127.0.0.0/8 allow"
           # Tailscale split DNS sends the private names here
-          "${tailnetCidr} allow"
+          "${self.inventory.tailnet.cidr} allow"
         ]
-        ++ map (vlan: "${vlan.cidr} allow") (lib.attrValues topology.vlans);
+        ++ map (vlan: "${vlan.cidr} allow") (lib.attrValues vlans);
 
         local-zone = [
           ''"${lan.domain}." static''
         ]
-        ++ lib.mapAttrsToList (name: _: ''"${name}." transparent'') dnsRecords;
+        ++ lib.mapAttrsToList (name: _: ''"${name}." transparent'') dnsAddresses;
         local-data =
-          lib.mapAttrsToList (name: device: ''"${name}.${lan.domain}. A ${device.ip}"'') dnsDevices
-          ++ lib.mapAttrsToList (name: ip: ''"${name}. A ${ip}"'') dnsRecords;
+          lib.mapAttrsToList (name: host: ''"${name}.${lan.domain}. A ${host.ip}"'') publishedHosts
+          ++ lib.mapAttrsToList (name: ip: ''"${name}. A ${ip}"'') dnsAddresses;
         local-data-ptr = lib.mapAttrsToList (
-          name: device: ''"${device.ip} ${name}.${lan.domain}"''
-        ) dnsDevices;
-        domain-insecure = [ lan.domain ] ++ lib.attrNames dnsRecords;
+          name: host: ''"${host.ip} ${name}.${lan.domain}"''
+        ) publishedHosts;
+        domain-insecure = [ lan.domain ] ++ lib.attrNames dnsAddresses;
 
         extended-statistics = true;
         do-ip6 = false;
@@ -139,10 +132,8 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      ExecStart = "${config.systemd.package}/lib/systemd/systemd-networkd-wait-online ${toString waitArguments}";
     };
-    script = ''
-      ${config.systemd.package}/lib/systemd/systemd-networkd-wait-online ${routerLanWaitArgs}
-    '';
   };
 
   systemd.services.kea-dhcp4-server = {
@@ -198,10 +189,10 @@ in
   clan.core.state.kea-dhcp = {
     folders = [ "/var/lib/kea" ];
     preRestoreScript = ''
-      ${config.systemd.package}/bin/systemctl stop kea-dhcp4-server.service || true
+      ${lib.getExe' config.systemd.package "systemctl"} stop kea-dhcp4-server.service || true
     '';
     postRestoreScript = ''
-      ${config.systemd.package}/bin/systemctl start kea-dhcp4-server.service
+      ${lib.getExe' config.systemd.package "systemctl"} start kea-dhcp4-server.service
     '';
   };
 }

@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 
+# Palworld keeps all settings in one OptionSettings=(...) tuple, not as INI keys.
 SECTION = "[/Script/Pal.PalGameWorldSettings]"
 PREFIX = "OptionSettings=("
 
@@ -43,8 +44,6 @@ def split_assignments(value):
 def render_atom(value):
     if isinstance(value, bool):
         return "True" if value else "False"
-    if isinstance(value, (int, float)):
-        return str(value)
     return str(value)
 
 
@@ -59,11 +58,6 @@ def render(value):
     return f'"{escaped}"'
 
 
-def load_json(path):
-    with Path(path).open() as f:
-        return json.load(f)
-
-
 def patch_settings(
     settings_path,
     settings_json,
@@ -71,7 +65,7 @@ def patch_settings(
     server_password_path,
     public_ip=None,
 ):
-    settings = load_json(settings_json)
+    settings = json.loads(Path(settings_json).read_text())
     settings["AdminPassword"] = Path(admin_password_path).read_text().strip()
     settings["ServerPassword"] = Path(server_password_path).read_text().strip()
     if public_ip:
@@ -112,7 +106,7 @@ def patch_settings(
 if __name__ == "__main__":
     if len(sys.argv) not in (5, 6):
         raise SystemExit(
-            "usage: palworld-patch-settings <settings.ini> <settings.json> "
+            "usage: patch-settings.py <settings.ini> <settings.json> "
             "<admin-password> <server-password> [public-ip]"
         )
     patch_settings(*sys.argv[1:])

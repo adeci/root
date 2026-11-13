@@ -14,51 +14,36 @@ ui.dashboard {
   title = "Fleet";
   panels = [
     (ui.stat {
-      id = 1;
       title = "Machines down";
-      x = 0;
-      y = 0;
       w = 6;
       h = 4;
       expr = firingCount ''alertname="HostDown"'';
     })
     (ui.stat {
-      id = 2;
       title = "Critical alerts";
-      x = 6;
-      y = 0;
       w = 6;
       h = 4;
       expr = firingCount ''severity="critical"'';
     })
     (ui.stat {
-      id = 3;
       title = "Warnings";
-      x = 12;
-      y = 0;
       w = 6;
       h = 4;
       expr = firingCount ''severity="warning"'';
       threshold = ui.thresholds.cautionWhenNonZero;
     })
     (ui.stat {
-      id = 4;
       title = "Machines reporting";
-      x = 18;
-      y = 0;
       w = 6;
       h = 4;
       expr = ''count(present_over_time(up{job="integrations/unix"}[5m]))'';
       threshold = ui.thresholds.neutral;
     })
     (ui.table {
-      id = 5;
       title = "Firing alerts";
-      x = 0;
-      y = 4;
       w = 24;
       h = 8;
-      targets = [ (ui.tableTarget "A" ''ALERTS{alertstate="firing"}'') ];
+      targets = [ (ui.tableTarget ''ALERTS{alertstate="firing"}'') ];
       hiddenColumns = [
         "Time"
         "Value"
@@ -67,61 +52,43 @@ ui.dashboard {
       ];
     })
     (ui.barGauge {
-      id = 6;
       title = "Root disk used";
-      x = 0;
-      y = 12;
       w = 8;
       h = 9;
       unit = "percent";
-      targets = [ (ui.target "A" rootDiskUsed "{{instance}}") ];
+      targets = [ (ui.target rootDiskUsed "{{instance}}") ];
     })
     (ui.barGauge {
-      id = 7;
       title = "Memory used";
-      x = 8;
-      y = 12;
       w = 8;
       h = 9;
       unit = "percent";
-      targets = [ (ui.target "A" memoryUsed "{{instance}}") ];
+      targets = [ (ui.target memoryUsed "{{instance}}") ];
     })
     (ui.barGauge {
-      id = 8;
       title = "Load per core";
-      x = 16;
-      y = 12;
       w = 8;
       h = 9;
       threshold = ui.thresholds.neutral;
-      targets = [ (ui.target "A" loadPerCore "{{instance}}") ];
+      targets = [ (ui.target loadPerCore "{{instance}}") ];
     })
     (ui.timeseries {
-      id = 9;
       title = "CPU busy";
-      x = 0;
-      y = 21;
       w = 12;
       h = 8;
       unit = "percent";
-      targets = [ (ui.target "A" cpuBusy "{{instance}}") ];
+      targets = [ (ui.target cpuBusy "{{instance}}") ];
     })
     (ui.timeseries {
-      id = 10;
       title = "Network traffic";
-      x = 12;
-      y = 21;
       w = 12;
       h = 8;
       unit = "Bps";
       threshold = ui.thresholds.neutral;
-      targets = [ (ui.target "A" networkTraffic "{{instance}}") ];
+      targets = [ (ui.target networkTraffic "{{instance}}") ];
     })
     (ui.logs {
-      id = 11;
       title = "Errors in the journal";
-      x = 0;
-      y = 29;
       w = 24;
       h = 10;
       expr = ''{level=~"emerg|alert|crit|err"}'';
