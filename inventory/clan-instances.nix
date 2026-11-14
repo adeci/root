@@ -58,6 +58,8 @@ in
           tags = {
             adeci-net = { };
             portable.settings.alwaysOn = false;
+            # The agent is NixOS-only: a Mac never reports, so it's never expected to.
+            darwin.settings.alwaysOn = false;
           };
           machines = {
             aegis.settings = minimalJournal;
