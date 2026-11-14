@@ -105,9 +105,9 @@ in
       roles.server.machines.leviathan.settings = {
         inherit domain;
         listenPort = cloudflare.tunnels.leviathan.${domain}.port;
-        # aarch64-linux only builds on bramble (Pi 4) and times out.
         buildSystems = [
           "x86_64-linux"
+          "aarch64-linux"
           "aarch64-darwin"
         ];
         # leviathan is shared with other users and the LLM host; keep CI bounded.
@@ -145,13 +145,6 @@ in
       input = "self";
     };
     roles.server.machines = {
-      bramble.settings = {
-        systems = [ "aarch64-linux" ];
-        maxJobs = 2;
-        speedFactor = 1;
-        supportedFeatures = [ ];
-      };
-
       daedalus.settings = {
         systems = [ "aarch64-darwin" ];
         maxJobs = 2;
