@@ -3,6 +3,8 @@
 [shell]
 polkit_agent = true
 setup_wizard_enabled = false
+# Apps opened from noctalia get their own unit, so restarting noctalia doesn't close them.
+launch_apps_as_systemd_services = true
 
 [theme]
 builtin = "Tokyo-Night"
