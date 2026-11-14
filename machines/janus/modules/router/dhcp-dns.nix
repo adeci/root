@@ -163,14 +163,13 @@ in
 
   services.prometheus.exporters.kea = {
     enable = true;
-    listenAddress = "127.0.0.1";
+    port = config.monitoring.exporters.kea-dhcp4;
     targets = [ "/run/kea/kea-dhcp4.sock" ];
   };
 
   services.prometheus.exporters.unbound = {
     enable = true;
-    listenAddress = "127.0.0.1";
-    port = 9167;
+    port = config.monitoring.exporters.unbound;
     user = "unbound";
     group = "unbound";
     unbound = {
@@ -180,15 +179,6 @@ in
       key = null;
     };
   };
-
-  monitoring.scrapeTargets =
-    let
-      inherit (config.services.prometheus.exporters) kea unbound;
-    in
-    {
-      kea-dhcp4 = "${kea.listenAddress}:${toString kea.port}";
-      unbound = "${unbound.listenAddress}:${toString unbound.port}";
-    };
 
   clan.core.state.kea-dhcp = {
     folders = [ "/var/lib/kea" ];

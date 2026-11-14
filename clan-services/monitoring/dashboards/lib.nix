@@ -637,12 +637,29 @@ let
       panels = [ ];
     } panels).panels;
 
+  # A picker over a label's values, which queries use as `$name`.
+  labelVariable =
+    {
+      name,
+      label,
+      query,
+    }:
+    {
+      inherit name label query;
+      type = "query";
+      datasource = prometheus;
+      definition = query;
+      refresh = 1;
+      sort = 1;
+    };
+
   # `panels` are either all rows or no rows.
   dashboard =
     {
       uid,
       title,
       panels,
+      variables ? [ ],
     }:
     {
       annotations.list = [ ];
@@ -656,7 +673,7 @@ let
       inherit title uid;
       schemaVersion = 41;
       tags = [ "monitoring" ];
-      templating.list = [ ];
+      templating.list = variables;
       time = {
         from = "now-6h";
         to = "now";
@@ -671,6 +688,7 @@ in
     barGauge
     colorOverride
     dashboard
+    labelVariable
     logs
     mappings
     row

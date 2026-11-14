@@ -160,7 +160,7 @@ in
   '';
 
   systemd.services.janus-firewall-counters = {
-    description = "Export Janus nftables named counters for Alloy textfile scraping";
+    description = "Export Janus nftables named counters for node_exporter";
     after = [ "nftables.service" ];
     wants = [ "nftables.service" ];
     path = [ pkgs.nftables ];

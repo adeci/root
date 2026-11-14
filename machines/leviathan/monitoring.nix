@@ -6,6 +6,8 @@ let
   perGpu = metric: ui.target "${metric}{${gpus}}" "GPU {{gpu}}";
 in
 {
+  exporters.dcgm = 9400;
+
   rules = [
     {
       alert = "GpuXidError";

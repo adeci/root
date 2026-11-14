@@ -16,6 +16,16 @@
           example = "monitor.example.ts.net";
         };
 
+        agentDomain = lib.mkOption {
+          type = lib.types.str;
+          description = ''
+            Domain under which every agent answers as `<machine>.<domain>`,
+            typically the tailnet's MagicDNS domain. The server scrapes each
+            agent's exporters there.
+          '';
+          example = "example.ts.net";
+        };
+
         grafana.enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
@@ -165,15 +175,18 @@
             ];
           };
 
-          pushLocation = service: port: {
-            basicAuthFile = "/run/nginx/credentials/${service}-auth-htpasswd";
-            proxyPass = "http://127.0.0.1:${toString port}/";
-            extraConfig = ''
-              client_max_body_size 32m;
-              proxy_read_timeout 120s;
-              proxy_send_timeout 120s;
-            '';
-          };
+          # Every agent's exporters by job, reached over the tailnet under the machine name.
+          agentJobs = lib.zipAttrs (
+            lib.mapAttrsToList (
+              machine: agent:
+              lib.mapAttrs (_: port: {
+                targets = [ "${machine}.${settings.agentDomain}:${toString port}" ];
+                labels = agent.settings.extraLabels // {
+                  instance = machine;
+                };
+              }) ({ node = 9100; } // agent.settings.exporters)
+            ) agents
+          );
         in
         {
           networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 80 ];
@@ -211,9 +224,6 @@
             listenAddress = "127.0.0.1";
             port = ports.prometheus;
             retentionTime = "${toString settings.retentionDays}d";
-            extraFlags = [
-              "--web.enable-remote-write-receiver"
-            ];
             globalConfig = {
               scrape_interval = "30s";
               evaluation_interval = "30s";
@@ -228,7 +238,11 @@
             scrapeConfigs = [
               (localScrape "prometheus" ports.prometheus)
               (localScrape "loki" ports.loki)
-            ];
+            ]
+            ++ lib.mapAttrsToList (job: staticConfigs: {
+              job_name = job;
+              static_configs = staticConfigs;
+            }) agentJobs;
             ruleFiles = [
               (yaml.generate "fleet-rules.yml" rules.fleet)
               (yaml.generate "machine-rules.yml" rules.machines)
@@ -434,8 +448,16 @@
 
             virtualHosts.${settings.host} = {
               locations = {
-                "/prometheus/" = pushLocation "prometheus" ports.prometheus;
-                "/loki/" = pushLocation "loki" ports.loki;
+                # Agents push their journal here.
+                "/loki/" = {
+                  basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
+                  proxyPass = "http://127.0.0.1:${toString ports.loki}/";
+                  extraConfig = ''
+                    client_max_body_size 32m;
+                    proxy_read_timeout 120s;
+                    proxy_send_timeout 120s;
+                  '';
+                };
               }
               // lib.optionalAttrs settings.grafana.enable {
                 # No trailing slash: with serve_from_sub_path Grafana needs the full /grafana/ path, or it redirect-loops re-adding the prefix.
@@ -452,7 +474,6 @@
           };
 
           systemd.services.nginx.serviceConfig.LoadCredential = [
-            "prometheus-auth-htpasswd:${config.clan.core.vars.generators.prometheus-auth.files.htpasswd.path}"
             "loki-auth-htpasswd:${config.clan.core.vars.generators.loki-auth.files.htpasswd.path}"
           ];
 

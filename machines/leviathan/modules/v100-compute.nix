@@ -32,8 +32,6 @@ let
     dcgm
     cuda.cudatoolkit
   ];
-
-  dcgmExporterAddress = "127.0.0.1:9400";
 in
 {
   services.xserver.videoDrivers = [ "nvidia" ];
@@ -98,8 +96,6 @@ in
     cuda.nccl
   ];
 
-  monitoring.scrapeTargets.dcgm = dcgmExporterAddress;
-
   systemd.services = {
     # DCGM stays local; the metrics agent scrapes the exporter.
     dcgm-hostengine = {
@@ -124,7 +120,7 @@ in
       unitConfig.ConditionPathExistsGlob = "/dev/nvidia[0-9]*";
       environment.LD_LIBRARY_PATH = "${driverLibraryPath}:/run/opengl-driver/lib";
       serviceConfig = {
-        ExecStart = "${lib.getExe dcgmExporter} --address ${dcgmExporterAddress} --collectors ${pkgs.prometheus-dcgm-exporter.src}/etc/default-counters.csv --collect-interval 15000 --remote-hostengine-info 127.0.0.1:5555";
+        ExecStart = "${lib.getExe dcgmExporter} --address :${toString config.monitoring.exporters.dcgm} --collectors ${pkgs.prometheus-dcgm-exporter.src}/etc/default-counters.csv --collect-interval 15000 --remote-hostengine-info 127.0.0.1:5555";
         DynamicUser = true;
         Restart = "on-failure";
         RestartSec = "10s";

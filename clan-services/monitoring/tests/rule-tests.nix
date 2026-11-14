@@ -17,49 +17,50 @@ let
   serverDown = {
     exp_labels = {
       instance = "server";
+      job = "node";
       severity = "critical";
     };
     exp_annotations = {
       summary = "server is down";
-      description = "No metrics from server for 10 minutes.";
+      description = "The server hasn't reached node_exporter on server for 5 minutes.";
     };
   };
 in
 [
   {
-    name = "a server that stops reporting is down after 10 minutes, a laptop never is";
+    name = "a server whose node_exporter stops answering is down after 5 minutes, a laptop never is";
     interval = "1m";
     input_series = [
       {
-        series = ''up{instance="server", job="integrations/unix"}'';
-        values = "1x30";
+        series = ''up{instance="server", job="node"}'';
+        values = "1x10 0x30";
       }
       {
-        series = ''up{instance="laptop", job="integrations/unix"}'';
-        values = "1x10";
+        series = ''up{instance="laptop", job="node"}'';
+        values = "1x10 0x30";
       }
     ];
     alert_rule_test = [
-      (noAlert "HostDown" (minutes 39))
-      (firing "HostDown" (minutes 41) [ serverDown ])
-      (firing "HostDown" "3h" [ serverDown ])
+      (noAlert "HostDown" (minutes 15))
+      (firing "HostDown" (minutes 17) [ serverDown ])
+      (firing "HostDown" (minutes 40) [ serverDown ])
     ];
   }
 
   {
-    name = "a server missing a few minutes of metrics is not down";
+    name = "a server missing a few scrapes is not down";
     interval = "1m";
     input_series = [
       {
-        series = ''up{instance="server", job="integrations/unix"}'';
-        values = "1x20 _x8 1x20";
+        series = ''up{instance="server", job="node"}'';
+        values = "1x10 0 1x10 0x3 1x10";
       }
     ];
     alert_rule_test = map (time: noAlert "HostDown" (minutes time)) [
+      11
+      15
       25
-      29
-      35
-      45
+      30
     ];
   }
 

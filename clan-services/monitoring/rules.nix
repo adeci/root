@@ -18,8 +18,7 @@ let
 
   onlyAlwaysOn = expression: "(${expression}) and on (instance) instance:always_on";
 
-  # Disks only: tmpfs, ramfs and FUSE mounts come and go with whoever uses them.
-  disk = ''fstype=~"ext[234]|btrfs|xfs|f2fs|bcachefs|zfs|vfat"'';
+  disk = import ./disks.nix;
   freeRatio = "node_filesystem_avail_bytes{${disk}} / node_filesystem_size_bytes{${disk}}";
   # Read-only bind mounts such as the Nix store would repeat their filesystem's alerts.
   writable = "on (instance, mountpoint) node_filesystem_readonly == 0";
@@ -33,13 +32,12 @@ let
   fleetAlerts = [
     {
       alert = "HostDown";
-      # Agents push their metrics, so a machine that is gone has no `up` series rather than `up == 0`.
-      expr = "instance:always_on unless on (instance) present_over_time(up[5m])";
+      expr = onlyAlwaysOn ''up{job="node"} == 0'';
       for = "5m";
       labels.severity = "critical";
       annotations = {
         summary = "{{ $labels.instance }} is down";
-        description = "No metrics from {{ $labels.instance }} for 10 minutes.";
+        description = "The server hasn't reached node_exporter on {{ $labels.instance }} for 5 minutes.";
       };
     }
     {
@@ -205,7 +203,7 @@ let
     }
     {
       alert = "ExporterDown";
-      expr = onlyAlwaysOn "up == 0";
+      expr = onlyAlwaysOn ''up{job!="node"} == 0'';
       for = "15m";
       labels.severity = "warning";
       annotations = {
@@ -224,19 +222,6 @@ let
       annotations = {
         summary = "Metrics files on {{ $labels.instance }} are stale";
         description = "A `*.prom` file in the textfile directory{{ with $labels.file }} ({{ . }}){{ end }} is unreadable or over an hour old.";
-      };
-    }
-    {
-      alert = "TelemetryDropped";
-      expr = onlyAlwaysOn ''
-        sum by (instance) (rate(prometheus_remote_storage_samples_failed_total[15m])) > 0
-        or sum by (instance) (rate(loki_write_dropped_entries_total[15m])) > 0
-      '';
-      for = "15m";
-      labels.severity = "warning";
-      annotations = {
-        summary = "{{ $labels.instance }} is losing metrics or logs";
-        description = "Its agent fails to ship samples or drops log lines; check alloy.service there.";
       };
     }
   ];

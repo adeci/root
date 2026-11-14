@@ -9,7 +9,7 @@ let
     journal = {
       mode = "explicit";
       include = [
-        "alloy"
+        "vector"
         "sshd"
         "tailscaled"
         "tailscaled-autoconnect"
@@ -58,8 +58,6 @@ in
           tags = {
             adeci-net = { };
             portable.settings.alwaysOn = false;
-            # The agent is NixOS-only: a Mac never reports, so it's never expected to.
-            darwin.settings.alwaysOn = false;
           };
           machines = {
             aegis.settings = minimalJournal;
@@ -78,6 +76,7 @@ in
         };
         server.machines.sequoia.settings = {
           host = "sequoia.${tailnet.domain}";
+          agentDomain = tailnet.domain;
           grafana = {
             enable = true;
             homeDashboard = "network";

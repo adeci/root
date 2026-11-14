@@ -49,18 +49,11 @@ in
 {
   services.prometheus.exporters.smokeping = {
     enable = true;
-    listenAddress = "127.0.0.1";
-    port = 9374;
+    port = config.monitoring.exporters.smokeping;
     hosts = [ ];
     pingInterval = "1s";
     extraFlags = [ "--config.file=${smokepingConfig}" ];
   };
-
-  monitoring.scrapeTargets.smokeping =
-    let
-      inherit (config.services.prometheus.exporters) smokeping;
-    in
-    "${smokeping.listenAddress}:${toString smokeping.port}";
 
   systemd.services.janus-network-probe = {
     description = "Probe Janus network reachability and DNS health";

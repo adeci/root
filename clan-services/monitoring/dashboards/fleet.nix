@@ -1,10 +1,12 @@
 let
   ui = import ./lib.nix;
+  queries = import ./queries.nix;
 
   firingCount = matcher: ''count(ALERTS{alertstate="firing", ${matcher}}) or vector(0)'';
 
-  rootDiskUsed = ''100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})'';
-  memoryUsed = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
+  # A Mac's / is its sealed system volume; its disk is the Data volume.
+  rootDiskUsed = ''100 * (1 - node_filesystem_avail_bytes{mountpoint=~"/|/System/Volumes/Data"} / node_filesystem_size_bytes{mountpoint=~"/|/System/Volumes/Data"})'';
+  memoryUsed = queries.memoryUsed "";
   loadPerCore = ''node_load15 / on (instance) count by (instance) (node_cpu_seconds_total{mode="idle"})'';
   cpuBusy = ''100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[$__rate_interval])))'';
   networkTraffic = ''sum by (instance) (rate(node_network_receive_bytes_total{device!="lo"}[$__rate_interval]) + rate(node_network_transmit_bytes_total{device!="lo"}[$__rate_interval]))'';
@@ -36,7 +38,7 @@ ui.dashboard {
       title = "Machines reporting";
       w = 6;
       h = 4;
-      expr = ''count(present_over_time(up{job="integrations/unix"}[5m]))'';
+      expr = ''sum(up{job="node"})'';
       threshold = ui.thresholds.neutral;
     })
     (ui.table {

@@ -12,7 +12,6 @@ let
 
   mainConfigPath = "/run/prometheus-mikrotik-exporter/config.yml";
   poeConfigPath = "/run/prometheus-mikrotik-poe-exporter/config.yml";
-  poeExporterAddress = "127.0.0.1:9437";
 
   # The exporters' device list; the password is added when each service starts.
   devicesOf = lib.mapAttrsToList (
@@ -60,8 +59,7 @@ in
 
   services.prometheus.exporters.mikrotik = {
     enable = true;
-    listenAddress = "127.0.0.1";
-    port = 9436;
+    port = config.monitoring.exporters.mikrotik;
     configFile = mainConfigPath;
     extraFlags = [
       "-log-format=json"
@@ -81,15 +79,6 @@ in
     };
   };
 
-  monitoring.scrapeTargets = {
-    mikrotik =
-      let
-        inherit (config.services.prometheus.exporters) mikrotik;
-      in
-      "${mikrotik.listenAddress}:${toString mikrotik.port}";
-    mikrotik-poe = poeExporterAddress;
-  };
-
   systemd.services.prometheus-mikrotik-poe-exporter = {
     description = "Prometheus exporter for RouterOS PoE metrics";
     wantedBy = [ "multi-user.target" ];
@@ -105,7 +94,7 @@ in
       ];
       RuntimeDirectory = "prometheus-mikrotik-poe-exporter";
       RuntimeDirectoryMode = "0700";
-      ExecStart = "${lib.getExe' pkgs.prometheus-mikrotik-exporter "mikrotik-exporter"} -config-file=${poeConfigPath} -port=${poeExporterAddress} -log-format=json -log-level=info";
+      ExecStart = "${lib.getExe' pkgs.prometheus-mikrotik-exporter "mikrotik-exporter"} -config-file=${poeConfigPath} -port=:${toString config.monitoring.exporters.mikrotik-poe} -log-format=json -log-level=info";
       Restart = "always";
       RestartSec = "10s";
       NoNewPrivileges = true;
@@ -116,7 +105,7 @@ in
   };
 
   systemd.services.janus-routeros-health = {
-    description = "Export RouterOS health sensors for Alloy textfile scraping";
+    description = "Export RouterOS health sensors for node_exporter";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     serviceConfig = {
