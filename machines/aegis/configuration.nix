@@ -27,6 +27,7 @@ in
     smartd
     desktop
     librewolf
+    bootvine
     niri
     noctalia
     niri-autologin
