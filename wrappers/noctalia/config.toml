@@ -4,6 +4,9 @@
 polkit_agent = true
 setup_wizard_enabled = false
 
+[theme]
+builtin = "Tokyo-Night"
+
 # Noctalia's defaults, pinned: nothing else locks the screen before suspend, lid close included.
 [lockscreen]
 enabled = true
