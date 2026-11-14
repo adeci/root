@@ -65,7 +65,7 @@ pkgs.testers.runNixOSTest {
   nodes.leviathan =
     { lib, ... }:
     {
-      imports = [ ../modules/microvms.nix ];
+      imports = [ ../modules/microvms ];
 
       virtualisation = {
         # 1: tenant VLAN, 2: trusted LAN

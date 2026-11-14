@@ -40,7 +40,7 @@
     command-lookup
     tailscale-travel
 
-    ./modules/gpd-hacks.nix
+    ./modules/gpd-hacks
     ./modules/gpd-audio-dsp.nix
     ./modules/viture-beast-audio.nix
   ];

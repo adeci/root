@@ -114,7 +114,7 @@ pkgs.testers.runNixOSTest {
       imports = [
         clan
         self.modules.nixos.primary-user
-        ../modules/paperless.nix
+        ../modules/paperless
         ../modules/paperless-xerox-ingest.nix
       ];
 

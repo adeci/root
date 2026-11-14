@@ -15,7 +15,7 @@
     cloudflared
     auto-pressure-gc
 
-    ./modules/microvms.nix
+    ./modules/microvms
     ./modules/palworld
     ./modules/v100-compute.nix
   ];

@@ -3,7 +3,7 @@
   perSystem =
     { pkgs, self', ... }:
     let
-      mkTofuWorkspace = import ./tofu-workspace.nix {
+      mkTofuWorkspace = import ../tofu-workspace {
         inherit
           inputs
           lib
@@ -16,7 +16,7 @@
       apps = mkTofuWorkspace {
         name = "network";
         stateKey = "network.tfstate";
-        modules = [ ../terranix/routeros ];
+        modules = [ ../../terranix/routeros ];
         appPrefix = "net";
         commands = [
           "init"

@@ -8,7 +8,7 @@
   perSystem =
     { pkgs, self', ... }:
     let
-      mkTofuWorkspace = import ./tofu-workspace.nix {
+      mkTofuWorkspace = import ./tofu-workspace {
         inherit
           inputs
           lib

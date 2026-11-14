@@ -32,7 +32,7 @@ in
   options.clanSecrets = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];
-    description = "Clan secrets this workspace reads; read each with `clanSecret \"<name>\"` from ./lib.nix.";
+    description = "Clan secrets this workspace reads; read each with `clanSecret \"<name>\"` from ../lib.nix.";
   };
 
   config = {

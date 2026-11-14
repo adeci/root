@@ -1,6 +1,6 @@
 { config, lib, ... }:
 let
-  inherit (import ./lib.nix { inherit lib; }) nixEntries;
+  inherit (import ../lib.nix { inherit lib; }) nixEntries;
   inherit (config.flake) modules;
 
   # One password per profile on every machine: asked for, or four random words.
@@ -177,5 +177,5 @@ in
     description = "User profiles from inventory/users, by file name; a machine imports a profile's nixosModule or darwinModule to get the account.";
   };
 
-  config.flake.users = lib.mapAttrs (_: import) (nixEntries ../inventory/users);
+  config.flake.users = lib.mapAttrs (_: import) (nixEntries ../../inventory/users);
 }

@@ -10,6 +10,6 @@
     secure-boot-luks
     initrd-ssh-unlock
 
-    ./modules/mandate.nix
+    ./modules/mandate
   ];
 }

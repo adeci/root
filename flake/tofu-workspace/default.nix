@@ -17,7 +17,7 @@ let
   configFile = inputs.terranix.lib.terranixConfiguration {
     inherit pkgs;
     modules = [
-      ../terranix/base.nix
+      ../../terranix/base
       { terraform.backend.s3.key = stateKey; }
     ]
     ++ modules;

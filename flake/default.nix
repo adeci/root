@@ -8,11 +8,11 @@
     ./inventory
     ./modules.nix
     ./packages.nix
-    ./routeros.nix
+    ./routeros
     ./routeros-netinstall.nix
     ./terranix.nix
     ./tests.nix
-    ./users.nix
+    ./users
     ./wrappers.nix
   ];
 
