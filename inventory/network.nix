@@ -380,7 +380,6 @@
     main = {
       ssid = "Aether";
       vlan = "trusted";
-      primary = true;
     };
 
     guest = {

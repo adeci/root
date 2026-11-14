@@ -21,7 +21,7 @@ let
     else
       throw "Cloudflare DNS edge target ${edgeName}: unsupported provider ${edge.provider}";
 
-  # references.nix checks that the stream exists, once.
+  # references.nix checks that the stream exists.
   ingressStream =
     reference:
     lib.findFirst (stream: stream.name == reference.name) null ingress.streams.${reference.edge};

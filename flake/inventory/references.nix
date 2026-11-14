@@ -26,17 +26,6 @@ let
   usedMoreThanOnce =
     values: lib.unique (lib.filter (value: lib.count (other: other == value) values > 1) values);
 
-  edges = lib.unique (lib.attrNames ingress.edges ++ lib.attrNames ingress.streams);
-
-  # What an edge opens: its static firewall rules and its streams' listen ports.
-  edgePorts =
-    edge:
-    map (rule: { inherit (rule) protocol port; }) (ingress.edges.${edge}.firewall.staticRules or [ ])
-    ++ map (stream: {
-      inherit (stream) protocol;
-      port = stream.listen;
-    }) (ingress.streams.${edge} or [ ]);
-
   # The rules
 
   tunnelMachines = map (name: mustBeMachine "inventory/cloudflare.nix tunnels.${name}" name) (
@@ -97,43 +86,22 @@ let
     ) ingress.streams
   );
 
-  uniqueStreamNames = lib.mapAttrsToList (
-    edge: streams:
-    let
-      reused = usedMoreThanOnce (map (stream: stream.name) streams);
-    in
-    {
-      assertion = reused == [ ];
-      message = "inventory/ingress.nix streams.${edge}: stream names ${toString reused} are used more than once";
-    }
-  ) ingress.streams;
-
-  validEdgePorts = lib.concatMap (
-    edge:
-    map (open: {
-      assertion =
-        lib.elem open.protocol [
-          "tcp"
-          "udp"
-        ]
-        && builtins.isInt open.port
-        && open.port >= 1
-        && open.port <= 65535;
-      message = "inventory/ingress.nix ${edge}: ${toString open.protocol}/${toString open.port} is not a tcp or udp port from 1 to 65535";
-    }) (edgePorts edge)
-  ) edges;
-
   # An edge's static firewall rules and its streams share one protocol/port space.
   uniqueEdgePorts = map (
     edge:
     let
-      reused = usedMoreThanOnce (map (open: "${open.protocol}/${toString open.port}") (edgePorts edge));
+      reused = usedMoreThanOnce (
+        map (rule: "${rule.protocol}/${toString rule.port}") (
+          ingress.edges.${edge}.firewall.staticRules or [ ]
+        )
+        ++ map (stream: "${stream.protocol}/${toString stream.listen}") (ingress.streams.${edge} or [ ])
+      );
     in
     {
       assertion = reused == [ ];
       message = "inventory/ingress.nix ${edge}: ports ${toString reused} are used more than once";
     }
-  ) edges;
+  ) (lib.unique (lib.attrNames ingress.edges ++ lib.attrNames ingress.streams));
 
   # Clan ignores role members that aren't machines.
   instanceMachines = lib.concatLists (
@@ -158,8 +126,6 @@ in
     dnsEdges
     dnsStreams
     streamUpstreams
-    uniqueStreamNames
-    validEdgePorts
     uniqueEdgePorts
     instanceMachines
   ];

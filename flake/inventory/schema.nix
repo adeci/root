@@ -77,27 +77,32 @@ in
                 };
                 prefix = mkOption {
                   type = types.str;
+                  readOnly = true;
                   default = "10.${toString config.id}.0";
                   description = "The first three octets of the VLAN's addresses.";
                 };
                 cidr = mkOption {
                   type = types.str;
+                  readOnly = true;
                   default = "${config.prefix}.0/24";
                   description = "The VLAN's subnet.";
                 };
                 gateway = mkOption {
                   type = ipv4Address;
+                  readOnly = true;
                   default = "${config.prefix}.1";
                   description = "The router's address on the VLAN.";
                 };
                 dhcpPool = {
                   start = mkOption {
                     type = ipv4Address;
+                    readOnly = true;
                     default = "${config.prefix}.100";
                     description = "The first address the router's DHCP server hands out. Reserved addresses stay outside the pool.";
                   };
                   end = mkOption {
                     type = ipv4Address;
+                    readOnly = true;
                     default = "${config.prefix}.250";
                     description = "The last address the router's DHCP server hands out.";
                   };
@@ -107,16 +112,10 @@ in
                   default = false;
                   description = "Whether the router advertises the VLAN to the tailnet as a subnet route.";
                 };
-                vlanDevice = mkOption {
-                  type = types.str;
-                  readOnly = true;
-                  default = "vlan${toString config.id}";
-                  description = "The router's 802.1Q device for the VLAN on the LAN trunk.";
-                };
                 interface = mkOption {
                   type = types.str;
-                  default = config.vlanDevice;
-                  description = "The router's interface holding the VLAN's gateway: its vlanDevice, or a bridge the device joins.";
+                  default = "vlan${toString config.id}";
+                  description = "The router's interface holding the VLAN's gateway: its 802.1Q device vlan<id>, or a bridge that device joins.";
                 };
               };
             }
@@ -139,19 +138,6 @@ in
         );
         default = { };
         description = "Full DNS names the router serves to the LAN and, through Tailscale split DNS, to the tailnet. Each points at either a LAN host (lan) or a machine's tailnet address (tailnet).";
-      };
-
-      dnsAddresses = mkOption {
-        type = types.attrsOf ipv4Address;
-        readOnly = true;
-        default = lib.mapAttrs (
-          _: record:
-          if record ? lan then
-            inventory.lan.hosts.${record.lan}.ip
-          else
-            inventory.machines.${record.tailnet}.tailnet
-        ) inventory.lan.dns;
-        description = "The address each name in `dns` resolves to.";
       };
 
       hosts = mkOption {
@@ -410,8 +396,8 @@ in
                   default =
                     if name == appliance.managementPort then
                       carriedVlans appliance.lan.vlan (
-                        if appliance.wifi != [ ] then
-                          appliance.wifiVlans
+                        if appliance.wifi != null then
+                          map (network: inventory.wifi.${network}.vlan) appliance.wifi
                         else
                           lib.optionals config.trunk (lib.remove appliance.lan.vlan appliance.vlans)
                       )
@@ -420,22 +406,6 @@ in
                     else
                       carriedVlans (if bridged config.vlan then config.vlan else null) (lib.filter bridged config.tagged);
                   description = "What the port carries, as { untagged, tagged }. The management port carries the appliance's own VLAN untagged and tags its Wi-Fi VLANs or, as a trunk, the switch's other VLANs. Any other port carries only VLANs the switch bridges.";
-                };
-                mode = mkOption {
-                  type = types.enum [
-                    "access"
-                    "hybrid"
-                    "trunk"
-                  ];
-                  readOnly = true;
-                  default =
-                    if config.carries.tagged == [ ] then
-                      "access"
-                    else if config.carries.untagged == null then
-                      "trunk"
-                    else
-                      "hybrid";
-                  description = "How the port carries VLANs: one untagged (access), only tagged (trunk), or both (hybrid).";
                 };
                 poe = mkOption {
                   type = types.nullOr (
@@ -482,12 +452,6 @@ in
                   type = types.str;
                   description = "Where it is installed.";
                 };
-                identity = mkOption {
-                  type = types.str;
-                  readOnly = true;
-                  default = name;
-                  description = "Its RouterOS system identity: its name here.";
-                };
                 lan = mkOption {
                   type = types.submodule reservation;
                   description = "Its management address.";
@@ -529,53 +493,10 @@ in
                   default = null;
                   description = "The VLAN a switch port carries untagged unless the port names another.";
                 };
-                bridgePorts = mkOption {
-                  type = types.listOf types.str;
-                  readOnly = true;
-                  default = lib.optionals (config.vlans != [ ]) (
-                    lib.remove config.managementPort models.${config.model}.ports
-                  );
-                  description = "The ports a switch bridges: all but the management port, in the model's order.";
-                };
-                vlanPorts = mkOption {
-                  type = types.attrsOf types.attrs;
-                  readOnly = true;
-                  default = lib.genAttrs config.vlans (vlan: {
-                    tagged = lib.filter (port: lib.elem vlan config.ports.${port}.carries.tagged) config.bridgePorts;
-                    untagged = lib.filter (port: config.ports.${port}.carries.untagged == vlan) config.bridgePorts;
-                  });
-                  description = "Each VLAN in `vlans` with the bridge ports that carry it, as { tagged, untagged }.";
-                };
                 wifi = mkOption {
-                  type = types.listOf wifiName;
-                  default = [ ];
-                  description = "The Wi-Fi networks an access point broadcasts.";
-                };
-                wifiNetworks = mkOption {
-                  type = types.attrsOf types.attrs;
-                  readOnly = true;
-                  default = lib.genAttrs config.wifi (network: inventory.wifi.${network});
-                  description = "The settings of each network in `wifi`, by name.";
-                };
-                primaryWifi = mkOption {
-                  type = types.nullOr wifiName;
-                  readOnly = true;
-                  default = lib.findFirst (network: inventory.wifi.${network}.primary) null config.wifi;
-                  description = "The network in `wifi` that each radio's main interface broadcasts.";
-                };
-                otherWifi = mkOption {
-                  type = types.listOf wifiName;
-                  readOnly = true;
-                  default = lib.filter (network: !inventory.wifi.${network}.primary) config.wifi;
-                  description = "The other networks in `wifi`, each a virtual interface on every radio.";
-                };
-                wifiVlans = mkOption {
-                  type = types.listOf vlanName;
-                  readOnly = true;
-                  default = lib.sort lib.lessThan (
-                    lib.unique (map (network: inventory.wifi.${network}.vlan) config.wifi)
-                  );
-                  description = "The VLANs its Wi-Fi networks join.";
+                  type = types.nullOr (types.nonEmptyListOf wifiName);
+                  default = null;
+                  description = "The Wi-Fi networks an access point broadcasts: the first from each radio's main interface, the others as virtual interfaces. Null on a switch.";
                 };
                 ports = mkOption {
                   type = types.attrsOf (port name config);
@@ -621,11 +542,6 @@ in
                 type = types.bool;
                 default = false;
                 description = "Whether the access points hide the SSID.";
-              };
-              primary = mkOption {
-                type = types.bool;
-                default = false;
-                description = "Whether access points broadcast it from each radio's main interface; the other networks get virtual interfaces.";
               };
               secret = mkOption {
                 type = types.str;

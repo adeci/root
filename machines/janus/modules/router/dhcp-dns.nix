@@ -6,8 +6,12 @@
   ...
 }:
 let
-  inherit (self.inventory) lan;
-  inherit (lan) vlans hosts dnsAddresses;
+  inherit (self.inventory) lan machines;
+  inherit (lan) vlans hosts;
+  # The address each full name in lan.dns resolves to: a LAN host's, or a machine's tailnet address.
+  dnsAddresses = lib.mapAttrs (
+    _: record: if record ? lan then hosts.${record.lan}.ip else machines.${record.tailnet}.tailnet
+  ) lan.dns;
   publishedHosts = lib.filterAttrs (_: host: host.publishDns) hosts;
   gatewayInterfaces = lib.mapAttrsToList (_: vlan: vlan.interface) vlans;
   waitArguments = map (interface: "--interface=${interface}:routable") gatewayInterfaces ++ [

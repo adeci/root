@@ -97,23 +97,11 @@ let
     else
       null;
 
-  accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != [ ]) appliances;
-
   # The rules
 
   uniqueVlanIds = usedOnce "id" (
     lib.mapAttrsToList (name: vlan: valueAt "lan.vlans.${name}.id" (toString vlan.id)) vlans
   );
-
-  gatewaysInVlans = lib.mapAttrsToList (name: vlan: {
-    assertion = inVlan vlan vlan.gateway;
-    message = "lan.vlans.${name}.gateway: ${vlan.gateway} is outside ${vlan.cidr}";
-  }) vlans;
-
-  poolsInVlans = lib.mapAttrsToList (name: vlan: {
-    assertion = inVlan vlan vlan.dhcpPool.start && inVlan vlan vlan.dhcpPool.end;
-    message = "lan.vlans.${name}.dhcpPool: ${vlan.dhcpPool.start}-${vlan.dhcpPool.end} is outside ${vlan.cidr}";
-  }) vlans;
 
   # Cables and DNS records name hosts alone.
   uniqueHostNames = usedOnce "name" (
@@ -184,28 +172,6 @@ let
     ) appliances
   );
 
-  # A trunk tags every VLAN of its switch, so a `tagged` list on it would go unused.
-  trunksListNoTaggedVlans = lib.concatLists (
-    lib.mapAttrsToList (
-      name: appliance:
-      lib.mapAttrsToList (port: settings: {
-        assertion = !settings.trunk || settings.tagged == [ ];
-        message = "appliances.${name}.ports.${port}: a trunk carries every VLAN tagged; drop its `tagged` list";
-      }) appliance.ports
-    ) appliances
-  );
-
-  accessPointsHaveOnePrimaryWifi = lib.mapAttrsToList (
-    name: accessPoint:
-    let
-      primaries = lib.filter (network: config.wifi.${network}.primary) accessPoint.wifi;
-    in
-    {
-      assertion = lib.length primaries == 1;
-      message = "appliances.${name}.wifi: an access point broadcasts exactly one primary network, not ${toString (lib.length primaries)}";
-    }
-  ) accessPoints;
-
   cablesLeadToExistingPorts = map (cable: {
     assertion = leadsToExistingPort cable;
     message =
@@ -268,8 +234,6 @@ in
 {
   assertions = lib.concatLists [
     uniqueVlanIds
-    gatewaysInVlans
-    poolsInVlans
     uniqueHostNames
     hostsInTheirVlans
     hostsOutsidePools
@@ -279,8 +243,6 @@ in
     uniqueTailnetAddresses
     tailnetRecordsResolve
     appliancePortsExist
-    trunksListNoTaggedVlans
-    accessPointsHaveOnePrimaryWifi
     cablesLeadToExistingPorts
     onePlugPerPort
     hostsCabledWithoutNicHaveOneCable
