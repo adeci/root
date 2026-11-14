@@ -7,9 +7,21 @@
 }:
 let
   inherit (self.inventory) appliances lan;
+  inherit (self.inventory.routeros) models;
   inherit (import ../lib.nix { inherit config lib self'; }) safeName;
 
   switches = lib.filterAttrs (_: appliance: appliance.vlans != [ ]) appliances;
+
+  # Every port but the management port, in the model's order.
+  bridgePorts = switch: lib.remove switch.managementPort models.${switch.model}.ports;
+
+  # Each VLAN of the switch with the bridge ports that carry it, tagged and untagged.
+  vlanPorts =
+    switch:
+    lib.genAttrs switch.vlans (vlan: {
+      tagged = lib.filter (port: lib.elem vlan switch.ports.${port}.carries.tagged) (bridgePorts switch);
+      untagged = lib.filter (port: switch.ports.${port}.carries.untagged == vlan) (bridgePorts switch);
+    });
 
   # A management port that tags VLANs stays out of the bridge, its IP on the untagged VLAN; each tagged VLAN joins the bridge through a sub-interface, so a single-cable switch configures in one apply.
   uplinkVlans = switch: switch.ports.${switch.managementPort}.carries.tagged;
@@ -26,7 +38,7 @@ in
 
   resource.routeros_interface_bridge_port = lib.concatMapAttrs (
     name: switch:
-    lib.genAttrs' switch.bridgePorts (
+    lib.genAttrs' (bridgePorts switch) (
       portName:
       let
         port = switch.ports.${portName};
@@ -38,7 +50,7 @@ in
           interface = portName;
           pvid = lan.vlans.${port.vlan}.id;
           frame_types =
-            if port.mode == "access" then "admit-only-untagged-and-priority-tagged" else "admit-all";
+            if port.carries.tagged == [ ] then "admit-only-untagged-and-priority-tagged" else "admit-all";
           ingress_filtering = true;
         }
         // lib.optionalAttrs (port.label != null) { comment = port.label; }
@@ -81,7 +93,7 @@ in
         tagged = [ "bridge" ] ++ ports.tagged;
         untagged = ports.untagged ++ lib.optional (lib.elem vlan (uplinkVlans switch)) (uplink name vlan);
       }
-    ) switch.vlanPorts
+    ) (vlanPorts switch)
   ) switches;
 
   resource.routeros_interface_ethernet = lib.concatMapAttrs (

@@ -11,7 +11,7 @@ let
   inherit (import ../lib.nix { inherit config lib self'; }) clanSecret;
 
   # The management port keeps untagged DHCP management and carries each Wi-Fi VLAN as a tagged sub-interface with a bridge of its own, without vlan_filtering.
-  accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != [ ]) appliances;
+  accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != null) appliances;
 
   authenticationTypes = {
     "wpa3" = [ "wpa3-psk" ];
@@ -25,6 +25,9 @@ let
   # The radios pre-exist after netinstall; the import blocks bring them into state on first apply.
   radios = accessPoint: models.${accessPoint.model}.radios;
 
+  # The VLANs an access point's networks join.
+  wifiVlans = accessPoint: lib.unique (map (network: wifi.${network}.vlan) accessPoint.wifi);
+
   # A resource for each Wi-Fi VLAN or network of each access point, named <access point>_<VLAN or network>.
   forEachAccessPoint =
     keys: resource:
@@ -32,7 +35,7 @@ let
       name: accessPoint:
       lib.genAttrs' (keys accessPoint) (key: lib.nameValuePair "${name}_${key}" (resource name key))
     ) accessPoints;
-  forEachVlan = forEachAccessPoint (accessPoint: accessPoint.wifiVlans);
+  forEachVlan = forEachAccessPoint wifiVlans;
   forEachNetwork = forEachAccessPoint (accessPoint: accessPoint.wifi);
 in
 {
@@ -100,11 +103,11 @@ in
     }
   );
 
-  # Each radio's main interface broadcasts the primary network, and a virtual interface each other network.
+  # Each radio's main interface broadcasts the access point's first network, and a virtual interface each other network.
   resource.routeros_wifi = lib.concatMapAttrs (
     name: accessPoint:
     let
-      primary = accessPoint.primaryWifi;
+      primary = lib.head accessPoint.wifi;
     in
     lib.genAttrs' (radios accessPoint) (
       radio:
@@ -139,7 +142,7 @@ in
               config = config.resource.routeros_wifi_configuration."${name}_${network}" "name";
             };
           }
-        ) accessPoint.otherWifi
+        ) (lib.tail accessPoint.wifi)
       ) (radios accessPoint)
     )
   ) accessPoints;

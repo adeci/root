@@ -36,9 +36,9 @@ in
     insecure = true;
   }) appliances;
 
-  resource.routeros_system_identity = lib.mapAttrs (name: appliance: {
+  resource.routeros_system_identity = lib.mapAttrs (name: _: {
     provider = "routeros.${name}";
-    name = appliance.identity;
+    inherit name;
   }) appliances;
 
   # The exporter's account: one password on every appliance, kept in the router's clan vars, reachable only from the router.

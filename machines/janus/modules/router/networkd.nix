@@ -3,6 +3,9 @@ let
   inherit (self.inventory.lan) vlans;
   inherit (self.inventory.router) interfaces ports;
 
+  # Each VLAN's 802.1Q device on the LAN trunk.
+  vlanDevice = vlan: "vlan${toString vlan.id}";
+
   # No IPv6 on the LAN for now; Tailscale manages its own.
   noIpv6 = {
     LinkLocalAddressing = "no";
@@ -21,9 +24,9 @@ in
   systemd.network.netdevs =
     lib.mapAttrs' (
       _: vlan:
-      lib.nameValuePair "20-${vlan.vlanDevice}" {
+      lib.nameValuePair "20-${vlanDevice vlan}" {
         netdevConfig = {
-          Name = vlan.vlanDevice;
+          Name = vlanDevice vlan;
           Kind = "vlan";
         };
         vlanConfig.Id = vlan.id;
@@ -49,7 +52,7 @@ in
       matchConfig.Name = interfaces.lan;
       linkConfig.RequiredForOnline = "carrier";
       networkConfig = noIpv6 // {
-        VLAN = map (vlan: vlan.vlanDevice) (lib.attrValues vlans);
+        VLAN = map vlanDevice (lib.attrValues vlans);
       };
     };
 
@@ -62,8 +65,8 @@ in
       };
     };
 
-    "20-${vlans.mgmt.vlanDevice}-bridge" = {
-      matchConfig.Name = vlans.mgmt.vlanDevice;
+    "20-${vlanDevice vlans.mgmt}-bridge" = {
+      matchConfig.Name = vlanDevice vlans.mgmt;
       linkConfig.RequiredForOnline = "no";
       networkConfig = noIpv6 // {
         Bridge = vlans.mgmt.interface;
