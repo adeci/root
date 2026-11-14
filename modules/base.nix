@@ -78,6 +78,8 @@ in
       users.mutableUsers = false;
       # Secrets install through a systemd unit that restarts consumers itself; activation-script restarts are deprecated.
       sops.useSystemdActivation = true;
+      # Long enough to press a key for an older generation; NixOS's default waits 5 seconds every boot.
+      boot.loader.timeout = lib.mkDefault 1;
 
       services.openssh = {
         enable = true;

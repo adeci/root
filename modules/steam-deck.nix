@@ -45,7 +45,6 @@
 
       boot.consoleLogLevel = 0;
       boot.kernelParams = [ "quiet" ];
-      boot.loader.timeout = 1;
       boot.loader.grub.timeoutStyle = "hidden";
 
       # NetworkManager required for Steam network management
