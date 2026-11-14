@@ -4,15 +4,20 @@ let
   workLock = builtins.fromJSON (builtins.readFile ./flake.lock);
   rootLock = builtins.fromJSON (builtins.readFile (root + "/flake.lock"));
 
-  # Lock references are node names, or `follows` paths from the lock's root.
+  # Lock references are node names, or `follows` paths from the lock's root; an input root added since resolves as "missing".
   resolve =
     lock: path:
     builtins.foldl' (
       node: name:
       let
-        ref = node.inputs.${name};
+        ref = node.inputs.${name} or null;
       in
-      if builtins.isList ref then resolve lock ref else lock.nodes.${ref}
+      if ref == null then
+        { locked.rev = "missing"; }
+      else if builtins.isList ref then
+        resolve lock ref
+      else
+        lock.nodes.${ref}
     ) lock.nodes.${lock.root} path;
 
   pin = node: node.locked.narHash or (builtins.toJSON (node.locked or { }));
