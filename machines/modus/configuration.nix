@@ -23,7 +23,7 @@
     smartd
     desktop
     librewolf
-    plymouth
+    bootvine
     keyring-tpm
     niri
     noctalia

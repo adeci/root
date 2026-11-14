@@ -73,6 +73,9 @@
     mandate.url = "github:adeci/mandate/next";
     mandate.inputs.nixpkgs.follows = "nixpkgs";
     mandate.inputs.treefmt-nix.follows = "treefmt-nix";
+
+    bootvine.url = "git+https://codeberg.org/wvhulle/bootvine";
+    bootvine.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
