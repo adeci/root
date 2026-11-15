@@ -102,7 +102,19 @@
             example = {
               "github:owner/repo" = [ "cachix" ];
             };
-            description = "Prompted effect secrets per repo; effects read each with `readSecretString <name> .token`";
+            description = "Effect secrets per repo. A name from `sharedEffectSecrets` is that secret; any other is prompted for this repo alone, and effects read it with `readSecretString <name> .token`";
+          };
+
+          sharedEffectSecrets = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
+            default = { };
+            example = {
+              signing_identity = {
+                key = "Private key (PEM)";
+                certificate = "Certificate (PEM)";
+              };
+            };
+            description = "Secrets prompted once, for every repo that names them in `effectSecrets`: each field with what to enter for it. Effects read a field with `readSecretString <name> .<field>`";
           };
         };
       };
@@ -121,6 +133,8 @@
             generators = config.clan.core.vars.generators;
             effectSecretsGenerator =
               repo: "${instanceName}-effects-${lib.replaceStrings [ ":" "/" ] [ "-" "-" ] repo}";
+            sharedSecretGenerator = name: "${instanceName}-secret-${name}";
+            isShared = name: settings.sharedEffectSecrets ? ${name};
           in
           {
             imports = [ inputs.nixbot.nixosModules.nixbot ];
@@ -161,21 +175,45 @@
               };
             }
             // lib.mapAttrs' (
+              name: fields:
+              lib.nameValuePair (sharedSecretGenerator name) {
+                prompts = lib.mapAttrs (_: description: {
+                  inherit description;
+                  type = "multiline-hidden";
+                  persist = true;
+                }) fields;
+              }
+            ) settings.sharedEffectSecrets
+            // lib.mapAttrs' (
               repo: names:
+              let
+                shared = lib.filter isShared names;
+                own = lib.filter (name: !isShared name) names;
+              in
               lib.nameValuePair (effectSecretsGenerator repo) {
                 files.secrets = { };
-                prompts = lib.genAttrs names (name: {
+                dependencies = map sharedSecretGenerator shared;
+                prompts = lib.genAttrs own (name: {
                   description = "${repo} effect secret `${name}`";
-                  type = "hidden";
+                  type = "multiline-hidden";
                   persist = true;
                 });
                 runtimeInputs = [ pkgs.jq ];
                 script = # bash
                   ''
                     json='{}'
-                    ${lib.concatMapStrings (name: ''
-                      json=$(jq --rawfile v "$prompts"/${name} '.${name}.data.token = ($v | rtrimstr("\n"))' <<<"$json")
-                    '') names}
+                    ${
+                      lib.concatMapStrings (name: ''
+                        json=$(jq --rawfile v "$prompts"/${name} '.${name}.data.token = ($v | rtrimstr("\n"))' <<<"$json")
+                      '') own
+                    }${
+                      lib.concatMapStrings (
+                        name:
+                        lib.concatMapStrings (field: ''
+                          json=$(jq --rawfile v "$in"/${sharedSecretGenerator name}/${field} '.${name}.data.${field} = ($v | rtrimstr("\n"))' <<<"$json")
+                        '') (lib.attrNames settings.sharedEffectSecrets.${name})
+                      ) shared
+                    }
                     printf '%s' "$json" > "$out"/secrets
                   '';
               }
