@@ -10,8 +10,7 @@ let
   bucket = b2.buckets.ziplineShares;
   inherit (bucket) credentials;
   port = 3002;
-  record = self.inventory.cloudflare.dns.shares;
-  domain = "${record.name}.${record.zone}";
+  domain = self.inventory.cloudflare.dns.shares.host;
   staging = "/var/cache/zipline";
 in
 {

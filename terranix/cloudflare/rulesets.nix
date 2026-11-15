@@ -7,7 +7,7 @@
 }:
 let
   inherit (import ../lib.nix { inherit config lib self'; }) safeName;
-  inherit (self.inventory.cloudflare) firewall redirects zones;
+  inherit (self.inventory.cloudflare) redirects tunnels zones;
   inherit (import ./lib.nix { inherit lib zones; })
     hostExpression
     ruleExpression
@@ -15,7 +15,12 @@ let
     zoneOf
     ;
 
-  hosts = firewall.hosts or { };
+  # Each tunnelled name with the firewall rules its entry gives.
+  hosts = lib.listToAttrs (
+    lib.concatMap (
+      routes: map (route: lib.nameValuePair route.host (route.firewall or { })) (lib.attrValues routes)
+    ) (lib.attrValues tunnels)
+  );
 
   skipRule =
     hostname: skip: path:
@@ -118,7 +123,7 @@ let
     lib.mapAttrsToList (hostname: host: map (rateLimitRule hostname) (host.rateLimits or [ ])) hosts
   );
 
-  redirectRules = lib.mapAttrsToList redirectRule redirects;
+  redirectRules = map (redirect: redirectRule redirect.host redirect.url) (lib.attrValues redirects);
 
   # Rules come as { zone, rule }; each zone with rules gets one ruleset for the phase.
   rulesets =

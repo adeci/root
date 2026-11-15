@@ -1,16 +1,15 @@
 { self, ... }:
 let
-  record = self.inventory.cloudflare.dns.ntfy_backup;
-  domain = "${record.name}.${record.zone}";
+  inherit (self.inventory.cloudflare.dns.ntfy_backup) host;
 in
 {
   services.ntfy-sh = {
-    settings.base-url = "https://${domain}";
+    settings.base-url = "https://${host}";
     nginx = {
       enable = true;
-      virtualHost = domain;
+      virtualHost = host;
     };
   };
 
-  services.nginx.virtualHosts.${domain}.enableACME = true;
+  services.nginx.virtualHosts.${host}.enableACME = true;
 }

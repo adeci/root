@@ -45,9 +45,9 @@ in
 
   # Split DNS: the LAN's private domains resolve through the trusted VLAN's gateway, reached over the subnet routes approved below.
   resource.tailscale_dns_split_nameservers = lib.mapAttrs' (
-    domain: _:
-    lib.nameValuePair (safeName domain) {
-      inherit domain;
+    _: record:
+    lib.nameValuePair (safeName record.host) {
+      domain = record.host;
       nameservers = [ lan.vlans.trusted.gateway ];
     }
   ) lan.dns;

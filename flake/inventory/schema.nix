@@ -125,19 +125,27 @@ in
 
       dns = mkOption {
         type = types.attrsOf (
-          types.attrTag {
-            lan = mkOption {
-              type = hostName;
-              description = "A LAN host, whose reserved address the name resolves to.";
-            };
-            tailnet = mkOption {
-              type = machineName;
-              description = "A machine, whose tailnet address the name resolves to.";
+          types.submodule {
+            options = {
+              host = mkOption {
+                type = types.str;
+                description = "The full name.";
+              };
+              lan = mkOption {
+                type = types.nullOr hostName;
+                default = null;
+                description = "A LAN host, whose reserved address the name resolves to.";
+              };
+              tailnet = mkOption {
+                type = types.nullOr machineName;
+                default = null;
+                description = "A machine, whose tailnet address the name resolves to.";
+              };
             };
           }
         );
         default = { };
-        description = "Full DNS names the router serves to the LAN and, through Tailscale split DNS, to the tailnet. Each points at either a LAN host (lan) or a machine's tailnet address (tailnet).";
+        description = "Names the router serves to the LAN and, through Tailscale split DNS, to the tailnet, each under the service it is for, which reads its name from here. A name points at either a LAN host (lan) or a machine's tailnet address (tailnet).";
       };
 
       hosts = mkOption {

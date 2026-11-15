@@ -7,7 +7,7 @@
   ...
 }:
 let
-  domain = "mandate.decio.us";
+  domain = self.inventory.lan.dns.mandate.host;
   certificateDirectory = config.security.acme.certs.${domain}.directory;
   connectors = [
     "whatsapp"

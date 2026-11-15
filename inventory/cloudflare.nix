@@ -2,16 +2,14 @@ let
   conduitEdge = "conduit";
 
   minecraftA = name: {
-    zone = "adeci.net";
-    inherit name;
+    host = "${name}.adeci.net";
     type = "A";
     edge = conduitEdge;
     proxied = false;
   };
 
-  minecraftSrv = host: stream: {
-    zone = "adeci.net";
-    name = "_minecraft._tcp.${host}";
+  minecraftSrv = name: stream: {
+    host = "_minecraft._tcp.${name}.adeci.net";
     type = "SRV";
     ingressStream = {
       edge = conduitEdge;
@@ -20,7 +18,7 @@ let
     data = {
       priority = 0;
       weight = 0;
-      target = "${host}.adeci.net";
+      target = "${name}.adeci.net";
     };
   };
 in
@@ -32,16 +30,42 @@ in
   ];
 
   # Keys are clan machine names: each machine receives its tunnel's token as a clan var.
+  # A tunnel sends each name to a local port; the service behind it reads both from its entry.
   tunnels = {
     sequoia = {
-      "vault.decio.us".port = 8222;
-      "matrix.decio.us".port = 8448;
-      "decio.us".port = 8748;
-      "ntfy.decio.us".port = 2586;
+      vault = {
+        host = "vault.decio.us";
+        port = 8222;
+        firewall.customRules = [
+          {
+            # Admin: ssh -L 8222:localhost:8222 sequoia, then http://localhost:8222/admin
+            description = "Vaultwarden: block the admin panel";
+            action = "block";
+            paths = [ "/admin" ];
+          }
+        ];
+      };
+
+      matrix = {
+        host = "matrix.decio.us";
+        port = 8448;
+      };
+
+      # Matrix's server name, which only points at the homeserver.
+      matrixWellKnown = {
+        host = "decio.us";
+        port = 8748;
+      };
+
+      ntfy = {
+        host = "ntfy.decio.us";
+        port = 2586;
+      };
     };
 
-    leviathan = {
-      "nixbot.decio.us".port = 80;
+    leviathan.nixbot = {
+      host = "nixbot.decio.us";
+      port = 80;
     };
   };
 
@@ -56,16 +80,14 @@ in
 
   dns = {
     shares = {
-      zone = "decio.us";
-      name = "share";
+      host = "share.decio.us";
       type = "A";
       edge = conduitEdge;
       proxied = false;
     };
 
     ntfy_backup = {
-      zone = "decio.us";
-      name = "ntfy-backup";
+      host = "ntfy-backup.decio.us";
       type = "A";
       edge = conduitEdge;
       proxied = false;
@@ -78,22 +100,9 @@ in
     srv_gab = minecraftSrv "gab" "minecraft-gab";
   };
 
-  firewall = {
-    hosts = {
-      "vault.decio.us".customRules = [
-        {
-          # Admin: ssh -L 8222:localhost:8222 sequoia, then http://localhost:8222/admin
-          description = "Vaultwarden: block the admin panel";
-          action = "block";
-          paths = [ "/admin" ];
-        }
-      ];
-    };
-  };
-
-  # Hostnames Cloudflare answers with a redirect; nothing serves them.
-  redirects = {
-    "macbootstrap.decio.us" =
-      "https://raw.githubusercontent.com/adeci/root/main/packages/mac-install/bootstrap.sh";
+  # Names Cloudflare answers with a redirect; nothing serves them.
+  redirects.macBootstrap = {
+    host = "macbootstrap.decio.us";
+    url = "https://raw.githubusercontent.com/adeci/root/main/packages/mac-install/bootstrap.sh";
   };
 }

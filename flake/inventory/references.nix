@@ -32,6 +32,23 @@ let
     lib.attrNames cloudflare.tunnels
   );
 
+  # Tunnel and redirect entries are keyed by service, so nothing else keeps a name to one entry.
+  uniquePublicHosts =
+    let
+      reused = usedMoreThanOnce (
+        lib.concatMap (routes: map (route: route.host) (lib.attrValues routes)) (
+          lib.attrValues cloudflare.tunnels
+        )
+        ++ map (redirect: redirect.host) (lib.attrValues cloudflare.redirects)
+      );
+    in
+    [
+      {
+        assertion = reused == [ ];
+        message = "inventory/cloudflare.nix: more than one tunnel or redirect entry is for ${toString reused}";
+      }
+    ];
+
   edgeMachines =
     map (name: mustBeMachine "inventory/ingress.nix edges.${name}" name) (lib.attrNames ingress.edges)
     ++ map (name: mustBeMachine "inventory/ingress.nix streams.${name}" name) (
@@ -121,6 +138,7 @@ in
 {
   assertions = lib.concatLists [
     tunnelMachines
+    uniquePublicHosts
     edgeMachines
     bucketMachines
     dnsEdges

@@ -20,9 +20,18 @@
     };
 
     dns = {
-      "paperless.decio.us".lan = "sequoia";
-      "atlas.decio.us".tailnet = "sequoia";
-      "mandate.decio.us".tailnet = "lachesis";
+      paperless = {
+        host = "paperless.decio.us";
+        lan = "sequoia";
+      };
+      atlas = {
+        host = "atlas.decio.us";
+        tailnet = "sequoia";
+      };
+      mandate = {
+        host = "mandate.decio.us";
+        tailnet = "lachesis";
+      };
     };
   };
 

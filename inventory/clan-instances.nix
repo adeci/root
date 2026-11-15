@@ -1,6 +1,7 @@
 {
   b2,
   cloudflare,
+  lan,
   tailnet,
   ...
 }@inventory:
@@ -31,8 +32,7 @@
 
   monitoring =
     let
-      ntfyHost = "ntfy.decio.us";
-      ntfyPort = cloudflare.tunnels.sequoia.${ntfyHost}.port;
+      ntfyPort = cloudflare.tunnels.sequoia.ntfy.port;
     in
     {
       module = {
@@ -72,7 +72,7 @@
               host = "sequoia.${tailnet.domain}";
               grafana = {
                 enable = true;
-                domain = "atlas.decio.us";
+                domain = lan.dns.atlas.host;
                 homeDashboard = "fleet";
               };
               retentionDays = 30;
@@ -93,7 +93,7 @@
 
   nixbot =
     let
-      domain = "nixbot.decio.us";
+      tunnel = cloudflare.tunnels.leviathan.nixbot;
     in
     {
       module = {
@@ -102,8 +102,8 @@
       };
 
       roles.server.machines.leviathan.settings = {
-        inherit domain;
-        listenPort = cloudflare.tunnels.leviathan.${domain}.port;
+        domain = tunnel.host;
+        listenPort = tunnel.port;
         buildSystems = [
           "x86_64-linux"
           "aarch64-linux"

@@ -31,13 +31,14 @@ in
     (lib.mapAttrs (
       _: record:
       removeAttrs record [
-        "zone"
+        "host"
         "target"
         "edge"
         "ingressStream"
       ]
       // {
-        zone_id = config.data.cloudflare_zone.${safeName record.zone} "id";
+        zone_id = config.data.cloudflare_zone.${safeName (zoneOf record.host)} "id";
+        name = recordName record.host;
       }
       // lib.optionalAttrs (record ? target) {
         content = config.resource.${record.target.resource}.${record.target.name} record.target.field;
@@ -54,10 +55,10 @@ in
 
     # Placeholders for the redirects in rulesets.nix; 100:: is Cloudflare's originless address.
     (lib.mapAttrs' (
-      hostname: _:
-      lib.nameValuePair "redirect_${safeName hostname}" {
-        zone_id = config.data.cloudflare_zone.${safeName (zoneOf hostname)} "id";
-        name = recordName hostname;
+      _: redirect:
+      lib.nameValuePair "redirect_${safeName redirect.host}" {
+        zone_id = config.data.cloudflare_zone.${safeName (zoneOf redirect.host)} "id";
+        name = recordName redirect.host;
         type = "AAAA";
         content = "100::";
         proxied = true;

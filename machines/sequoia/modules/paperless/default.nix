@@ -8,7 +8,7 @@
 let
   inherit (self.inventory) lan tailnet;
 
-  domain = "paperless.decio.us";
+  domain = lan.dns.paperless.host;
   dataDir = "/srv/paperless";
 
   workflows = ./paperless-workflows.py;

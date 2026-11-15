@@ -6,10 +6,10 @@
   ...
 }:
 let
-  serverName = "decio.us";
-  matrixDomain = "matrix.decio.us";
+  inherit (self.inventory.cloudflare.tunnels.sequoia) matrix matrixWellKnown;
+  serverName = matrixWellKnown.host;
+  matrixDomain = matrix.host;
   synapsePort = 8008;
-  tunnels = self.inventory.cloudflare.tunnels.sequoia;
 
   users = {
     alex.admin = true;
@@ -179,7 +179,7 @@ in
       listen = [
         {
           addr = "127.0.0.1";
-          port = tunnels.${matrixDomain}.port;
+          inherit (matrix) port;
         }
       ];
       extraConfig = ''
@@ -198,7 +198,7 @@ in
       listen = [
         {
           addr = "127.0.0.1";
-          port = tunnels.${serverName}.port;
+          inherit (matrixWellKnown) port;
         }
       ];
       locations."=/.well-known/matrix/server".extraConfig = ''

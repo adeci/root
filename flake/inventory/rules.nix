@@ -148,10 +148,19 @@ let
     )
   );
 
-  tailnetRecordsResolve = lib.mapAttrsToList (fqdn: record: {
+  dnsNamesPointOneWay = lib.mapAttrsToList (name: record: {
+    assertion = (record.lan == null) != (record.tailnet == null);
+    message = "lan.dns.${name}: needs exactly one of lan and tailnet";
+  }) config.lan.dns;
+
+  uniqueDnsNames = usedOnce "name" (
+    lib.mapAttrsToList (name: record: valueAt "lan.dns.${name}.host" record.host) config.lan.dns
+  );
+
+  tailnetRecordsResolve = lib.mapAttrsToList (name: record: {
     assertion = config.machines.${record.tailnet}.tailnet != null;
-    message = ''lan.dns."${fqdn}".tailnet: ${record.tailnet} has no tailnet address'';
-  }) (lib.filterAttrs (_: record: record ? tailnet) config.lan.dns);
+    message = "lan.dns.${name}.tailnet: ${record.tailnet} has no tailnet address";
+  }) (lib.filterAttrs (_: record: record.tailnet != null) config.lan.dns);
 
   appliancePortsExist = lib.concatLists (
     lib.mapAttrsToList (
@@ -241,6 +250,8 @@ in
     uniqueMacs
     uniqueClientIds
     uniqueTailnetAddresses
+    dnsNamesPointOneWay
+    uniqueDnsNames
     tailnetRecordsResolve
     appliancePortsExist
     cablesLeadToExistingPorts

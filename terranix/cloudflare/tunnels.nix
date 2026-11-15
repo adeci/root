@@ -32,11 +32,12 @@ in
     account_id = clanSecret "cloudflare-account-id";
     tunnel_id = tunnelId machine;
 
+    # In the order of the names, so renaming a service leaves the rules where they are.
     config.ingress_rule =
-      lib.mapAttrsToList (hostname: route: {
-        inherit hostname;
+      map (route: {
+        hostname = route.host;
         service = "http://localhost:${toString route.port}";
-      }) routes
+      }) (lib.sortOn (route: route.host) (lib.attrValues routes))
       ++ [
         { service = "http_status:404"; }
       ];
@@ -61,10 +62,10 @@ in
   resource.cloudflare_record = lib.concatMapAttrs (
     machine: routes:
     lib.mapAttrs' (
-      hostname: _:
-      lib.nameValuePair "tunnel_${safeName hostname}" {
-        zone_id = config.data.cloudflare_zone.${safeName (zoneOf hostname)} "id";
-        name = recordName hostname;
+      _: route:
+      lib.nameValuePair "tunnel_${safeName route.host}" {
+        zone_id = config.data.cloudflare_zone.${safeName (zoneOf route.host)} "id";
+        name = recordName route.host;
         type = "CNAME";
         content = "${tunnelId machine}.cfargotunnel.com";
         proxied = true;
