@@ -8,8 +8,10 @@
     auto-pressure-gc
     zram
     public-edge
+    ntfy-alerts
 
     ./modules/zipline.nix
+    ./modules/ntfy.nix
   ];
 
   publicEdge.streams = self.inventory.ingress.streams.conduit;

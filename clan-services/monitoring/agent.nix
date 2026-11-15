@@ -133,12 +133,13 @@ in
           # nixos-facter's finding: "none" on hardware, the hypervisor in a VM.
           virtualisation = config.hardware.facter.report.virtualisation or "none";
 
-          serverMachineCount = builtins.length (builtins.attrNames roles.server.machines);
+          # The journal goes to the main server: a backup keeps no logs.
+          mainServers = lib.filter (server: !server.settings.backup) (lib.attrValues roles.server.machines);
           serverSettings =
-            if serverMachineCount != 1 then
-              throw "@adeci/monitoring: requires exactly one server machine, got ${toString serverMachineCount}"
+            if lib.length mainServers != 1 then
+              throw "@adeci/monitoring: requires exactly one server that is not a backup, got ${toString (lib.length mainServers)}"
             else
-              (lib.head (lib.attrValues roles.server.machines)).settings;
+              (lib.head mainServers).settings;
 
           acmeCertificates = pkgs.writeText "acme-certificates" (
             lib.concatLines (

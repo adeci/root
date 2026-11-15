@@ -9,6 +9,7 @@
     auto-pressure-gc
     cloudflared
     acme
+    ntfy-alerts
 
     ./modules/wildcard-cert.nix
     ./modules/tailscale-exit-node.nix

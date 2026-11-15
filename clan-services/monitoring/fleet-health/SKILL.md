@@ -5,7 +5,7 @@ description: Check the health of alex's machines (the root clan fleet) — faili
 
 # Querying
 
-Prometheus and Loki run on sequoia and listen on localhost only; query them over SSH. Both keep 30 days.
+Prometheus and Loki run on sequoia and listen on localhost only; query them over SSH. Both keep 30 days. When sequoia is down, conduit (`root@conduit.cymric-daggertooth.ts.net`) answers the same PromQL from its own Prometheus, which keeps 3 days and no logs.
 
 ```bash
 s=root@sequoia.cymric-daggertooth.ts.net

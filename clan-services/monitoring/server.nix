@@ -1,5 +1,5 @@
 {
-  description = "Runs Prometheus, Loki, Grafana, and nginx — the central monitoring server";
+  description = "Runs the monitoring server, with Prometheus, Alertmanager, Loki and Grafana, or a backup that alerts when it cannot";
 
   interface =
     { lib, ... }:
@@ -24,6 +24,19 @@
             agent's exporters there.
           '';
           example = "example.ts.net";
+        };
+
+        backup = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            A backup server scrapes every agent and evaluates the same rules as
+            the main server, and notifies through its own delivery when the
+            main server has not: it is down, or its delivery fails. It keeps no
+            logs and shows no dashboards, so only `agentDomain`, `retentionDays`
+            and `alertDelivery` apply to it. One server of an instance is the
+            main one.
+          '';
         };
 
         grafana.enable = lib.mkOption {
@@ -136,6 +149,7 @@
           ports = {
             prometheus = 9090;
             alertmanager = 9093;
+            alertmanagerCluster = 9094;
             ntfyBridge = 8000;
             loki = 3100;
             lokiGrpc = 9095;
@@ -145,6 +159,12 @@
           machineName = config.clan.core.settings.machine.name;
           agents = roles.agent.machines;
           ntfyDelivery = settings.alertDelivery.ntfy;
+          main = !settings.backup;
+          grafanaEnabled = main && settings.grafana.enable;
+          # The other servers, whose Alertmanagers form a cluster with this one's over the tailnet.
+          peers = lib.attrNames (lib.removeAttrs roles.server.machines [ machineName ]);
+          clustered = ntfyDelivery.enable && peers != [ ];
+          tailnetAddress = machine: self.inventory.machines.${machine}.tailnet;
           ntfyGenerator = config.clan.core.vars.generators.${ntfyDelivery.configGenerator} or null;
           ntfyCredentialsFile =
             if ntfyGenerator == null then
@@ -228,17 +248,23 @@
             // agent.settings.exporters;
         in
         {
-          networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 80 ];
+          networking.firewall.interfaces.tailscale0 = {
+            allowedTCPPorts = lib.optional main 80 ++ lib.optional clustered ports.alertmanagerCluster;
+            allowedUDPPorts = lib.optional clustered ports.alertmanagerCluster;
+          };
 
-          clan.core.state.monitoring.folders = [
-            "/var/lib/${config.services.prometheus.stateDir}"
-            config.services.loki.dataDir
-          ]
-          ++ lib.optionals ntfyDelivery.enable [
-            "/var/lib/alertmanager"
-          ];
+          # A backup's metrics are the main server's too: not worth keeping.
+          clan.core.state = lib.mkIf main {
+            monitoring.folders = [
+              "/var/lib/${config.services.prometheus.stateDir}"
+              config.services.loki.dataDir
+            ]
+            ++ lib.optionals ntfyDelivery.enable [
+              "/var/lib/alertmanager"
+            ];
+          };
 
-          clan.core.postgresql = lib.mkIf settings.grafana.enable {
+          clan.core.postgresql = lib.mkIf grafanaEnabled {
             enable = true;
             users.grafana = { };
             databases.grafana = {
@@ -247,7 +273,7 @@
             };
           };
 
-          clan.core.vars.generators = lib.optionalAttrs settings.grafana.enable {
+          clan.core.vars.generators = lib.optionalAttrs grafanaEnabled {
             # Grafana's NixOS module requires an explicit secret_key since 26.05; a generated one keeps stored secrets stable across rebuilds.
             grafana-secret = {
               files.key = { };
@@ -284,8 +310,8 @@
             ];
             scrapeConfigs = [
               (localScrape "prometheus" ports.prometheus)
-              (localScrape "loki" ports.loki)
             ]
+            ++ lib.optional main (localScrape "loki" ports.loki)
             ++ lib.optionals ntfyDelivery.enable [
               (localScrape "alertmanager" ports.alertmanager)
             ]
@@ -303,8 +329,17 @@
             enable = true;
             listenAddress = "127.0.0.1";
             port = ports.alertmanager;
-            # A lone Alertmanager needs no gossip mesh, which fails to start before the network has an address.
-            extraFlags = [ "--cluster.listen-address=" ];
+            clusterPeers = map tailnetAddress peers;
+            extraFlags =
+              if clustered then
+                [
+                  "--cluster.advertise-address=${tailnetAddress machineName}:${toString ports.alertmanagerCluster}"
+                  # Peers notify in the order of their names, each 15 seconds after the one before and only what is still unsent: the main server first.
+                  "--cluster.peer-name=${if main then "1" else "2"}-${machineName}"
+                ]
+              else
+                # A lone Alertmanager needs no gossip mesh, which fails to start before the network has an address.
+                [ "--cluster.listen-address=" ];
             configuration = import ./alertmanager.nix {
               inherit lib;
               inherit (settings.alertDelivery) quietHours;
@@ -325,11 +360,11 @@
               inherit lib;
               inherit (ntfyDelivery) baseUrl topic;
               listenAddress = "127.0.0.1:${toString ports.ntfyBridge}";
-              clickUrl = if settings.grafana.enable then "${grafanaUrl}d/${dashboards.fleet.uid}" else null;
+              clickUrl = if grafanaEnabled then "${grafanaUrl}d/${dashboards.fleet.uid}" else null;
             };
           };
 
-          services.loki = {
+          services.loki = lib.mkIf main {
             enable = true;
             configuration = {
               auth_enabled = false;
@@ -384,7 +419,7 @@
             };
           };
 
-          services.grafana = lib.mkIf settings.grafana.enable {
+          services.grafana = lib.mkIf grafanaEnabled {
             enable = true;
             # Grafana 13.2 ships these data sources as separate plugins.
             declarativePlugins = [
@@ -479,14 +514,14 @@
             };
           };
 
-          systemd.services.grafana.serviceConfig = lib.mkIf settings.grafana.enable {
+          systemd.services.grafana.serviceConfig = lib.mkIf grafanaEnabled {
             LoadCredential = [
               "grafana-secret-key:${config.clan.core.vars.generators.grafana-secret.files.key.path}"
               "grafana-admin-password:${config.clan.core.vars.generators.grafana-admin.files.password.path}"
             ];
           };
 
-          services.nginx = {
+          services.nginx = lib.mkIf main {
             enable = true;
             recommendedProxySettings = true;
             serverTokens = false;
@@ -504,7 +539,7 @@
                   '';
                 };
               }
-              (lib.mkIf settings.grafana.enable {
+              (lib.mkIf grafanaEnabled {
                 ${settings.grafana.domain}.locations."/" = {
                   proxyPass = "http://127.0.0.1:${toString ports.grafana}";
                   proxyWebsockets = true;
@@ -513,14 +548,15 @@
             ];
           };
 
-          systemd.services.nginx.serviceConfig.LoadCredential = [
-            "loki-auth-htpasswd:${config.clan.core.vars.generators.loki-auth.files.htpasswd.path}"
-          ];
-
-          # preStart runs as root with $CREDENTIALS_DIRECTORY; the symlink lets nginx's workers read the auth files.
-          systemd.services.nginx.preStart = lib.mkAfter ''
-            ln -sfn "$CREDENTIALS_DIRECTORY" /run/nginx/credentials
-          '';
+          systemd.services.nginx = lib.mkIf main {
+            serviceConfig.LoadCredential = [
+              "loki-auth-htpasswd:${config.clan.core.vars.generators.loki-auth.files.htpasswd.path}"
+            ];
+            # preStart runs as root with $CREDENTIALS_DIRECTORY; the symlink lets nginx's workers read the auth files.
+            preStart = lib.mkAfter ''
+              ln -sfn "$CREDENTIALS_DIRECTORY" /run/nginx/credentials
+            '';
+          };
         };
     };
 }

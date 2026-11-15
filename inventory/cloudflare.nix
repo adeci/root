@@ -63,6 +63,14 @@ in
       proxied = false;
     };
 
+    ntfy_backup = {
+      zone = "decio.us";
+      name = "ntfy-backup";
+      type = "A";
+      edge = conduitEdge;
+      proxied = false;
+    };
+
     mc_dj2 = minecraftA "dj2";
     mc_gab = minecraftA "gab";
 

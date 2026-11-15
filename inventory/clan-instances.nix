@@ -58,21 +58,34 @@
             leviathan.settings = import ../machines/leviathan/monitoring.nix;
           };
         };
-        server.machines.sequoia.settings = {
-          host = "sequoia.${tailnet.domain}";
-          agentDomain = tailnet.domain;
-          grafana = {
-            enable = true;
-            domain = "atlas.decio.us";
-            homeDashboard = "fleet";
+        server = {
+          settings = {
+            agentDomain = tailnet.domain;
+            alertDelivery.ntfy = {
+              enable = true;
+              topic = "alerts";
+              configGenerator = "ntfy-alerts";
+            };
           };
-          retentionDays = 30;
-          loki.retentionDays = 30;
-          alertDelivery.ntfy = {
-            enable = true;
-            baseUrl = "http://127.0.0.1:${toString ntfyPort}";
-            topic = "atlas-alerts";
-            configGenerator = "ntfy-alerts";
+          machines = {
+            sequoia.settings = {
+              host = "sequoia.${tailnet.domain}";
+              grafana = {
+                enable = true;
+                domain = "atlas.decio.us";
+                homeDashboard = "fleet";
+              };
+              retentionDays = 30;
+              loki.retentionDays = 30;
+              alertDelivery.ntfy.baseUrl = "http://127.0.0.1:${toString ntfyPort}";
+            };
+
+            # Outside the house: it still sees the fleet when home is offline, and alerts when sequoia cannot.
+            conduit.settings = {
+              backup = true;
+              retentionDays = 3;
+              alertDelivery.ntfy.baseUrl = "http://[::1]:2586";
+            };
           };
         };
       };

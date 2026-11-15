@@ -51,6 +51,17 @@ in
       equal = [ "instance" ];
     }
     {
+      # The router down means its site is offline: one alert, not one for every machine behind it.
+      source_matchers = [
+        ''alertname="HostDown"''
+        ''role="router"''
+      ];
+      target_matchers = [
+        ''alertname="HostDown"''
+        ''role!="router"''
+      ];
+    }
+    {
       source_matchers = [ ''severity="critical"'' ];
       target_matchers = [ ''severity="warning"'' ];
       equal = [
