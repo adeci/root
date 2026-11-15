@@ -12,7 +12,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "ms";
-      threshold = ui.thresholds.latencyMs;
       targets = [
         (ui.target ''1000 * janus_network_probe_latency_seconds{group=~"wan|internet"}'' "{{target}}")
       ];
@@ -27,7 +26,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "ms";
-      threshold = ui.thresholds.latencyMs;
       targets = [
         (ui.target "(${internetLatency "0.95"}) - (${internetLatency "0.50"})" "p95 - p50")
         (ui.target "(${internetLatency "0.99"}) - (${internetLatency "0.50"})" "p99 - p50")
@@ -42,7 +40,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "percent";
-      threshold = ui.thresholds.packetLossPercent;
       targets = [
         (ui.target (lossPercent ''janus_network_probe_packet_loss_ratio{target="wan_gateway"}'') "wan gateway")
         (ui.target queries.internetLoss "internet")

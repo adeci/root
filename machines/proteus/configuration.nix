@@ -8,6 +8,7 @@
     auto-pressure-gc
     auto-timezone
     desktop
+    earwig
     librewolf
     niri
     noctalia

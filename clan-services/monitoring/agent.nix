@@ -1,3 +1,23 @@
+let
+  # The command that records what a system runs, for node_exporter.
+  recordSystemVersion =
+    {
+      config,
+      lib,
+      pkgs,
+      self,
+    }:
+    let
+      script = pkgs.writeShellApplication {
+        name = "system-version";
+        runtimeInputs = [ pkgs.coreutils ];
+        text = builtins.readFile ./system-version.sh;
+      };
+    in
+    "${lib.getExe script} ${config.monitoring.textfileDirectory}/system-version.prom ${
+      self.inputs.nixpkgs.rev or "unknown"
+    } ${toString self.inputs.nixpkgs.lastModified}";
+in
 {
   description = "Serves node metrics to the monitoring server and, on NixOS, ships the journal to it";
 
@@ -44,6 +64,12 @@
           };
         };
 
+        smart.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Export the drives' SMART health (NixOS); off for a virtual machine, whose disks have none.";
+        };
+
         useSSL = lib.mkOption {
           type = lib.types.bool;
           default = false;
@@ -57,31 +83,6 @@
           example = {
             role = "router";
           };
-        };
-
-        journal.mode = lib.mkOption {
-          type = lib.types.enum [
-            "all"
-            "nixos"
-            "explicit"
-          ];
-          default = "all";
-          description = ''
-            Which journal entries to ship to Loki:
-              - "all":      every journal entry (default)
-              - "nixos":    services explicitly enabled through NixOS `services.*.enable`
-              - "explicit": only the services listed in `journal.include`
-          '';
-        };
-
-        journal.include = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [ ];
-          description = "Explicit service list when `journal.mode = \"explicit\"`. Omit the `.service` suffix.";
-          example = [
-            "nginx"
-            "grafana"
-          ];
         };
 
         rules = lib.mkOption {
@@ -122,13 +123,15 @@
         {
           config,
           lib,
-          options,
           pkgs,
+          self,
           ...
         }:
         let
           inherit (config.monitoring) textfileDirectory;
           lokiAuth = config.clan.core.vars.generators.loki-auth;
+          # nixos-facter's finding: "none" on hardware, the hypervisor in a VM.
+          virtualisation = config.hardware.facter.report.virtualisation or "none";
 
           serverMachineCount = builtins.length (builtins.attrNames roles.server.machines);
           serverSettings =
@@ -136,28 +139,6 @@
               throw "@adeci/monitoring: requires exactly one server machine, got ${toString serverMachineCount}"
             else
               (lib.head (lib.attrValues roles.server.machines)).settings;
-
-          # Services enabled by this configuration rather than by default.
-          enabledServiceUnits = map (name: "${name}.service") (
-            lib.attrNames (
-              lib.filterAttrs (
-                name: service:
-                options.services.${name} ? enable
-                && options.services.${name}.enable ? default
-                && options.services.${name}.enable.default != service.enable
-                && service.enable
-              ) config.services
-            )
-          );
-
-          # The units whose journal to ship; null ships every entry.
-          journalUnits =
-            if settings.journal.mode == "all" then
-              null
-            else if settings.journal.mode == "nixos" then
-              enabledServiceUnits
-            else
-              map (service: "${service}.service") settings.journal.include;
 
           acmeCertificates = pkgs.writeText "acme-certificates" (
             lib.concatLines (
@@ -175,14 +156,43 @@
             ];
             text = builtins.readFile ./acme-certificate-expiry.sh;
           };
+
+          filesystemDisks = pkgs.writeShellApplication {
+            name = "filesystem-disks";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.util-linux
+            ];
+            text = builtins.readFile ./filesystem-disks.sh;
+          };
+
+          bootTiming = pkgs.writeShellApplication {
+            name = "boot-timing";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.jq
+              config.systemd.package
+            ];
+            text = builtins.readFile ./boot-timing.sh;
+          };
         in
         {
           monitoring.exporters = settings.exporters;
+
+          assertions = [
+            {
+              assertion = settings.smart.enable -> virtualisation == "none";
+              message = "@adeci/monitoring: ${config.clan.core.settings.machine.name} runs in ${virtualisation}, whose disks have no SMART data; set smart.enable = false in its agent settings.";
+            }
+          ];
+
+          services.prometheus.exporters.smartctl.enable = settings.smart.enable;
 
           services.prometheus.exporters.node = {
             enable = true;
             enabledCollectors = [
               "cpu"
+              "cpufreq"
               "meminfo"
               "filesystem"
               "diskstats"
@@ -210,6 +220,7 @@
           networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
             config.services.prometheus.exporters.node.port
           ]
+          ++ lib.optional settings.smart.enable config.services.prometheus.exporters.smartctl.port
           ++ lib.attrValues settings.exporters;
 
           services.vector = {
@@ -227,10 +238,7 @@
                 remove_trailing_whitespace = true;
               };
 
-              sources.journal = {
-                type = "journald";
-              }
-              // lib.optionalAttrs (journalUnits != null) { include_units = journalUnits; };
+              sources.journal.type = "journald";
 
               # Queries match levels by syslog name; kernel lines have no unit, so they go by their program.
               transforms.labelled = {
@@ -284,20 +292,68 @@
               ExecStart = "${lib.getExe acmeCertificateExpiry} ${acmeCertificates} ${textfileDirectory}/acme-certificates.prom";
             };
           };
+
+          # The fleet dashboard's per-disk panels group filesystems by the disk under them.
+          systemd.services.filesystem-disks = {
+            description = "Map mounted filesystems to their physical disks for node_exporter";
+            wantedBy = [ "multi-user.target" ];
+            after = [ "local-fs.target" ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              ExecStart = "${lib.getExe filesystemDisks} ${textfileDirectory}/filesystem-disks.prom";
+            };
+          };
+
+          # Once a boot: how long it took, and the shutdown before it. A simple service's start is done at once,
+          # so the boot can finish while the script waits for it to.
+          systemd.services.boot-timing = {
+            description = "Export this boot's and the last shutdown's timing for node_exporter";
+            wantedBy = [ "multi-user.target" ];
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = "${lib.getExe bootTiming} ${textfileDirectory}/boot-timing.prom";
+            };
+          };
+
+          # On every boot and switch; given the activated system, it also tells whether its kernel waits for a reboot.
+          system.activationScripts.system-version.text = "${
+            recordSystemVersion {
+              inherit
+                config
+                lib
+                pkgs
+                self
+                ;
+            }
+          } $systemConfig";
         };
 
       darwinModule =
         {
           config,
           lib,
+          pkgs,
           self,
           ...
         }:
         let
+          inherit (config.monitoring) textfileDirectory;
           machineName = config.clan.core.settings.machine.name;
           tailnetAddress = self.inventory.machines.${machineName}.tailnet;
           nodeExporter = lib.getExe config.services.prometheus.exporters.node.package;
           socketfilterfw = "/usr/libexec/ApplicationFirewall/socketfilterfw";
+
+          macosHealth = pkgs.writeShellApplication {
+            name = "macos-health";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.jq
+              pkgs.macmon
+              pkgs.smartmontools
+            ];
+            text = builtins.readFile ./macos-health.sh;
+          };
         in
         {
           assertions = [
@@ -321,12 +377,14 @@
               "uname"
               "boottime"
               "time"
+              "textfile"
             ]
             ++ settings.extraCollectors;
             extraFlags = [
               "--collector.disable-defaults"
               # The rest are the sealed system volume at /, macOS's helper volumes and the secrets ramdisk.
               "--collector.filesystem.mount-points-include=^/(System/Volumes/Data|nix)$"
+              "--collector.textfile.directory=${textfileDirectory}"
             ];
           };
 
@@ -334,7 +392,29 @@
           system.activationScripts.preActivation.text = ''
             ${socketfilterfw} --add ${nodeExporter} > /dev/null
             ${socketfilterfw} --unblockapp ${nodeExporter} > /dev/null
+            mkdir -p ${textfileDirectory}
           '';
+
+          # What node_exporter cannot read on a Mac: the internal SSD's SMART data, which needs root, the memory pressure level, the CPU temperature and the battery's health.
+          launchd.daemons.macos-health = {
+            command = "${lib.getExe macosHealth} ${textfileDirectory}/macos-health.prom";
+            serviceConfig = {
+              RunAtLoad = true;
+              # The page's temperature is as old as the last run.
+              StartInterval = 60;
+              StandardErrorPath = "/var/log/macos-health.log";
+            };
+          };
+
+          # On every deploy: a Mac changes what it runs only then, and the file outlasts reboots.
+          system.activationScripts.postActivation.text = recordSystemVersion {
+            inherit
+              config
+              lib
+              pkgs
+              self
+              ;
+          };
         };
     };
 }

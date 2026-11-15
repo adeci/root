@@ -20,6 +20,7 @@
     auto-pressure-gc
     smartd
     desktop
+    earwig
     librewolf
     bootvine
     niri

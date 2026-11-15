@@ -117,10 +117,10 @@ in
   {
     alert = "RouterOSLinkErrors";
     expr = ''
-      sum by (name, interface) (
+      sum by (instance, name, interface) (
         ${cableErrors "rx"}
       )
-      + sum by (name, interface) (
+      + sum by (instance, name, interface) (
         ${cableErrors "tx"}
       )
       > 0.01
@@ -150,7 +150,7 @@ in
   }
   {
     alert = "RouterOSTooHot";
-    expr = "max by (name) (janus_routeros_temperature_celsius{${router}}) > 85";
+    expr = "max by (instance, name) (janus_routeros_temperature_celsius{${router}}) > 85";
     for = "15m";
     labels.severity = "warning";
     annotations = {
@@ -162,10 +162,10 @@ in
     alert = "RouterOSMetricsFailing";
     expr = ''
       (
-        min by (name) (label_replace(mikrotik_scrape_collector_success{${router}}, "name", "$1", "device", "(.+)")) == 0
-        or min by (name) (janus_routeros_health_scrape_success{${router}}) == 0
+        min by (instance, name) (label_replace(mikrotik_scrape_collector_success{${router}}, "name", "$1", "device", "(.+)")) == 0
+        or min by (instance, name) (janus_routeros_health_scrape_success{${router}}) == 0
       )
-      unless on (name) label_replace(janus_network_probe_up{${router}, group="routeros"} == 0, "name", "$1", "target", "(.+)")
+      unless on (instance, name) label_replace(janus_network_probe_up{${router}, group="routeros"} == 0, "name", "$1", "target", "(.+)")
     '';
     for = "30m";
     labels.severity = "warning";

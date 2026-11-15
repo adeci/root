@@ -7,7 +7,6 @@ in
   hosts = {
     inherit (tailnet.addresses)
       leviathan
-      modus
       lachesis
       ;
   };
@@ -46,11 +45,6 @@ in
       src = [ "autogroup:shared" ];
       dst = [ "leviathan" ];
       ip = [ "*" ];
-    }
-    {
-      src = [ "autogroup:shared" ];
-      dst = [ "modus" ];
-      ip = [ "tcp:22" ];
     }
     # Agent machines, e.g. Grok Bot: only mandate's agent port on lachesis, never the owner side.
     {

@@ -217,6 +217,56 @@ in
   }
 
   {
+    name = "a drive warns while its bad-sector count grows or SMART fails it, not for a count that stays put";
+    interval = "1h";
+    input_series = [
+      {
+        series = ''smartctl_device_attribute{instance="server", device="sdd", attribute_name="Offline_Uncorrectable", attribute_value_type="raw"}'';
+        values = "30x24 32x30";
+      }
+      {
+        series = ''smartctl_device_attribute{instance="server", device="sdb", attribute_name="Current_Pending_Sector", attribute_value_type="raw"}'';
+        values = "5x54";
+      }
+      {
+        series = ''smartctl_device_smart_status{instance="server", device="nvme0"}'';
+        values = "1x40 0x14";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "DriveDegrading" "20h")
+      (firing "DriveDegrading" "30h" [
+        {
+          exp_labels = {
+            instance = "server";
+            device = "sdd";
+            attribute_name = "Offline_Uncorrectable";
+            attribute_value_type = "raw";
+            severity = "warning";
+          };
+          exp_annotations = {
+            summary = "Drive sdd in server is degrading";
+            description = "Its bad-sector counts grew in the last day, or SMART says it failed; see its row under Drives on the fleet page, and `smartctl -a` on server.";
+          };
+        }
+      ])
+      (firing "DriveDegrading" "50h" [
+        {
+          exp_labels = {
+            instance = "server";
+            device = "nvme0";
+            severity = "warning";
+          };
+          exp_annotations = {
+            summary = "Drive nvme0 in server is degrading";
+            description = "Its bad-sector counts grew in the last day, or SMART says it failed; see its row under Drives on the fleet page, and `smartctl -a` on server.";
+          };
+        }
+      ])
+    ];
+  }
+
+  {
     name = "certificates warn two weeks before they expire";
     interval = "1m";
     input_series = [
@@ -290,6 +340,50 @@ in
           };
         }
       ])
+    ];
+  }
+
+  {
+    name = "a notification failing at every 5-minute retry alerts after 15 minutes";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''alertmanager_notifications_failed_total{instance="server", job="alertmanager", integration="webhook", reason="serverError"}'';
+        values = "0x14 1x4 2x4 3x4 4x4 5x4 6x4 7x4";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "AlertDeliveryFailing" (minutes 29))
+      (firing "AlertDeliveryFailing" (minutes 31) [
+        {
+          exp_labels = {
+            instance = "server";
+            job = "alertmanager";
+            integration = "webhook";
+            severity = "critical";
+          };
+          exp_annotations = {
+            summary = "Alert notifications fail to send";
+            description = "Sending webhook notifications fails, so alerts go unseen; check the Alertmanager log on server.";
+          };
+        }
+      ])
+    ];
+  }
+
+  {
+    name = "a notification that fails once, then goes out, does not alert";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''alertmanager_notifications_failed_total{instance="server", job="alertmanager", integration="webhook", reason="serverError"}'';
+        values = "0x14 1x40";
+      }
+    ];
+    alert_rule_test = map (time: noAlert "AlertDeliveryFailing" (minutes time)) [
+      20
+      31
+      50
     ];
   }
 ]

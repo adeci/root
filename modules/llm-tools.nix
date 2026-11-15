@@ -44,6 +44,7 @@ let
           "${herdrIntegrations}/.omp/agent/extensions/herdr-omp-agent-state.ts";
         ".pi/agent/extensions/herdr-agent-state.ts" =
           "${herdrIntegrations}/.pi/agent/extensions/herdr-agent-state.ts";
+        ".agents/skills/fleet-health" = ../clan-services/monitoring/fleet-health;
       };
     };
 in

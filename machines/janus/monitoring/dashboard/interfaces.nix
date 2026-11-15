@@ -24,7 +24,6 @@ ui.row {
       w = 12;
       h = 8;
       unit = "bps";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target (bps (total wan)) "wan")
         (ui.target (bps (total lan)) "lan trunk")

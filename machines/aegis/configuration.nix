@@ -26,6 +26,7 @@ in
     auto-timezone
     smartd
     desktop
+    earwig
     librewolf
     bootvine
     niri

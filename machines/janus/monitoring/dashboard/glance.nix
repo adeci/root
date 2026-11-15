@@ -106,7 +106,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "bps";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target (bps (received wan)) "download")
         (ui.target (bps (transmitted wan)) "upload")
@@ -121,7 +120,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "bps";
-      threshold = ui.thresholds.neutral;
       targets = queries.vlanTargets (vlan: bps (queries.total vlan.interface));
       overrides = queries.vlanColours;
     })
@@ -130,7 +128,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "ms";
-      threshold = ui.thresholds.latencyMs;
       targets = [
         (ui.target (internetLatency "0.50") "p50")
         (ui.target (internetLatency "0.90") "p90")

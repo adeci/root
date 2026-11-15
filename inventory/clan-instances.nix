@@ -4,20 +4,6 @@
   tailnet,
   ...
 }@inventory:
-let
-  minimalJournal = {
-    journal = {
-      mode = "explicit";
-      include = [
-        "vector"
-        "sshd"
-        "tailscaled"
-        "tailscaled-autoconnect"
-        "tailscaled-set"
-      ];
-    };
-  };
-in
 {
   atuin = {
     module = {
@@ -57,17 +43,15 @@ in
         agent = {
           tags = {
             adeci-net = { };
-            portable.settings.alwaysOn = false;
+            portable.settings = {
+              alwaysOn = false;
+              # Battery health, on Linux and macOS.
+              extraCollectors = [ "powersupplyclass" ];
+            };
           };
           machines = {
-            aegis.settings = minimalJournal;
-            atropos.settings = minimalJournal;
-            clotho.settings = minimalJournal;
-            kasha.settings = minimalJournal;
-            lachesis.settings = minimalJournal;
-            modus.settings = minimalJournal;
-            praxis.settings = minimalJournal;
-            proteus.settings = minimalJournal;
+            # A VM: its disk is QEMU's, with no SMART data.
+            conduit.settings.smart.enable = false;
 
             janus.settings = import ../machines/janus/monitoring inventory;
 
@@ -79,10 +63,11 @@ in
           agentDomain = tailnet.domain;
           grafana = {
             enable = true;
-            homeDashboard = "network";
+            domain = "atlas.decio.us";
+            homeDashboard = "fleet";
           };
           retentionDays = 30;
-          loki.retentionHours = 168;
+          loki.retentionDays = 30;
           alertDelivery.ntfy = {
             enable = true;
             baseUrl = "http://127.0.0.1:${toString ntfyPort}";

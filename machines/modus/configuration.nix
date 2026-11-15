@@ -9,7 +9,6 @@
     inputs.nixos-hardware.nixosModules.framework-intel-core-ultra-series3
 
     self.users.alex.nixosModule
-    self.users.fmzakari.nixosModule
 
     base
     latest-kernel
@@ -22,6 +21,7 @@
     btrfs
     smartd
     desktop
+    earwig
     librewolf
     bootvine
     keyring-tpm
@@ -43,8 +43,6 @@
     command-lookup
     tailscale-travel
   ];
-
-  system.primaryUser = self.users.alex.username;
 
   gitSigning.key = "modus-tpm";
 

@@ -49,6 +49,10 @@ let
     vlans.mgmt.interface
   ];
 
+  # Requests LAN devices send on their own, dropped without a log line: NAT-PMP and PCP port mapping (5351),
+  # SSDP (1900), MikroTik neighbour discovery (5678) and IP Cloud (15252), Syncthing (21027) and Steam (27036) discovery.
+  chatterPorts = "{ 1900, 5351, 5678, 15252, 21027, 27036 }";
+
   chains = ''
     chain input {
       type filter hook input priority 0; policy drop;
@@ -69,7 +73,9 @@ let
 
       iifname ${adminInterfaces} tcp dport 22 counter name input_accept_ssh_admin accept
 
-      limit rate 6/minute burst 12 packets log prefix "janus-fw input-drop " level warn
+      fib daddr type { broadcast, multicast } counter name input_drop_default drop
+      udp dport ${chatterPorts} counter name input_drop_default drop
+      limit rate 6/minute burst 12 packets log prefix "janus-fw input-drop " level info
       counter name input_drop_default drop
     }
 
@@ -83,7 +89,9 @@ let
       iifname "tailscale0" oifname ${tailnetInterfaces} counter name forward_accept_tailscale_to_local accept
 
     ${zoneJumps}
-      limit rate 6/minute burst 12 packets log prefix "janus-fw forward-drop " level warn
+      fib daddr type { broadcast, multicast } counter name forward_drop_default drop
+      udp dport ${chatterPorts} counter name forward_drop_default drop
+      limit rate 6/minute burst 12 packets log prefix "janus-fw forward-drop " level info
       counter name forward_drop_default drop
     }
 

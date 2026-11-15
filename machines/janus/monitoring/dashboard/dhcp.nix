@@ -37,7 +37,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "pps";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target (received "discover") "discover")
         (ui.target (received "request") "request")

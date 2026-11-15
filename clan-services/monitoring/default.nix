@@ -1,3 +1,15 @@
+let
+  textfileDirectory =
+    { lib, ... }:
+    {
+      options.monitoring.textfileDirectory = lib.mkOption {
+        type = lib.types.str;
+        default = "/var/lib/prometheus-node-exporter/textfile";
+        readOnly = true;
+        description = "Directory whose `*.prom` files node_exporter serves with the node metrics.";
+      };
+    };
+in
 {
   _class = "clan.service";
 
@@ -14,19 +26,12 @@
   perMachine.nixosModule =
     { lib, pkgs, ... }:
     {
-      options.monitoring = {
-        exporters = lib.mkOption {
-          type = lib.types.attrsOf lib.types.port;
-          readOnly = true;
-          description = "The ports of this machine's exporters by job, from its agent settings; the machine's modules make each exporter listen on its port.";
-        };
+      imports = [ textfileDirectory ];
 
-        textfileDirectory = lib.mkOption {
-          type = lib.types.str;
-          default = "/var/lib/prometheus-node-exporter/textfile";
-          readOnly = true;
-          description = "Directory whose `*.prom` files node_exporter serves with the node metrics.";
-        };
+      options.monitoring.exporters = lib.mkOption {
+        type = lib.types.attrsOf lib.types.port;
+        readOnly = true;
+        description = "The ports of this machine's exporters by job, from its agent settings; the machine's modules make each exporter listen on its port.";
       };
 
       # Agents push their journal with the password; the server's nginx checks it against the htpasswd.
@@ -49,4 +54,6 @@
         '';
       };
     };
+
+  perMachine.darwinModule = textfileDirectory;
 }

@@ -43,7 +43,6 @@ in
         w = 12;
         h = 8;
         unit = "percent";
-        threshold = ui.thresholds.neutral;
         targets = [ (perGpu "DCGM_FI_DEV_GPU_UTIL") ];
       })
       (ui.timeseries {
@@ -60,7 +59,6 @@ in
         w = 12;
         h = 8;
         unit = "celsius";
-        threshold = ui.thresholds.temperatureC;
         targets = [
           (perGpu "DCGM_FI_DEV_GPU_TEMP")
           (ui.target "DCGM_FI_DEV_MEMORY_TEMP{${gpus}}" "GPU {{gpu}} memory")
@@ -71,7 +69,6 @@ in
         w = 12;
         h = 8;
         unit = "watt";
-        threshold = ui.thresholds.neutral;
         targets = [ (perGpu "DCGM_FI_DEV_POWER_USAGE") ];
       })
       (ui.stat {

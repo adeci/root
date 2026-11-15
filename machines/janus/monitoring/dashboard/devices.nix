@@ -132,7 +132,6 @@ ui.row {
       w = 18;
       h = 6;
       unit = "pps";
-      threshold = ui.thresholds.goodWhenZero;
       targets = [
         (ui.target "sum(${errors}) or vector(0)" "errors")
         (ui.target "sum(${drops}) or vector(0)" "drops")

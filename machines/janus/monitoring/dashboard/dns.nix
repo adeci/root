@@ -27,7 +27,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "ms";
-      threshold = ui.thresholds.latencyMs;
       targets = [
         (ui.target "1000 * janus_dns_probe_latency_seconds" "google.com A via 127.0.0.1")
       ];
@@ -53,7 +52,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "ops";
-      threshold = ui.thresholds.neutral;
       targets = [ (ui.target (rate "unbound_queries_total") "queries") ];
     })
 
@@ -62,7 +60,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "percentunit";
-      threshold = ui.thresholds.neutral;
       targets = [ (ui.target cacheHitRatio "hits / total") ];
     })
     (ui.timeseries {
@@ -70,7 +67,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "ops";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target ''sum by (rcode) (rate(unbound_answer_rcodes_total{${unbound},rcode=~"NOERROR|NXDOMAIN|SERVFAIL"}[$__rate_interval])) or on() vector(0)'' "{{rcode}}")
       ];
@@ -80,7 +76,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "ops";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target ''sum by (type) (rate(unbound_query_types_total{${unbound},type=~"A|AAAA|PTR|SRV"}[$__rate_interval])) or on() vector(0)'' "{{type}}")
       ];
@@ -91,7 +86,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "ms";
-      threshold = ui.thresholds.latencyMs;
       targets = [
         (ui.target (latency "0.50") "p50")
         (ui.target (latency "0.95") "p95")
@@ -101,7 +95,6 @@ ui.row {
       title = "Request List Pressure";
       w = 8;
       h = 7;
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target "sum(unbound_request_list_current_user{${unbound}}) or vector(0)" "current user")
         (ui.target "sum(unbound_request_list_current_all{${unbound}}) or vector(0)" "current all")
@@ -114,7 +107,6 @@ ui.row {
       w = 8;
       h = 7;
       unit = "bytes";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target "sum by (cache) (unbound_memory_caches_bytes{${unbound}}) or on() vector(0)" "cache {{cache}}")
         (ui.target "sum by (module) (unbound_memory_modules_bytes{${unbound}}) or on() vector(0)" "module {{module}}")

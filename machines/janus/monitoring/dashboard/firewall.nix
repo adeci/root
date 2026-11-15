@@ -14,7 +14,6 @@ ui.row {
       w = 8;
       h = 8;
       unit = "pps";
-      threshold = ui.thresholds.goodWhenZero;
       targets = [
         (ui.target (packets ''counter="input_drop_default"'') "input default deny")
         (ui.target (packets ''counter="forward_drop_default"'') "forward default deny")
@@ -33,7 +32,6 @@ ui.row {
       w = 16;
       h = 8;
       unit = "pps";
-      threshold = ui.thresholds.neutral;
       targets = [
         (ui.target (packets ''counter="forward_accept_trusted"'') "trusted forward")
         (ui.target (packets ''counter=~"forward_accept_.+_to_wan"'') "internet-only wan")

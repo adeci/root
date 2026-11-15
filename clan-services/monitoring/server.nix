@@ -10,8 +10,8 @@
           description = ''
             Fully qualified hostname every agent uses to reach this server. Must
             resolve to this machine from every agent — typically the Tailscale
-            MagicDNS name. Also used as the Grafana `domain` and the nginx
-            `server_name`.
+            MagicDNS name. Also used as the nginx `server_name` agents push
+            their journal to.
           '';
           example = "monitor.example.ts.net";
         };
@@ -32,6 +32,16 @@
           description = "Enable Grafana dashboards on this server.";
         };
 
+        grafana.domain = lib.mkOption {
+          type = lib.types.str;
+          description = ''
+            Name Grafana is served under, at the root of its own nginx virtual
+            host. Grafana's links use `https://` when the machine turns on TLS
+            for that virtual host.
+          '';
+          example = "grafana.example.com";
+        };
+
         grafana.homeDashboard = lib.mkOption {
           type = lib.types.str;
           default = "fleet";
@@ -47,10 +57,10 @@
           description = "Prometheus TSDB retention (days).";
         };
 
-        loki.retentionHours = lib.mkOption {
+        loki.retentionDays = lib.mkOption {
           type = lib.types.int;
-          default = 168;
-          description = "Loki log retention (hours). 168h = 7 days.";
+          default = 7;
+          description = "Loki log retention (days).";
         };
 
         alertDelivery.quietHours = lib.mkOption {
@@ -119,6 +129,7 @@
           config,
           pkgs,
           lib,
+          self,
           ...
         }:
         let
@@ -148,9 +159,9 @@
             machineRules = lib.mapAttrs (_: agent: agent.settings.rules) agents;
           };
 
-          dashboards = lib.foldl' lib.attrsets.unionOfDisjoint (import ./dashboards) (
-            lib.mapAttrsToList (_: agent: agent.settings.dashboards) agents
-          );
+          dashboards = lib.foldl' lib.attrsets.unionOfDisjoint (import ./dashboards (
+            lib.mapAttrs (machine: _: machineLabels machine) agents
+          )) (lib.mapAttrsToList (_: agent: agent.settings.dashboards) agents);
           dashboardDirectory = pkgs.linkFarm "monitoring-grafana-dashboards" (
             lib.mapAttrsToList (name: dashboard: {
               name = "${name}.json";
@@ -162,7 +173,10 @@
               settings.grafana.homeDashboard
             else
               throw "@adeci/monitoring: grafana.homeDashboard '${settings.grafana.homeDashboard}' is none of the dashboards: ${lib.concatStringsSep ", " (lib.attrNames dashboards)}";
-          grafanaUrl = config.services.grafana.settings.server.root_url;
+          # The machine, not this service, turns on TLS for Grafana's virtual host.
+          grafanaVirtualHost = config.services.nginx.virtualHosts.${settings.grafana.domain};
+          grafanaTls = grafanaVirtualHost.forceSSL || grafanaVirtualHost.onlySSL || grafanaVirtualHost.addSSL;
+          grafanaUrl = "${if grafanaTls then "https" else "http"}://${settings.grafana.domain}/";
 
           # The server's own exporters carry its machine name, like every agent's.
           localScrape = job: port: {
@@ -175,18 +189,43 @@
             ];
           };
 
+          # What the fleet dashboard filters machines on, from the inventory.
+          machineLabels =
+            machine:
+            let
+              inherit (self.inventory.machines.${machine}) class tags;
+            in
+            {
+              os = if class == "darwin" then "macos" else "linux";
+              kind = if lib.elem "portable" tags then "laptop" else "server";
+            };
+
           # Every agent's exporters by job, reached over the tailnet under the machine name.
           agentJobs = lib.zipAttrs (
             lib.mapAttrsToList (
               machine: agent:
               lib.mapAttrs (_: port: {
                 targets = [ "${machine}.${settings.agentDomain}:${toString port}" ];
-                labels = agent.settings.extraLabels // {
-                  instance = machine;
-                };
-              }) ({ node = 9100; } // agent.settings.exporters)
+                labels =
+                  agent.settings.extraLabels
+                  // machineLabels machine
+                  // {
+                    instance = machine;
+                  };
+              }) (agentExporters machine agent)
             ) agents
           );
+
+          # node_exporter's and smartctl_exporter's default ports; SMART comes from NixOS agents only.
+          agentExporters =
+            machine: agent:
+            {
+              node = 9100;
+            }
+            // lib.optionalAttrs ((machineLabels machine).os == "linux" && agent.settings.smart.enable) {
+              smartctl = 9633;
+            }
+            // agent.settings.exporters;
         in
         {
           networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 80 ];
@@ -208,13 +247,21 @@
             };
           };
 
-          # Grafana's NixOS module requires an explicit secret_key since 26.05; a generated one keeps stored secrets stable across rebuilds.
           clan.core.vars.generators = lib.optionalAttrs settings.grafana.enable {
+            # Grafana's NixOS module requires an explicit secret_key since 26.05; a generated one keeps stored secrets stable across rebuilds.
             grafana-secret = {
               files.key = { };
               runtimeInputs = [ pkgs.openssl ];
               script = ''
                 openssl rand -hex 32 > "$out/key"
+              '';
+            };
+
+            grafana-admin = {
+              files.password = { };
+              runtimeInputs = [ pkgs.xkcdpass ];
+              script = ''
+                xkcdpass --numwords 6 --delimiter - > "$out/password"
               '';
             };
           };
@@ -238,6 +285,9 @@
             scrapeConfigs = [
               (localScrape "prometheus" ports.prometheus)
               (localScrape "loki" ports.loki)
+            ]
+            ++ lib.optionals ntfyDelivery.enable [
+              (localScrape "alertmanager" ports.alertmanager)
             ]
             ++ lib.mapAttrsToList (job: staticConfigs: {
               job_name = job;
@@ -315,7 +365,7 @@
               storage_config.filesystem.directory = "${config.services.loki.dataDir}/chunks";
 
               limits_config = {
-                retention_period = "${toString settings.loki.retentionHours}h";
+                retention_period = "${toString (settings.loki.retentionDays * 24)}h";
                 ingestion_rate_mb = 16;
                 ingestion_burst_size_mb = 32;
                 reject_old_samples = true;
@@ -364,17 +414,12 @@
               metrics.enabled = false;
               public_dashboards.enabled = false;
 
-              # Tailnet-only, so anonymous Editor is fine while the dashboards are designed; provisioned ones stay read-only (Save as, then promote to git).
-              "auth.anonymous" = {
-                enabled = true;
-                org_role = "Editor";
-                hide_version = true;
-              };
-              "auth".disable_login_form = true;
-
               security = {
                 disable_gravatar = true;
                 secret_key = "$__file{/run/credentials/grafana.service/grafana-secret-key}";
+                # Grafana takes this when it first creates its database; `grafana cli admin reset-admin-password` changes it later.
+                admin_password = "$__file{/run/credentials/grafana.service/grafana-admin-password}";
+                cookie_secure = grafanaTls;
               };
 
               users = {
@@ -386,9 +431,8 @@
               server = {
                 http_addr = "127.0.0.1";
                 http_port = ports.grafana;
-                domain = settings.host;
-                root_url = "http://${settings.host}/grafana/";
-                serve_from_sub_path = true;
+                inherit (settings.grafana) domain;
+                root_url = grafanaUrl;
               };
 
               snapshots = {
@@ -438,6 +482,7 @@
           systemd.services.grafana.serviceConfig = lib.mkIf settings.grafana.enable {
             LoadCredential = [
               "grafana-secret-key:${config.clan.core.vars.generators.grafana-secret.files.key.path}"
+              "grafana-admin-password:${config.clan.core.vars.generators.grafana-admin.files.password.path}"
             ];
           };
 
@@ -446,12 +491,12 @@
             recommendedProxySettings = true;
             serverTokens = false;
 
-            virtualHosts.${settings.host} = {
-              locations = {
-                # Agents push their journal here.
-                "/loki/" = {
+            virtualHosts = lib.mkMerge [
+              {
+                # Agents push their journal here and nowhere else: the rest of Loki's API reads and deletes logs.
+                ${settings.host}.locations."= /loki/loki/api/v1/push" = {
                   basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
-                  proxyPass = "http://127.0.0.1:${toString ports.loki}/";
+                  proxyPass = "http://127.0.0.1:${toString ports.loki}/loki/api/v1/push";
                   extraConfig = ''
                     client_max_body_size 32m;
                     proxy_read_timeout 120s;
@@ -459,18 +504,13 @@
                   '';
                 };
               }
-              // lib.optionalAttrs settings.grafana.enable {
-                # No trailing slash: with serve_from_sub_path Grafana needs the full /grafana/ path, or it redirect-loops re-adding the prefix.
-                "/grafana/" = {
+              (lib.mkIf settings.grafana.enable {
+                ${settings.grafana.domain}.locations."/" = {
                   proxyPass = "http://127.0.0.1:${toString ports.grafana}";
                   proxyWebsockets = true;
                 };
-
-                "= /" = {
-                  return = "302 /grafana/";
-                };
-              };
-            };
+              })
+            ];
           };
 
           systemd.services.nginx.serviceConfig.LoadCredential = [
