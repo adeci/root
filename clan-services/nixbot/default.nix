@@ -106,12 +106,31 @@
           };
 
           sharedEffectSecrets = lib.mkOption {
-            type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
+            type = lib.types.attrsOf (
+              lib.types.attrsOf (
+                lib.types.submodule {
+                  options = {
+                    description = lib.mkOption {
+                      type = lib.types.str;
+                      description = "What to enter for the field";
+                    };
+                    multiline = lib.mkOption {
+                      type = lib.types.bool;
+                      default = false;
+                      description = "Whether the value spans lines, as a PEM key does";
+                    };
+                  };
+                }
+              )
+            );
             default = { };
             example = {
               signing_identity = {
-                key = "Private key (PEM)";
-                certificate = "Certificate (PEM)";
+                key = {
+                  description = "Private key (PEM)";
+                  multiline = true;
+                };
+                passphrase.description = "Passphrase of the private key";
               };
             };
             description = "Secrets prompted once, for every repo that names them in `effectSecrets`: each field with what to enter for it. Effects read a field with `readSecretString <name> .<field>`";
@@ -141,7 +160,7 @@
 
             clan.core.vars.generators = {
               "${instanceName}-webhook-secret" = {
-                files.webhook-secret = { };
+                files.webhook-secret.restartUnits = [ "nixbot.service" ];
                 runtimeInputs = [ pkgs.openssl ];
                 script = # bash
                   ''
@@ -151,8 +170,8 @@
 
               "${instanceName}-github" = {
                 files = {
-                  app-secret-key = { };
-                  oauth-secret = { };
+                  app-secret-key.restartUnits = [ "nixbot.service" ];
+                  oauth-secret.restartUnits = [ "nixbot.service" ];
                 };
                 prompts = {
                   app-secret-key = {
@@ -177,9 +196,9 @@
             // lib.mapAttrs' (
               name: fields:
               lib.nameValuePair (sharedSecretGenerator name) {
-                prompts = lib.mapAttrs (_: description: {
-                  inherit description;
-                  type = "multiline-hidden";
+                prompts = lib.mapAttrs (_: field: {
+                  inherit (field) description;
+                  type = if field.multiline then "multiline-hidden" else "hidden";
                   persist = true;
                 }) fields;
               }
@@ -191,11 +210,11 @@
                 own = lib.filter (name: !isShared name) names;
               in
               lib.nameValuePair (effectSecretsGenerator repo) {
-                files.secrets = { };
+                files.secrets.restartUnits = [ "nixbot.service" ];
                 dependencies = map sharedSecretGenerator shared;
                 prompts = lib.genAttrs own (name: {
                   description = "${repo} effect secret `${name}`";
-                  type = "multiline-hidden";
+                  type = "hidden";
                   persist = true;
                 });
                 runtimeInputs = [ pkgs.jq ];

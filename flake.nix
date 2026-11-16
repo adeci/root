@@ -19,6 +19,10 @@
     clan-core.inputs.nix-darwin.follows = "nix-darwin";
     clan-core.inputs.systems.follows = "systems";
     clan-core.inputs.treefmt-nix.follows = "treefmt-nix";
+    clan-core.inputs.sops-nix.follows = "sops-nix";
+
+    sops-nix.url = "github:adeci/sops-nix/restart-after-link";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     terranix.url = "github:terranix/terranix";
     terranix.inputs.flake-parts.follows = "flake-parts";

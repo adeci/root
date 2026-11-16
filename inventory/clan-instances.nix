@@ -136,13 +136,26 @@
         };
         # Signs and notarizes Mac software with rcodesign, away from a Mac.
         sharedEffectSecrets.apple_developer_id = {
-          key = "Developer ID Application private key (PEM), the one its signing request was made from";
-          certificate = "Developer ID Application certificate (PEM: openssl x509 -inform der -in developerID_application.cer)";
-          notary_key = "App Store Connect API key as JSON (rcodesign encode-app-store-connect-api-key)";
+          key = {
+            description = "Developer ID Application private key (PEM), the one its signing request was made from";
+            multiline = true;
+          };
+          certificate = {
+            description = "Developer ID Application certificate (PEM: openssl x509 -inform der -in developerID_application.cer)";
+            multiline = true;
+          };
+          notary_key = {
+            description = "App Store Connect API key as JSON (rcodesign encode-app-store-connect-api-key)";
+            multiline = true;
+          };
         };
+        sharedEffectSecrets.github_release.token.description = "GitHub token that publishes releases";
         effectSecrets = {
           "github:fzakaria/rewindvm" = [ "cachix" ];
-          "github:adeci/earwig" = [ "apple_developer_id" ];
+          "github:adeci/earwig" = [
+            "apple_developer_id"
+            "github_release"
+          ];
         };
       };
     };
