@@ -38,9 +38,8 @@
     ssh-tpm-agent
     mullvad
     virt-manager
-    rbw
-    command-lookup
     tailscale-travel
+    sdwire
 
     ./modules/gpd-hacks
     ./modules/gpd-audio-dsp.nix
@@ -101,24 +100,20 @@
   boot.kernelParams = [ "pcie_ports=native" ];
 
   environment.systemPackages = [
-    # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.calibre
     pkgs.modem-manager-gui
     pkgs.linux-wifi-hotspot
-    self.packages.${pkgs.stdenv.hostPlatform.system}.sdwire-cli
     pkgs.ethtool
     pkgs.displaycal
     pkgs.android-tools
     inputs.mandate.packages.${pkgs.stdenv.hostPlatform.system}.mandate
   ];
 
-  services.udev.extraRules = ''
-    # SDWire USB SD card mux (usb device + block device for dd without sudo)
-    SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0316", MODE="0666"
-    SUBSYSTEM=="block", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0316", MODE="0666"
-
-    # RP2350/RP2040 BOOTSEL mode
-    SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666"
-    SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", MODE="0666"
-  '';
+  # RP2350/RP2040 boards in BOOTSEL mode, for whoever sits at the machine; numbered 70 for the reason given in the sdwire module.
+  services.udev.packages = [
+    (pkgs.writeTextDir "lib/udev/rules.d/70-rp2040.rules" ''
+      SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", TAG+="uaccess"
+      SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", TAG+="uaccess"
+    '')
+  ];
 }

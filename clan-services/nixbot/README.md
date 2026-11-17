@@ -12,7 +12,8 @@ as a CI server for GitHub repositories.
 ## Notes
 
 - The server rejects `nixbld` traffic to loopback, private ranges and the
-  tailnet, so fixed-output CI builds only reach DNS and the internet.
+  tailnet, so fixed-output CI builds on it only reach DNS and the internet.
+  Builds it hands to remote builders run there without this filter.
 - The GitHub App needs:
   - callback URL `https://<domain>/auth/github/callback`
   - an active webhook to `https://<domain>/webhooks/github`, with the secret

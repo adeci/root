@@ -20,11 +20,6 @@
             default = 8888;
             description = "Port for the atuin server";
           };
-          address = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Override address for clients to reach this server";
-          };
         };
       };
 
@@ -95,11 +90,7 @@
             serverNames = lib.attrNames roles.server.machines;
             serverName = lib.head serverNames;
             serverSettings = roles.server.machines.${serverName}.settings;
-            address =
-              if serverSettings.address != null then
-                serverSettings.address
-              else
-                "${serverName}.${config.clan.core.settings.domain}";
+            address = "${serverName}.${config.clan.core.settings.domain}";
           in
           {
             options.atuinSync.address = lib.mkOption {

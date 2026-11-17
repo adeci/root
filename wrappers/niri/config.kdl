@@ -11,7 +11,7 @@ input {
 }
 
 cursor {
-    xcursor-theme "phinger-cursors-dark"
+    xcursor-theme "@CURSOR_THEME@"
     hide-after-inactive-ms 1000
     // Needs cursor-shake-to-find.patch.
     shake-to-find
@@ -179,6 +179,11 @@ binds {
     Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
     Mod+Shift+P { power-off-monitors; }
+}
+
+debug {
+    // A notification's action asks for focus without a valid serial; honoring it lets the click bring the window up.
+    honor-xdg-activation-with-invalid-serial
 }
 
 include optional=true "machine.kdl"

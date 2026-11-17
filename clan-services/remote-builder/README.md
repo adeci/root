@@ -6,7 +6,7 @@ generated per client.
 ## Roles
 
 - `server` (NixOS or nix-darwin): creates the trusted `nix` user and authorizes
-  every client's public key, plus `externalKeys`, on it.
+  every client's public key on it.
   A nix-darwin server with the `linux-builder` feature can share its Linux VM
   through `linuxBuilder`: the VM trusts the same keys, and clients reach it as
   `<server>-linux-builder` by jumping through the server.

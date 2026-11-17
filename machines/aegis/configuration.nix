@@ -39,17 +39,10 @@ in
     chat-apps
     yubikey
     mullvad
-    rbw
-    command-lookup
   ];
 
   wrappers.niri.machineConfig = # kdl
     ''
-      output "LG Display 0x02D8 Unknown" {
-          mode "1366x768@60.019"
-          scale 1
-      }
-
       input {
           trackpoint {
               accel-speed -0.25
@@ -59,7 +52,6 @@ in
     '';
 
   environment.systemPackages = [
-    # pkgs.bitwarden-desktop # Electron 39 is EOL; re-enable once nixpkgs updates it
     pkgs.openscad
   ];
   wrappers.btop.package = btopPerfmon;

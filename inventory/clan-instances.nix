@@ -70,11 +70,7 @@
           machines = {
             sequoia.settings = {
               host = "sequoia.${tailnet.domain}";
-              grafana = {
-                enable = true;
-                domain = lan.dns.atlas.host;
-                homeDashboard = "fleet";
-              };
+              grafana.domain = lan.dns.atlas.host;
               retentionDays = 30;
               loki.retentionDays = 30;
               alertDelivery.ntfy.baseUrl = "http://127.0.0.1:${toString ntfyPort}";

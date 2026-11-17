@@ -17,7 +17,6 @@
 
       wrappers.kitty.enable = true;
       wrappers.niri.terminal = config.wrappers.kitty.wrapper;
-      fonts.packages = [ pkgs.nerd-fonts.caskaydia-mono ];
 
       environment.systemPackages = [
         pkgs.xwayland-satellite

@@ -20,7 +20,7 @@ in
       alwaysEnsure = true;
 
       override = final: prev: {
-        # nixpkgs has 0.59; 0.60 adds ghostel-status-next and the status indicator.
+        # nixpkgs has 0.59, which lacks ghostel-status-next and the status indicator.
         ghostel = prev.ghostel.overrideAttrs (
           finalAttrs: _: {
             version = "0.63.0";

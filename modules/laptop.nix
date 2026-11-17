@@ -12,15 +12,8 @@
         powerOnBoot = true;
       };
       services.blueman.enable = true;
-      services.libinput = {
-        enable = true;
-        touchpad = {
-          tapping = true;
-          disableWhileTyping = true;
-          naturalScrolling = true;
-          tappingDragLock = false;
-        };
-      };
+      # Installs libinput's udev rules, which niri's libinput reads too; the option's other settings are for X11.
+      services.libinput.enable = true;
       powerManagement.enable = true;
       services.upower.enable = true;
       services.power-profiles-daemon.enable = true;

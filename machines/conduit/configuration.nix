@@ -10,7 +10,7 @@
     public-edge
     ntfy-alerts
 
-    ./modules/zipline.nix
+    ./modules/zipline
     ./modules/ntfy.nix
   ];
 

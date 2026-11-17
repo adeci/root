@@ -72,16 +72,6 @@
               clients reach by jumping through this server over SSH.
             '';
           };
-
-          externalKeys = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
-            default = [ ];
-            description = ''
-              SSH public keys from external users (friends not in your clan)
-              to authorize on the nix build user.
-            '';
-            example = [ "ssh-ed25519 AAAA... friend" ];
-          };
         };
       };
 
@@ -109,8 +99,7 @@
                 }
               )
             ) (roles.client.machines or { })
-          )
-          ++ settings.externalKeys;
+          );
 
         shared =
           { config, ... }:

@@ -67,7 +67,6 @@
       ];
 
       wrappers.kitty.enable = true;
-      fonts.packages = [ pkgs.nerd-fonts.caskaydia-mono ];
 
       environment.systemPackages = [ pkgs.aerospace ];
 

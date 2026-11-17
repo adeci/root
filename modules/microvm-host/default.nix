@@ -155,6 +155,11 @@
 
       config = lib.mkMerge [
         {
+          assertions = lib.mapAttrsToList (name: _: {
+            assertion = lib.stringLength "vm-${name}" <= 15;
+            message = "microvmHost.vms.${name}: its tap interface vm-${name} is longer than the 15 characters Linux allows.";
+          }) host.vms;
+
           microvm.vms = lib.mapAttrs (name: vm: {
             autostart = false;
             restartIfChanged = false;

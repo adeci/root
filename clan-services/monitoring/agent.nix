@@ -70,12 +70,6 @@ in
           description = "Export the drives' SMART health (NixOS); off for a virtual machine, whose disks have none.";
         };
 
-        useSSL = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-          description = "Use HTTPS when pushing the journal to the monitoring server.";
-        };
-
         extraLabels = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = { };
@@ -254,7 +248,7 @@ in
               sinks.loki = {
                 type = "loki";
                 inputs = [ "labelled" ];
-                endpoint = "${if settings.useSSL then "https" else "http"}://${serverSettings.host}/loki";
+                endpoint = "http://${serverSettings.host}/loki";
                 encoding.codec = "text";
                 labels = settings.extraLabels // {
                   job = "systemd-journal";

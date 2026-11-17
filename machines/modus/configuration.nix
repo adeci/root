@@ -39,14 +39,15 @@
     ssh-tpm-agent
     mullvad
     virt-manager
-    rbw
-    command-lookup
     tailscale-travel
   ];
 
   gitSigning.key = "modus-tpm";
 
   tailscaleTravel.defaultExitNode = "sequoia";
+
+  # The firmware write-protects the memory's SPD chip, so spd5118 fails to restore itself on every resume.
+  boot.blacklistedKernelModules = [ "spd5118" ];
 
   wrappers.niri.machineConfig = # kdl
     ''

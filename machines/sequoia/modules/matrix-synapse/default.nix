@@ -64,8 +64,10 @@ in
   };
   clan.core.postgresql.databases.matrix-synapse.restore.stopOnRestore = [ "matrix-synapse" ];
 
+  # A server restored without its signing key would come back as a new identity.
   clan.core.state.matrix-synapse.folders = [
     config.services.matrix-synapse.settings.media_store_path
+    config.services.matrix-synapse.settings.signing_key_path
   ];
 
   services.matrix-synapse = {

@@ -12,5 +12,4 @@ hand.
 
 ## Notes
 
-- Clients reach each server at `<server>.<clan domain>` unless it sets
-  `address`.
+- Clients reach each server at `<server>.<clan domain>`.

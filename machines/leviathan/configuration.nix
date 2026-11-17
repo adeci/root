@@ -28,6 +28,7 @@
   system.primaryUser = self.users.alex.username;
   cloudflared.token = self.inventory.cloudflare.tunnelToken;
 
+  # leviathan overruns its RAM at peaks; a swapfile, unlike zram, moves the overflow out of memory.
   swapDevices = [
     {
       device = "/swapfile";

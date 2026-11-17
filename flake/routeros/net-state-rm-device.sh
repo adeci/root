@@ -6,7 +6,8 @@ fi
 all_state="$(tofu state list 2>/dev/null)"
 resources=()
 for device in "$@"; do
-  mapfile -t matched < <(echo "$all_state" | grep "$device")
+  # A device's resources are named "<device>" or "<device>_…"; a bare match would also take another device's resource that mentions it.
+  mapfile -t matched < <(echo "$all_state" | grep -E "^[^.]+\.${device}(_|\$)")
   resources+=("${matched[@]}")
 done
 if [[ ${#resources[@]} -eq 0 ]]; then

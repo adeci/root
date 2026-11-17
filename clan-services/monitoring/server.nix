@@ -39,12 +39,6 @@
           '';
         };
 
-        grafana.enable = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "Enable Grafana dashboards on this server.";
-        };
-
         grafana.domain = lib.mkOption {
           type = lib.types.str;
           description = ''
@@ -160,7 +154,6 @@
           agents = roles.agent.machines;
           ntfyDelivery = settings.alertDelivery.ntfy;
           main = !settings.backup;
-          grafanaEnabled = main && settings.grafana.enable;
           # The other servers, whose Alertmanagers form a cluster with this one's over the tailnet.
           peers = lib.attrNames (lib.removeAttrs roles.server.machines [ machineName ]);
           clustered = ntfyDelivery.enable && peers != [ ];
@@ -264,7 +257,7 @@
             ];
           };
 
-          clan.core.postgresql = lib.mkIf grafanaEnabled {
+          clan.core.postgresql = lib.mkIf main {
             enable = true;
             users.grafana = { };
             databases.grafana = {
@@ -273,7 +266,7 @@
             };
           };
 
-          clan.core.vars.generators = lib.optionalAttrs grafanaEnabled {
+          clan.core.vars.generators = lib.optionalAttrs main {
             # Grafana's NixOS module requires an explicit secret_key since 26.05; a generated one keeps stored secrets stable across rebuilds.
             grafana-secret = {
               files.key = { };
@@ -360,7 +353,7 @@
               inherit lib;
               inherit (ntfyDelivery) baseUrl topic;
               listenAddress = "127.0.0.1:${toString ports.ntfyBridge}";
-              clickUrl = if grafanaEnabled then "${grafanaUrl}d/${dashboards.fleet.uid}" else null;
+              clickUrl = if main then "${grafanaUrl}d/${dashboards.fleet.uid}" else null;
             };
           };
 
@@ -419,7 +412,7 @@
             };
           };
 
-          services.grafana = lib.mkIf grafanaEnabled {
+          services.grafana = lib.mkIf main {
             enable = true;
             # Grafana 13.2 ships these data sources as separate plugins.
             declarativePlugins = [
@@ -514,7 +507,7 @@
             };
           };
 
-          systemd.services.grafana.serviceConfig = lib.mkIf grafanaEnabled {
+          systemd.services.grafana.serviceConfig = lib.mkIf main {
             LoadCredential = [
               "grafana-secret-key:${config.clan.core.vars.generators.grafana-secret.files.key.path}"
               "grafana-admin-password:${config.clan.core.vars.generators.grafana-admin.files.password.path}"
@@ -539,12 +532,12 @@
                   '';
                 };
               }
-              (lib.mkIf grafanaEnabled {
+              {
                 ${settings.grafana.domain}.locations."/" = {
                   proxyPass = "http://127.0.0.1:${toString ports.grafana}";
                   proxyWebsockets = true;
                 };
-              })
+              }
             ];
           };
 

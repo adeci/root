@@ -46,7 +46,6 @@ in
 
   services.zipline = {
     enable = true;
-    package = self.packages.${pkgs.stdenv.hostPlatform.system}.zipline;
     database.createLocally = false;
     environmentFiles = [
       config.clan.core.vars.generators.zipline-secret.files.env.path
@@ -98,7 +97,7 @@ in
         "admin.json:${config.clan.core.vars.generators.zipline-admin.files."credentials.json".path}"
       ];
       ExecStartPost = [
-        "${lib.getExe config.services.zipline.package.bootstrapAdmin} %d/admin.json"
+        "${lib.getExe pkgs.nodejs_24} ${./bootstrap-admin.mjs} %d/admin.json"
       ];
       TimeoutStartSec = 120;
     };

@@ -78,7 +78,10 @@
           "root",
           "nixpkgs"
         ],
-        "sops-nix": "sops-nix",
+        "sops-nix": [
+          "root",
+          "sops-nix"
+        ],
         "systems": [
           "root",
           "systems"
@@ -411,11 +414,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794634844,
-        "narHash": "sha256-8HlfWrlXejz26+kK2XQuNvhO6wpQ3g+JOONywNf8d1E=",
+        "lastModified": 1794808658,
+        "narHash": "sha256-RbvK/ghvMuWWx/riUqtCZCxjZFji2n3onTo2Kg60T3s=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "ee05b5abb7c7f4af84a5ad5420f8a6e662774f2b",
+        "rev": "733d5b0fa81d5aad7c623dca8d8170ce411fba1d",
         "type": "github"
       },
       "original": {
@@ -774,6 +777,7 @@
         "nixpkgs": "nixpkgs_2",
         "pelican": "pelican",
         "sdwire-cli": "sdwire-cli",
+        "sops-nix": "sops-nix",
         "systems": "systems",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix",
@@ -874,20 +878,20 @@
       "inputs": {
         "nixpkgs": [
           "root",
-          "clan-core",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1792809984,
-        "narHash": "sha256-KV+CaZX7QS0hcdKxwGKehDb1jmUgx6lbkTPpaoIW5Nw=",
-        "owner": "Mic92",
+        "lastModified": 1794804655,
+        "narHash": "sha256-fXTyicqCp82wjv77WyvsnEAHHaeDly7OYnIW7Q+PmsQ=",
+        "owner": "adeci",
         "repo": "sops-nix",
-        "rev": "442449fa7b1fe6c692d0103ac9fc8f9e82931cf3",
+        "rev": "b6ba09a99e89bacd0f0d599e1cb3374d101dfa7b",
         "type": "github"
       },
       "original": {
-        "owner": "Mic92",
+        "owner": "adeci",
+        "ref": "restart-after-link",
         "repo": "sops-nix",
         "type": "github"
       }

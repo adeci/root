@@ -66,7 +66,10 @@ in
         shared
       ];
 
-      programs.zsh.enable = true;
+      programs.zsh = {
+        enable = true;
+        enableGlobalCompInit = false;
+      };
       environment.shells = lib.mkDefault [ config.wrappers.zsh.wrapper ];
     };
 }

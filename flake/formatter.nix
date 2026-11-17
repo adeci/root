@@ -6,7 +6,8 @@
     { pkgs, ... }:
     {
       treefmt = {
-        projectRootFile = ".git/config";
+        # A file every checkout has at its top and work/ lacks; .git/config is missing in a git worktree.
+        projectRootFile = ".gitignore";
         programs = {
           shellcheck.enable = true;
 

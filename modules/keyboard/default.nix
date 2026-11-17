@@ -19,8 +19,8 @@
       ...
     }:
     let
-      user = config.system.primaryUser;
-      home = config.system.primaryUserHome;
+      asUser = config.system.asPrimaryUser;
+      configDir = "${config.system.primaryUserHome}/.config/karabiner";
     in
     {
       imports = [
@@ -69,14 +69,12 @@
         ];
 
       # A copy, not a home.links link: Karabiner misses changes to a linked karabiner.json.
+      # Made as the user, so a missing ~/.config does not end up owned by root.
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           echo "installing karabiner config..."
-          configDir="${home}/.config/karabiner"
-          mkdir -p "$configDir"
-          cp "${./karabiner.json}" "$configDir/karabiner.json"
-          chmod 644 "$configDir/karabiner.json"
-          chown -R ${user}:staff "$configDir"
+          ${asUser} /bin/mkdir -p ${lib.escapeShellArg configDir}
+          ${asUser} /usr/bin/install -m 644 ${./karabiner.json} ${lib.escapeShellArg "${configDir}/karabiner.json"}
         '';
     };
 }

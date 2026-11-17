@@ -10,9 +10,6 @@
     let
       user = config.system.primaryUser;
       socket = "/run/user/${toString config.users.users.${user}.uid}/ssh-tpm-agent.sock";
-      ssh-tpm-agent = pkgs.ssh-tpm-agent.overrideAttrs {
-        doCheck = false; # keyring tests need kernel keyring unavailable in sandbox
-      };
     in
     {
       imports = [
@@ -29,7 +26,7 @@
       users.users.${user}.extraGroups = [ config.security.tpm2.tssGroup ];
 
       environment.systemPackages = [
-        ssh-tpm-agent
+        pkgs.ssh-tpm-agent
         pkgs.keyutils
       ];
 
@@ -40,7 +37,7 @@
           Requires = "ssh-tpm-agent.socket";
         };
         serviceConfig = {
-          ExecStart = "${ssh-tpm-agent}/bin/ssh-tpm-agent";
+          ExecStart = "${pkgs.ssh-tpm-agent}/bin/ssh-tpm-agent";
           PassEnvironment = "SSH_AGENT_PID";
           SuccessExitStatus = 2;
           Type = "simple";

@@ -13,8 +13,7 @@ with every client logged in to one shared account.
 
 ## Notes
 
-- Clients reach the server at `<server>.<clan domain>` unless it sets
-  `address`. It opens no firewall port, so clients must reach it over an
-  interface the firewall already admits.
+- Clients reach the server at `<server>.<clan domain>`. It opens no firewall
+  port, so clients must reach it over an interface the firewall already admits.
 - The account's username, password and key (`atuin key` on a logged-in
   machine) are prompted once and shared by all clients.

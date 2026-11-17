@@ -39,6 +39,12 @@ in
     description = "Terminal for the terminal binds and kitty-here, which expect kitty's binary name, `-d` flag and app id.";
   };
 
+  options.cursorTheme = lib.mkOption {
+    type = lib.types.str;
+    default = "default";
+    description = "Xcursor theme niri draws and hands to the programs it starts; \"default\" is niri's own.";
+  };
+
   config = {
     package = pkgs.niri.overrideAttrs (old: {
       patches = (old.patches or [ ]) ++ [
@@ -47,7 +53,9 @@ in
         ./patches/cursor-shake-to-find.patch
       ];
     });
-    "config.kdl".content = builtins.readFile ./config.kdl;
+    "config.kdl".content = builtins.replaceStrings [ "@CURSOR_THEME@" ] [ config.cursorTheme ] (
+      builtins.readFile ./config.kdl
+    );
     constructFiles.machineConfig = lib.mkIf (config.machineConfig != "") {
       relPath = "machine.kdl";
       content = config.machineConfig;

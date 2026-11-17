@@ -78,6 +78,7 @@
       };
 
       fonts.packages = [
+        # kitty and Emacs name this font in their configs.
         pkgs.nerd-fonts.caskaydia-mono
         pkgs.noto-fonts-color-emoji
       ];
@@ -90,6 +91,8 @@
       # Servers keep clan's networkd default.
       networking.networkmanager.enable = true;
       networking.useNetworkd = false;
+      # facter turns DHCP on for every interface, which starts dhcpcd beside NetworkManager's own client.
+      hardware.facter.detected.dhcp.enable = false;
 
       services.gnome.gnome-keyring.enable = true;
       # Apps store secrets in the login keyring, never in one they create themselves.
@@ -107,6 +110,8 @@
         GTK_THEME = gtk;
         QT_QPA_PLATFORMTHEME = "gtk3";
       };
+      # niri takes the theme from its own config, not from XCURSOR_THEME.
+      wrappers.niri.cursorTheme = cursor;
 
       programs.dconf = {
         enable = lib.mkDefault true;

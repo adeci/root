@@ -21,16 +21,6 @@
             default = 5000;
             description = "Port for the harmonia cache server";
           };
-          address = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Override address for clients to reach this server";
-          };
-          priority = lib.mkOption {
-            type = lib.types.int;
-            default = 50;
-            description = "Nix substituter priority advertised to clients";
-          };
         };
       };
 
@@ -91,23 +81,8 @@
   roles.client = {
     description = "Configures nix to use harmonia cache servers as substituters";
 
-    interface =
-      { lib, ... }:
-      {
-        options.priority = lib.mkOption {
-          type = lib.types.nullOr lib.types.int;
-          default = null;
-          description = "Override substituter priority (defaults to server's priority)";
-        };
-      };
-
     perInstance =
-      {
-        instanceName,
-        roles,
-        settings,
-        ...
-      }:
+      { instanceName, roles, ... }:
       let
         client =
           { config, lib, ... }:
@@ -123,15 +98,13 @@
               }
             ];
 
+            # Priority 50 ranks these after cache.nixos.org, which has 40.
             nix.settings.substituters = map (
               serverName:
               let
-                serverSettings = roles.server.machines.${serverName}.settings;
-                address =
-                  if serverSettings.address != null then serverSettings.address else "${serverName}.${domain}";
-                priority = if settings.priority != null then settings.priority else serverSettings.priority;
+                inherit (roles.server.machines.${serverName}.settings) port;
               in
-              "http://${address}:${toString serverSettings.port}?priority=${toString priority}"
+              "http://${serverName}.${domain}:${toString port}?priority=50"
             ) serverNames;
 
             nix.settings.trusted-public-keys = map (

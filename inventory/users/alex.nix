@@ -22,6 +22,7 @@
     "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAJa5JNj1B7grD4B3gr132AmGLCg1IxpnQPq5VbLHABEJiBj+vIDH79LYaHRn/K4LM3CN1g2/jQwmtkHutUOMzM= icarus-se"
 
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEhgjkz1FKcpufSwoe8fwefLiBijonH8djVddlLjt+Li fold"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKRfwTyCYZLf5ituQAYc7VqTMZ96Hz5X2fBDkOAtk21Y fold-herdr"
 
   ];
   git = {

@@ -14,7 +14,6 @@ let
     "prusa-slicer"
     "vencord"
     "vesktop"
-    "zipline"
   ];
 in
 {

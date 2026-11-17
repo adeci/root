@@ -16,10 +16,7 @@ in
 
   services.tailscale = {
     extraUpFlags = [ advertiseRoutes ];
-    extraSetFlags = [
-      "--accept-routes=false"
-      advertiseRoutes
-    ];
+    extraSetFlags = [ advertiseRoutes ];
     useRoutingFeatures = "server";
   };
 }

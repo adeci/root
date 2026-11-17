@@ -37,6 +37,8 @@ let
         llm-agents.grok-bot
         llm-agents.openspec
         llm-agents.workmux
+        # The Herdr phone app talks to this runtime (`hc`), not to the herdr TUI.
+        llm-agents.herdr-core
       ];
 
       home.links = {

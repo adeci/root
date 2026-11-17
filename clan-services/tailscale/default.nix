@@ -14,11 +14,6 @@
       { lib, ... }:
       {
         options = {
-          auth-key-generator = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Clan vars generator containing the Tailscale auth key. Defaults to tailscale-<instance>.";
-          };
           flags = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [ ];
@@ -31,11 +26,7 @@
     perInstance =
       { instanceName, settings, ... }:
       let
-        generatorName =
-          if settings.auth-key-generator != null then
-            settings.auth-key-generator
-          else
-            "tailscale-${instanceName}";
+        generatorName = "tailscale-${instanceName}";
         shared =
           { pkgs, ... }:
           {
@@ -64,7 +55,8 @@
               enable = true;
               authKeyFile = config.clan.core.vars.generators.${generatorName}.files.auth_key.path;
               extraUpFlags = settings.flags;
-              extraSetFlags = lib.mkDefault ([ "--accept-routes=false" ] ++ settings.flags);
+              # First in the list, so a machine's own flags follow and win.
+              extraSetFlags = lib.mkBefore ([ "--accept-routes=false" ] ++ settings.flags);
             };
             # Stay active after the one-shot run, so a deploy that changes the flags restarts it and applies them.
             systemd.services.tailscaled-set = lib.mkIf (config.services.tailscale.extraSetFlags != [ ]) {

@@ -184,7 +184,7 @@ async function main() {
   // An initialized instance is dashboard-owned: never log in or reconcile credentials.
   if (!(await waitForSetup(client))) return;
   const admin = await credentialsFrom(file);
-  // The pinned Zipline 4.8.0 setup endpoint does not create a session.
+  // Zipline's setup endpoint does not create a session.
   const result = await client.request("POST", "/api/setup", admin);
   if (result.status !== 200)
     throw new BootstrapError("Initial Zipline setup failed.");

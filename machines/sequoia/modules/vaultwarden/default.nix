@@ -7,9 +7,7 @@
 }:
 let
   inherit (self.inventory.cloudflare.tunnels.sequoia.vault) host port;
-  stateDirectory =
-    if lib.versionOlder config.system.stateVersion "24.11" then "bitwarden_rs" else "vaultwarden";
-  dataDir = "/var/lib/${stateDirectory}";
+  dataDir = "/var/lib/vaultwarden";
   backupDir = "/var/backup/vaultwarden";
 
   backup = pkgs.writeShellApplication {
