@@ -190,6 +190,13 @@
           grafanaVirtualHost = config.services.nginx.virtualHosts.${settings.grafana.domain};
           grafanaTls = grafanaVirtualHost.forceSSL || grafanaVirtualHost.onlySSL || grafanaVirtualHost.addSSL;
           grafanaUrl = "${if grafanaTls then "https" else "http"}://${settings.grafana.domain}/";
+          # A backup has no Grafana: its notifications open the main server's, which that server's assertion keeps on HTTPS.
+          mainServer = lib.head (
+            lib.filter (server: !server.settings.backup) (lib.attrValues roles.server.machines)
+          );
+          fleetPage = "${
+            if main then grafanaUrl else "https://${mainServer.settings.grafana.domain}/"
+          }d/${dashboards.fleet.uid}";
 
           # The server's own exporters carry its machine name, like every agent's.
           localScrape = job: port: {
@@ -229,7 +236,7 @@
             ) agents
           );
 
-          # node_exporter's and smartctl_exporter's default ports; SMART comes from NixOS agents only.
+          # The default ports of node_exporter, smartctl_exporter and blackbox_exporter; SMART comes from NixOS agents only.
           agentExporters =
             machine: agent:
             {
@@ -238,23 +245,45 @@
             // lib.optionalAttrs ((machineLabels machine).os == "linux" && agent.settings.smart.enable) {
               smartctl = 9633;
             }
+            // lib.optionalAttrs (agent.settings.probes != { }) {
+              blackbox = 9115;
+            }
             // agent.settings.exporters;
+
+          # A probe is a scrape of its prober's blackbox_exporter; the __param labels tell it the address and the check.
+          probes = lib.concatLists (
+            lib.mapAttrsToList (
+              machine: agent:
+              lib.mapAttrsToList (name: probe: {
+                targets = [
+                  "${machine}.${settings.agentDomain}:${toString (agentExporters machine agent).blackbox}"
+                ];
+                labels = {
+                  inherit name;
+                  inherit (probe) instance;
+                  __param_target = probe.url;
+                  __param_module = if probe.redirect then "http_redirect" else "http_2xx";
+                };
+              }) agent.settings.probes
+            ) agents
+          );
         in
         {
+          assertions = [
+            {
+              assertion = main && clustered -> grafanaTls;
+              message = "@adeci/monitoring: a backup server's notifications link to Grafana over HTTPS, so ${machineName} must serve ${settings.grafana.domain} with TLS.";
+            }
+          ];
+
           networking.firewall.interfaces.tailscale0 = {
             allowedTCPPorts = lib.optional main 80 ++ lib.optional clustered ports.alertmanagerCluster;
             allowedUDPPorts = lib.optional clustered ports.alertmanagerCluster;
           };
 
-          # A backup's metrics are the main server's too: not worth keeping.
-          clan.core.state = lib.mkIf main {
-            monitoring.folders = [
-              "/var/lib/${config.services.prometheus.stateDir}"
-              config.services.loki.dataDir
-            ]
-            ++ lib.optionals ntfyDelivery.enable [
-              "/var/lib/alertmanager"
-            ];
+          # The silences, which a backup server only copies; metrics and logs refill as the machines report.
+          clan.core.state = lib.mkIf (main && ntfyDelivery.enable) {
+            monitoring.folders = [ "/var/lib/alertmanager" ];
           };
 
           clan.core.postgresql = lib.mkIf main {
@@ -311,7 +340,14 @@
             ++ lib.mapAttrsToList (job: staticConfigs: {
               job_name = job;
               static_configs = staticConfigs;
-            }) agentJobs;
+            }) agentJobs
+            ++ lib.optional (probes != [ ]) {
+              job_name = "probe";
+              metrics_path = "/probe";
+              # Every scrape is a request to the name, and each server scrapes.
+              scrape_interval = "1m";
+              static_configs = probes;
+            };
             ruleFiles = [
               (yaml.generate "fleet-rules.yml" rules.fleet)
               (yaml.generate "machine-rules.yml" rules.machines)
@@ -350,10 +386,9 @@
             enable = true;
             extraConfigFiles = [ ntfyCredentialsFile ];
             settings = import ./ntfy-bridge.nix {
-              inherit lib;
               inherit (ntfyDelivery) baseUrl topic;
               listenAddress = "127.0.0.1:${toString ports.ntfyBridge}";
-              clickUrl = if main then "${grafanaUrl}d/${dashboards.fleet.uid}" else null;
+              clickUrl = fleetPage;
             };
           };
 

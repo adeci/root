@@ -62,6 +62,12 @@ in
       ];
     }
     {
+      # A tunnel that is down takes its names with it: one alert, not one for each name.
+      source_matchers = [ ''alertname="TunnelDown"'' ];
+      target_matchers = [ ''alertname="PublicNameDown"'' ];
+      equal = [ "instance" ];
+    }
+    {
       source_matchers = [ ''severity="critical"'' ];
       target_matchers = [ ''severity="warning"'' ];
       equal = [

@@ -23,6 +23,10 @@ let
   # Read-only bind mounts such as the Nix store would repeat their filesystem's alerts.
   writable = "on (instance, mountpoint) node_filesystem_readonly == 0";
 
+  # The agent asks each repository for its newest snapshot every hour.
+  snapshotAge = "time() - restic_snapshot_timestamp_seconds";
+  staleBackup = "The newest snapshot in its {{ $labels.backup }} repository is {{ $value | humanizeDuration }} old; see `systemctl status restic-backups-{{ $labels.backup }}` on {{ $labels.instance }}.";
+
   alwaysOnRecords = map (instance: {
     record = "instance:always_on";
     expr = "vector(1)";
@@ -62,6 +66,28 @@ let
       annotations = {
         summary = "{{ $labels.instance }} is down";
         description = "The server hasn't reached node_exporter on {{ $labels.instance }} for 5 minutes.";
+      };
+    }
+    {
+      alert = "PublicNameDown";
+      # Whatever serves it: a name's instance need not be an always-on machine.
+      expr = "probe_success == 0";
+      for = "5m";
+      labels.severity = "critical";
+      annotations = {
+        summary = "{{ $labels.name }} does not answer";
+        description = "Requests to {{ $labels.name }}, which {{ $labels.instance }} serves, have failed for 5 minutes; see Public names on the fleet page.";
+      };
+    }
+    {
+      alert = "TunnelDown";
+      # No connection to Cloudflare, or no cloudflared to make one.
+      expr = onlyAlwaysOn ''cloudflared_tunnel_ha_connections == 0 or up{job="cloudflared"} == 0'';
+      for = "5m";
+      labels.severity = "critical";
+      annotations = {
+        summary = "The Cloudflare tunnel of {{ $labels.instance }} is down";
+        description = "cloudflared on {{ $labels.instance }} has no connection to Cloudflare, so the public names it serves don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
       };
     }
     {
@@ -182,15 +208,20 @@ let
     }
     {
       alert = "BackupStale";
-      expr = onlyAlwaysOn ''
-        time() - node_systemd_timer_last_trigger_seconds{name=~"(restic-backups|borgbackup-job)-.+\\.timer"} > 36 * 3600
-        and node_systemd_timer_last_trigger_seconds > 0
-      '';
-      for = "30m";
+      expr = onlyAlwaysOn "${snapshotAge} > 36 * 3600";
       labels.severity = "warning";
       annotations = {
-        summary = "Backups on {{ $labels.instance }} are stale";
-        description = "{{ $labels.name }} last fired {{ $value | humanizeDuration }} ago.";
+        summary = "The newest backup of {{ $labels.instance }} is over a day and a half old";
+        description = staleBackup;
+      };
+    }
+    {
+      alert = "BackupStale";
+      expr = onlyAlwaysOn "${snapshotAge} > 72 * 3600";
+      labels.severity = "critical";
+      annotations = {
+        summary = "The newest backup of {{ $labels.instance }} is over three days old";
+        description = staleBackup;
       };
     }
     {
@@ -201,6 +232,16 @@ let
       annotations = {
         summary = "Certificate {{ $labels.certificate }} on {{ $labels.instance }} expires soon";
         description = "It expires in {{ $value | humanizeDuration }}, so its renewal is failing.";
+      };
+    }
+    {
+      alert = "TailscaleKeyExpiring";
+      expr = onlyAlwaysOn "tailscale_key_expiry_timestamp_seconds - time() < 14 * 86400";
+      for = "1h";
+      labels.severity = "warning";
+      annotations = {
+        summary = "The Tailscale key of {{ $labels.instance }} expires soon";
+        description = "It expires in {{ $value | humanizeDuration }}, and the machine then leaves the tailnet; sign it in again, or turn off key expiry for it in the admin console.";
       };
     }
     {
@@ -222,12 +263,13 @@ let
       labels.severity = "warning";
       annotations = {
         summary = "{{ $labels.device }} on {{ $labels.instance }} has errors";
-        description = "{{ $value | humanize }} errors/s; check the cable, transceiver and switch port.";
+        description = ''{{ $value | printf "%.2f" }} errors/s; check the cable, transceiver and switch port.'';
       };
     }
     {
       alert = "ExporterDown";
-      expr = onlyAlwaysOn ''up{job!="node"} == 0'';
+      # node_exporter has HostDown and cloudflared TunnelDown; a probe that can't be scraped is its prober's blackbox job down.
+      expr = onlyAlwaysOn ''up{job!~"node|cloudflared|probe"} == 0'';
       for = "15m";
       labels.severity = "warning";
       annotations = {
@@ -250,16 +292,16 @@ let
     }
     {
       alert = "TextfileMetricsStale";
-      # The disk map, what the system runs and the boot timing are written only at boot and deploy.
+      # The disk map, what the system runs and the boot timing are written only at boot and deploy; the slowest of the rest every hour.
       expr = onlyAlwaysOn ''
         node_textfile_scrape_error == 1
-        or time() - node_textfile_mtime_seconds{file!~".*/(filesystem-disks|system-version|boot-timing)[.]prom"} > 3600
+        or time() - node_textfile_mtime_seconds{file!~".*/(filesystem-disks|system-version|boot-timing)[.]prom"} > 2 * 3600
       '';
       for = "15m";
       labels.severity = "warning";
       annotations = {
         summary = "Metrics files on {{ $labels.instance }} are stale";
-        description = "A `*.prom` file in the textfile directory{{ with $labels.file }} ({{ . }}){{ end }} is unreadable or over an hour old.";
+        description = "A `*.prom` file in the textfile directory{{ with $labels.file }} ({{ . }}){{ end }} is unreadable or over two hours old.";
       };
     }
   ];

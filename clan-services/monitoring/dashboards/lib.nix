@@ -210,6 +210,82 @@ let
       ];
     };
 
+    # An HTTP status; 0 stands for no answer.
+    httpStatus = {
+      mode = "absolute";
+      steps = [
+        {
+          color = "red";
+          value = null;
+        }
+        {
+          color = "green";
+          value = 200;
+        }
+        {
+          color = "red";
+          value = 400;
+        }
+      ];
+    };
+
+    # The seconds a certificate has left; its renewal is due a month ahead.
+    certificateLifeSeconds = {
+      mode = "absolute";
+      steps = [
+        {
+          color = "red";
+          value = null;
+        }
+        {
+          color = "yellow";
+          value = 3 * 86400;
+        }
+        {
+          color = "green";
+          value = 14 * 86400;
+        }
+      ];
+    };
+
+    # cloudflared holds four connections to Cloudflare.
+    tunnelConnections = {
+      mode = "absolute";
+      steps = [
+        {
+          color = "red";
+          value = null;
+        }
+        {
+          color = "yellow";
+          value = 1;
+        }
+        {
+          color = "green";
+          value = 4;
+        }
+      ];
+    };
+
+    # A backup's age in seconds, at the two levels of BackupStale.
+    backupAgeSeconds = {
+      mode = "absolute";
+      steps = [
+        {
+          color = "green";
+          value = null;
+        }
+        {
+          color = "yellow";
+          value = 36 * 3600;
+        }
+        {
+          color = "red";
+          value = 72 * 3600;
+        }
+      ];
+    };
+
     # macOS's memory pressure level: 1 normal, 2 warning, 4 critical.
     memoryPressureLevel = {
       mode = "absolute";
@@ -409,6 +485,35 @@ let
       {
         type = "value";
         options."1".text = "new";
+      }
+    ];
+
+    # An HTTP status of 0: the request got no answer.
+    noAnswer = [
+      {
+        type = "value";
+        options."0".text = "none";
+      }
+    ];
+
+    # How many of BackupStale's two levels a backup's age has passed.
+    backupAge = [
+      {
+        type = "value";
+        options = {
+          "0" = {
+            color = "green";
+            text = "fresh";
+          };
+          "1" = {
+            color = "yellow";
+            text = "over 36 hours old";
+          };
+          "2" = {
+            color = "red";
+            text = "over 72 hours old";
+          };
+        };
       }
     ];
   };

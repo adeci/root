@@ -32,7 +32,27 @@
 
   monitoring =
     let
-      ntfyPort = cloudflare.tunnels.sequoia.ntfy.port;
+      # A public name's probe: its health path, under what serves the name.
+      probe = extra: entry: {
+        name = entry.host;
+        value = {
+          url = "https://${entry.host}${entry.healthPath}";
+        }
+        // extra;
+      };
+      probed = entries: builtins.filter (entry: entry ? healthPath) (builtins.attrValues entries);
+      tunnelProbes = builtins.concatLists (
+        builtins.attrValues (
+          builtins.mapAttrs (
+            machine: services: map (probe { instance = machine; }) (probed services)
+          ) cloudflare.tunnels
+        )
+      );
+      edgeProbes = map (record: probe { instance = record.edge; } record) (probed cloudflare.dns);
+      redirectProbes = map (probe {
+        instance = "cloudflare";
+        redirect = true;
+      }) (probed cloudflare.redirects);
     in
     {
       module = {
@@ -50,12 +70,18 @@
             };
           };
           machines = {
-            # A VM: its disk is QEMU's, with no SMART data.
-            conduit.settings.smart.enable = false;
+            # A VM: its disk is QEMU's, with no SMART data. From outside the house, it asks every public name for its health path.
+            conduit.settings = {
+              smart.enable = false;
+              probes = builtins.listToAttrs (tunnelProbes ++ edgeProbes ++ redirectProbes);
+            };
 
             janus.settings = import ../machines/janus/monitoring inventory;
 
             leviathan.settings = import ../machines/leviathan/monitoring.nix;
+
+            # cloudflared's own default port, here open to the tailnet.
+            sequoia.settings.exporters.cloudflared = 20241;
           };
         };
         server = {
@@ -73,14 +99,15 @@
               grafana.domain = lan.dns.atlas.host;
               retentionDays = 30;
               loki.retentionDays = 30;
-              alertDelivery.ntfy.baseUrl = "http://127.0.0.1:${toString ntfyPort}";
+              # By the public name, as phones reach it: when that way is broken the delivery fails, and conduit's goes out.
+              alertDelivery.ntfy.baseUrl = "https://${cloudflare.tunnels.sequoia.ntfy.host}";
             };
 
             # Outside the house: it still sees the fleet when home is offline, and alerts when sequoia cannot.
             conduit.settings = {
               backup = true;
               retentionDays = 3;
-              alertDelivery.ntfy.baseUrl = "http://[::1]:2586";
+              alertDelivery.ntfy.baseUrl = "https://${cloudflare.dns.ntfy_backup.host}";
             };
           };
         };

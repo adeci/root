@@ -42,7 +42,6 @@ let
 
   bridgeConfig = yaml.generate "alertmanager-ntfy.yml" (
     import ../ntfy-bridge.nix {
-      inherit lib;
       listenAddress = "127.0.0.1:8000";
       baseUrl = "http://127.0.0.1:8001";
       topic = "alerts";

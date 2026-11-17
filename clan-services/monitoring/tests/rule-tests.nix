@@ -25,6 +25,18 @@ let
       description = "The server hasn't reached node_exporter on server for 5 minutes.";
     };
   };
+
+  tunnelDown = {
+    exp_labels = {
+      instance = "server";
+      job = "cloudflared";
+      severity = "critical";
+    };
+    exp_annotations = {
+      summary = "The Cloudflare tunnel of server is down";
+      description = "cloudflared on server has no connection to Cloudflare, so the public names it serves don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
+    };
+  };
 in
 [
   {
@@ -61,6 +73,136 @@ in
       15
       25
       30
+    ];
+  }
+
+  {
+    name = "a public name that stops answering alerts after 5 minutes, whatever serves it; one failed request does not";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''probe_success{job="probe", instance="server", name="app.example.com"}'';
+        values = "1x5 0x20";
+      }
+      {
+        series = ''probe_success{job="probe", instance="cloudflare", name="go.example.com"}'';
+        values = "1x5 0x20";
+      }
+      {
+        series = ''probe_success{job="probe", instance="server", name="blip.example.com"}'';
+        values = "1x5 0 1x20";
+      }
+    ];
+    alert_rule_test =
+      let
+        down = name: instance: {
+          exp_labels = {
+            inherit name instance;
+            job = "probe";
+            severity = "critical";
+          };
+          exp_annotations = {
+            summary = "${name} does not answer";
+            description = "Requests to ${name}, which ${instance} serves, have failed for 5 minutes; see Public names on the fleet page.";
+          };
+        };
+      in
+      [
+        (noAlert "PublicNameDown" (minutes 10))
+        (firing "PublicNameDown" (minutes 12) [
+          (down "app.example.com" "server")
+          (down "go.example.com" "cloudflare")
+        ])
+      ];
+  }
+
+  {
+    name = "a prober that can't be scraped is one missing exporter, not one for each of its probes";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''up{instance="server", job="blackbox"}'';
+        values = "0x30";
+      }
+      {
+        series = ''up{instance="server", job="probe", name="app.example.com"}'';
+        values = "0x30";
+      }
+    ];
+    alert_rule_test = [
+      (firing "ExporterDown" (minutes 20) [
+        {
+          exp_labels = {
+            instance = "server";
+            job = "blackbox";
+            severity = "warning";
+          };
+          exp_annotations = {
+            summary = "blackbox metrics from server are missing";
+            description = "Scraping blackbox on server fails, so its dashboards and alerts are blind.";
+          };
+        }
+      ])
+    ];
+  }
+
+  {
+    name = "a tunnel is down after 5 minutes without a connection to Cloudflare";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''cloudflared_tunnel_ha_connections{instance="server", job="cloudflared"}'';
+        values = "4x5 0x20";
+      }
+      {
+        series = ''up{instance="server", job="cloudflared"}'';
+        values = "1x25";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "TunnelDown" (minutes 10))
+      (firing "TunnelDown" (minutes 12) [ tunnelDown ])
+    ];
+  }
+
+  {
+    name = "a tunnel whose cloudflared stops is down too, and is not a missing exporter";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''up{instance="server", job="cloudflared"}'';
+        values = "1x5 0x30";
+      }
+    ];
+    alert_rule_test = [
+      (firing "TunnelDown" (minutes 12) [ tunnelDown ])
+      (noAlert "ExporterDown" (minutes 30))
+    ];
+  }
+
+  {
+    name = "a Tailscale key warns two weeks before it expires";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''tailscale_key_expiry_timestamp_seconds{instance="server"}'';
+        values = "1296000x1600";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "TailscaleKeyExpiring" "23h")
+      (firing "TailscaleKeyExpiring" "26h" [
+        {
+          exp_labels = {
+            instance = "server";
+            severity = "warning";
+          };
+          exp_annotations = {
+            summary = "The Tailscale key of server expires soon";
+            description = "It expires in 13d 22h 0m 0s, and the machine then leaves the tailnet; sign it in again, or turn off key expiry for it in the admin console.";
+          };
+        }
+      ])
     ];
   }
 
@@ -186,34 +328,46 @@ in
   }
 
   {
-    name = "backups that have not run for a day and a half are stale";
-    interval = "5m";
+    name = "a server's backup warns once its newest snapshot is a day and a half old and is critical after three days";
+    interval = "1h";
     input_series = [
       {
-        series = ''node_systemd_timer_last_trigger_seconds{instance="server", name="restic-backups-state.timer"}'';
-        values = "3600x480";
+        series = ''restic_snapshot_timestamp_seconds{instance="server", backup="state"}'';
+        values = "0x80";
       }
       {
-        series = ''node_systemd_timer_last_trigger_seconds{instance="server", name="restic-backups-fresh.timer"}'';
-        values = "0+300x480";
+        series = ''restic_snapshot_timestamp_seconds{instance="server", backup="fresh"}'';
+        values = "0+3600x80";
+      }
+      {
+        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
+        values = "0x80";
       }
     ];
-    alert_rule_test = [
-      (noAlert "BackupStale" "37h")
-      (firing "BackupStale" "38h" [
-        {
+    alert_rule_test =
+      let
+        stale = severity: summary: age: {
           exp_labels = {
             instance = "server";
-            name = "restic-backups-state.timer";
-            severity = "warning";
+            backup = "state";
+            inherit severity;
           };
           exp_annotations = {
-            summary = "Backups on server are stale";
-            description = "restic-backups-state.timer last fired 1d 13h 0m 0s ago.";
+            inherit summary;
+            description = "The newest snapshot in its state repository is ${age} old; see `systemctl status restic-backups-state` on server.";
           };
-        }
-      ])
-    ];
+        };
+        warning = stale "warning" "The newest backup of server is over a day and a half old";
+        critical = stale "critical" "The newest backup of server is over three days old";
+      in
+      [
+        (noAlert "BackupStale" "36h")
+        (firing "BackupStale" "37h" [ (warning "1d 13h 0m 0s") ])
+        (firing "BackupStale" "73h" [
+          (warning "3d 1h 0m 0s")
+          (critical "3d 1h 0m 0s")
+        ])
+      ];
   }
 
   {

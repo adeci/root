@@ -17,6 +17,26 @@ let
     "${lib.getExe script} ${config.monitoring.textfileDirectory}/system-version.prom ${
       self.inputs.nixpkgs.rev or "unknown"
     } ${toString self.inputs.nixpkgs.lastModified}";
+
+  # The command that records when a machine's Tailscale key expires, for node_exporter.
+  recordTailscaleKeyExpiry =
+    {
+      config,
+      lib,
+      pkgs,
+    }:
+    let
+      script = pkgs.writeShellApplication {
+        name = "tailscale-key-expiry";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.jq
+          config.services.tailscale.package
+        ];
+        text = builtins.readFile ./tailscale-key-expiry.sh;
+      };
+    in
+    "${lib.getExe script} ${config.monitoring.textfileDirectory}/tailscale-key-expiry.prom";
 in
 {
   description = "Serves node metrics to the monitoring server and, on NixOS, ships the journal to it";
@@ -61,6 +81,41 @@ in
           '';
           example = {
             kea-dhcp4 = 9547;
+          };
+        };
+
+        probes = lib.mkOption {
+          type = lib.types.attrsOf (
+            lib.types.submodule {
+              options = {
+                url = lib.mkOption {
+                  type = lib.types.str;
+                  description = "The address to request.";
+                };
+                instance = lib.mkOption {
+                  type = lib.types.str;
+                  description = "What serves the name. The probe's metrics carry it as `instance`, so the name's alert is held back while that machine is down.";
+                };
+                redirect = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Whether the name is up when it answers with a redirect, which is then not followed.";
+                };
+              };
+            }
+          );
+          default = { };
+          description = ''
+            Addresses this machine requests over HTTP for the servers (NixOS),
+            by the public name each one checks. A name is up while its address
+            answers with a 2xx status. The machine runs blackbox_exporter,
+            which makes one request whenever a server scrapes a probe.
+          '';
+          example = {
+            "example.com" = {
+              url = "https://example.com/health";
+              instance = "web";
+            };
           };
         };
 
@@ -123,6 +178,7 @@ in
         }:
         let
           inherit (config.monitoring) textfileDirectory;
+          yaml = pkgs.formats.yaml { };
           lokiAuth = config.clan.core.vars.generators.loki-auth;
           # nixos-facter's finding: "none" on hardware, the hypervisor in a VM.
           virtualisation = config.hardware.facter.report.virtualisation or "none";
@@ -170,6 +226,18 @@ in
             ];
             text = builtins.readFile ./boot-timing.sh;
           };
+
+          resticSnapshots = pkgs.writeShellApplication {
+            name = "restic-snapshots";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.jq
+            ];
+            text = builtins.readFile ./restic-snapshots.sh;
+          };
+
+          # Every prober has IPv4; one without an IPv6 route would fail each name that has an IPv6 address.
+          httpProbe.preferred_ip_protocol = "ip4";
         in
         {
           monitoring.exporters = settings.exporters;
@@ -182,6 +250,32 @@ in
           ];
 
           services.prometheus.exporters.smartctl.enable = settings.smart.enable;
+
+          # It requests an address only when a server scrapes that probe.
+          services.prometheus.exporters.blackbox = lib.mkIf (settings.probes != { }) {
+            enable = true;
+            configFile = yaml.generate "blackbox.yml" {
+              modules = {
+                http_2xx = {
+                  prober = "http";
+                  http = httpProbe;
+                };
+                http_redirect = {
+                  prober = "http";
+                  http = httpProbe // {
+                    follow_redirects = false;
+                    valid_status_codes = [
+                      301
+                      302
+                      303
+                      307
+                      308
+                    ];
+                  };
+                };
+              };
+            };
+          };
 
           services.prometheus.exporters.node = {
             enable = true;
@@ -216,6 +310,7 @@ in
             config.services.prometheus.exporters.node.port
           ]
           ++ lib.optional settings.smart.enable config.services.prometheus.exporters.smartctl.port
+          ++ lib.optional (settings.probes != { }) config.services.prometheus.exporters.blackbox.port
           ++ lib.attrValues settings.exporters;
 
           services.vector = {
@@ -285,6 +380,24 @@ in
             serviceConfig = {
               Type = "oneshot";
               ExecStart = "${lib.getExe acmeCertificateExpiry} ${acmeCertificates} ${textfileDirectory}/acme-certificates.prom";
+            };
+          };
+
+          systemd.services.restic-snapshots = lib.mkIf (config.services.restic.backups != { }) {
+            description = "Export each backup's newest snapshot for node_exporter";
+            startAt = "hourly";
+            serviceConfig = {
+              Type = "oneshot";
+              ExecStart = "${lib.getExe resticSnapshots} ${textfileDirectory} ${lib.escapeShellArgs (lib.attrNames config.services.restic.backups)}";
+            };
+          };
+
+          systemd.services.tailscale-key-expiry = {
+            description = "Export when the Tailscale key expires for node_exporter";
+            startAt = "hourly";
+            serviceConfig = {
+              Type = "oneshot";
+              ExecStart = recordTailscaleKeyExpiry { inherit config lib pkgs; };
             };
           };
 
@@ -398,6 +511,15 @@ in
               # The page's temperature is as old as the last run.
               StartInterval = 60;
               StandardErrorPath = "/var/log/macos-health.log";
+            };
+          };
+
+          launchd.daemons.tailscale-key-expiry = {
+            command = recordTailscaleKeyExpiry { inherit config lib pkgs; };
+            serviceConfig = {
+              RunAtLoad = true;
+              StartInterval = 3600;
+              StandardErrorPath = "/var/log/tailscale-key-expiry.log";
             };
           };
 

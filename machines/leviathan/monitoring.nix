@@ -6,7 +6,11 @@ let
   perGpu = metric: ui.target "${metric}{${gpus}}" "GPU {{gpu}}";
 in
 {
-  exporters.dcgm = 9400;
+  exporters = {
+    dcgm = 9400;
+    # cloudflared's own default port, here open to the tailnet.
+    cloudflared = 20241;
+  };
 
   rules = [
     {

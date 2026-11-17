@@ -35,6 +35,7 @@ in
         "target"
         "edge"
         "ingressStream"
+        "healthPath"
       ]
       // {
         zone_id = config.data.cloudflare_zone.${safeName (zoneOf record.host)} "id";

@@ -1,5 +1,4 @@
 {
-  lib,
   listenAddress,
   baseUrl,
   topic,
@@ -33,8 +32,8 @@
         headers = {
           # ntfy replaces the notification that has the same sequence ID, so each alert keeps one.
           X-Sequence-ID = "{{ .Fingerprint }}";
-        }
-        // lib.optionalAttrs (clickUrl != null) { X-Click = clickUrl; };
+          X-Click = clickUrl;
+        };
       };
     };
   };

@@ -64,6 +64,9 @@
     lanzaboote.url = "github:nix-community/lanzaboote/v1.2.0";
     lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
 
+    bootvine.url = "git+https://codeberg.org/wvhulle/bootvine";
+    bootvine.inputs.nixpkgs.follows = "nixpkgs";
+
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
     emacs-overlay.inputs.nixpkgs-stable.follows = "nixpkgs";
@@ -77,9 +80,6 @@
     mandate.url = "github:adeci/mandate/next";
     mandate.inputs.nixpkgs.follows = "nixpkgs";
     mandate.inputs.treefmt-nix.follows = "treefmt-nix";
-
-    bootvine.url = "git+https://codeberg.org/wvhulle/bootvine";
-    bootvine.inputs.nixpkgs.follows = "nixpkgs";
 
     earwig.url = "github:adeci/earwig";
     earwig.inputs.nixpkgs.follows = "nixpkgs";

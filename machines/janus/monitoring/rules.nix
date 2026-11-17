@@ -16,10 +16,12 @@ let
 
   unitInactive = unit: ''node_systemd_unit_state{${router}, name="${unit}", state="active"} == 0'';
 
+  # Each direction carries its name as a label, or `or` would keep only the first of a port's two.
   cableErrors =
     direction:
     network.onPorts network.cabledPorts (
-      ports: "rate(mikrotik_interface_${direction}_error{${mikrotik}, ${ports}}[15m])"
+      ports:
+      ''label_replace(rate(mikrotik_interface_${direction}_error{${mikrotik}, ${ports}}[15m]), "direction", "${direction}", "", "")''
     );
 
   # mikrotik_monitor_rate is in Mb/s; SFP+ ports should link at 10 Gb/s, copper ports at 1 Gb/s.
@@ -119,9 +121,7 @@ in
     expr = ''
       sum by (instance, name, interface) (
         ${cableErrors "rx"}
-      )
-      + sum by (instance, name, interface) (
-        ${cableErrors "tx"}
+        or ${cableErrors "tx"}
       )
       > 0.01
     '';
@@ -129,7 +129,7 @@ in
     labels.severity = "warning";
     annotations = {
       summary = "{{ $labels.name }} {{ $labels.interface }} has link errors";
-      description = "{{ $value | humanize }} errors/s on a cabled port; check the cable, transceiver and the port at its other end.";
+      description = ''{{ $value | printf "%.2f" }} errors/s on a cabled port; check the cable, transceiver and the port at its other end.'';
     };
   }
   {

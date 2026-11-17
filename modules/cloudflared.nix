@@ -29,9 +29,11 @@
           wants = [ "network-online.target" ];
           wantedBy = [ "multi-user.target" ];
 
+          # The firewall opens the metrics port on the tailnet only.
           script = # bash
             ''
-              ${lib.getExe pkgs.cloudflared} tunnel --no-autoupdate run \
+              ${lib.getExe pkgs.cloudflared} tunnel --no-autoupdate \
+                --metrics 0.0.0.0:${toString config.monitoring.exporters.cloudflared} run \
                 --token "$(cat "$CREDENTIALS_DIRECTORY/token")"
             '';
 

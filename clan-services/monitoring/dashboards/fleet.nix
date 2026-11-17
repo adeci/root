@@ -3,7 +3,7 @@ machines:
 let
   ui = import ./lib.nix;
 
-  # Every panel matches the three pickers.
+  # Every panel matches the three pickers, but for the public names, which belong to no machine they list.
   selected = ''os=~"$os", kind=~"$kind", instance=~"$host"'';
   # The jobs keep out the Alloy-era series still stored under the same names.
   node = ''job="node", ${selected}'';
@@ -54,6 +54,7 @@ let
     memory = "#bb9af7";
     disk = "#73daca";
     battery = "#9ece6a";
+    response = "#7dcfff";
   };
 
   # A Linux machine's reading from its last boot, or the shutdown before it.
@@ -109,6 +110,11 @@ let
 
   # 1 up, 0 down.
   up = kind: ''max by (${machine}) (up{${node}, kind="${kind}"})'';
+  # A public name's reading from the last request to it.
+  publicName = metric: ''max by (name) (${metric}{job="probe"})'';
+  # A backup's reading: from its repository's newest snapshot, or from a series named after the backup.
+  backup = expr: "max by (instance, backup) (${expr})";
+  snapshotAge = "(time() - restic_snapshot_timestamp_seconds{${node}})";
   # Idle time against all CPU time, not against the step: a machine up for only part of a step would read near 100 %.
   cpuBusy =
     matchers:
@@ -520,6 +526,160 @@ ui.dashboard {
               decimals = 0;
             }
           ];
+        })
+      ];
+    })
+
+    (ui.row {
+      title = "Public names";
+      collapsed = false;
+      panels = [
+        (ui.mergedTable {
+          title = "Public names";
+          description = "Each name as the last request to it found it, one a minute. Peak is the slowest response in the picked time range, beside its course over that range. Tunnel counts the connections to Cloudflare its machine holds: four when healthy.";
+          w = 15;
+          # Eight names today, plus the title and the header.
+          h = 10;
+          joinBy = "name";
+          sortBy = [
+            {
+              displayName = "Name";
+              desc = false;
+            }
+          ];
+          renamedColumns = {
+            name = "Name";
+            instance = "Served by";
+          };
+          firstColumns = [
+            "name"
+            "instance"
+          ];
+          columns = [
+            {
+              name = "Up";
+              width = 50;
+              expr = ''max by (name, instance) (probe_success{job="probe"})'';
+              threshold = ui.thresholds.goodWhenOne;
+              valueMappings = ui.mappings.dot;
+            }
+            {
+              name = "Status";
+              width = 70;
+              expr = publicName "probe_http_status_code";
+              threshold = ui.thresholds.httpStatus;
+              valueMappings = ui.mappings.noAnswer;
+            }
+            {
+              name = "Response";
+              width = 90;
+              expr = publicName "probe_duration_seconds";
+              unit = "s";
+            }
+            {
+              name = "Peak";
+              expr = publicName "probe_duration_seconds";
+              unit = "s";
+              sparkline = colours.response;
+            }
+            {
+              name = "Tunnel";
+              width = 70;
+              # Only a name whose machine has a tunnel gets a value.
+              expr = ''max by (name) (0 * probe_success{job="probe"} + on (instance) group_left () max by (instance) (cloudflared_tunnel_ha_connections))'';
+              threshold = ui.thresholds.tunnelConnections;
+            }
+            {
+              name = "Certificate";
+              width = 100;
+              expr = ''max by (name) (probe_ssl_earliest_cert_expiry{job="probe"} - time())'';
+              unit = "s";
+              decimals = 0;
+              threshold = ui.thresholds.certificateLifeSeconds;
+            }
+          ];
+        })
+        (ui.stateTimeline {
+          title = "Answering";
+          w = 9;
+          h = 10;
+          targets = [ (ui.target (publicName "probe_success") "{{name}}") ];
+          threshold = ui.thresholds.goodWhenOne;
+          valueMappings = ui.mappings.upDown;
+        })
+      ];
+    })
+
+    (ui.row {
+      title = "Backups";
+      collapsed = false;
+      panels = [
+        (ui.mergedTable {
+          title = "Backups";
+          description = "Each repository's newest snapshot, as its machine found it when it last asked, which it does every hour.";
+          w = 15;
+          # Five backups today, plus the title and the header; a table this short needs one more for its last row.
+          h = 8;
+          sortBy = [
+            {
+              displayName = "Host";
+              desc = false;
+            }
+          ];
+          renamedColumns = {
+            instance = "Host";
+            backup = "Backup";
+          };
+          firstColumns = [
+            "instance"
+            "backup"
+          ];
+          columns = [
+            {
+              name = "Age";
+              expr = backup snapshotAge;
+              unit = "s";
+              decimals = 0;
+              threshold = ui.thresholds.backupAgeSeconds;
+            }
+            {
+              name = "Size";
+              expr = backup "restic_snapshot_size_bytes{${node}}";
+              unit = "bytes";
+            }
+            {
+              name = "Added";
+              expr = backup "restic_snapshot_added_bytes{${node}}";
+              unit = "bytes";
+            }
+            {
+              name = "Took";
+              expr = backup "restic_snapshot_duration_seconds{${node}}";
+              unit = "s";
+            }
+            {
+              name = "Last run";
+              # 1 unless the backup's unit is in the failed state.
+              expr = "1 - ${backup ''label_replace(node_systemd_unit_state{${node}, name=~"restic-backups-.+[.]service", state="failed"}, "backup", "$1", "name", "restic-backups-(.+)[.]service")''}";
+              threshold = ui.thresholds.goodWhenOne;
+              valueMappings = ui.mappings.passed;
+            }
+            {
+              name = "Asked";
+              expr = backup ''label_replace(1000 * node_textfile_mtime_seconds{${node}, file=~".*/restic-snapshot-.+[.]prom"}, "backup", "$1", "file", ".*/restic-snapshot-(.+)[.]prom")'';
+              unit = "dateTimeFromNow";
+            }
+          ];
+        })
+        (ui.stateTimeline {
+          title = "Fresh";
+          w = 9;
+          h = 8;
+          targets = [
+            (ui.target "max by (instance) ((${snapshotAge} > bool 36 * 3600) + (${snapshotAge} > bool 72 * 3600))" "{{instance}}")
+          ];
+          threshold = ui.thresholds.goodWhenZero;
+          valueMappings = ui.mappings.backupAge;
         })
       ];
     })

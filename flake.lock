@@ -214,11 +214,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794643713,
-        "narHash": "sha256-lbFHewsuljZUWMkNM/gIFlB7nJCQYnwmrWDn4OplktA=",
+        "lastModified": 1794905972,
+        "narHash": "sha256-D5+TyLwaFWvpqPIXcd2Jt5PMhnkvJmlGVSQimupnUXc=",
         "owner": "adeci",
         "repo": "earwig",
-        "rev": "afb34cdb97e73a4020108ffa4db8f136880529ee",
+        "rev": "9d13d1cc806bb14f97a08d61385c580534fc1e14",
         "type": "github"
       },
       "original": {

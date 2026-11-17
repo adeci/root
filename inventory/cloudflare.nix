@@ -31,11 +31,13 @@ in
 
   # Keys are clan machine names: each machine receives its tunnel's token as a clan var.
   # A tunnel sends each name to a local port; the service behind it reads both from its entry.
+  # A name with a `healthPath`, here or below, is asked for it from outside: see the monitoring instance.
   tunnels = {
     sequoia = {
       vault = {
         host = "vault.decio.us";
         port = 8222;
+        healthPath = "/alive";
         firewall.customRules = [
           {
             # Admin: ssh -L 8222:localhost:8222 sequoia, then http://localhost:8222/admin
@@ -49,23 +51,27 @@ in
       matrix = {
         host = "matrix.decio.us";
         port = 8448;
+        healthPath = "/_matrix/client/versions";
       };
 
       # Matrix's server name, which only points at the homeserver.
       matrixWellKnown = {
         host = "decio.us";
         port = 8748;
+        healthPath = "/.well-known/matrix/server";
       };
 
       ntfy = {
         host = "ntfy.decio.us";
         port = 2586;
+        healthPath = "/v1/health";
       };
     };
 
     leviathan.nixbot = {
       host = "nixbot.decio.us";
       port = 80;
+      healthPath = "/";
     };
   };
 
@@ -84,6 +90,7 @@ in
       type = "A";
       edge = conduitEdge;
       proxied = false;
+      healthPath = "/api/healthcheck";
     };
 
     ntfy_backup = {
@@ -91,6 +98,7 @@ in
       type = "A";
       edge = conduitEdge;
       proxied = false;
+      healthPath = "/v1/health";
     };
 
     mc_dj2 = minecraftA "dj2";
@@ -104,5 +112,6 @@ in
   redirects.macBootstrap = {
     host = "macbootstrap.decio.us";
     url = "https://raw.githubusercontent.com/adeci/root/main/packages/mac-install/bootstrap.sh";
+    healthPath = "/";
   };
 }
