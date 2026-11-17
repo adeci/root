@@ -12,20 +12,18 @@
           ;
       };
     in
-    {
-      apps = mkTofuWorkspace {
-        name = "network";
-        stateKey = "network.tfstate";
-        modules = [ ../../terranix/routeros ];
-        appPrefix = "net";
-        commands = [
-          "init"
-          "plan"
-          "apply"
-          "destroy"
-          "state"
-        ];
-        scripts.state-rm-device = ./net-state-rm-device.sh;
-      };
+    mkTofuWorkspace {
+      name = "network";
+      stateKey = "network.tfstate";
+      modules = [ ../../terranix/routeros ];
+      appPrefix = "net";
+      commands = [
+        "init"
+        "plan"
+        "apply"
+        "destroy"
+        "state"
+      ];
+      scripts.state-rm-device = ./net-state-rm-device.sh;
     };
 }

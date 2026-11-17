@@ -1,4 +1,4 @@
-# Builds a Terraform workspace and its tofu apps.
+# Builds a Terraform workspace and its tofu apps, and checks that its config still evaluates.
 {
   inputs,
   lib,
@@ -44,7 +44,13 @@ let
     };
   };
 in
-lib.mapAttrs' (command: text: lib.nameValuePair "${appPrefix}-${command}" (app command text)) (
-  lib.genAttrs commands (command: ''tofu ${command} "$@"'')
-  // lib.mapAttrs (_: builtins.readFile) scripts
-)
+{
+  apps =
+    lib.mapAttrs' (command: text: lib.nameValuePair "${appPrefix}-${command}" (app command text))
+      (
+        lib.genAttrs commands (command: ''tofu ${command} "$@"'')
+        // lib.mapAttrs (_: builtins.readFile) scripts
+      );
+
+  checks."tofu-${name}" = configFile;
+}
