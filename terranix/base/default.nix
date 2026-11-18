@@ -65,11 +65,6 @@ in
       plan.method = "method.aes_gcm.encryption_method";
     };
 
-    terraform.required_providers.external = {
-      source = "registry.opentofu.org/hashicorp/external";
-      version = "~> 2.0";
-    };
-
     data.external = lib.genAttrs config.clanSecrets (secret: {
       program = [
         (lib.getExe getClanSecret)

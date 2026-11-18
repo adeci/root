@@ -9,7 +9,7 @@ let
   inherit (import ../lib.nix { inherit config lib self'; }) safeName;
   inherit (self.inventory) ingress;
   inherit (self.inventory.cloudflare) dns redirects zones;
-  inherit (import ./lib.nix { inherit lib zones; }) recordName zoneOf;
+  inherit (import ./lib.nix { inherit lib zones; }) zoneOf;
 
   edgeAddress =
     edgeName:
@@ -27,10 +27,14 @@ let
     lib.findFirst (stream: stream.name == reference.name) null ingress.streams.${reference.edge};
 in
 {
-  resource.cloudflare_record = lib.mkMerge [
+  resource.cloudflare_dns_record = lib.mkMerge [
     (lib.mapAttrs (
       _: record:
-      removeAttrs record [
+      # Cloudflare's automatic TTL, which provider v4 assumed and v5 wants said.
+      {
+        ttl = 1;
+      }
+      // removeAttrs record [
         "host"
         "target"
         "edge"
@@ -39,7 +43,7 @@ in
       ]
       // {
         zone_id = config.data.cloudflare_zone.${safeName (zoneOf record.host)} "id";
-        name = recordName record.host;
+        name = record.host;
       }
       // lib.optionalAttrs (record ? target) {
         content = config.resource.${record.target.resource}.${record.target.name} record.target.field;
@@ -52,6 +56,10 @@ in
           port = (ingressStream record.ingressStream).listen;
         };
       }
+      # Cloudflare repeats an SRV record's priority at the top level, where provider v5 would otherwise plan to clear it.
+      // lib.optionalAttrs (record ? data.priority) {
+        inherit (record.data) priority;
+      }
     ) dns)
 
     # Placeholders for the redirects in rulesets.nix; 100:: is Cloudflare's originless address.
@@ -59,11 +67,18 @@ in
       _: redirect:
       lib.nameValuePair "redirect_${safeName redirect.host}" {
         zone_id = config.data.cloudflare_zone.${safeName (zoneOf redirect.host)} "id";
-        name = recordName redirect.host;
+        name = redirect.host;
         type = "AAAA";
         content = "100::";
         proxied = true;
+        ttl = 1;
       }
     ) redirects)
   ];
+
+  # Provider v4 called these cloudflare_record; v5 converts each one's state as it moves.
+  moved = map (name: {
+    from = "cloudflare_record.${name}";
+    to = "cloudflare_dns_record.${name}";
+  }) (lib.attrNames config.resource.cloudflare_dns_record);
 }

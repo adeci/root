@@ -34,14 +34,6 @@ in
 {
   inherit hostExpression zoneOf;
 
-  # The hostname's record name in its zone: "@" at the apex.
-  recordName =
-    hostname:
-    let
-      zone = zoneOf hostname;
-    in
-    if hostname == zone then "@" else lib.removeSuffix ".${zone}" hostname;
-
   # Requests to the hostname matching the rule's paths, methods and expression, whichever it gives.
   ruleExpression =
     hostname: rule:

@@ -15,6 +15,10 @@
     mkTofuWorkspace {
       name = "network";
       stateKey = "network.tfstate";
+      providers = {
+        random = pkgs.terraform-providers.hashicorp_random;
+        routeros = pkgs.terraform-providers.terraform-routeros_routeros;
+      };
       modules = [ ../../terranix/routeros ];
       appPrefix = "net";
       commands = [

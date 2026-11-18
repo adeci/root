@@ -96,11 +96,6 @@ let
   ziplineKeyName = "zipline_${safeName ziplineMachine}";
 in
 {
-  terraform.required_providers.b2 = {
-    source = "Backblaze/b2";
-    version = "~> 0.12";
-  };
-
   clanSecrets = [
     "b2-admin-key-id"
     "b2-admin-application-key"
@@ -111,7 +106,11 @@ in
     application_key = clanSecret "b2-admin-application-key";
   };
 
-  resource.b2_bucket.restic_backups = privateBucket resticBucket.name "restic-backups";
+  # B2 refuses to delete a bucket that still holds files, but only at apply; this stops any plan that would destroy or replace it.
+  resource.b2_bucket.restic_backups = privateBucket resticBucket.name "restic-backups" // {
+    lifecycle.prevent_destroy = true;
+  };
+
   resource.b2_bucket.zipline_shares = privateBucket ziplineBucket.name "zipline-shares";
 
   resource.b2_application_key =

@@ -12,11 +12,6 @@ let
   router = self.inventory.router.machine;
 in
 {
-  terraform.required_providers.tailscale = {
-    source = "tailscale/tailscale";
-    version = "~> 0.29";
-  };
-
   clanSecrets = [
     "tailscale-oauth-client-id"
     "tailscale-oauth-client-secret"

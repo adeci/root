@@ -16,16 +16,6 @@ in
     ./access-points.nix
   ];
 
-  terraform.required_providers.routeros = {
-    source = "terraform-routeros/routeros";
-    version = "~> 1.99";
-  };
-
-  terraform.required_providers.random = {
-    source = "hashicorp/random";
-    version = "~> 3.9";
-  };
-
   clanSecrets = [ admin.secret ];
 
   provider.routeros = lib.mapAttrsToList (name: appliance: {
@@ -51,7 +41,11 @@ in
     input = config.resource.random_password.routeros_exporter "result";
 
     provisioner.local-exec = {
-      command = "echo \"\${self.input}\" | ${setClanVar exporter.machine exporter}";
+      # Off the command line, which other local processes can read.
+      environment.EXPORTER_PASSWORD = "\${sensitive(self.input)}";
+      command = ''
+        printf '%s\n' "$EXPORTER_PASSWORD" | ${setClanVar exporter.machine exporter}
+      '';
     };
   };
 

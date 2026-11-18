@@ -8,7 +8,7 @@
 let
   inherit (import ../lib.nix { inherit config lib self'; }) clanSecret safeName setClanVar;
   inherit (self.inventory.cloudflare) tunnels tunnelToken zones;
-  inherit (import ./lib.nix { inherit lib zones; }) recordName zoneOf;
+  inherit (import ./lib.nix { inherit lib zones; }) zoneOf;
 
   tunnelId = machine: config.resource.cloudflare_zero_trust_tunnel_cloudflared.${machine} "id";
 in
@@ -24,7 +24,7 @@ in
   resource.cloudflare_zero_trust_tunnel_cloudflared = lib.mapAttrs (machine: _: {
     account_id = clanSecret "cloudflare-account-id";
     name = machine;
-    secret = config.resource.random_bytes."tunnel_secret_${machine}" "base64";
+    tunnel_secret = config.resource.random_bytes."tunnel_secret_${machine}" "base64";
     config_src = "cloudflare";
   }) tunnels;
 
@@ -33,7 +33,7 @@ in
     tunnel_id = tunnelId machine;
 
     # In the order of the names, so renaming a service leaves the rules where they are.
-    config.ingress_rule =
+    config.ingress =
       map (route: {
         hostname = route.host;
         service = "http://localhost:${toString route.port}";
@@ -41,6 +41,15 @@ in
       ++ [
         { service = "http_status:404"; }
       ];
+
+    # Cloudflare still returns the empty origin_request provider v4 always sent; leaving it out would plan a change to every tunnel.
+    config.origin_request = { };
+  }) tunnels;
+
+  # Provider v5 no longer gives the token on the tunnel itself.
+  data.cloudflare_zero_trust_tunnel_cloudflared_token = lib.mapAttrs (machine: _: {
+    account_id = clanSecret "cloudflare-account-id";
+    tunnel_id = tunnelId machine;
   }) tunnels;
 
   resource.terraform_data = lib.mapAttrs' (
@@ -51,7 +60,7 @@ in
 
       provisioner.local-exec = {
         # terraform_data echoes its input unredacted, so the token goes only to the provisioner.
-        environment.TUNNEL_TOKEN = "\${sensitive(cloudflare_zero_trust_tunnel_cloudflared.${machine}.tunnel_token)}";
+        environment.TUNNEL_TOKEN = "\${sensitive(data.cloudflare_zero_trust_tunnel_cloudflared_token.${machine}.token)}";
         command = ''
           printf '%s\n' "$TUNNEL_TOKEN" | ${setClanVar machine tunnelToken}
         '';
@@ -59,16 +68,17 @@ in
     }
   ) tunnels;
 
-  resource.cloudflare_record = lib.concatMapAttrs (
+  resource.cloudflare_dns_record = lib.concatMapAttrs (
     machine: routes:
     lib.mapAttrs' (
       _: route:
       lib.nameValuePair "tunnel_${safeName route.host}" {
         zone_id = config.data.cloudflare_zone.${safeName (zoneOf route.host)} "id";
-        name = recordName route.host;
+        name = route.host;
         type = "CNAME";
         content = "${tunnelId machine}.cfargotunnel.com";
         proxied = true;
+        ttl = 1;
       }
     ) routes
   ) tunnels;

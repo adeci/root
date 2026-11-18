@@ -21,11 +21,6 @@ let
     }) (ingress.streams.${edgeName} or [ ]);
 in
 {
-  terraform.required_providers.hcloud = {
-    source = "hetznercloud/hcloud";
-    version = "~> 1.65";
-  };
-
   clanSecrets = [ "hcloud-api-token" ];
 
   provider.hcloud = {

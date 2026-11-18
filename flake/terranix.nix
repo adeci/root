@@ -20,6 +20,13 @@
     mkTofuWorkspace {
       name = "cloud";
       stateKey = "tofu.tfstate";
+      providers = {
+        b2 = self'.packages.terraform-provider-b2;
+        cloudflare = pkgs.terraform-providers.cloudflare_cloudflare;
+        hcloud = pkgs.terraform-providers.hetznercloud_hcloud;
+        random = pkgs.terraform-providers.hashicorp_random;
+        tailscale = pkgs.terraform-providers.tailscale_tailscale;
+      };
       modules = [
         ../terranix/b2.nix
         ../terranix/cloudflare

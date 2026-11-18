@@ -12,3 +12,11 @@ export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
 export AWS_REQUEST_CHECKSUM_CALCULATION AWS_RESPONSE_CHECKSUM_VALIDATION
 
 install -m644 "$WORKSPACE_CONFIG" config.tf.json
+
+# tofu's lock file records the last init's provider versions and checksums, so init would fail once Nix moves a version, and keep the old build when Nix only rebuilds one.
+rm -f .terraform.lock.hcl
+
+# tofu won't run once the config's providers or backend have changed since the last init.
+if [[ $COMMAND != init ]]; then
+  tofu init -input=false >/dev/null
+fi
