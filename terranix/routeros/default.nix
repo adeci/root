@@ -3,6 +3,7 @@
   config,
   lib,
   self,
+  tunnelPorts,
   ...
 }:
 let
@@ -21,9 +22,10 @@ in
 
   clanSecrets = [ admin.secret ];
 
-  provider.routeros = lib.mapAttrsToList (name: appliance: {
+  # The net apps' tunnel through the router forwards each appliance's API to its port in tunnelPorts.
+  provider.routeros = lib.mapAttrsToList (name: _: {
     alias = name;
-    hosturl = "api://${appliance.api.address}:${toString appliance.api.port}";
+    hosturl = "api://127.0.0.1:${toString tunnelPorts.${name}}";
     username = admin.user;
     password = clanSecret admin.secret;
     insecure = true;

@@ -133,7 +133,9 @@ let
   );
 
   uniqueMacs = usedOnce "MAC" (
-    lib.mapAttrsToList (name: host: valueAt reservedAt.${name} (lib.toLower host.mac)) hosts
+    lib.mapAttrsToList (name: host: valueAt reservedAt.${name} (lib.toLower host.mac)) (
+      lib.filterAttrs (_: host: host.mac != null) hosts
+    )
   );
 
   uniqueClientIds = usedOnce "DHCP client id" (

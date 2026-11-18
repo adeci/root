@@ -156,7 +156,8 @@ in
           let
             # The same record for every kind of host, so readers needn't know where it was written.
             host = lan: {
-              inherit (lan) mac ip vlan;
+              inherit (lan) ip vlan;
+              mac = lan.mac or null;
               clientId = lan.clientId or null;
               publishDns = lan.publishDns or true;
             };
@@ -175,7 +176,7 @@ in
               ) machine.lan.extra
             )
           ) inventory.machines;
-        description = "Every reserved LAN address by host name, each as { mac, clientId, ip, vlan, publishDns }: the machines (and their extra NICs), vms, devices and appliances below.";
+        description = "Every reserved LAN address by host name, each as { mac, clientId, ip, vlan, publishDns }: the machines (and their extra NICs), vms, devices and appliances below. An appliance's mac is null, as its reservation goes by its clientId.";
       };
 
       cables = mkOption {
@@ -482,8 +483,19 @@ in
                   description = "Where it is installed.";
                 };
                 lan = mkOption {
-                  type = types.submodule reservation;
-                  description = "Its management address.";
+                  type = types.submodule {
+                    options = {
+                      ip = mkOption { type = ipv4Address; };
+                      vlan = mkOption { type = vlanName; };
+                      clientId = mkOption {
+                        type = types.str;
+                        readOnly = true;
+                        default = textClientId name;
+                        description = "The DHCP client id its first-boot script has the management port's DHCP client send: its name. The reservation matches it instead of a MAC, so a replacement unit gets the address with no edit.";
+                      };
+                    };
+                  };
+                  description = "Its management address, which janus reserves for its clientId.";
                 };
                 api = {
                   address = mkOption {

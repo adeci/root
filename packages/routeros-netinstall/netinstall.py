@@ -73,6 +73,15 @@ def routeros_string(value, label):
     return f'"{escaped}"'
 
 
+def routeros_hex(value, label):
+    try:
+        data = bytes.fromhex(value.replace(":", ""))
+    except ValueError:
+        raise SystemExit(f"ERROR: {label} {value} is not hex bytes.")
+    # RouterOS sends a value written 0x… as those bytes, unconverted.
+    return f"0x{data.hex()}"
+
+
 def read_admin_password(path):
     with open(path, encoding="utf-8", newline="") as file:
         password = file.read().removesuffix("\n")
@@ -82,13 +91,19 @@ def read_admin_password(path):
     return password
 
 
-def render_setup_script(admin_user, admin_password, dhcp_clients):
+def render_setup_script(admin_user, admin_password, management_port, client_id, fallback_port):
     user = routeros_string(admin_user, "Admin user")
     password = routeros_string(admin_password, "Admin password")
-    lines = [f"/user set {user} password={password}"]
-    lines += [
-        f"/ip dhcp-client add interface={interface} disabled=no" for interface in dhcp_clients
+    client_id_hex = routeros_hex(client_id, "Client id")
+    lines = [
+        f"/user set {user} password={password}",
+        f"/ip dhcp-client option add name=clientid_name code=61 value={client_id_hex}",
+        # The default list, hostname,clientid, with the name in place of the MAC-based id.
+        f"/ip dhcp-client add interface={management_port} dhcp-options=hostname,clientid_name disabled=no",
     ]
+    if fallback_port:
+        # A client id must be unique on its subnet (RFC 2132, 9.14), so this port keeps its MAC-based one.
+        lines.append(f"/ip dhcp-client add interface={fallback_port} disabled=no")
     return "".join(f"{line}\n" for line in lines)
 
 
@@ -109,7 +124,9 @@ def main():
     parser.add_argument(
         "--package", nargs=2, metavar=("NAME", "FILE"), action="append", required=True, dest="packages"
     )
-    parser.add_argument("--dhcp-client", action="append", required=True, dest="dhcp_clients")
+    parser.add_argument("--management-port", required=True)
+    parser.add_argument("--client-id", required=True)
+    parser.add_argument("--fallback-port")
     parser.add_argument("--admin-user", default="admin")
     parser.add_argument("--admin-password-file", required=True)
     args = parser.parse_args()
@@ -120,11 +137,13 @@ def main():
     installed = " + ".join(
         [f"RouterOS {args.version} ({args.arch})"] + [name for name in package_names if name != "routeros"]
     )
-    dhcp_ports = " and ".join(args.dhcp_clients)
-    plug_ports = " or ".join(args.dhcp_clients)
 
     setup_text = render_setup_script(
-        args.admin_user, read_admin_password(args.admin_password_file), args.dhcp_clients
+        args.admin_user,
+        read_admin_password(args.admin_password_file),
+        args.management_port,
+        args.client_id,
+        args.fallback_port,
     )
 
     print(f"RouterOS Netinstall — {args.device}, a {args.model} ({args.arch}, v{args.version})")
@@ -176,9 +195,11 @@ def main():
     print("  Device has been configured with:")
     print(f"    - {installed}")
     print(f"    - Password for {args.admin_user}")
-    print(f"    - DHCP client on {dhcp_ports}")
+    print(f"    - DHCP client on {args.management_port}, sending its name as client id {args.client_id}")
+    if args.fallback_port:
+        print(f"    - DHCP client on {args.fallback_port}")
     print("")
-    print(f"  Plug {plug_ports} into the management network, then apply its configuration.")
+    print(f"  Plug {args.management_port} into the management network, then apply its configuration.")
     print("")
 
 

@@ -7,6 +7,7 @@ let
   inherit (pkgs) lib;
   inherit (self.inventory) lan machines router;
   inherit (self.inventory.routeros) exporter;
+  sshKeys = import "${pkgs.path}/nixos/tests/ssh-keys.nix" pkgs;
 
   # Each cable into janus is a network of its own in the test.
   cables = {
@@ -45,6 +46,9 @@ let
     ip route add default via "$router"
     echo "nameserver $dns" > "/etc/netns/$(ip netns identify)/resolv.conf"
   '';
+
+  # Prints the address a host's DHCP client is given, leaving the host as it was.
+  udhcpcPrintScript = pkgs.writeShellScript "udhcpc-print" ''[ "$1" = bound ] && echo "$ip"'';
 in
 pkgs.testers.runNixOSTest {
   name = "janus-router";
@@ -70,6 +74,8 @@ pkgs.testers.runNixOSTest {
     clan.core.vars.generators.${exporter.generator}.script = ''touch "$out/${exporter.file}"'';
     # As base.nix runs it on every machine; the firewall decides who reaches it.
     services.openssh.enable = true;
+    # The key a trusted host forwards ports through janus with, as the network apps do.
+    users.users.root.openssh.authorizedKeys.keys = [ sshKeys.snakeOilPublicKey ];
     services.unbound = {
       enableRootTrustAnchor = false;
       settings.server.trust-anchor-file = "${rootZone}/trust-anchor";
@@ -134,6 +140,9 @@ pkgs.testers.runNixOSTest {
       pkgs.dnsutils
       pkgs.chrony
     ];
+    systemd.tmpfiles.rules = [
+      "C /root/.ssh/id_snakeoil 0600 root root - ${sshKeys.snakeOilPrivateKey}"
+    ];
   };
 
   testScript =
@@ -143,6 +152,7 @@ pkgs.testers.runNixOSTest {
         builtins.toJSON (
           builtins.toJSON {
             inherit lan machines router;
+            appliances = lib.attrNames self.inventory.appliances;
             tailnet = self.inventory.tailnet.addresses;
           }
         )
@@ -154,6 +164,10 @@ pkgs.testers.runNixOSTest {
       exporter_ports = ${builtins.toJSON (lib.attrValues nodes.janus.monitoring.exporters)}
       busybox = "${lib.getExe pkgs.busybox}"
       udhcpc_script = "${udhcpcScript}"
+      appliance_apis = ${
+        builtins.toJSON (lib.mapAttrs (_: appliance: appliance.api) self.inventory.appliances)
+      }
+      udhcpc_print_script = "${udhcpcPrintScript}"
     ''
     + builtins.readFile ./router.py;
 }

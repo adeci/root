@@ -9,9 +9,14 @@
   stateKey,
   providers,
   modules,
+  extraArgs ? { },
   appPrefix,
   commands,
   scripts ? { },
+  # { host, forwards }: the commands that reach the providers' endpoints do so through one ssh connection to host, each forward <local port>:<address>:<port> listening on 127.0.0.1.
+  tunnel ? null,
+  # <name> = <provider configuration>, such as routeros.nexus: apply-<name> applies only that configuration's resources, so the others' endpoints may be unreachable.
+  applyAlone ? { },
 }:
 let
   # Each provider's package by the name the config calls it; the base module's own is `external`, which reads clan secrets.
@@ -40,8 +45,32 @@ let
     extraArgs = {
       inherit (inputs) self;
       inherit clan-cli;
-    };
+    }
+    // extraArgs;
   };
+
+  # The tofu commands that reach the providers' endpoints.
+  reachesProviders = [
+    "plan"
+    "apply"
+    "destroy"
+  ];
+
+  # The addresses of the resources a provider configuration manages, for -target-file, which targets everything when empty.
+  targetFile =
+    provider:
+    let
+      addresses = lib.concatLists (
+        lib.mapAttrsToList (
+          type: resources:
+          lib.mapAttrsToList (resource: _: "${type}.${resource}") (
+            lib.filterAttrs (_: settings: settings.provider or null == provider) resources
+          )
+        ) configFile.config.resource
+      );
+    in
+    assert lib.assertMsg (addresses != [ ]) "the ${name} config has no resources of ${provider}";
+    pkgs.writeText "${name}-${provider}-resources" (lib.concatLines addresses);
 
   # Runs `text` in .terraform/<name>, with the config installed and the state bucket's credentials exported.
   app = command: text: {
@@ -60,13 +89,36 @@ let
       text = builtins.readFile ./tofu-workspace.sh + text;
     };
   };
+
+  # Runs its arguments while the tunnel is open.
+  tunnelProgram = pkgs.writeShellApplication {
+    name = "${appPrefix}-tunnel";
+    runtimeInputs = [ pkgs.openssh ];
+    runtimeEnv = {
+      TUNNEL_HOST = tunnel.host;
+      TUNNEL_FORWARDS = toString tunnel.forwards;
+    };
+    text = builtins.readFile ./tunnel.sh;
+  };
+
+  # tofu with `arguments`, inside the tunnel when the workspace has one.
+  throughTunnel =
+    arguments:
+    lib.optionalString (tunnel != null) "${lib.getExe tunnelProgram} " + ''tofu ${arguments} "$@"'';
 in
 {
   apps =
     lib.mapAttrs' (command: text: lib.nameValuePair "${appPrefix}-${command}" (app command text))
       (
-        lib.genAttrs commands (command: ''tofu ${command} "$@"'')
+        lib.genAttrs commands (
+          command:
+          if lib.elem command reachesProviders then throughTunnel command else ''tofu ${command} "$@"''
+        )
         // lib.mapAttrs (_: builtins.readFile) scripts
+        // lib.mapAttrs' (
+          alias: provider:
+          lib.nameValuePair "apply-${alias}" (throughTunnel "apply -target-file=${targetFile provider}")
+        ) applyAlone
       );
 
   # Built in the sandbox, where init has only the providers above; the result is the config once it validates against their schemas.

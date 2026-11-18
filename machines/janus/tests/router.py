@@ -105,9 +105,9 @@ def connect(host, address, port, accepted=True):
 
 def get_time(host, server, answered=True):
     """Checks that the host's NTP client gets the time from a server, or that the server does not answer it."""
-    # Polling every second, the client has the three answers it needs within a second, or gives up within two.
+    # Polling every second, the client needs three answers; one that comes late on a busy machine fails the try, so an expected success may take another.
     if answered:
-        clients.succeed(f"{netns(host)} chronyd -Q -t 10 'server {server} iburst minpoll 0'")
+        clients.wait_until_succeeds(f"{netns(host)} chronyd -Q -t 10 'server {server} iburst minpoll 0'", timeout=60)
     else:
         clients.fail(f"{netns(host)} chronyd -Q -t 3 'server {server} iburst minpoll 0'")
 
@@ -116,6 +116,12 @@ def listen(host, port):
     """Leaves a TCP listener running in the host's namespace."""
     clients.succeed(f"{netns(host)} nc -dlk {port} >&2 &")
     clients.wait_until_succeeds(f"{netns(host)} nc -z 127.0.0.1 {port}")
+
+
+def answer(host, port, reply):
+    """Leaves a TCP listener in the host's namespace that answers one connection with a line."""
+    clients.succeed(f"echo {reply} | {netns(host)} nc -N -l {port} >&2 &")
+    clients.wait_until_succeeds(f"{netns(host)} ss -Hltn 'sport = :{port}' | grep -q .")
 
 
 start_all()
@@ -147,6 +153,17 @@ with subtest("every host gets its reserved address, by MAC or client id, and oth
         address = lease(host)
         assert in_pool(vlan, address), f"{host} got {address}"
         pool_addresses[vlan] = address
+
+with subtest("an appliance's replacement, with a new MAC, gets its address by its name while the old lease is live"):
+    for name in inventory["appliances"]:
+        replacement = f"{name}-new"
+        plug_in(replacement, "mgmt" if name == mgmt_port_host else trunk(hosts[name]["vlan"]))
+        client_id = hosts[name]["clientId"].replace(":", "")
+        # The print script leaves the address with the appliance, so the segment never has it twice.
+        address = clients.succeed(
+            f"{netns(replacement)} {busybox} udhcpc -i {replacement} -n -q -s {udhcpc_print_script} -x 0x3d:{client_id}"
+        ).strip()
+        assert address == hosts[name]["ip"], f"{replacement} got {address}, not {name}'s {hosts[name]['ip']}"
 
 with subtest("each VLAN's resolver from DHCP answers lan.dns names, and internet names via the ISP, by UDP and TCP"):
     for vlan, host in pool_hosts.items():
@@ -210,6 +227,18 @@ with subtest("janus answers ssh on the admin VLANs only, and the router modules'
         # They listen on every address; only the firewall keeps them to the tailnet.
         janus.wait_for_open_port(port, gateway)
         connect(pool_hosts["trusted"], gateway, port, accepted=False)
+
+with subtest("a trusted host without an admin address reaches an appliance's API through ssh -L via janus, and not directly"):
+    host = pool_hosts["trusted"]
+    api = appliance_apis[mgmt_port_host]
+    answer(mgmt_port_host, api["port"], mgmt_port_host)
+    connect(host, api["address"], api["port"], accepted=False)
+    ssh = f"ssh -i /root/.ssh/id_snakeoil -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -S /tmp/janus root@{vlans['trusted']['gateway']}"
+    forward = f"127.0.0.1:{api['port']}:{api['address']}:{api['port']}"
+    clients.succeed(f"{netns(host)} {ssh} -f -N -M -o ExitOnForwardFailure=yes -L {forward}")
+    reply = clients.succeed(f"{netns(host)} nc -N -w 5 127.0.0.1 {api['port']} < /dev/null").strip()
+    assert reply == mgmt_port_host, f"through janus, {api['address']}:{api['port']} answered {reply!r}"
+    clients.succeed(f"{netns(host)} {ssh} -O exit")
 
 with subtest("janus takes the time from the internet and gives it to mgmt only"):
     janus.wait_until_succeeds("chronyc waitsync 1")

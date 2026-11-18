@@ -267,7 +267,6 @@
       model = "CRS328-24P-4S+RM";
       location = "main rack";
       lan = {
-        mac = "08:55:31:21:A7:0D";
         ip = "10.99.0.2";
         vlan = "mgmt";
       };
@@ -335,7 +334,6 @@
       model = "CRS310-8G+2S+IN";
       location = "upstairs mini rack";
       lan = {
-        mac = "04:f4:1c:84:68:a6"; # sfp-sfpplus1's MAC
         ip = "10.99.0.3";
         vlan = "mgmt";
       };
@@ -371,7 +369,6 @@
       model = "cAP-ax";
       location = "living room";
       lan = {
-        mac = "04:F4:1C:E9:EF:E5";
         ip = "10.99.0.5";
         vlan = "mgmt";
       };
@@ -388,7 +385,6 @@
       model = "cAP-ax";
       location = "upstairs";
       lan = {
-        mac = "04:F4:1C:EA:18:83";
         ip = "10.99.0.6";
         vlan = "mgmt";
       };
