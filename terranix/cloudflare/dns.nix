@@ -1,12 +1,12 @@
 {
+  clan-cli,
   config,
   lib,
   self,
-  self',
   ...
 }:
 let
-  inherit (import ../lib.nix { inherit config lib self'; }) safeName;
+  inherit (import ../lib.nix { inherit clan-cli config lib; }) safeName;
   inherit (self.inventory) ingress;
   inherit (self.inventory.cloudflare) dns redirects zones;
   inherit (import ./lib.nix { inherit lib zones; }) zoneOf;

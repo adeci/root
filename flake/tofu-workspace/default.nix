@@ -3,7 +3,6 @@
   inputs,
   lib,
   pkgs,
-  self',
 }:
 {
   name,
@@ -23,6 +22,8 @@ let
   # init installs providers from these builds alone, never from a registry.
   tofu = pkgs.opentofu.withPlugins (_: lib.attrValues allProviders);
 
+  clan-cli = inputs.clan-core.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli;
+
   configFile = inputs.terranix.lib.terranixConfiguration {
     inherit pkgs;
     modules = [
@@ -38,7 +39,7 @@ let
     ++ modules;
     extraArgs = {
       inherit (inputs) self;
-      inherit self';
+      inherit clan-cli;
     };
   };
 
@@ -49,7 +50,7 @@ let
       runtimeInputs = [
         pkgs.gitMinimal
         tofu
-        self'.packages.clan-cli
+        clan-cli
       ];
       runtimeEnv = {
         WORKSPACE = name;

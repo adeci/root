@@ -1,16 +1,9 @@
 { inputs, lib, ... }:
 {
   perSystem =
-    { pkgs, self', ... }:
+    { pkgs, ... }:
     let
-      mkTofuWorkspace = import ../tofu-workspace {
-        inherit
-          inputs
-          lib
-          pkgs
-          self'
-          ;
-      };
+      mkTofuWorkspace = import ../tofu-workspace { inherit inputs lib pkgs; };
     in
     mkTofuWorkspace {
       name = "network";

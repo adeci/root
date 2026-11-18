@@ -1,14 +1,14 @@
 {
+  clan-cli,
   config,
   lib,
   self,
-  self',
   ...
 }:
 let
   inherit (self.inventory) appliances lan;
   inherit (self.inventory.routeros) admin exporter;
-  inherit (import ../lib.nix { inherit config lib self'; }) clanSecret setClanVar;
+  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret setClanVar;
 in
 {
   imports = [

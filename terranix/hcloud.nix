@@ -1,13 +1,13 @@
 {
+  clan-cli,
   config,
   lib,
   self,
-  self',
   ...
 }:
 let
   inherit (self.inventory) ingress;
-  inherit (import ./lib.nix { inherit config lib self'; }) clanSecret;
+  inherit (import ./lib.nix { inherit clan-cli config lib; }) clanSecret;
 
   hcloudEdges = lib.filterAttrs (_: edge: edge.provider == "hcloud") ingress.edges;
 

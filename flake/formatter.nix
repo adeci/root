@@ -6,7 +6,7 @@
     { pkgs, ... }:
     {
       treefmt = {
-        # A file every checkout has at its top and work/ lacks; .git/config is missing in a git worktree.
+        # A file every checkout has at its top; .git/config is missing in a git worktree.
         projectRootFile = ".gitignore";
         programs = {
           shellcheck.enable = true;
@@ -47,7 +47,6 @@
           "*.gitignore"
           ".vscode/*"
           "*.toml"
-          "*.clan-flake"
           "*.code-workspace"
           "*.pub"
           "*.typed"

@@ -35,9 +35,6 @@
     microvm.url = "github:microvm-nix/microvm.nix";
     microvm.inputs.nixpkgs.follows = "nixpkgs";
 
-    nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
-    nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
-
     jovian.url = "github:Jovian-Experiments/Jovian-NixOS";
     jovian.inputs.nixpkgs.follows = "nixpkgs";
 

@@ -1,11 +1,21 @@
-{ config, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 let
   inherit (config.flake.inventory) appliances;
   inherit (config.flake.inventory.routeros) admin models;
 in
 {
   perSystem =
-    { pkgs, self', ... }:
+    {
+      pkgs,
+      self',
+      system,
+      ...
+    }:
     let
       netinstall = self'.packages.routeros-netinstall;
 
@@ -37,7 +47,7 @@ in
         {
           program = pkgs.writeShellApplication {
             name = "net-netinstall-${name}";
-            runtimeInputs = [ self'.packages.clan-cli ];
+            runtimeInputs = [ inputs.clan-core.packages.${system}.clan-cli ];
             text = "exec ${lib.getExe netinstall} \\\n  ${lib.concatStringsSep " \\\n  " flags}\n";
           };
         };

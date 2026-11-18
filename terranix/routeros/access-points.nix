@@ -1,14 +1,14 @@
 {
+  clan-cli,
   config,
   lib,
   self,
-  self',
   ...
 }:
 let
   inherit (self.inventory) appliances lan wifi;
   inherit (self.inventory.routeros) models;
-  inherit (import ../lib.nix { inherit config lib self'; }) clanSecret;
+  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret;
 
   # The management port keeps untagged DHCP management and carries each Wi-Fi VLAN as a tagged sub-interface with a bridge of its own, without vlan_filtering.
   accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != null) appliances;

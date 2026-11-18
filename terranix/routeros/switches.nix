@@ -1,14 +1,14 @@
 {
+  clan-cli,
   config,
   lib,
   self,
-  self',
   ...
 }:
 let
   inherit (self.inventory) appliances lan;
   inherit (self.inventory.routeros) models;
-  inherit (import ../lib.nix { inherit config lib self'; }) safeName;
+  inherit (import ../lib.nix { inherit clan-cli config lib; }) safeName;
 
   switches = lib.filterAttrs (_: appliance: appliance.vlans != [ ]) appliances;
 

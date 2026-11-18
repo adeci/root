@@ -1,14 +1,13 @@
 {
+  clan-cli,
   config,
   lib,
   pkgs,
   self,
-  self',
   ...
 }:
 let
   inherit (self.inventory) b2;
-  inherit (self'.packages) clan-cli;
 
   getClanSecret = pkgs.writeShellApplication {
     name = "get-clan-secret";

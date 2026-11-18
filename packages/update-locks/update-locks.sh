@@ -1,14 +1,13 @@
 # shellcheck shell=bash
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   echo "Usage: update-locks [INPUT...]"
-  echo "Update the named root inputs (default: all), then run"
-  echo "'nix flake update root' in work/ so it inherits the same pins."
+  echo "Update the named inputs (default: all)."
   exit 0
 fi
 
 repo=$(git rev-parse --show-toplevel)
 
-# A token lifts GitHub's per-IP anonymous API limit; NIX_CONFIG keeps it to these calls.
+# A token lifts GitHub's per-IP anonymous API limit; NIX_CONFIG keeps it to this call.
 token=${GH_TOKEN:-${GITHUB_TOKEN:-}}
 if [[ -z "$token" ]] && command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
   token=$(gh auth token)
@@ -21,4 +20,3 @@ else
 fi
 
 nix flake update "$@" --flake "$repo"
-nix flake update root --flake "$repo/work"

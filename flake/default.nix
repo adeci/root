@@ -16,7 +16,7 @@
     ./wrappers.nix
   ];
 
-  # Helpers the work flake reuses; an option, so several files can add to it.
+  # Helpers for flakes that take this one as an input; an option, so several files can add to it.
   options.flake.lib = lib.mkOption {
     type = lib.types.lazyAttrsOf lib.types.raw;
     default = { };
