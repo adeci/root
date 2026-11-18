@@ -15,6 +15,18 @@ let
       };
       text = builtins.readFile ./auto-pressure-gc.sh;
     };
+
+  # Nix's own collection acts whenever a path enters the store, so it covers a big build between two runs of the timer.
+  nixSettings = {
+    min-free = 10 * 1024 * 1024 * 1024;
+    max-free = 50 * 1024 * 1024 * 1024;
+  };
+
+  # Only removes old generations; this collector frees their paths when the disk needs room.
+  nixGc = {
+    automatic = true;
+    options = "--delete-older-than 14d --max-freed 0";
+  };
 in
 {
   nixos =
@@ -61,6 +73,11 @@ in
           Unit = "auto-pressure-gc.service";
         };
       };
+
+      nix.settings = nixSettings;
+      nix.gc = nixGc // {
+        dates = "weekly";
+      };
     };
 
   darwin =
@@ -93,5 +110,9 @@ in
           StandardErrorPath = "/var/log/auto-pressure-gc.log";
         };
       };
+
+      nix.settings = nixSettings;
+      # nix-darwin's default schedule is already weekly.
+      nix.gc = nixGc;
     };
 }

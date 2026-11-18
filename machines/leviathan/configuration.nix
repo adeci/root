@@ -73,13 +73,6 @@
     overrideStrategy = "asDropin";
   };
 
-  # Keep two weeks of builds for the binary cache to serve.
-  nix.gc = {
-    automatic = true;
-    dates = "daily";
-    options = "--delete-older-than 14d";
-  };
-
   nix.settings.max-jobs = 16;
 
   # farid's cursed stuff:

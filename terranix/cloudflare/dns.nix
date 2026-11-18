@@ -75,10 +75,4 @@ in
       }
     ) redirects)
   ];
-
-  # Provider v4 called these cloudflare_record; v5 converts each one's state as it moves.
-  moved = map (name: {
-    from = "cloudflare_record.${name}";
-    to = "cloudflare_dns_record.${name}";
-  }) (lib.attrNames config.resource.cloudflare_dns_record);
 }

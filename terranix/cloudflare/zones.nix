@@ -8,8 +8,6 @@
 let
   inherit (import ../lib.nix { inherit clan-cli config lib; }) safeName;
   inherit (self.inventory.cloudflare) zones;
-
-  zoneId = zone: config.data.cloudflare_zone.${safeName zone} "id";
 in
 {
   data.cloudflare_zone = lib.listToAttrs (
@@ -21,7 +19,7 @@ in
     map (
       zone:
       lib.nameValuePair "${safeName zone}_security_header" {
-        zone_id = zoneId zone;
+        zone_id = config.data.cloudflare_zone.${safeName zone} "id";
         setting_id = "security_header";
         value.strict_transport_security = {
           enabled = true;
@@ -33,10 +31,4 @@ in
       }
     ) zones
   );
-
-  # Provider v5 cannot take over v4's cloudflare_zone_settings_override, so it adopts the setting each zone already has.
-  import = map (zone: {
-    to = "cloudflare_zone_setting.${safeName zone}_security_header";
-    id = "${zoneId zone}/security_header";
-  }) zones;
 }
