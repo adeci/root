@@ -148,6 +148,16 @@ let
     )
   );
 
+  networkAdminsOnTrusted = lib.mapAttrsToList (name: machine: {
+    assertion = machine.lan != null && machine.lan.vlan == "trusted";
+    message = "machines.${name}: a network-admin needs its reservation on trusted, from which janus lets it into mgmt";
+  }) (lib.filterAttrs (_: machine: lib.elem "network-admin" machine.tags) config.machines);
+
+  wiredReservationsOnNetworkAdmins = lib.mapAttrsToList (name: machine: {
+    assertion = machine.wiredClientId != null;
+    message = "machines.${name}.lan.wired: only a network-admin machine sends the client id a wired reservation matches";
+  }) (lib.filterAttrs (_: machine: machine.lan != null && machine.lan.wired) config.machines);
+
   dnsNamesPointOneWay = lib.mapAttrsToList (name: record: {
     assertion = (record.lan == null) != (record.tailnet == null);
     message = "lan.dns.${name}: needs exactly one of lan and tailnet";
@@ -250,6 +260,8 @@ in
     uniqueMacs
     uniqueClientIds
     uniqueTailnetAddresses
+    networkAdminsOnTrusted
+    wiredReservationsOnNetworkAdmins
     dnsNamesPointOneWay
     uniqueDnsNames
     tailnetRecordsResolve

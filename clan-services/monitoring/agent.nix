@@ -305,14 +305,6 @@ in
 
           systemd.tmpfiles.rules = [ "d ${textfileDirectory} 0755 root root -" ];
 
-          # The server scrapes over the tailnet.
-          networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
-            config.services.prometheus.exporters.node.port
-          ]
-          ++ lib.optional settings.smart.enable config.services.prometheus.exporters.smartctl.port
-          ++ lib.optional (settings.probes != { }) config.services.prometheus.exporters.blackbox.port
-          ++ lib.attrValues settings.exporters;
-
           services.vector = {
             enable = true;
             journaldAccess = true;

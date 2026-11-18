@@ -38,6 +38,12 @@ in
     depends_on = [ "tailscale_acl.policy" ];
   }) deviceTags;
 
+  # An expired key would log a server in again with the user-owned auth key, which takes its tag away.
+  resource.tailscale_device_key = lib.mapAttrs (hostname: _: {
+    device_id = config.data.tailscale_device.${hostname} "node_id";
+    key_expiry_disabled = true;
+  }) (lib.filterAttrs (_: tags: lib.elem "tag:server" tags) deviceTags);
+
   # Split DNS: the LAN's private domains resolve through the trusted VLAN's gateway, reached over the subnet routes approved below.
   resource.tailscale_dns_split_nameservers = lib.mapAttrs' (
     _: record:

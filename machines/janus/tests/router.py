@@ -7,7 +7,7 @@ hosts = inventory["lan"]["hosts"]
 
 # firewall.nix's zones: what each VLAN's hosts may reach through janus besides replies, "wan" being the internet.
 zones = {
-    "trusted": set(vlans) | {"wan"},
+    "trusted": (set(vlans) - {"mgmt"}) | {"wan"},
     "iot": {"wan"},
     "guest": {"wan"},
     "vault": {"wan"},
@@ -15,6 +15,13 @@ zones = {
     "mgmt": set(),
 }
 assert set(zones) == set(vlans), f"the test has zones for {sorted(zones)}, the inventory has VLANs {sorted(vlans)}"
+# The hosts of the machines tagged network-admin: on trusted, they alone also reach mgmt.
+network_admins = {
+    host
+    for name, machine in inventory["machines"].items()
+    if "network-admin" in machine["tags"]
+    for host in [name, *(f"{name}-{label}" for label in machine["lan"]["extra"])]
+}
 # The VLANs firewall.nix lets ssh into janus.
 admin_vlans = {"trusted", "mgmt"}
 # LPD, IPP and JetDirect, which firewall.nix lets guests print with, and the printer's web page, which it doesn't.
@@ -60,6 +67,12 @@ def lease(host, client_id=None):
     return json.loads(clients.succeed(f"ip -n {host} -j -4 address show dev {host}"))[0]["addr_info"][0]["local"]
 
 
+def in_pool(vlan, address):
+    """Whether an address is one the VLAN's DHCP pool hands out."""
+    pool = vlans[vlan]["dhcpPool"]
+    return ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"])
+
+
 def resolve(host, name, tcp=False):
     """The addresses the host's resolver, the one DHCP gave it, answers for a name, over UDP or TCP."""
     option = "+tcp" if tcp else ""
@@ -88,6 +101,15 @@ def connect(host, address, port, accepted=True):
         clients.succeed(f"{netns(host)} nc -z -w 5 {address} {port}")
     else:
         clients.fail(f"{netns(host)} nc -z -w 1 {address} {port}")
+
+
+def get_time(host, server, answered=True):
+    """Checks that the host's NTP client gets the time from a server, or that the server does not answer it."""
+    # Polling every second, the client has the three answers it needs within a second, or gives up within two.
+    if answered:
+        clients.succeed(f"{netns(host)} chronyd -Q -t 10 'server {server} iburst minpoll 0'")
+    else:
+        clients.fail(f"{netns(host)} chronyd -Q -t 3 'server {server} iburst minpoll 0'")
 
 
 def listen(host, port):
@@ -123,8 +145,7 @@ with subtest("every host gets its reserved address, by MAC or client id, and oth
     for vlan, host in pool_hosts.items():
         plug_in(host, trunk(vlan))
         address = lease(host)
-        pool = vlans[vlan]["dhcpPool"]
-        assert ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"]), f"{host} got {address}"
+        assert in_pool(vlan, address), f"{host} got {address}"
         pool_addresses[vlan] = address
 
 with subtest("each VLAN's resolver from DHCP answers lan.dns names, and internet names via the ISP, by UDP and TCP"):
@@ -156,6 +177,19 @@ with subtest("each VLAN reaches the others exactly as its zone allows"):
             if target != source:
                 ping(host, address, answered=target in zones[source])
 
+with subtest("on trusted, the network admins' hosts alone reach mgmt, not another machine in an admin's dock"):
+    for name, host in hosts.items():
+        if host["vlan"] == "trusted":
+            ping(name, pool_addresses["mgmt"], answered=name in network_admins)
+    # A wired reservation goes by its machine's client id, so the dock's MAC alone gets a pool address.
+    for name in network_admins:
+        if hosts[name]["clientId"]:
+            stranger = f"{name}-dock"
+            plug_in(stranger, trunk("trusted"), hosts[name]["mac"])
+            address = lease(stranger)
+            assert in_pool("trusted", address), f"{stranger} got {address}"
+            ping(stranger, pool_addresses["mgmt"], answered=False)
+
 with subtest("guests print to the printer, and reach neither its other ports nor another trusted host"):
     guest = pool_hosts["guest"]
     printer = hosts["printer"]["ip"]
@@ -176,6 +210,11 @@ with subtest("janus answers ssh on the admin VLANs only, and the router modules'
         # They listen on every address; only the firewall keeps them to the tailnet.
         janus.wait_for_open_port(port, gateway)
         connect(pool_hosts["trusted"], gateway, port, accepted=False)
+
+with subtest("janus takes the time from the internet and gives it to mgmt only"):
+    janus.wait_until_succeeds("chronyc waitsync 1")
+    for vlan, host in pool_hosts.items():
+        get_time(host, vlans[vlan]["gateway"], answered=vlan == "mgmt")
 
 with subtest("the internet reaches neither janus's services nor the LAN, even when routed to them"):
     isp.fail(f"nc -z -w 1 {janus_wan} {ssh_port}")

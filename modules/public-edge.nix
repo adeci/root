@@ -85,7 +85,6 @@
 
           # Out-of-band fallback: the provider's web console, log in as the primary user.
           services.openssh.openFirewall = false;
-          networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ];
         }
         (lib.mkIf (streams != [ ]) {
           assertions = [

@@ -6,6 +6,7 @@ let
     cloudflare
     ingress
     clanInstances
+    tailscalePolicy
     ;
 
   isMachine = name: config.machines ? ${name};
@@ -134,6 +135,21 @@ let
       )
     ) clanInstances
   );
+
+  # Stands in for a policy test, which can't take autogroup:shared as its source (tailscale/tailscale#4416).
+  sharedUserDestinations = map (
+    grant:
+    let
+      beyond = lib.subtractLists [
+        "leviathan"
+        "tag:gaming"
+      ] grant.dst;
+    in
+    {
+      assertion = beyond == [ ];
+      message = "inventory/tailscale-policy.nix grants: shared users may reach only leviathan and tag:gaming, not ${toString beyond}";
+    }
+  ) (lib.filter (grant: lib.elem "autogroup:shared" grant.src) tailscalePolicy.grants);
 in
 {
   assertions = lib.concatLists [
@@ -146,5 +162,6 @@ in
     streamUpstreams
     uniqueEdgePorts
     instanceMachines
+    sharedUserDestinations
   ];
 }

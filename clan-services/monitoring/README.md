@@ -7,8 +7,8 @@ server watches the same fleet and alerts when the main one cannot.
 ## Roles
 
 - `server` (NixOS): the main server runs Prometheus, Alertmanager, Loki and
-  Grafana behind nginx, which the firewall opens only on the Tailscale
-  interface. Prometheus scrapes each agent at `<machine>.<agentDomain>`.
+  Grafana behind nginx, reached over the tailnet. Prometheus scrapes each
+  agent at `<machine>.<agentDomain>`.
   Grafana is at the root of `grafana.domain`; agents push their journal to
   `/loki/loki/api/v1/push` on `<host>`, the only Loki path open to them, with
   a generated basic auth credential. A server with `backup = true` runs only

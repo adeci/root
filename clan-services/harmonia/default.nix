@@ -73,8 +73,6 @@
 
             services.harmonia-dev.daemon.enable = true;
             nix.settings.extra-allowed-users = [ "harmonia" ];
-            # Its clients reach it over the tailnet.
-            networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ settings.port ];
           };
       };
   };

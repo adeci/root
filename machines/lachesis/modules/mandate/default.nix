@@ -57,11 +57,6 @@ in
     connectors = lib.genAttrs connectors (_: { });
   };
 
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
-    443
-    8443
-  ];
-
   # Snapshots stores, owner state and gateway live set, not sessions.
   clan.core.state.mandate = {
     folders = [ backupDirectory ];

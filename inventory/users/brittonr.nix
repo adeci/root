@@ -3,7 +3,6 @@
   uid = 1555;
   shell = "bash";
   groups = [
-    "wheel"
     "networkmanager"
     "video"
     "audio"

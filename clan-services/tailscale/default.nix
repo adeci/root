@@ -58,23 +58,38 @@
               # First in the list, so a machine's own flags follow and win.
               extraSetFlags = lib.mkBefore ([ "--accept-routes=false" ] ++ settings.flags);
             };
+            # Tailscale's own netfilter rule accepts tailscale0 before this firewall sees it; the tailnet policy filters it.
+            networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
             # Stay active after the one-shot run, so a deploy that changes the flags restarts it and applies them.
             systemd.services.tailscaled-set = lib.mkIf (config.services.tailscale.extraSetFlags != [ ]) {
               serviceConfig.RemainAfterExit = true;
             };
           };
         darwinModule =
-          { config, lib, ... }:
+          {
+            config,
+            lib,
+            pkgs,
+            ...
+          }:
+          let
+            connect = pkgs.writeShellApplication {
+              name = "tailscale-connect";
+              runtimeInputs = [
+                config.services.tailscale.package
+                pkgs.jq
+              ];
+              text = builtins.readFile ./connect.sh;
+            };
+          in
           {
             imports = [ shared ];
             services.tailscale.enable = true;
             launchd.daemons.tailscale-connect.serviceConfig = {
               ProgramArguments = [
-                (lib.getExe config.services.tailscale.package)
-                "up"
-                "--auth-key=file:${config.clan.core.vars.generators.${generatorName}.files.auth_key.path}"
+                (lib.getExe connect)
+                config.clan.core.vars.generators.${generatorName}.files.auth_key.path
                 "--accept-routes=false"
-                "--timeout=30s"
               ]
               ++ settings.flags;
               RunAtLoad = true;

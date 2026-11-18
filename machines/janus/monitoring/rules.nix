@@ -107,6 +107,20 @@ in
     };
   }
   {
+    alert = "ClockUnsynchronised";
+    # chrony leaves node_timex_sync_status and the offset at 0 even when synchronised; its maximum error is 16 s when not.
+    expr = ''
+      node_timex_maxerror_seconds{${router}} > 1
+      unless on (instance) (${internetDown})
+    '';
+    for = "30m";
+    labels.severity = "warning";
+    annotations = {
+      summary = "The router's clock is unsynchronised";
+      description = "Its maximum error is {{ $value | humanizeDuration }}, and the switches and access points take their time from it; see `chronyc sources` on {{ $labels.instance }}.";
+    };
+  }
+  {
     alert = "RouterOSDeviceDown";
     expr = ''janus_network_probe_up{${router}, group="routeros"} == 0'';
     for = "5m";

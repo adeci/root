@@ -290,6 +290,49 @@ in
     }
 
     {
+      name = "a clock whose maximum error has been over a second for half an hour is unsynchronised; one at 0.9 s is not";
+      interval = "1m";
+      input_series = [
+        {
+          # 16 s is chrony's mark of an unsynchronised clock.
+          series = ''node_timex_maxerror_seconds{instance="janus"}'';
+          values = "0.9x10 1.5x10 16x30";
+        }
+      ];
+      alert_rule_test = [
+        (noAlert "ClockUnsynchronised" "40m")
+        (firing "ClockUnsynchronised" "42m" [
+          {
+            exp_labels = {
+              instance = "janus";
+              severity = "warning";
+            };
+            exp_annotations = {
+              summary = "The router's clock is unsynchronised";
+              description = "Its maximum error is 16s, and the switches and access points take their time from it; see `chronyc sources` on janus.";
+            };
+          }
+        ])
+      ];
+    }
+
+    {
+      name = "an unsynchronised clock while the ISP gateway is down stays quiet";
+      interval = "1m";
+      input_series = [
+        {
+          series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
+          values = "0x40";
+        }
+        {
+          series = ''node_timex_maxerror_seconds{instance="janus"}'';
+          values = "16x40";
+        }
+      ];
+      alert_rule_test = [ (noAlert "ClockUnsynchronised" "35m") ];
+    }
+
+    {
       name = "an appliance that stops answering pings for 5 minutes is down, one that misses a few is not";
       interval = "1m";
       input_series = [

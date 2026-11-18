@@ -7,8 +7,7 @@ hand.
 
 ## Roles
 
-- `server` (NixOS only): serves the cache on `port`, opened on the Tailscale
-  interface.
+- `server` (NixOS only): serves the cache on `port` to the tailnet.
 - `client`: uses every server as a substituter and trusts its public key.
 
 ## Notes

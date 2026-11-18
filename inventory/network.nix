@@ -171,8 +171,14 @@
         "adeci-net"
         "wifi-preload"
         "portable"
+        "network-admin"
       ];
       tailnet = "100.104.206.85";
+      lan = {
+        mac = "e0:c9:32:6c:48:b4";
+        ip = "10.10.0.72";
+        vlan = "trusted";
+      };
     };
 
     praxis = {
@@ -180,8 +186,19 @@
         "adeci-net"
         "wifi-preload"
         "portable"
+        "network-admin"
       ];
       tailnet = "100.88.20.8";
+      lan = {
+        mac = "6c:1f:f7:74:83:36"; # its dock's NIC
+        wired = true;
+        ip = "10.10.0.70";
+        vlan = "trusted";
+        extra.wifi = {
+          mac = "4c:77:cb:ac:86:4a";
+          ip = "10.10.0.71";
+        };
+      };
     };
 
     proteus = {

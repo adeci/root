@@ -276,11 +276,6 @@
             }
           ];
 
-          networking.firewall.interfaces.tailscale0 = {
-            allowedTCPPorts = lib.optional main 80 ++ lib.optional clustered ports.alertmanagerCluster;
-            allowedUDPPorts = lib.optional clustered ports.alertmanagerCluster;
-          };
-
           # The silences, which a backup server only copies; metrics and logs refill as the machines report.
           # Alertmanager runs under a dynamic user, so /var/lib/alertmanager is only a link to this folder.
           clan.core.state = lib.mkIf (main && ntfyDelivery.enable) {

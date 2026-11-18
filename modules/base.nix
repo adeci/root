@@ -19,8 +19,9 @@ let
       };
 
       programs.ssh.extraConfig = lib.mkMerge [
+        # Not for root: on a build host, whoever is root could reuse its open connections to the machines it deployed.
         ''
-          Host *.${config.clan.core.settings.domain}
+          Match host *.${config.clan.core.settings.domain} !localuser root
             ControlMaster auto
             ControlPersist 10m
             ControlPath ~/.ssh/cm-%C

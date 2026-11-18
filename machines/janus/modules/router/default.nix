@@ -10,6 +10,7 @@ in
     ./networkd.nix
     ./firewall.nix
     ./dhcp-dns.nix
+    ./ntp.nix
     ./probes.nix
     ./routeros-metrics.nix
   ];

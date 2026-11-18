@@ -37,6 +37,13 @@ in
 
   macAddress = lib.types.strMatching "([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}";
 
+  # A text DHCP client id in hex, as it goes on the wire: type 0, then the text's bytes.
+  textClientId =
+    text:
+    lib.concatMapStringsSep ":" (
+      byte: lib.fixedWidthString 2 "0" (lib.toLower (lib.toHexString byte))
+    ) ([ 0 ] ++ map lib.strings.charToInt (lib.stringToCharacters text));
+
   # Where a cable leads, as { name, port }, port being null when it names none; null when malformed.
   parseCableEnd =
     end:

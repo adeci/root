@@ -4,7 +4,10 @@ let
   network = import ./network.nix inventory;
 in
 {
-  extraCollectors = [ "conntrack" ];
+  extraCollectors = [
+    "conntrack"
+    "timex"
+  ];
   extraLabels.role = "router";
   exporters = {
     kea-dhcp4 = 9547;

@@ -8,6 +8,7 @@ let
     ipv4Address
     macAddress
     parseCableEnd
+    textClientId
     ;
 
   # The whole inventory. Inside an entry's own submodule, `config` is that entry.
@@ -219,7 +220,7 @@ in
       deviceTags = mkOption {
         type = types.attrsOf (types.listOf types.str);
         default = { };
-        description = "ACL tags set on tailnet devices through the Tailscale API, by hostname.";
+        description = "ACL tags set on tailnet devices through the Tailscale API, by hostname. Every machine on the tailnet that isn't portable also carries tag:server.";
       };
 
       addresses = mkOption {
@@ -272,55 +273,75 @@ in
 
     machines = mkOption {
       type = types.attrsOf (
-        types.submodule {
-          options = {
-            class = mkOption {
-              type = types.enum [
-                "nixos"
-                "darwin"
-              ];
-              default = "nixos";
+        types.submodule (
+          { name, config, ... }:
+          let
+            machine = config;
+          in
+          {
+            options = {
+              class = mkOption {
+                type = types.enum [
+                  "nixos"
+                  "darwin"
+                ];
+                default = "nixos";
+              };
+              tags = mkOption {
+                type = types.listOf types.str;
+                default = [ ];
+                description = "Its clan inventory tags; portable marks a laptop that comes and goes, network-admin a machine whose reservations on trusted reach the mgmt VLAN.";
+              };
+              tailnet = mkOption {
+                type = types.nullOr tailnetAddress;
+                default = null;
+                description = "Its tailnet address. Tailscale assigns it, so a reinstall can change it.";
+              };
+              wiredClientId = mkOption {
+                type = types.nullOr types.str;
+                readOnly = true;
+                default = if lib.elem "network-admin" config.tags then textClientId name else null;
+                description = "The DHCP client id a network-admin machine's NetworkManager sends on every wired NIC: its name. Null for other machines.";
+              };
+              lan = mkOption {
+                type = types.nullOr (
+                  types.submodule (
+                    { config, ... }:
+                    {
+                      imports = [ reservation ];
+                      options = {
+                        wired = mkOption {
+                          type = types.bool;
+                          default = false;
+                          description = "Whether the reservation is the machine's wired one, matched by its wiredClientId instead of the MAC, so it follows the machine from NIC to NIC and dock to dock.";
+                        };
+                        clientId = mkOption {
+                          type = types.nullOr (types.strMatching "[0-9a-fA-F]{2}(:[0-9a-fA-F]{2})*");
+                          default = if config.wired then machine.wiredClientId else null;
+                          description = "The DHCP client id the machine sends, systemd-networkd's own or its wiredClientId; the reservation matches it instead of the MAC.";
+                        };
+                        extra = mkOption {
+                          type = types.attrsOf (
+                            types.submodule {
+                              options = {
+                                mac = mkOption { type = macAddress; };
+                                ip = mkOption { type = ipv4Address; };
+                              };
+                            }
+                          );
+                          default = { };
+                          description = "More NICs on the machine's VLAN, such as a BMC; each becomes a host named <machine>-<label>.";
+                        };
+                      };
+                    }
+                  )
+                );
+                default = null;
+                description = "Its reserved address on the home LAN; null for a machine that isn't on it.";
+              };
             };
-            tags = mkOption {
-              type = types.listOf types.str;
-              default = [ ];
-              description = "Its clan inventory tags; portable marks a laptop that comes and goes.";
-            };
-            tailnet = mkOption {
-              type = types.nullOr tailnetAddress;
-              default = null;
-              description = "Its tailnet address. Tailscale assigns it, so a reinstall can change it.";
-            };
-            lan = mkOption {
-              type = types.nullOr (
-                types.submodule {
-                  imports = [ reservation ];
-                  options = {
-                    clientId = mkOption {
-                      type = types.nullOr (types.strMatching "[0-9a-fA-F]{2}(:[0-9a-fA-F]{2})*");
-                      default = null;
-                      description = "The DHCP client id systemd-networkd sends; the reservation matches it instead of the MAC.";
-                    };
-                    extra = mkOption {
-                      type = types.attrsOf (
-                        types.submodule {
-                          options = {
-                            mac = mkOption { type = macAddress; };
-                            ip = mkOption { type = ipv4Address; };
-                          };
-                        }
-                      );
-                      default = { };
-                      description = "More NICs on the machine's VLAN, such as a BMC; each becomes a host named <machine>-<label>.";
-                    };
-                  };
-                }
-              );
-              default = null;
-              description = "Its reserved address on the home LAN; null for a machine that isn't on it.";
-            };
-          };
-        }
+          }
+        )
       );
       default = { };
       description = "The clan machines; the clan inventory is built from these.";
@@ -633,4 +654,11 @@ in
       description = "The rules from rules.nix and references.nix, each { assertion, message }.";
     };
   };
+
+  # The servers: every machine on the tailnet that isn't a portable one.
+  config.tailnet.deviceTags = lib.mapAttrs (_: _: [ "tag:server" ]) (
+    lib.filterAttrs (
+      _: machine: machine.tailnet != null && !lib.elem "portable" machine.tags
+    ) inventory.machines
+  );
 }

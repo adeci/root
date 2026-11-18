@@ -5,7 +5,7 @@
 }:
 let
   inherit (pkgs) lib;
-  inherit (self.inventory) lan router;
+  inherit (self.inventory) lan machines router;
   inherit (self.inventory.routeros) exporter;
 
   # Each cable into janus is a network of its own in the test.
@@ -22,13 +22,14 @@ let
     address = "203.0.113.10";
   };
 
-  # The internet's root zone, signed with a key janus trusts in place of the real root's.
+  # The internet's root zone, signed with a key janus trusts in place of the real root's; every NTP pool server is the internet host.
   rootZone = pkgs.runCommand "root-zone" { nativeBuildInputs = [ pkgs.ldns.examples ]; } ''
     cat > root.zone <<EOF
     . 3600 IN SOA a.root-servers.net. hostmaster.root-servers.net. 1 1800 900 604800 86400
     . 3600 IN NS a.root-servers.net.
     a.root-servers.net. 3600 IN A ${wanGateway}
     ${internet.name}. 3600 IN A ${internet.address}
+    *.pool.ntp.org. 3600 IN A ${internet.address}
     EOF
     key=$(ldns-keygen -a ECDSAP256SHA256 -k .)
     mkdir "$out"
@@ -110,6 +111,15 @@ pkgs.testers.runNixOSTest {
         file = "${rootZone}/root.zone";
       };
     };
+    # The internet's time server: its own clock, as good as a stratum 1 server's.
+    services.chrony = {
+      enable = true;
+      servers = [ ];
+      extraConfig = ''
+        local stratum 1
+        allow
+      '';
+    };
     environment.systemPackages = [ pkgs.dnsutils ];
   };
 
@@ -120,7 +130,10 @@ pkgs.testers.runNixOSTest {
       mgmt.vlan = cables.mgmt;
     };
     networking.useDHCP = false;
-    environment.systemPackages = [ pkgs.dnsutils ];
+    environment.systemPackages = [
+      pkgs.dnsutils
+      pkgs.chrony
+    ];
   };
 
   testScript =
@@ -129,7 +142,7 @@ pkgs.testers.runNixOSTest {
       inventory_json = ${
         builtins.toJSON (
           builtins.toJSON {
-            inherit lan router;
+            inherit lan machines router;
             tailnet = self.inventory.tailnet.addresses;
           }
         )
