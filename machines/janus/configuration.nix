@@ -7,6 +7,7 @@
     zsh
     auto-pressure-gc
     zram
+    ext4-single-disk
 
     ./modules/router
   ];

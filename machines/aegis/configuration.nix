@@ -18,27 +18,11 @@ in
 
     self.users.alex.nixosModule
 
-    base
-    nvim-dev
-    zsh
+    workstation
     llm-tools
-    auto-pressure-gc
-    auto-timezone
-    smartd
-    desktop
-    earwig
-    librewolf
-    bootvine
-    niri
-    noctalia
-    niri-autologin
-    keyboard
-    zram
-    laptop
-    printing
     chat-apps
-    yubikey
     mullvad
+    ext4-single-disk
   ];
 
   wrappers.niri.machineConfig = # kdl

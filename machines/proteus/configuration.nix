@@ -16,6 +16,7 @@
     zram
     keyboard
     steam-deck
+    ext4-single-disk
   ];
 
   boot.loader.grub.configurationLimit = 5;

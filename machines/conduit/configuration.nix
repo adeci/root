@@ -9,6 +9,7 @@
     zram
     public-edge
     ntfy-alerts
+    ext4-single-disk
 
     ./modules/zipline
     ./modules/ntfy.nix

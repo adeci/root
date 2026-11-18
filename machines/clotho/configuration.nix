@@ -5,7 +5,6 @@
 
     base
     zsh
-    llm-tools
     auto-pressure-gc
     zram
     secure-boot-luks

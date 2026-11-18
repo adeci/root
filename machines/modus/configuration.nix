@@ -10,34 +10,17 @@
 
     self.users.alex.nixosModule
 
-    base
-    latest-kernel
-    nvim-dev
-    emacs
-    zsh
+    workstation
     llm-tools
-    auto-timezone
-    auto-pressure-gc
-    btrfs
-    smartd
-    desktop
-    earwig
-    librewolf
-    bootvine
-    keyring-tpm
-    niri
-    noctalia
-    niri-autologin
-    keyboard
-    zram
-    laptop
-    printing
     chat-apps
+    mullvad
+    latest-kernel
+    emacs
+    btrfs
+    keyring-tpm
     gaming
     creative-apps
-    yubikey
     ssh-tpm-agent
-    mullvad
     virt-manager
     tailscale-travel
   ];

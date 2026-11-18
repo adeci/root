@@ -19,6 +19,7 @@
     gnome
     amd-gpu
     printing
+    ext4-single-disk
   ];
 
   system.primaryUser = self.users.alex.username;
