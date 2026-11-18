@@ -14,8 +14,9 @@ Backs up each machine's `clan.core.state` folders with
 
 - Only the repository password is generated: set the `credentials` file (for
   S3, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) with `clan vars set`.
-- Restoring some folders restores every folder of the states holding them, and
-  runs only those states' restore commands.
+- Restoring some folders restores every folder of the states holding them.
+  `restic-restore` runs no state commands: `clan backups restore` runs them
+  around it.
 - A state folder must be a real folder: restic saves a symlink without what it
   points to, so the backup fails on one. A service that runs under a dynamic
   user keeps its data in `/var/lib/private/<name>`; `/var/lib/<name>` is only
@@ -29,5 +30,5 @@ Backs up each machine's `clan.core.state` folders with
   default `jobName`). Check what arrived, then delete it.
 - For real, from the admin machine: `clan backups list <machine>` names the
   snapshots, and `clan backups restore <machine> restic <name>` restores one in
-  place and runs each state's restore commands. `--service <state>` limits it
-  to one state.
+  place, state by state: the state's pre-restore command, its folders, then its
+  post-restore command. `--service <state>` limits it to one state.

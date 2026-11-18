@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# clan backups restore sets NAME and FOLDERS.
+# clan backups restore sets NAME and FOLDERS, and runs each state's restore commands around this script.
 if [[ "${NAME:-}" == "" ]]; then
   echo "No backup name given via NAME environment variable" >&2
   exit 1
@@ -37,20 +37,6 @@ state_selected() {
   return 1
 }
 
-run_hook() {
-  local hook="$1"
-  local state command_hook command
-
-  # The table is read on fd 3 so the commands keep this script's stdin.
-  while IFS=$'\t' read -r -u 3 state command_hook command; do
-    [[ "$command_hook" == "$hook" ]] || continue
-    if state_selected "$state"; then
-      echo "Running $hook command for $state"
-      "/run/current-system/sw/bin/$command"
-    fi
-  done 3<"$STATE_COMMANDS"
-}
-
 include_args=()
 while IFS=$'\t' read -r state folder; do
   state_selected "$state" || continue
@@ -62,8 +48,4 @@ if [[ "${#include_args[@]}" -eq 0 ]]; then
   exit 1
 fi
 
-run_hook pre-restore
-
 "/run/current-system/sw/bin/restic-$JOB_NAME" restore "$snapshot" --target / "${include_args[@]}"
-
-run_hook post-restore

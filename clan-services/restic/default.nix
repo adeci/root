@@ -118,7 +118,7 @@
               ) states
             );
 
-            # One "<state>\t<hook>\t<command>" line per state command, hook being e.g. pre-backup.
+            # One "<state>\t<hook>\t<command>" line per state backup command, hook being pre-backup or post-backup.
             stateCommands = pkgs.writeText "restic-state-commands.tsv" (
               lib.concatMapStrings (
                 state:
@@ -126,8 +126,6 @@
                   commands = {
                     pre-backup = state.preBackupCommand;
                     post-backup = state.postBackupCommand;
-                    pre-restore = state.preRestoreCommand;
-                    post-restore = state.postRestoreCommand;
                   };
                 in
                 lib.concatStrings (
@@ -210,11 +208,9 @@
 
                 (pkgs.writeShellApplication {
                   name = "restic-restore";
-                  runtimeInputs = [ pkgs.coreutils ];
                   runtimeEnv = {
                     JOB_NAME = jobName;
                     STATE_FOLDERS = stateFolders;
-                    STATE_COMMANDS = stateCommands;
                   };
                   text = builtins.readFile ./restore.sh;
                 })

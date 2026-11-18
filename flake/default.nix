@@ -11,7 +11,7 @@
     ./routeros
     ./routeros-netinstall.nix
     ./terranix.nix
-    ./tests.nix
+    ./tests
     ./users
     ./wrappers.nix
   ];
