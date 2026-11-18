@@ -85,26 +85,35 @@
       let
         # Clients without a public key yet are skipped; servers authorize them on their next deploy.
         authorizedKeys =
-          directory:
-          lib.filter (key: key != "") (
-            lib.mapAttrsToList (
-              clientName: _:
-              lib.strings.trim (
-                clanLib.getPublicValue {
-                  flake = directory;
-                  machine = clientName;
-                  generator = instanceName;
-                  file = "id_ed25519.pub";
-                  default = "";
-                }
-              )
-            ) (roles.client.machines or { })
+          options: directory:
+          map (key: "${options} ${key}") (
+            lib.filter (key: key != "") (
+              lib.mapAttrsToList (
+                clientName: _:
+                lib.strings.trim (
+                  clanLib.getPublicValue {
+                    flake = directory;
+                    machine = clientName;
+                    generator = instanceName;
+                    file = "id_ed25519.pub";
+                    default = "";
+                  }
+                )
+              ) (roles.client.machines or { })
+            )
           );
+
+        # Nix's ssh-ng protocol runs `nix-daemon --stdio` and needs nothing else.
+        buildOnly = ''restrict,command="nix-daemon --stdio"'';
+        # Clients reach the Linux VM with `ssh -W localhost:31022` through this server.
+        buildAndJump = ''restrict,port-forwarding,permitopen="localhost:31022",command="nix-daemon --stdio"'';
 
         shared =
           { config, ... }:
           {
-            users.users.nix.openssh.authorizedKeys.keys = authorizedKeys config.clan.core.settings.directory;
+            users.users.nix.openssh.authorizedKeys.keys = authorizedKeys (
+              if settings.linuxBuilder == null then buildOnly else buildAndJump
+            ) config.clan.core.settings.directory;
             nix.settings.trusted-users = [ "nix" ];
           };
       in
@@ -151,11 +160,20 @@
               fi
             '';
 
+            # Key options can't refuse remote forwards once port-forwarding is on; last, as a Match block runs to the end of its file.
+            services.openssh.extraConfig = lib.mkIf (settings.linuxBuilder != null) (
+              lib.mkAfter ''
+                Match User nix
+                  AllowTcpForwarding local
+                  AllowStreamLocalForwarding no
+              ''
+            );
+
             nix.linux-builder = lib.mkIf (settings.linuxBuilder != null) {
               inherit (settings.linuxBuilder) systems maxJobs supportedFeatures;
               config = {
                 users.users.builder.openssh.authorizedKeys.keys =
-                  authorizedKeys config.clan.core.settings.directory;
+                  authorizedKeys buildOnly config.clan.core.settings.directory;
                 # The builder profile forces its own key file; equal priority keeps the standard one too.
                 services.openssh.authorizedKeysFiles = lib.mkForce [ "/etc/ssh/authorized_keys.d/%u" ];
               };
