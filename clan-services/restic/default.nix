@@ -140,7 +140,11 @@
 
             backupHooks = pkgs.writeShellApplication {
               name = "restic-backup-hooks";
-              runtimeEnv.STATE_COMMANDS = stateCommands;
+              runtimeInputs = [ pkgs.coreutils ];
+              runtimeEnv = {
+                STATE_FOLDERS = stateFolders;
+                STATE_COMMANDS = stateCommands;
+              };
               text = builtins.readFile ./backup-hooks.sh;
             };
           in

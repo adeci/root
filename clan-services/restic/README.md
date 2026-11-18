@@ -16,6 +16,10 @@ Backs up each machine's `clan.core.state` folders with
   S3, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) with `clan vars set`.
 - Restoring some folders restores every folder of the states holding them, and
   runs only those states' restore commands.
+- A state folder must be a real folder: restic saves a symlink without what it
+  points to, so the backup fails on one. A service that runs under a dynamic
+  user keeps its data in `/var/lib/private/<name>`; `/var/lib/<name>` is only
+  a link to it.
 
 ## Restoring
 

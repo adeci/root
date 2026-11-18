@@ -184,7 +184,8 @@ in
   };
 
   clan.core.state.kea-dhcp = {
-    folders = [ "/var/lib/kea" ];
+    # Kea runs under a dynamic user, so /var/lib/kea is only a link to this folder.
+    folders = [ "/var/lib/private/kea" ];
     preRestoreScript = ''
       ${lib.getExe' config.systemd.package "systemctl"} stop kea-dhcp4-server.service || true
     '';

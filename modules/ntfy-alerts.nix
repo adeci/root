@@ -105,8 +105,9 @@
           '';
       };
 
+      # ntfy runs under a dynamic user, so /var/lib/ntfy-sh is only a link to this folder.
       clan.core.state.ntfy.folders = [
-        "/var/lib/ntfy-sh"
+        "/var/lib/private/ntfy-sh"
       ];
 
       # Auth is provisioned from the generated EnvironmentFile so hashes/tokens never enter the Nix store.

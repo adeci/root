@@ -282,8 +282,9 @@
           };
 
           # The silences, which a backup server only copies; metrics and logs refill as the machines report.
+          # Alertmanager runs under a dynamic user, so /var/lib/alertmanager is only a link to this folder.
           clan.core.state = lib.mkIf (main && ntfyDelivery.enable) {
-            monitoring.folders = [ "/var/lib/alertmanager" ];
+            monitoring.folders = [ "/var/lib/private/alertmanager" ];
           };
 
           clan.core.postgresql = lib.mkIf main {
