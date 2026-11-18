@@ -69,6 +69,8 @@ in
       programs.zsh = {
         enable = true;
         enableGlobalCompInit = false;
+        enableBashCompletion = false;
+        promptInit = "";
       };
       environment.shells = lib.mkDefault [ config.wrappers.zsh.wrapper ];
     };

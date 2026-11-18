@@ -64,6 +64,15 @@
   # Users' SSH clients multiplex more than sshd's default 10 sessions over one connection.
   services.openssh.settings.MaxSessions = 64;
 
+  # A process left in a logged-out SSH session held the reboot of 13 Nov for systemd's full 90 seconds.
+  systemd.units."session-.scope" = {
+    text = ''
+      [Scope]
+      TimeoutStopSec=10s
+    '';
+    overrideStrategy = "asDropin";
+  };
+
   # Keep two weeks of builds for the binary cache to serve.
   nix.gc = {
     automatic = true;

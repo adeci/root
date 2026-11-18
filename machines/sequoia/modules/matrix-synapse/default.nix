@@ -153,7 +153,7 @@ in
 
   systemd.services.matrix-synapse.serviceConfig = {
     ExecStartPre = lib.mkBefore [
-      "+${lib.getExe' pkgs.coreutils "install"} -o matrix-synapse -g matrix-synapse ${
+      "+${lib.getExe' pkgs.coreutils "install"} -m 0400 -o matrix-synapse -g matrix-synapse ${
         lib.escapeShellArg
           config.clan.core.vars.generators.matrix-synapse.files."synapse-registration_shared_secret".path
       } /run/synapse-registration-shared-secret"

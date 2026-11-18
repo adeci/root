@@ -557,15 +557,19 @@
 
             virtualHosts = lib.mkMerge [
               {
-                # Agents push their journal here and nowhere else: the rest of Loki's API reads and deletes logs.
-                ${settings.host}.locations."= /loki/loki/api/v1/push" = {
-                  basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
-                  proxyPass = "http://127.0.0.1:${toString ports.loki}/loki/api/v1/push";
-                  extraConfig = ''
-                    client_max_body_size 32m;
-                    proxy_read_timeout 120s;
-                    proxy_send_timeout 120s;
-                  '';
+                ${settings.host}.locations = {
+                  # Agents push their journal here and nowhere else: the rest of Loki's API reads and deletes logs.
+                  "= /loki/loki/api/v1/push" = {
+                    basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
+                    proxyPass = "http://127.0.0.1:${toString ports.loki}/loki/api/v1/push";
+                    extraConfig = ''
+                      client_max_body_size 32m;
+                      proxy_read_timeout 120s;
+                      proxy_send_timeout 120s;
+                    '';
+                  };
+                  # Any other path would get nginx's welcome page.
+                  "/".return = "404";
                 };
               }
               {
