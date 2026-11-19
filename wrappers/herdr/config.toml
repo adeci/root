@@ -12,9 +12,10 @@ version_check = false
 prefix = "ctrl+space"
 
 # Workspaces are herdr's sessions, so they take tmux's session keys: shift+s starts one, `(`/`)` walk them.
+# alt+k/alt+j walk them without the prefix, up and down the sidebar; panes never see those two chords.
 new_workspace = ["prefix+shift+n", "prefix+shift+s"]
-previous_workspace = "prefix+("
-next_workspace = "prefix+)"
+previous_workspace = ["prefix+(", "alt+k"]
+next_workspace = ["prefix+)", "alt+j"]
 switch_workspace = "prefix+shift+1..9"
 
 # Tabs are tmux-style windows: shift+h/l walk them.

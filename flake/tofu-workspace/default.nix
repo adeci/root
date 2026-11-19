@@ -13,6 +13,8 @@
   appPrefix,
   commands,
   scripts ? { },
+  # Packages the scripts need besides tofu, git and clan, such as jq.
+  runtimeInputs ? [ ],
   # { host, forwards }: the commands that reach the providers' endpoints do so through one ssh connection to host, each forward <local port>:<address>:<port> listening on 127.0.0.1.
   tunnel ? null,
   # <name> = <provider configuration>, such as routeros.nexus: apply-<name> applies only that configuration's resources, so the others' endpoints may be unreachable.
@@ -80,7 +82,8 @@ let
         pkgs.gitMinimal
         tofu
         clan-cli
-      ];
+      ]
+      ++ runtimeInputs;
       runtimeEnv = {
         WORKSPACE = name;
         WORKSPACE_CONFIG = "${configFile}";

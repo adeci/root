@@ -176,6 +176,7 @@
         sharedEffectSecrets.github_release.token.description = "GitHub token that publishes releases";
         effectSecrets = {
           "github:fzakaria/rewindvm" = [ "cachix" ];
+          "github:fzakaria/genrulify" = [ "cachix" ];
           "github:adeci/earwig" = [
             "apple_developer_id"
             "github_release"

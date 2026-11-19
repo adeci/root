@@ -367,7 +367,7 @@
 
     zephyr = {
       model = "cAP-ax";
-      location = "living room";
+      location = "upstairs";
       lan = {
         ip = "10.99.0.5";
         vlan = "mgmt";
@@ -383,7 +383,7 @@
 
     nimbus = {
       model = "cAP-ax";
-      location = "upstairs";
+      location = "living room ceiling";
       lan = {
         ip = "10.99.0.6";
         vlan = "mgmt";

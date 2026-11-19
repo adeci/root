@@ -199,7 +199,7 @@ def main():
     if args.fallback_port:
         print(f"    - DHCP client on {args.fallback_port}")
     print("")
-    print(f"  Plug {args.management_port} into the management network, then apply its configuration.")
+    print("  Plug ether1 back into its cable; the rebuild goes on from here.")
     print("")
 
 

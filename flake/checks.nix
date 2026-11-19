@@ -49,6 +49,9 @@ in
         // {
           # Reading the inventory runs its checks.
           inventory = pkgs.writeText "inventory" (lib.concatLines (lib.attrNames self.inventory));
+
+          # The home.links command through a series of switches, in a scratch home.
+          home-links = callPackage ../modules/home-links/tests { };
         }
         // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
           # Alert rules, routing and the ntfy bridge, all of which run on the Linux monitoring server.

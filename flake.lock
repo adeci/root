@@ -206,19 +206,17 @@
         "nixbot": [
           "nixbot"
         ],
-        "nixpkgs": [
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs",
         "treefmt-nix": [
           "treefmt-nix"
         ]
       },
       "locked": {
-        "lastModified": 1794905972,
-        "narHash": "sha256-D5+TyLwaFWvpqPIXcd2Jt5PMhnkvJmlGVSQimupnUXc=",
+        "lastModified": 1795045777,
+        "narHash": "sha256-GD2kKsQFuE8X8vVNIgZK0yUMwD/7DgM75EKzDMFAMsk=",
         "owner": "adeci",
         "repo": "earwig",
-        "rev": "9d13d1cc806bb14f97a08d61385c580534fc1e14",
+        "rev": "6debb69d0d73f57b8c46698e73d33e839e00c3fd",
         "type": "github"
       },
       "original": {
@@ -377,7 +375,7 @@
         "flake-parts": [
           "flake-parts"
         ],
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": "nixpkgs_2",
         "systems": [
           "systems"
         ],
@@ -580,6 +578,22 @@
     },
     "nixpkgs": {
       "locked": {
+        "lastModified": 1793726008,
+        "narHash": "sha256-jQp1wKvbwWdLBASTXkSi/VYmDJ5AbBi1WvcMt9HWJC8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1d060086d60cb76a40cf37109f979d88a5bd6396",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
         "lastModified": 1793977579,
         "narHash": "sha256-WrSODdZFVIs/Hh2NzC0bY+ROByi0bATg8WfePX8dPj8=",
         "owner": "NixOS",
@@ -594,7 +608,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
+    "nixpkgs_3": {
       "locked": {
         "lastModified": 1794386569,
         "narHash": "sha256-x9sADJvoVG0L6RejZB+/BB4YiGZFBZrfTlhF4uBq1tQ=",
@@ -669,7 +683,7 @@
         "nix-index-database": "nix-index-database",
         "nixbot": "nixbot",
         "nixos-hardware": "nixos-hardware",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs_3",
         "pelican": "pelican",
         "sdwire-cli": "sdwire-cli",
         "sops-nix": "sops-nix",

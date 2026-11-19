@@ -28,16 +28,10 @@ builtins.mapAttrs (_: withPorts) {
     extraPackages = [ "wifi-qcom" ];
     etherPorts = 2;
     sfpPorts = 0;
-    # wifi1 is 5GHz and wifi2 2.4GHz; these ids are stable after netinstall.
+    # The radios' interface names, the same on every unit: wifi1 is 5GHz and wifi2 2.4GHz.
     radios = [
-      {
-        name = "wifi1";
-        id = "*2";
-      }
-      {
-        name = "wifi2";
-        id = "*3";
-      }
+      "wifi1"
+      "wifi2"
     ];
   };
 }

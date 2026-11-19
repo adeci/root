@@ -46,5 +46,6 @@ in
       # A blank appliance comes up on its own while the others are unreachable or blank.
       applyAlone = lib.mapAttrs (name: _: "routeros.${name}") appliances;
       scripts.state-rm-device = ./net-state-rm-device.sh;
+      runtimeInputs = [ pkgs.jq ];
     };
 }

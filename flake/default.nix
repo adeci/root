@@ -9,7 +9,7 @@
     ./modules.nix
     ./packages.nix
     ./routeros
-    ./routeros-netinstall.nix
+    ./routeros-netinstall
     ./terranix.nix
     ./tests
     ./users

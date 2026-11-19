@@ -1,28 +1,36 @@
 # shellcheck shell=bash
+# net-rebuild-<device> passes --yes, as its netinstall has just wiped the device.
+ask=true
+if [[ ${1-} == --yes ]]; then
+  ask=false
+  shift
+fi
 if [[ $# -eq 0 ]]; then
-  echo "Usage: net-state-rm-device <device-name> [device-name ...]"
+  echo "Usage: net-state-rm-device [--yes] <device-name> [device-name ...]"
   exit 1
 fi
-all_state="$(tofu state list 2>/dev/null)"
+all_state="$(tofu state pull)"
 resources=()
 for device in "$@"; do
-  # A device's resources are named "<device>" or "<device>_…"; a bare match would also take another device's resource that mentions it.
-  mapfile -t matched < <(echo "$all_state" | grep -E "^[^.]+\.${device}(_|\$)")
+  # What the state records under the device's provider configuration, so also what the config has dropped since, or a device gone from the inventory.
+  mapfile -t matched < <(echo "$all_state" | jq -r --arg device "$device" '.resources[] | select(.provider | endswith("].\($device)")) | (if .mode == "data" then "data." else "" end) + .type + "." + .name')
   resources+=("${matched[@]}")
 done
 if [[ ${#resources[@]} -eq 0 ]]; then
-  echo "No resources found matching: $*"
+  echo "No resources of $* in the state."
   exit 0
 fi
-echo "Removing ${#resources[@]} resources matching: $*"
-for resource in "${resources[@]}"; do
-  echo "  $resource"
-done
-echo ""
-read -rp "Continue? [y/N] " confirm
-if [[ "$confirm" != "y" ]]; then
-  echo "Aborted."
-  exit 0
+if $ask; then
+  echo "Removing ${#resources[@]} resources of: $*"
+  for resource in "${resources[@]}"; do
+    echo "  $resource"
+  done
+  echo ""
+  read -rp "Continue? [y/N] " confirm
+  if [[ "$confirm" != "y" ]]; then
+    echo "Aborted."
+    exit 0
+  fi
 fi
-tofu state rm "${resources[@]}"
-echo "Done."
+tofu state rm "${resources[@]}" >/dev/null
+echo "Removed ${#resources[@]} resources of $* from the state."

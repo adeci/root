@@ -22,7 +22,7 @@ let
     ];
   };
 
-  # The radios pre-exist after netinstall; the import blocks bring them into state on first apply.
+  # The radios pre-exist after netinstall; the import blocks find them by name and bring them into state on first apply.
   radios = accessPoint: models.${accessPoint.model}.radios;
 
   # The VLANs an access point's networks join.
@@ -111,9 +111,9 @@ in
     in
     lib.genAttrs' (radios accessPoint) (
       radio:
-      lib.nameValuePair "${name}_${radio.name}" {
+      lib.nameValuePair "${name}_${radio}" {
         provider = "routeros.${name}";
-        inherit (radio) name;
+        name = radio;
         disabled = false;
         configuration = {
           config = config.resource.routeros_wifi_configuration."${name}_${primary}" "name";
@@ -133,10 +133,10 @@ in
         radio:
         map (
           network:
-          lib.nameValuePair "${name}_${radio.name}_${network}" {
+          lib.nameValuePair "${name}_${radio}_${network}" {
             provider = "routeros.${name}";
-            name = "${radio.name}-${network}";
-            master_interface = config.resource.routeros_wifi."${name}_${radio.name}" "name";
+            name = "${radio}-${network}";
+            master_interface = config.resource.routeros_wifi."${name}_${radio}" "name";
             disabled = false;
             configuration = {
               config = config.resource.routeros_wifi_configuration."${name}_${network}" "name";
@@ -151,8 +151,8 @@ in
     lib.mapAttrsToList (
       name: accessPoint:
       map (radio: {
-        to = "routeros_wifi.${name}_${radio.name}";
-        inherit (radio) id;
+        to = "routeros_wifi.${name}_${radio}";
+        id = radio;
         provider = "routeros.${name}";
       }) (radios accessPoint)
     ) accessPoints
