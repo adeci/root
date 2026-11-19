@@ -2,7 +2,6 @@
   b2,
   cloudflare,
   lan,
-  machines,
   tailnet,
   ...
 }@inventory:
@@ -365,28 +364,6 @@
         home = { };
         hotspot = { };
       };
-    };
-  };
-
-  # On every wired NIC a network admin sends its machine's own DHCP client id, so its wired reservation follows it, not the dock.
-  network-admin = {
-    module = {
-      name = "importer";
-      input = "clan-core";
-    };
-    roles.default = {
-      tags = [ "network-admin" ];
-      extraModules = [
-        (
-          { config, ... }:
-          {
-            networking.networkmanager.settings.connection-wired = {
-              match-device = "type:ethernet";
-              "ipv4.dhcp-client-id" = machines.${config.clan.core.settings.machine.name}.wiredClientId;
-            };
-          }
-        )
-      ];
     };
   };
 }

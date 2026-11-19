@@ -5,7 +5,7 @@
 }:
 let
   inherit (pkgs) lib;
-  inherit (self.inventory) lan machines router;
+  inherit (self.inventory) lan router;
   inherit (self.inventory.routeros) exporter;
   sshKeys = import "${pkgs.path}/nixos/tests/ssh-keys.nix" pkgs;
 
@@ -151,7 +151,7 @@ pkgs.testers.runNixOSTest {
       inventory_json = ${
         builtins.toJSON (
           builtins.toJSON {
-            inherit lan machines router;
+            inherit lan router;
             appliances = lib.attrNames self.inventory.appliances;
             tailnet = self.inventory.tailnet.addresses;
           }

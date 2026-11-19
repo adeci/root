@@ -124,6 +124,11 @@ in
         );
       };
 
+      fallbackNetwork = mkOption {
+        type = types.str;
+        description = "The block every appliance's fallbackAddress lies in, written without host bits as RouterOS takes it; the appliances' ssh and API admit it beside the management VLAN.";
+      };
+
       dns = mkOption {
         type = types.attrsOf (
           types.submodule {
@@ -274,75 +279,55 @@ in
 
     machines = mkOption {
       type = types.attrsOf (
-        types.submodule (
-          { name, config, ... }:
-          let
-            machine = config;
-          in
-          {
-            options = {
-              class = mkOption {
-                type = types.enum [
-                  "nixos"
-                  "darwin"
-                ];
-                default = "nixos";
-              };
-              tags = mkOption {
-                type = types.listOf types.str;
-                default = [ ];
-                description = "Its clan inventory tags; portable marks a laptop that comes and goes, network-admin a machine whose reservations on trusted reach the mgmt VLAN.";
-              };
-              tailnet = mkOption {
-                type = types.nullOr tailnetAddress;
-                default = null;
-                description = "Its tailnet address. Tailscale assigns it, so a reinstall can change it.";
-              };
-              wiredClientId = mkOption {
-                type = types.nullOr types.str;
-                readOnly = true;
-                default = if lib.elem "network-admin" config.tags then textClientId name else null;
-                description = "The DHCP client id a network-admin machine's NetworkManager sends on every wired NIC: its name. Null for other machines.";
-              };
-              lan = mkOption {
-                type = types.nullOr (
-                  types.submodule (
-                    { config, ... }:
-                    {
-                      imports = [ reservation ];
-                      options = {
-                        wired = mkOption {
-                          type = types.bool;
-                          default = false;
-                          description = "Whether the reservation is the machine's wired one, matched by its wiredClientId instead of the MAC, so it follows the machine from NIC to NIC and dock to dock.";
-                        };
-                        clientId = mkOption {
-                          type = types.nullOr (types.strMatching "[0-9a-fA-F]{2}(:[0-9a-fA-F]{2})*");
-                          default = if config.wired then machine.wiredClientId else null;
-                          description = "The DHCP client id the machine sends, systemd-networkd's own or its wiredClientId; the reservation matches it instead of the MAC.";
-                        };
-                        extra = mkOption {
-                          type = types.attrsOf (
-                            types.submodule {
-                              options = {
-                                mac = mkOption { type = macAddress; };
-                                ip = mkOption { type = ipv4Address; };
-                              };
-                            }
-                          );
-                          default = { };
-                          description = "More NICs on the machine's VLAN, such as a BMC; each becomes a host named <machine>-<label>.";
-                        };
-                      };
-                    }
-                  )
-                );
-                default = null;
-                description = "Its reserved address on the home LAN; null for a machine that isn't on it.";
-              };
+        types.submodule {
+          options = {
+            class = mkOption {
+              type = types.enum [
+                "nixos"
+                "darwin"
+              ];
+              default = "nixos";
             };
-          }
-        )
+            tags = mkOption {
+              type = types.listOf types.str;
+              default = [ ];
+              description = "Its clan inventory tags; portable marks a laptop that comes and goes.";
+            };
+            tailnet = mkOption {
+              type = types.nullOr tailnetAddress;
+              default = null;
+              description = "Its tailnet address. Tailscale assigns it, so a reinstall can change it.";
+            };
+            lan = mkOption {
+              type = types.nullOr (
+                types.submodule {
+                  imports = [ reservation ];
+                  options = {
+                    clientId = mkOption {
+                      type = types.nullOr (types.strMatching "[0-9a-fA-F]{2}(:[0-9a-fA-F]{2})*");
+                      default = null;
+                      description = "The DHCP client id systemd-networkd sends; the reservation matches it instead of the MAC.";
+                    };
+                    extra = mkOption {
+                      type = types.attrsOf (
+                        types.submodule {
+                          options = {
+                            mac = mkOption { type = macAddress; };
+                            ip = mkOption { type = ipv4Address; };
+                          };
+                        }
+                      );
+                      default = { };
+                      description = "More NICs on the machine's VLAN, such as a BMC; each becomes a host named <machine>-<label>.";
+                    };
+                  };
+                }
+              );
+              default = null;
+              description = "Its reserved address on the home LAN; null for a machine that isn't on it.";
+            };
+          };
+        }
       );
       default = { };
       description = "The clan machines; the clan inventory is built from these.";
@@ -522,7 +507,7 @@ in
                 };
                 fallbackAddress = mkOption {
                   type = types.str;
-                  description = "A static address with prefix length, for reaching it from a laptop when DHCP fails.";
+                  description = "A static address with prefix length in lan.fallbackNetwork, for reaching it from a laptop when DHCP fails.";
                 };
                 vlans = mkOption {
                   type = types.listOf vlanName;

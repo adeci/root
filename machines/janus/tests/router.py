@@ -15,18 +15,13 @@ zones = {
     "mgmt": set(),
 }
 assert set(zones) == set(vlans), f"the test has zones for {sorted(zones)}, the inventory has VLANs {sorted(vlans)}"
-# The hosts of the machines tagged network-admin: on trusted, they alone also reach mgmt.
-network_admins = {
-    host
-    for name, machine in inventory["machines"].items()
-    if "network-admin" in machine["tags"]
-    for host in [name, *(f"{name}-{label}" for label in machine["lan"]["extra"])]
-}
 # The VLANs firewall.nix lets ssh into janus.
 admin_vlans = {"trusted", "mgmt"}
 # LPD, IPP and JetDirect, which firewall.nix lets guests print with, and the printer's web page, which it doesn't.
 print_ports = [515, 631, 9100]
 web_port = 80
+# An appliance's ssh port, which trusted hosts reach only through janus.
+appliance_ssh_port = 22
 
 # The appliance cabled to janus's mgmt port plugs in there; every other host comes in on the trunk.
 mgmt_port_host = next(
@@ -65,12 +60,6 @@ def lease(host, client_id=None):
     option = f"-x 0x3d:{client_id.replace(':', '')}" if client_id else ""
     clients.succeed(f"{netns(host)} {busybox} udhcpc -i {host} -n -q -s {udhcpc_script} {option}")
     return json.loads(clients.succeed(f"ip -n {host} -j -4 address show dev {host}"))[0]["addr_info"][0]["local"]
-
-
-def in_pool(vlan, address):
-    """Whether an address is one the VLAN's DHCP pool hands out."""
-    pool = vlans[vlan]["dhcpPool"]
-    return ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"])
 
 
 def resolve(host, name, tcp=False):
@@ -151,7 +140,8 @@ with subtest("every host gets its reserved address, by MAC or client id, and oth
     for vlan, host in pool_hosts.items():
         plug_in(host, trunk(vlan))
         address = lease(host)
-        assert in_pool(vlan, address), f"{host} got {address}"
+        pool = vlans[vlan]["dhcpPool"]
+        assert ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"]), f"{host} got {address}"
         pool_addresses[vlan] = address
 
 with subtest("an appliance's replacement, with a new MAC, gets its address by its name while the old lease is live"):
@@ -194,18 +184,16 @@ with subtest("each VLAN reaches the others exactly as its zone allows"):
             if target != source:
                 ping(host, address, answered=target in zones[source])
 
-with subtest("on trusted, the network admins' hosts alone reach mgmt, not another machine in an admin's dock"):
-    for name, host in hosts.items():
-        if host["vlan"] == "trusted":
-            ping(name, pool_addresses["mgmt"], answered=name in network_admins)
-    # A wired reservation goes by its machine's client id, so the dock's MAC alone gets a pool address.
-    for name in network_admins:
-        if hosts[name]["clientId"]:
-            stranger = f"{name}-dock"
-            plug_in(stranger, trunk("trusted"), hosts[name]["mac"])
-            address = lease(stranger)
-            assert in_pool("trusted", address), f"{stranger} got {address}"
-            ping(stranger, pool_addresses["mgmt"], answered=False)
+with subtest("no host on trusted, reserved or from the pool, reaches a host on mgmt"):
+    trusted_hosts = [name for name, host in hosts.items() if host["vlan"] == "trusted"] + [pool_hosts["trusted"]]
+    mgmt_hosts = {name: host["ip"] for name, host in hosts.items() if host["vlan"] == "mgmt"}
+    mgmt_hosts[pool_hosts["mgmt"]] = pool_addresses["mgmt"]
+    for name in mgmt_hosts:
+        listen(name, appliance_ssh_port)
+    for source in trusted_hosts:
+        for address in mgmt_hosts.values():
+            ping(source, address, answered=False)
+            connect(source, address, appliance_ssh_port, accepted=False)
 
 with subtest("guests print to the printer, and reach neither its other ports nor another trusted host"):
     guest = pool_hosts["guest"]
@@ -228,7 +216,7 @@ with subtest("janus answers ssh on the admin VLANs only, and the router modules'
         janus.wait_for_open_port(port, gateway)
         connect(pool_hosts["trusted"], gateway, port, accepted=False)
 
-with subtest("a trusted host without an admin address reaches an appliance's API through ssh -L via janus, and not directly"):
+with subtest("a trusted host reaches an appliance's API through ssh -L via janus, and not directly"):
     host = pool_hosts["trusted"]
     api = appliance_apis[mgmt_port_host]
     answer(mgmt_port_host, api["port"], mgmt_port_host)

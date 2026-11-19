@@ -6,7 +6,6 @@
   ...
 }:
 let
-  inherit (self.inventory) machines;
   inherit (self.inventory.lan) vlans hosts;
   inherit (self.inventory.router.interfaces) wan;
 
@@ -17,18 +16,10 @@ let
     map (vlan: vlan.interface) (lib.filter (vlan: vlan.tailnet) (lib.attrValues vlans))
   );
 
-  # The reserved addresses of the machines tagged network-admin, which the inventory keeps on trusted.
-  networkAdminAddresses = lib.concatMap (
-    machine: [ machine.lan.ip ] ++ map (nic: nic.ip) (lib.attrValues machine.lan.extra)
-  ) (lib.filter (machine: lib.elem "network-admin" machine.tags) (lib.attrValues machines));
-
   # What each VLAN's clients may reach through Janus, besides replies.
   zones = {
-    # Everything, vault and tenant included; mgmt only from the network admins' machines.
-    trusted = [
-      ''oifname "${vlans.mgmt.interface}" ip saddr { ${lib.concatStringsSep ", " networkAdminAddresses} } counter name forward_accept_admins_to_mgmt accept''
-      ''oifname != "${vlans.mgmt.interface}" counter name forward_accept_trusted accept''
-    ];
+    # Everything but mgmt, which only Janus reaches; vault and tenant included.
+    trusted = [ ''oifname != "${vlans.mgmt.interface}" counter name forward_accept_trusted accept'' ];
     iot = [ ''oifname "${wan}" counter name forward_accept_iot_to_wan accept'' ];
     # Printing to the trusted printer: LPD, IPP and JetDirect.
     guest = [
@@ -131,7 +122,6 @@ let
     "forward_accept_guest_to_printer"
     "forward_accept_iot_to_wan"
     "forward_accept_tenant_to_wan"
-    "forward_accept_admins_to_mgmt"
     "forward_accept_trusted"
     "forward_accept_vault_to_wan"
   ];

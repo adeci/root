@@ -9,7 +9,7 @@
 let
   inherit (self.inventory) appliances lan;
   inherit (self.inventory.routeros) admin exporter;
-  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret setClanVar;
+  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret safeName setClanVar;
 
   # The router's address on an appliance's management VLAN.
   routerAddress = appliance: lan.vlans.${appliance.lan.vlan}.gateway;
@@ -40,6 +40,12 @@ in
     provider = "routeros.${name}";
     enabled = true;
     servers = [ (routerAddress appliance) ];
+  }) appliances;
+
+  # The time zone lookup asks MikroTik's cloud, which the router never lets them reach.
+  resource.routeros_system_clock = lib.mapAttrs (name: _: {
+    provider = "routeros.${name}";
+    time_zone_autodetect = false;
   }) appliances;
 
   # The exporter's account: one password on every appliance, kept in the router's clan vars, reachable only from the router.
@@ -91,20 +97,36 @@ in
       disabledServices = {
         telnet = 23;
         ftp = 21;
+        www = 80;
         winbox = 8291;
+        api-ssl = 8729;
+      };
+      # The logins that stay answer only the management VLAN, which the router reaches them on, and the fallback network.
+      logins = appliance: {
+        ssh = 22;
+        api = appliance.api.port;
       };
     in
     lib.concatMapAttrs (
-      name: _:
+      name: appliance:
       lib.mapAttrs' (
         service: port:
-        lib.nameValuePair "${name}_disable_${service}" {
+        lib.nameValuePair "${name}_disable_${safeName service}" {
           provider = "routeros.${name}";
           numbers = service;
           inherit port;
           disabled = true;
         }
       ) disabledServices
+      // lib.mapAttrs' (
+        service: port:
+        lib.nameValuePair "${name}_${service}" {
+          provider = "routeros.${name}";
+          numbers = service;
+          inherit port;
+          address = "${lan.vlans.${appliance.lan.vlan}.cidr},${lan.fallbackNetwork}";
+        }
+      ) (logins appliance)
     ) appliances;
 
   resource.routeros_tool_mac_server = lib.mapAttrs (name: _: {
@@ -120,6 +142,22 @@ in
   resource.routeros_tool_mac_server_ping = lib.mapAttrs (name: _: {
     provider = "routeros.${name}";
     enabled = false;
+  }) appliances;
+
+  resource.routeros_tool_bandwidth_server = lib.mapAttrs (name: _: {
+    provider = "routeros.${name}";
+    enabled = false;
+  }) appliances;
+
+  resource.routeros_ip_neighbor_discovery_settings = lib.mapAttrs (name: _: {
+    provider = "routeros.${name}";
+    discover_interface_list = "none";
+  }) appliances;
+
+  # Their bridges carry the clients' IPv6 without needing any of their own.
+  resource.routeros_ipv6_settings = lib.mapAttrs (name: _: {
+    provider = "routeros.${name}";
+    disable_ipv6 = true;
   }) appliances;
 
   resource.routeros_ip_address = lib.mapAttrs' (
