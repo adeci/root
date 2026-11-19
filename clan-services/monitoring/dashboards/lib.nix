@@ -9,6 +9,12 @@ let
     uid = "loki";
   };
 
+  # A panel whose queries each name their own data source.
+  mixed = {
+    type = "datasource";
+    uid = "-- Mixed --";
+  };
+
   # A strip's colours: the idle shade, then a brighter one from each step's value up.
   shades = steps: {
     mode = "absolute";
@@ -820,6 +826,7 @@ let
 
   # One row per label set the queries share, one column per query; `renamedColumns` names the label columns.
   # A sparkline column's query runs over the time range; a column with `hidden = true` only brings its rows.
+  # A column with its own `datasource` brings that source's rows, e.g. a Prometheus column in a Loki table.
   mergedTable =
     {
       title,
@@ -841,12 +848,15 @@ let
       datasource ? prometheus,
     }:
     let
+      datasourceOf = column: column.datasource or datasource;
       targets = lettered (
         map (
-          column: if column ? sparkline then target column.expr "" else tableTarget datasource column.expr
+          column:
+          if column ? sparkline then target column.expr "" else tableTarget (datasourceOf column) column.expr
         ) columns
       );
-      # Each column with its refId and the field Grafana gives its values: "Trend #A" for a sparkline, else "Value #A", or just "Value" for a lone Prometheus query.
+      prometheusColumns = builtins.filter (column: datasourceOf column == prometheus) columns;
+      # Each column with its refId and the field Grafana gives its values: "Trend #A" for a sparkline, else "Value #A", or just "Value" for the only Prometheus query.
       queryColumns = builtins.genList (
         index:
         let
@@ -859,7 +869,7 @@ let
           field =
             if column ? sparkline then
               "Trend #${refId}"
-            else if datasource == prometheus && builtins.length columns == 1 then
+            else if datasourceOf column == prometheus && builtins.length prometheusColumns == 1 then
               "Value"
             else
               "Value #${refId}";
@@ -873,7 +883,9 @@ let
       hiddenQueries = builtins.filter (column: column.hidden or false) queryColumns;
     in
     {
-      inherit title targets datasource;
+      inherit title targets;
+      datasource =
+        if builtins.all (column: datasourceOf column == datasource) columns then datasource else mixed;
       type = "table";
       gridPos = { inherit w h; };
       fieldConfig = {
@@ -956,6 +968,7 @@ let
     "sensor"
     "chip"
     "certificate"
+    "backup"
     "integration"
     "controller"
     "file"
@@ -982,17 +995,6 @@ let
           desc = false;
         }
       ];
-      # The target labels every series carries say nothing here, nor a DHCP pool's other names, and the alert's subject shows joined, as On.
-      hiddenColumns = [
-        "job"
-        "os"
-        "kind"
-        "role"
-        "address"
-        "pool"
-        "subnet_id"
-      ]
-      ++ alertSubjects;
       renamedColumns = {
         severity = "Severity";
         alertname = "Alert";
@@ -1017,9 +1019,10 @@ let
         {
           name = "Since";
           width = 92;
-          expr = ''label_join(1000 * ALERTS_FOR_STATE and ignoring (alertstate) ALERTS{alertstate="firing", severity=~"critical|warning", ${matchers}}, "detail", " ", ${
+          # Only the labels shown, so no other label of an alert becomes a column of its own.
+          expr = ''max by (severity, alertname, instance, detail) (label_join(1000 * ALERTS_FOR_STATE and ignoring (alertstate) ALERTS{alertstate="firing", severity=~"critical|warning", ${matchers}}, "detail", " ", ${
             builtins.concatStringsSep ", " (map (label: "\"${label}\"") alertSubjects)
-          })'';
+          }))'';
           unit = "dateTimeFromNow";
         }
       ];
@@ -1233,6 +1236,7 @@ in
     lokiTarget
     mappings
     mergedTable
+    prometheus
     queryOverride
     row
     stat

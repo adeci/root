@@ -35,7 +35,7 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Devices";
-      description = "The router and the appliances. Restarts counts those in the picked time range.";
+      description = "The router and the appliances. Restarts counts those in the picked time range. Wi-Fi clients counts those on an access point now, as it lists them: a client that has just roamed can count on both access points for a moment.";
       w = 24;
       # The router and each appliance, plus the title and the header.
       h = builtins.length network.appliances + 3;
@@ -103,11 +103,16 @@ ui.row {
           expr = device ''changes(node_boot_time_seconds{${router}, job="node"}[$__range])'' "resets((max by (name) (mikrotik_system_uptime{${mikrotik}}))[$__range:1m])";
           valueMappings = ui.mappings.blankZero;
         }
+        {
+          name = "Wi-Fi clients";
+          width = 100;
+          expr = "count by (name) (janus_routeros_wifi_client_signal_dbm{${router}})";
+        }
       ];
     })
     (ui.mergedTable {
       title = "Links";
-      description = "Each known cable at the appliance port it is written on. Errors and link downs count those in the picked time range. Traffic is the busiest moment in that range, beside its course.";
+      description = "Each known cable at the appliance port it is written on. Link downs counts those in the picked time range. Traffic is the busiest moment in that range, beside its course.";
       w = 15;
       # A grid unit per cable, plus the title and the header.
       h = builtins.length (builtins.attrNames network.cableEnds) + 2;

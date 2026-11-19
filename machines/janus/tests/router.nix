@@ -74,6 +74,8 @@ pkgs.testers.runNixOSTest {
     clan.core.vars.generators.${exporter.generator}.script = ''touch "$out/${exporter.file}"'';
     # As base.nix runs it on every machine; the firewall decides who reaches it.
     services.openssh.enable = true;
+    # As clan-core has it on the real machine, so network-online.target doesn't wait for the WAN.
+    systemd.network.wait-online.enable = false;
     # The key a trusted host forwards ports through janus with, as the network apps do.
     users.users.root.openssh.authorizedKeys.keys = [ sshKeys.snakeOilPublicKey ];
     services.unbound = {
@@ -168,6 +170,8 @@ pkgs.testers.runNixOSTest {
         builtins.toJSON (lib.mapAttrs (_: appliance: appliance.api) self.inventory.appliances)
       }
       udhcpc_print_script = "${udhcpcPrintScript}"
+      textfile_directory = "${nodes.janus.monitoring.textfileDirectory}"
+      smokeping_port = ${toString nodes.janus.monitoring.exporters.smokeping}
     ''
     + builtins.readFile ./router.py;
 }

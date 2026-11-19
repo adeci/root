@@ -1,5 +1,6 @@
 from ipaddress import ip_address
 import json
+import re
 
 inventory = json.loads(inventory_json)
 vlans = inventory["lan"]["vlans"]
@@ -55,10 +56,20 @@ def plug_in(host, port, mac=None):
     )
 
 
+def own_name(host):
+    """The name a host asks for its address with; a reservation's name wins over it."""
+    return f"{host}-own"
+
+
+# One pool host gives its name in the client FQDN option, as some laptops do; Kea keeps it fully qualified, ending in a dot.
+fqdn_host = pool_hosts["iot"]
+
+
 def lease(host, client_id=None):
-    """Runs the host's DHCP client, with its client id if it has one, until it is bound; returns its address."""
+    """Runs the host's DHCP client, asking with its own name and its client id if it has one, until it is bound; returns its address."""
+    name = f"-F {own_name(host)}" if host == fqdn_host else f"-x hostname:{own_name(host)}"
     option = f"-x 0x3d:{client_id.replace(':', '')}" if client_id else ""
-    clients.succeed(f"{netns(host)} {busybox} udhcpc -i {host} -n -q -s {udhcpc_script} {option}")
+    clients.succeed(f"{netns(host)} {busybox} udhcpc -i {host} -n -q -s {udhcpc_script} {name} {option}")
     return json.loads(clients.succeed(f"ip -n {host} -j -4 address show dev {host}"))[0]["addr_info"][0]["local"]
 
 
@@ -113,13 +124,21 @@ def answer(host, port, reply):
     clients.wait_until_succeeds(f"{netns(host)} ss -Hltn 'sport = :{port}' | grep -q .")
 
 
-start_all()
+# The ISP comes up once janus has booted, as a modem does after a power cut.
+janus.start()
+clients.start()
 janus.wait_for_unit("kea-dhcp4-server.service")
 janus.wait_for_unit("unbound.service")
+isp.start()
 isp.wait_for_unit("bind.service")
 janus.wait_until_succeeds(f"ip -4 route show default | grep -q 'via {wan_gateway} '")
 wan = inventory["router"]["interfaces"]["wan"]
 janus_wan = json.loads(janus.succeed(f"ip -j -4 address show dev {wan}"))[0]["addr_info"][0]["local"]
+
+with subtest("the latency prober pings the internet once the ISP answers, though janus booted without it"):
+    janus.wait_until_succeeds(
+        f"curl -sf http://127.0.0.1:{smokeping_port}/metrics | grep -Eq '^smokeping_requests_total\\{{.*\\}} [1-9]'", timeout=60
+    )
 
 # The switch: the trunk carries every VLAN to janus's LAN port, tagged, and the mgmt link carries mgmt to its mgmt port.
 clients.succeed("ip link set trunk up", "ip link set mgmt up")
@@ -143,6 +162,17 @@ with subtest("every host gets its reserved address, by MAC or client id, and oth
         pool = vlans[vlan]["dhcpPool"]
         assert ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"]), f"{host} got {address}"
         pool_addresses[vlan] = address
+
+with subtest("janus exports every lease in use, named as its reservation or as its client asked, but never as a guest or tenant asked"):
+    # The monitoring agent makes the folder on a real machine.
+    janus.succeed(f"mkdir -p {textfile_directory}", "systemctl start janus-dhcp-leases.service")
+    exported = janus.succeed(f"cat {textfile_directory}/janus-dhcp-leases.prom")
+    leased = set(re.findall(r'address="([^"]+)"', exported))
+    assert leased == {host["ip"] for host in hosts.values()} | set(pool_addresses.values()), f"janus exported the leases of {leased}"
+    names = dict(re.findall(r'address="([^"]+)",mac="[^"]+",hostname="([^"]+)"', exported))
+    expected = {host["ip"]: name for name, host in hosts.items()}
+    expected.update({pool_addresses[vlan]: own_name(host) for vlan, host in pool_hosts.items() if vlan not in ("guest", "tenant")})
+    assert names == expected, f"janus exported {names}, not {expected}"
 
 with subtest("an appliance's replacement, with a new MAC, gets its address by its name while the old lease is live"):
     for name in inventory["appliances"]:
@@ -219,6 +249,8 @@ with subtest("janus answers ssh on the admin VLANs only, and the router modules'
 with subtest("a trusted host reaches an appliance's API through ssh -L via janus, and not directly"):
     host = pool_hosts["trusted"]
     api = appliance_apis[mgmt_port_host]
+    # janus's own reader asks every appliance each half minute, and would take the listener's one answer.
+    janus.succeed("systemctl stop janus-routeros-health.timer janus-routeros-health.service")
     answer(mgmt_port_host, api["port"], mgmt_port_host)
     connect(host, api["address"], api["port"], accepted=False)
     ssh = f"ssh -i /root/.ssh/id_snakeoil -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -S /tmp/janus root@{vlans['trusted']['gateway']}"

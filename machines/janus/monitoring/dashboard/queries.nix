@@ -22,8 +22,12 @@ let
     }
   ];
 
-  # Each lease the router's DHCP server hands out or renews: the client's MAC and address, the address's first three octets as `network`, and the address again as `name`, for a table to show as the inventory names it.
-  leases = ''{${router}, service_name="kea-dhcp4-server.service"} |~ "DHCP4_LEASE_(ALLOC|REUSE)" | regexp `hwtype=1 (?P<mac>[0-9a-f:]+)\].* lease (?P<address>(?P<network>[0-9]+[.][0-9]+[.][0-9]+)[.][0-9]+) has been` | label_format name="{{.address}}"'';
+  # Each lease the router's DHCP server hands out or renews: the client's MAC and address, and the address's first three octets as `network`.
+  leases = ''{${router}, service_name="kea-dhcp4-server.service"} |~ "DHCP4_LEASE_(ALLOC|REUSE)" | regexp `hwtype=1 (?P<mac>[0-9a-f:]+)\].* lease (?P<address>(?P<network>[0-9]+[.][0-9]+[.][0-9]+)[.][0-9]+) has been`'';
+  # Every reserved address, as a regex.
+  reservedAddresses = builtins.concatStringsSep "|" (
+    map (builtins.replaceStrings [ "." ] [ "[.]" ]) (builtins.attrNames network.hostsByAddress)
+  );
 in
 {
   inherit
@@ -31,6 +35,7 @@ in
     named
     showAs
     leases
+    reservedAddresses
     ;
   mikrotik = ''${router}, job="mikrotik"'';
 
@@ -48,6 +53,8 @@ in
 
   # The time of each lease, to unwrap.
   leaseTimes = "${leases} | label_format seen=`{{ __timestamp__ | unixEpoch }}` | unwrap seen";
+  # The leases of reserved addresses, with the address again as `name`, for a table to show as the inventory names it.
+  reservedLeases = ''${leases} | address =~ "${reservedAddresses}" | label_format name="{{.address}}"'';
   # 1 for each client that got a lease in the last day and none in the six days before.
   newClients =
     labels:

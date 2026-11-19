@@ -11,12 +11,6 @@ let
     inherit (cable) appliance port;
   }) steadyCables;
 
-  # The other ends that are appliance ports too.
-  farEnds = map (cable: {
-    appliance = cable.to;
-    port = cable.toPort;
-  }) (builtins.filter (cable: inventory.appliances ? ${cable.to}) steadyCables);
-
   portsByAppliance =
     ends: builtins.mapAttrs (_: map (end: end.port)) (builtins.groupBy (end: end.appliance) ends);
 in
@@ -28,8 +22,6 @@ in
   vlans = builtins.sort (a: b: a.id < b.id) (
     builtins.attrValues (builtins.mapAttrs (name: vlan: vlan // { inherit name; }) inventory.lan.vlans)
   );
-  # Appliance ports at either end of a known cable.
-  cabledPorts = portsByAppliance (nearEnds ++ farEnds);
   # One appliance port for each known cable.
   cableNearEnds = portsByAppliance nearEnds;
   # What each known cable reaches, by the appliance port it is written on, as "nexus ether2".

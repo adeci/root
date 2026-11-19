@@ -41,8 +41,11 @@ let
     }
   );
 
+  # The script reads an access point's Wi-Fi clients with its health.
   healthDevices = pkgs.writeText "routeros-health-devices.json" (
-    builtins.toJSON (devicesOf appliances)
+    builtins.toJSON (
+      map (device: device // { wifi = appliances.${device.name}.wifi != null; }) (devicesOf appliances)
+    )
   );
 
   exporterConfig = pkgs.writeShellApplication {
@@ -105,7 +108,7 @@ in
   };
 
   systemd.services.janus-routeros-health = {
-    description = "Export RouterOS health sensors and rollbacks for node_exporter";
+    description = "Export RouterOS health sensors, rollbacks and Wi-Fi clients for node_exporter";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     serviceConfig = {

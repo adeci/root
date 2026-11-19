@@ -152,6 +152,37 @@ in
     }
 
     {
+      name = "a prober whose pingers have exited alerts at once, even while the ISP gateway is down; one whose pingers all run does not";
+      interval = "1m";
+      input_series = [
+        {
+          series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
+          values = "0x20";
+        }
+        {
+          # Both pingers exit when janus boots with no route to the internet.
+          series = ''smokeping_prober_errors_total{instance="janus"}'';
+          values = "0x10 2x10";
+        }
+      ];
+      alert_rule_test = [
+        (noAlert "LatencyProberSilent" "10m")
+        (firing "LatencyProberSilent" "11m" [
+          {
+            exp_labels = {
+              instance = "janus";
+              severity = "warning";
+            };
+            exp_annotations = {
+              summary = "The router's latency prober has stopped pinging";
+              description = "2 of its pingers exited with an error, so InternetPacketLoss can't see the internet; see `journalctl -u prometheus-smokeping-exporter` on janus, and restart it.";
+            };
+          }
+        ])
+      ];
+    }
+
+    {
       name = "DNS that fails while the internet is up alerts";
       interval = "1m";
       input_series = [
@@ -363,58 +394,6 @@ in
           }
         ])
       ];
-    }
-
-    {
-      name = "errors at either end of a cable, in either direction, alert after 15 minutes; a few errors, or errors where the laptop docks, do not";
-      interval = "1m";
-      input_series =
-        let
-          counter = direction: name: interface: values: {
-            series = ''mikrotik_interface_${direction}_error{instance="janus", job="mikrotik", name="${name}", interface="${interface}"}'';
-            inherit values;
-          };
-          none = "0x30";
-          twoPerSecond = "0+120x30";
-          threePerMinute = "0+3x30";
-          onePerFiveMinutes = "0x4 1x4 2x4 3x4 4x4 5x4 6x4";
-        in
-        [
-          (counter "rx" "switch" "sfp-sfpplus1" twoPerSecond)
-          (counter "tx" "switch" "sfp-sfpplus1" none)
-          (counter "rx" "ap" "ether1" none)
-          (counter "tx" "ap" "ether1" twoPerSecond)
-          # Ports that report one direction only.
-          (counter "rx" "switch" "sfp-sfpplus2" threePerMinute)
-          (counter "tx" "switch" "ether4" twoPerSecond)
-          (counter "rx" "switch" "ether3" onePerFiveMinutes)
-          (counter "tx" "switch" "ether3" none)
-          (counter "rx" "switch" "ether2" twoPerSecond)
-          (counter "tx" "switch" "ether2" none)
-        ];
-      alert_rule_test =
-        let
-          linkErrors = name: interface: rate: {
-            exp_labels = {
-              instance = "janus";
-              inherit name interface;
-              severity = "warning";
-            };
-            exp_annotations = {
-              summary = "${name} ${interface} has link errors";
-              description = "${rate} errors/s on a cabled port; check the cable, transceiver and the port at its other end.";
-            };
-          };
-        in
-        [
-          (noAlert "RouterOSLinkErrors" "15m")
-          (firing "RouterOSLinkErrors" "22m" [
-            (linkErrors "switch" "sfp-sfpplus1" "2.00")
-            (linkErrors "ap" "ether1" "2.00")
-            (linkErrors "switch" "sfp-sfpplus2" "0.05")
-            (linkErrors "switch" "ether4" "2.00")
-          ])
-        ];
     }
 
     {

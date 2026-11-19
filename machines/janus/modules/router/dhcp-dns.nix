@@ -20,6 +20,17 @@ let
   waitArguments = map (interface: "--interface=${interface}:routable") gatewayInterfaces ++ [
     "--timeout=30"
   ];
+  controlSocket = "/run/kea/kea-dhcp4.sock";
+  # Guests' and tenants' devices are other people's, so their leases are exported with a reservation's name only, never the one they ask with.
+  leaseNames = pkgs.writeText "janus-dhcp-lease-names.json" (
+    builtins.toJSON {
+      privateSubnets = map (vlan: vlans.${vlan}.id) [
+        "guest"
+        "tenant"
+      ];
+      reservedAddresses = map (host: host.ip) (lib.attrValues hosts);
+    }
+  );
 in
 {
   services.resolved.enable = false;
@@ -49,7 +60,7 @@ in
 
       control-socket = {
         socket-type = "unix";
-        socket-name = "/run/kea/kea-dhcp4.sock";
+        socket-name = controlSocket;
       };
 
       subnet4 = lib.mapAttrsToList (
@@ -164,10 +175,33 @@ in
     };
   };
 
+  systemd.services.janus-dhcp-leases = {
+    description = "Export the names on Janus's DHCP leases for node_exporter";
+    after = [ "kea-dhcp4-server.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${lib.getExe pkgs.python3} ${./dhcp-leases.py} ${controlSocket} ${leaseNames} ${config.monitoring.textfileDirectory}/janus-dhcp-leases.prom";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectHome = true;
+      ProtectSystem = "strict";
+      ReadWritePaths = [ config.monitoring.textfileDirectory ];
+    };
+  };
+
+  systemd.timers.janus-dhcp-leases = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "1m";
+      OnUnitActiveSec = "1m";
+      AccuracySec = "10s";
+    };
+  };
+
   services.prometheus.exporters.kea = {
     enable = true;
     port = config.monitoring.exporters.kea-dhcp4;
-    targets = [ "/run/kea/kea-dhcp4.sock" ];
+    targets = [ controlSocket ];
   };
 
   services.prometheus.exporters.unbound = {

@@ -16,14 +16,6 @@ let
 
   unitInactive = unit: ''node_systemd_unit_state{${router}, name="${unit}", state="active"} == 0'';
 
-  # Each direction carries its name as a label, or `or` would keep only the first of a port's two.
-  cableErrors =
-    direction:
-    network.onPorts network.cabledPorts (
-      ports:
-      ''label_replace(rate(mikrotik_interface_${direction}_error{${mikrotik}, ${ports}}[15m]), "direction", "${direction}", "", "")''
-    );
-
   # mikrotik_monitor_rate is in Mb/s; SFP+ ports should link at 10 Gb/s, copper ports at 1 Gb/s.
   slowFibreCables = network.onPorts network.cableNearEnds (
     ports: ''mikrotik_monitor_rate{${mikrotik}, ${ports}, interface=~"sfp-sfpplus.+"} < 10000''
@@ -54,6 +46,15 @@ in
     annotations = {
       summary = "The internet connection is losing packets";
       description = "{{ $value | humanizePercentage }} of pings to internet hosts get no answer.";
+    };
+  }
+  {
+    alert = "LatencyProberSilent";
+    expr = "smokeping_prober_errors_total{${router}} > 0";
+    labels.severity = "warning";
+    annotations = {
+      summary = "The router's latency prober has stopped pinging";
+      description = "{{ $value }} of its pingers exited with an error, so InternetPacketLoss can't see the internet; see `journalctl -u prometheus-smokeping-exporter` on {{ $labels.instance }}, and restart it.";
     };
   }
   {
@@ -128,22 +129,6 @@ in
     annotations = {
       summary = "{{ $labels.target }} is unreachable";
       description = "The router can't ping {{ $labels.target }} at {{ $labels.address }}; check its power and uplink.";
-    };
-  }
-  {
-    alert = "RouterOSLinkErrors";
-    expr = ''
-      sum by (instance, name, interface) (
-        ${cableErrors "rx"}
-        or ${cableErrors "tx"}
-      )
-      > 0.01
-    '';
-    for = "15m";
-    labels.severity = "warning";
-    annotations = {
-      summary = "{{ $labels.name }} {{ $labels.interface }} has link errors";
-      description = ''{{ $value | printf "%.2f" }} errors/s on a cabled port; check the cable, transceiver and the port at its other end.'';
     };
   }
   {

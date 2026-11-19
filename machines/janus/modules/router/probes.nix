@@ -55,6 +55,27 @@ in
     extraFlags = [ "--config.file=${smokepingConfig}" ];
   };
 
+  # clan-core turns off systemd-networkd-wait-online, so network-online.target comes before the WAN's lease.
+  systemd.services.router-wan-online = {
+    description = "Wait for Janus WAN interface";
+    after = [ "systemd-networkd.service" ];
+    requires = [ "systemd-networkd.service" ];
+    # A switch must not rerun the wait: with the WAN down it would hold the switch for a minute and then fail it.
+    restartIfChanged = false;
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      # At most a minute of the boot, so an ISP outage cannot hold it longer; a prober started without a route fires LatencyProberSilent.
+      ExecStart = "${config.systemd.package}/lib/systemd/systemd-networkd-wait-online --interface=${self.inventory.router.interfaces.wan}:routable --timeout=60";
+    };
+  };
+
+  # A pinger whose first ping finds no route never pings again.
+  systemd.services.prometheus-smokeping-exporter = {
+    after = [ "router-wan-online.service" ];
+    wants = [ "router-wan-online.service" ];
+  };
+
   systemd.services.janus-network-probe = {
     description = "Probe Janus network reachability and DNS health";
     after = [ "network-online.target" ];
