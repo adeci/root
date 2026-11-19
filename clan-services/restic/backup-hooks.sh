@@ -2,8 +2,8 @@
 hook=$1
 failed=0
 
-# restic would save a link without what it points to.
 if [[ "$hook" == pre-backup ]]; then
+  # restic would save a link without what it points to.
   while IFS=$'\t' read -r state folder; do
     if [[ -L "$folder" ]]; then
       echo "$state's folder $folder is a link to $(readlink -f "$folder"): declare that folder instead" >&2
@@ -12,6 +12,13 @@ if [[ "$hook" == pre-backup ]]; then
   done <"$STATE_FOLDERS"
   if [[ "$failed" -ne 0 ]]; then
     exit 1
+  fi
+
+  # A run cut off while it held the repository to itself, as a forget step stopped by sleep once the network is gone, leaves a lock every backup refuses; unlock removes only such locks, and finds no repository (10) before the first backup.
+  status=0
+  "/run/current-system/sw/bin/restic-$JOB_NAME" unlock || status=$?
+  if [[ "$status" -ne 0 && "$status" -ne 10 ]]; then
+    exit "$status"
   fi
 fi
 

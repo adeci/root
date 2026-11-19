@@ -37,6 +37,36 @@ let
       description = "cloudflared on server has no connection to Cloudflare, so the public names it serves don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
     };
   };
+
+  # LaptopBackupStale on "laptop", with how long it has been on since its newest snapshot.
+  laptopStale = severity: on: {
+    exp_labels = {
+      instance = "laptop";
+      backup = "state";
+      inherit severity;
+    };
+    exp_annotations = {
+      summary =
+        if severity == "warning" then
+          "laptop has gone days of use without a backup"
+        else
+          "laptop has gone a week of use without a backup";
+      description = "It has been on for ${on} of the last 30 days since the newest snapshot in its state repository. It backs up only on AC power, on a network that is not metered and with the repository answering; `journalctl -u restic-state-when-due` on laptop says what was missing.";
+    };
+  };
+
+  laptopBackupFailed = {
+    exp_labels = {
+      instance = "laptop";
+      name = "restic-backups-state.service";
+      state = "failed";
+      severity = "warning";
+    };
+    exp_annotations = {
+      summary = "The last backup of laptop failed";
+      description = "See `journalctl -u restic-backups-state.service` on laptop; it is tried again every hour.";
+    };
+  };
 in
 [
   {
@@ -368,6 +398,132 @@ in
           (critical "3d 1h 0m 0s")
         ])
       ];
+  }
+
+  {
+    name = "a laptop's backup warns once it has been on for three days since its newest snapshot and is critical after a week; the days it is off do not count";
+    interval = "5m";
+    input_series = [
+      {
+        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
+        # On for two days, off for five, then on again.
+        values = "0x575 _x1440 0x2000";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "LaptopBackupStale" "120h")
+      (noAlert "LaptopBackupStale" "191h")
+      (firing "LaptopBackupStale" "193h" [ (laptopStale "warning" "3d 1h 30m 0s") ])
+      (firing "LaptopBackupStale" "290h" [
+        (laptopStale "warning" "7d 2h 30m 0s")
+        (laptopStale "critical" "7d 2h 30m 0s")
+      ])
+    ];
+  }
+
+  {
+    name = "a laptop counts again from each new snapshot";
+    interval = "5m";
+    input_series = [
+      {
+        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
+        # The next snapshot comes after 70 hours on.
+        values = "0x839 252000x900";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "LaptopBackupStale" "73h")
+      (firing "LaptopBackupStale" "144h" [ (laptopStale "warning" "3d 2h 30m 0s") ])
+    ];
+  }
+
+  {
+    name = "a laptop on for an hour and a half a day warns once it has been on for a day of the last 30 days, its snapshot being older than them";
+    interval = "30m";
+    input_series = [
+      {
+        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
+        # A snapshot four months old, and three half hours on at the start of each day.
+        values = builtins.concatStringsSep " " (builtins.genList (_: "-10000000x2 _x45") 20);
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "LaptopBackupStale" "337h")
+      (firing "LaptopBackupStale" "385h" [ (laptopStale "warning" "1d 1h 30m 0s") ])
+    ];
+  }
+
+  {
+    name = "a laptop that never backed up, whose agent reports its newest snapshot as taken at 0, warns once it has been on for a day";
+    interval = "30m";
+    input_series = [
+      {
+        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
+        # New a month in, and never backed up.
+        values = "_x1488 0x200";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "LaptopBackupStale" "767h")
+      (firing "LaptopBackupStale" "769h" [ (laptopStale "warning" "1d 1h 30m 0s") ])
+    ];
+  }
+
+  {
+    name = "a laptop off for two weeks does not alert, and counts on from where it stopped";
+    interval = "30m";
+    input_series = [
+      {
+        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
+        # On for a day after its snapshot, off for two weeks, then on again.
+        values = "0x47 _x672 0x200";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "LaptopBackupStale" "200h")
+      (noAlert "LaptopBackupStale" "407h")
+      (firing "LaptopBackupStale" "409h" [ (laptopStale "warning" "3d 1h 30m 0s") ])
+    ];
+  }
+
+  {
+    name = "a laptop's failed backup is reported until an hour after a try succeeds, a server's is a failed unit";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''node_systemd_unit_state{instance="laptop", name="restic-backups-state.service", state="failed"}'';
+        # Failed, then tried again an hour later with success.
+        values = "0x5 1x60 0x120";
+      }
+      {
+        series = ''node_systemd_unit_state{instance="server", name="restic-backups-state.service", state="failed"}'';
+        values = "1x180";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "BackupFailed" (minutes 5))
+      (firing "BackupFailed" (minutes 7) [ laptopBackupFailed ])
+      (firing "BackupFailed" (minutes 100) [ laptopBackupFailed ])
+      (noAlert "BackupFailed" (minutes 130))
+    ];
+  }
+
+  {
+    name = "a laptop whose key is refused fails at every hourly try and stays reported throughout, a night asleep included";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''node_systemd_unit_state{instance="laptop", name="restic-backups-state.service", state="failed"}'';
+        # Failed, each hourly try failing again after a few minutes, then ten hours asleep, and still failed on waking.
+        values = "0x5 1x54 0x3 1x54 0x3 1x54 _x600 1x30";
+      }
+    ];
+    alert_rule_test = [
+      (firing "BackupFailed" (minutes 7) [ laptopBackupFailed ])
+      (firing "BackupFailed" (minutes 62) [ laptopBackupFailed ])
+      (firing "BackupFailed" (minutes 500) [ laptopBackupFailed ])
+      (firing "BackupFailed" (minutes 800) [ laptopBackupFailed ])
+    ];
   }
 
   {

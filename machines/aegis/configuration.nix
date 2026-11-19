@@ -25,6 +25,9 @@ in
     ext4-single-disk
   ];
 
+  # Backed up by the restic instance in inventory/clan-instances.nix, which lists what it leaves out.
+  clan.core.state.home.folders = [ "/home/alex" ];
+
   wrappers.niri.machineConfig = # kdl
     ''
       input {

@@ -17,15 +17,22 @@ let
       rule;
 
   onlyAlwaysOn = expression: "(${expression}) and on (instance) instance:always_on";
+  # Machines that are not always on: laptops and handhelds.
+  onlyLaptops = expression: "(${expression}) unless on (instance) instance:always_on";
 
   disk = import ./disks.nix;
   freeRatio = "node_filesystem_avail_bytes{${disk}} / node_filesystem_size_bytes{${disk}}";
   # Read-only bind mounts such as the Nix store would repeat their filesystem's alerts.
   writable = "on (instance, mountpoint) node_filesystem_readonly == 0";
 
-  # The agent asks each repository for its newest snapshot every hour.
+  # The agent asks each repository for its newest snapshot every hour; 0 while there is none.
   snapshotAge = "time() - restic_snapshot_timestamp_seconds";
   staleBackup = "The newest snapshot in its {{ $labels.backup }} repository is {{ $value | humanizeDuration }} old; see `systemctl status restic-backups-{{ $labels.backup }}` on {{ $labels.instance }}.";
+  # A laptop's newest snapshot as it last reported it, so a night asleep keeps its alerts.
+  laptopSnapshot = "last_over_time(restic_snapshot_timestamp_seconds[1d] @ end())";
+  # How long a laptop has been on since that snapshot: the half hours of the last 30 days in which it reported it.
+  laptopSnapshotAge = "count_over_time((restic_snapshot_timestamp_seconds == ${laptopSnapshot})[30d:30m]) * 1800";
+  staleLaptopBackup = "It has been on for {{ $value | humanizeDuration }} of the last 30 days since the newest snapshot in its {{ $labels.backup }} repository. It backs up only on AC power, on a network that is not metered and with the repository answering; `journalctl -u restic-{{ $labels.backup }}-when-due` on {{ $labels.instance }} says what was missing.";
 
   alwaysOnRecords = map (instance: {
     record = "instance:always_on";
@@ -222,6 +229,37 @@ let
       annotations = {
         summary = "The newest backup of {{ $labels.instance }} is over three days old";
         description = staleBackup;
+      };
+    }
+    {
+      alert = "LaptopBackupStale";
+      # Or a snapshot older than those 30 days on a laptop on for a day of them, which the count alone never reaches at an hour or two a day.
+      expr = onlyLaptops "${laptopSnapshotAge} > 3 * 86400 or (${laptopSnapshotAge} >= 86400 and time() - ${laptopSnapshot} > 30 * 86400)";
+      labels.severity = "warning";
+      annotations = {
+        summary = "{{ $labels.instance }} has gone days of use without a backup";
+        description = staleLaptopBackup;
+      };
+    }
+    {
+      alert = "LaptopBackupStale";
+      expr = onlyLaptops "${laptopSnapshotAge} > 7 * 86400";
+      labels.severity = "critical";
+      annotations = {
+        summary = "{{ $labels.instance }} has gone a week of use without a backup";
+        description = staleLaptopBackup;
+      };
+    }
+    {
+      alert = "BackupFailed";
+      # On an always-on machine it is a SystemdUnitFailed; a laptop asleep keeps the state it last reported.
+      expr = onlyLaptops ''last_over_time(node_systemd_unit_state{name=~"restic-backups-.+[.]service", state="failed"}[1d]) == 1'';
+      # The hourly retry clears the failed state while it runs.
+      keep_firing_for = "1h";
+      labels.severity = "warning";
+      annotations = {
+        summary = "The last backup of {{ $labels.instance }} failed";
+        description = "See `journalctl -u {{ $labels.name }}` on {{ $labels.instance }}; it is tried again every hour.";
       };
     }
     {

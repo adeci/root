@@ -166,25 +166,6 @@ let
       ];
     };
 
-    # A backup's age in seconds, at the two levels of BackupStale.
-    backupAgeSeconds = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 36 * 3600;
-        }
-        {
-          color = "red";
-          value = 72 * 3600;
-        }
-      ];
-    };
-
     # macOS's memory pressure level: 1 normal, 2 warning, 4 critical.
     memoryPressureLevel = {
       mode = "absolute";
@@ -404,7 +385,7 @@ let
       }
     ];
 
-    # How many of BackupStale's two levels a backup's age has passed.
+    # How many of its two ages a backup has passed: a server's 36 and 72 hours, a laptop's 3 and 7 days.
     backupAge = [
       {
         type = "value";
@@ -415,11 +396,11 @@ let
           };
           "1" = {
             color = "yellow";
-            text = "over 36 hours old";
+            text = "old";
           };
           "2" = {
             color = "red";
-            text = "over 72 hours old";
+            text = "too old";
           };
         };
       }

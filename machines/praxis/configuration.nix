@@ -33,6 +33,9 @@
 
   tailscaleTravel.defaultExitNode = "sequoia";
 
+  # Backed up by the restic instance in inventory/clan-instances.nix, which lists what it leaves out.
+  clan.core.state.home.folders = [ "/home/alex" ];
+
   wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
 
   wrappers.niri.machineConfig = # kdl

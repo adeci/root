@@ -12,6 +12,7 @@
     in
     lib.optionalAttrs (system == "x86_64-linux") {
       checks.janus-router-test = callPackage ../../machines/janus/tests/router.nix { };
+      checks.praxis-home-restore-test = callPackage ../../machines/praxis/tests/home-restore.nix { };
       checks.sequoia-paperless-test = callPackage ../../machines/sequoia/tests/paperless.nix { };
       checks.sequoia-vaultwarden-restore-test =
         callPackage ../../machines/sequoia/tests/vaultwarden-restore.nix

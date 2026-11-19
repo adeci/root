@@ -22,8 +22,10 @@ server watches the same fleet and alerts when the main one cannot.
   and buffers it on disk while the server is out of reach; a Mac has no
   journal, so it serves metrics only. A NixOS agent with restic backups asks
   each repository for its newest snapshot every hour, which BackupStale goes
-  by. One with `probes` runs blackbox_exporter, which requests each address
-  when a server scrapes it, once a minute.
+  by; on a machine that is not always on, LaptopBackupStale counts only the
+  time the server reaches it, and BackupFailed reports a failed run. One with
+  `probes` runs blackbox_exporter, which requests each address when a server
+  scrapes it, once a minute.
 
 ## Notes
 

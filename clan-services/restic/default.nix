@@ -49,6 +49,22 @@
             description = "Name for the underlying NixOS Restic job.";
           };
 
+          alwaysOn = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = ''
+              Whether this machine is meant to be on at all times. One that is
+              not, such as a laptop, tries every hour instead of following
+              `timerConfig`, and backs up once its newest snapshot is 20 hours
+              old, on AC power, on a network that comes up within a minute and
+              that NetworkManager does not call metered, and with an S3
+              repository's server answering within 10 seconds; a repository
+              that answers with an error makes the backup run and fail. Its
+              backup stops when it goes to sleep, and the next try picks up
+              where it stopped.
+            '';
+          };
+
           timerConfig = lib.mkOption {
             type = lib.types.nullOr (lib.types.attrsOf lib.types.anything);
             default = {
@@ -56,7 +72,7 @@
               RandomizedDelaySec = "2h";
               Persistent = true;
             };
-            description = "systemd timerConfig for the Restic backup job. Set to null for manual-only backups.";
+            description = "systemd timerConfig for the Restic backup job of an always-on machine. Set to null for manual-only backups.";
           };
 
           exclude = lib.mkOption {
@@ -140,11 +156,38 @@
               name = "restic-backup-hooks";
               runtimeInputs = [ pkgs.coreutils ];
               runtimeEnv = {
+                JOB_NAME = jobName;
                 STATE_FOLDERS = stateFolders;
                 STATE_COMMANDS = stateCommands;
               };
               text = builtins.readFile ./backup-hooks.sh;
             };
+
+            restic = lib.getExe config.services.restic.backups.${jobName}.package;
+            # forget needs the repository to itself, so it waits out a read such as clan backups list.
+            forget = "${restic} forget --prune --retry-lock 10m ${lib.concatStringsSep " " settings.pruneOpts}";
+
+            whenDue = pkgs.writeShellApplication {
+              name = "restic-when-due";
+              runtimeInputs = [
+                pkgs.coreutils
+                pkgs.curl
+                pkgs.jq
+                config.networking.networkmanager.package
+                config.systemd.package
+              ];
+              runtimeEnv = {
+                JOB_NAME = jobName;
+                REPOSITORY = repository;
+              };
+              text = builtins.readFile ./when-due.sh;
+            };
+
+            # restic mount runs fusermount, which fuse 3 calls fusermount3.
+            fusermount = pkgs.runCommand "fusermount" { } ''
+              mkdir -p $out/bin
+              ln -s ${lib.getExe' pkgs.fuse3 "fusermount3"} $out/bin/fusermount
+            '';
           in
           {
             config = lib.mkIf (states != [ ]) {
@@ -163,23 +206,55 @@
               services.restic.backups.${jobName} = {
                 inherit repository;
                 paths = lib.unique (lib.concatMap (state: state.folders) states);
-                inherit (settings)
-                  exclude
-                  timerConfig
-                  pruneOpts
-                  checkOpts
-                  ;
+                inherit (settings) exclude checkOpts;
+                # A laptop's backup is started by restic-<job>-when-due, below.
+                timerConfig = if settings.alwaysOn then settings.timerConfig else null;
                 extraBackupArgs = settings.extraBackupArgs ++ [
                   "--tag clan"
                   "--tag ${machineName}"
                 ];
                 initialize = true;
-                inhibitsSleep = true;
+                # A laptop sleeps when its owner says so, and its backup stops.
+                inhibitsSleep = settings.alwaysOn;
                 environmentFile =
                   config.clan.core.vars.generators.${settings.credentials.generator}.files.${settings.credentials.file}.path;
                 passwordFile = config.clan.core.vars.generators.${settings.passwordGenerator}.files.password.path;
                 backupPrepareCommand = "${lib.getExe backupHooks} pre-backup";
                 backupCleanupCommand = "${lib.getExe backupHooks} post-backup";
+              };
+
+              systemd.services."restic-backups-${jobName}" = lib.mkMerge [
+                {
+                  # For restic-<job> mount: that command runs with this unit's PATH.
+                  path = [ fusermount ];
+                  # A step after the backup rather than one more ExecStart, and a single command: systemd runs the next command of a stopped run when the stopped one ends cleanly, as a laptop's does.
+                  serviceConfig.ExecStartPost = lib.mkIf (settings.pruneOpts != [ ]) forget;
+                }
+                (lib.mkIf (!settings.alwaysOn) {
+                  # Stopped for sleep, restic exits with 130 and the scripts around it die by SIGTERM; the next try resumes the upload.
+                  conflicts = [ "sleep.target" ];
+                  before = [ "sleep.target" ];
+                  serviceConfig.SuccessExitStatus = "130 SIGTERM";
+                })
+              ];
+
+              systemd.services."restic-${jobName}-when-due" = lib.mkIf (!settings.alwaysOn) {
+                description = "Start the ${jobName} backup when it is due and the network allows";
+                # Skipped, not failed, on battery.
+                unitConfig.ConditionACPower = true;
+                serviceConfig = {
+                  Type = "oneshot";
+                  ExecStart = lib.getExe whenDue;
+                };
+              };
+
+              # Every hour, and at once after a sleep or a boot that missed one.
+              systemd.timers."restic-${jobName}-when-due" = lib.mkIf (!settings.alwaysOn) {
+                wantedBy = [ "timers.target" ];
+                timerConfig = {
+                  OnCalendar = "hourly";
+                  Persistent = true;
+                };
               };
 
               clan.core.backups.providers.restic = {

@@ -70,7 +70,7 @@
             };
           };
           machines = {
-            # A VM: its disk is QEMU's, with no SMART data. From outside the house, it asks every public name for its health path.
+            # hetzner cloud VM: its disk is QEMU's, with no SMART data. off-site so it asks every public name for its health path
             conduit.settings = {
               smart.enable = false;
               probes = builtins.listToAttrs (tunnelProbes ++ edgeProbes ++ redirectProbes);
@@ -132,7 +132,6 @@
           "aarch64-linux"
           "aarch64-darwin"
         ];
-        # leviathan is shared with other users and the LLM host; keep CI bounded.
         evalWorkerCount = 8;
         evalMaxMemorySize = 4096;
         buildConcurrency = 8;
@@ -157,7 +156,7 @@
             "fzakaria"
           ];
         };
-        # Signs and notarizes Mac software with rcodesign, away from a Mac.
+        # signs and notarizes macos software with rcodesign, doesnt have to be on macos.
         sharedEffectSecrets.apple_developer_id = {
           key = {
             description = "Developer ID Application private key (PEM), the one its signing request was made from";
@@ -228,6 +227,12 @@
   restic =
     let
       bucket = b2.buckets.resticBackups;
+
+      laptop.settings = {
+        alwaysOn = false;
+        # Cargo marks its target folders as caches, as other build tools mark theirs.
+        extraBackupArgs = [ "--exclude-caches" ];
+      };
     in
     {
       module = {
@@ -238,7 +243,36 @@
       roles.client.settings = {
         repositoryBase = "s3:${b2.s3Endpoint}/${bucket.name}";
         inherit (bucket) credentials;
+        exclude = [
+          "/home/alex/.cache"
+          "/home/alex/.cargo/registry"
+          "/home/alex/.cargo/git"
+          "/home/alex/.rustup"
+          "/home/alex/.npm"
+          "/home/alex/go/pkg"
+          "/home/alex/**/node_modules"
+          "/home/alex/**/.direnv"
+          "/home/alex/.local/share/Steam"
+          "/home/alex/.local/share/libvirt/images"
+          "/home/alex/.local/share/containers"
+          "/home/alex/.local/share/Trash"
+          "/home/alex/git/pi-repos"
+          "/home/alex/Downloads"
+          "/home/alex/*.ipsw"
+        ];
       };
+
+      roles.client.extraModules = [
+        (
+          { config, ... }:
+          {
+            clan.core.vars.generators.${bucket.credentials.generator}.script = ''
+              echo "${config.clan.core.settings.machine.name} has no B2 key yet: run nix run .#tf-apply, which makes one and sets it as ${bucket.credentials.generator}/${bucket.credentials.file}, then deploy again." >&2
+              exit 1
+            '';
+          }
+        )
+      ];
 
       roles.client.machines = {
         conduit = { };
@@ -246,6 +280,9 @@
         leviathan = { };
         lachesis = { };
         janus = { };
+        praxis = laptop;
+        modus = laptop;
+        aegis = laptop;
       };
     };
 

@@ -107,6 +107,14 @@ let
   # A backup's reading: from its repository's newest snapshot, or from a series named after the backup.
   backup = expr: "max by (instance, backup) (${expr})";
   snapshotAge = "(time() - restic_snapshot_timestamp_seconds{${node}})";
+  # How many of its two ages a backup has passed: 36 and 72 hours on a server, 3 and 7 days by the clock on a laptop, whose alerts count only its time on.
+  backupStaleness =
+    let
+      passed =
+        matchers: old: tooOld:
+        "(time() - restic_snapshot_timestamp_seconds{${matchers}} > bool ${old}) + (time() - restic_snapshot_timestamp_seconds{${matchers}} > bool ${tooOld})";
+    in
+    "(${passed servers "36 * 3600" "72 * 3600"}) or (${passed laptops "3 * 86400" "7 * 86400"})";
   # Idle time against all CPU time, not against the step: a machine up for only part of a step would read near 100 %.
   cpuBusy =
     matchers:
@@ -549,10 +557,10 @@ ui.dashboard {
       panels = [
         (ui.mergedTable {
           title = "Backups";
-          description = "Each repository's newest snapshot, as its machine found it when it last asked, which it does every hour.";
+          description = "Each repository's newest snapshot, as its machine found it when it last asked, which it does every hour. A server's backup is old after 36 hours and too old after 72, a laptop's after 3 and 7 days.";
           w = 15;
-          # Five backups today, plus the title and the header; a table this short needs one more for its last row.
-          h = 8;
+          # Eight backups, the laptops' among them, plus the title and the header; a table this short needs one more for its last row.
+          h = 11;
           sortBy = [
             {
               displayName = "Host";
@@ -574,7 +582,11 @@ ui.dashboard {
               expr = backup snapshotAge;
               unit = "clocks";
               decimals = 0;
-              threshold = ui.thresholds.backupAgeSeconds;
+            }
+            {
+              name = "Fresh";
+              expr = backup backupStaleness;
+              colours = ui.mappings.backupAge;
             }
             {
               name = "Size";
@@ -610,10 +622,8 @@ ui.dashboard {
         (ui.stateTimeline {
           title = "Fresh";
           w = 9;
-          h = 8;
-          targets = [
-            (ui.target "max by (instance) ((${snapshotAge} > bool 36 * 3600) + (${snapshotAge} > bool 72 * 3600))" "{{instance}}")
-          ];
+          h = 11;
+          targets = [ (ui.target "max by (instance) (${backupStaleness})" "{{instance}}") ];
           threshold = ui.thresholds.goodWhenZero;
           valueMappings = ui.mappings.backupAge;
         })
