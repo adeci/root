@@ -48,14 +48,6 @@ let
   linuxMachineCount = builtins.length (
     builtins.filter (name: machines.${name}.os == "linux") (builtins.attrNames machines)
   );
-  # One colour per resource on every panel; red, yellow and green are left to alerts and up or down.
-  colours = {
-    cpu = "#7aa2f7";
-    memory = "#bb9af7";
-    disk = "#73daca";
-    battery = "#9ece6a";
-    response = "#7dcfff";
-  };
 
   # A Linux machine's reading from its last boot, or the shutdown before it.
   bootReading = metric: "max by (instance) (${metric}{${linux}})";
@@ -175,20 +167,6 @@ let
   messageCount =
     range: "sum by (instance, service, message) (count_over_time(${errorMessages} ${range}))";
   newMessages = "${messageCount "[24h]"} unless ${messageCount "[24h] offset 24h"}";
-  alertSubjects = [
-    "mountpoint"
-    "device"
-    "interface"
-    "name"
-    "sensor"
-    "chip"
-    "certificate"
-    "integration"
-    "controller"
-    "file"
-    "rule_group"
-  ];
-  alertSubjectArguments = builtins.concatStringsSep ", " (map (label: "\"${label}\"") alertSubjects);
 
   machineTable =
     table:
@@ -219,14 +197,14 @@ let
         expr = memoryUsed matchers;
         unit = "percent";
         decimals = 0;
-        bar = colours.memory;
+        bar = ui.colours.memory;
       }
       {
         name = "Disk";
         expr = ''100 * max by (${machine}) (disk:used:ratio{${selected}, kind="${kind}"})'';
         unit = "percent";
         decimals = 0;
-        bar = colours.disk;
+        bar = ui.colours.disk;
       }
       {
         name = "Temp";
@@ -285,55 +263,10 @@ ui.dashboard {
       title = "Now";
       collapsed = false;
       panels = [
-        (ui.mergedTable {
-          title = "Alerts";
+        (ui.alerts {
           w = 14;
           h = 5;
-          noDataText = "No alert is firing";
-          # Critical first.
-          sortBy = [
-            {
-              displayName = "Severity";
-              desc = false;
-            }
-          ];
-          # The target labels every series carries say nothing here, and the alert's subject shows joined, as On.
-          hiddenColumns = [
-            "job"
-            "os"
-            "kind"
-            "role"
-            "address"
-          ]
-          ++ alertSubjects;
-          renamedColumns = {
-            severity = "Severity";
-            alertname = "Alert";
-            instance = "Machine";
-            detail = "On";
-          };
-          firstColumns = [
-            "severity"
-            "alertname"
-            "instance"
-            "detail"
-          ];
-          labelColumns = {
-            Severity = {
-              width = 76;
-              colours = ui.mappings.severityColours;
-            };
-            Machine.width = 86;
-            On.width = 120;
-          };
-          columns = [
-            {
-              name = "Since";
-              width = 92;
-              expr = ''label_join(1000 * ALERTS_FOR_STATE and ignoring (alertstate) ALERTS{alertstate="firing", severity=~"critical|warning", ${selected}}, "detail", " ", ${alertSubjectArguments})'';
-              unit = "dateTimeFromNow";
-            }
-          ];
+          matchers = selected;
         })
         (ui.mergedTable {
           title = "Updates";
@@ -410,14 +343,14 @@ ui.dashboard {
               expr = cpuBusy servers;
               unit = "percent";
               decimals = 0;
-              bar = colours.cpu;
+              bar = ui.colours.cpu;
             }
             {
               name = "Peak";
               expr = cpuBusy servers;
               unit = "percent";
               decimals = 0;
-              sparkline = colours.cpu;
+              sparkline = ui.colours.cpu;
             }
           ]
           ++ usageColumns "server"
@@ -478,7 +411,7 @@ ui.dashboard {
               expr = "(${cpuBusy laptops}) and on (instance) (${laptopsOnline})";
               unit = "percent";
               decimals = 0;
-              bar = colours.cpu;
+              bar = ui.colours.cpu;
             }
           ]
           ++ usageColumns "laptop"
@@ -488,7 +421,7 @@ ui.dashboard {
               expr = batteryCharge;
               unit = "percent";
               decimals = 0;
-              bar = colours.battery;
+              bar = ui.colours.battery;
             }
             {
               name = "Health";
@@ -580,7 +513,7 @@ ui.dashboard {
               name = "Peak";
               expr = publicName "probe_duration_seconds";
               unit = "s";
-              sparkline = colours.response;
+              sparkline = ui.colours.response;
             }
             {
               name = "Tunnel";
@@ -635,10 +568,11 @@ ui.dashboard {
             "backup"
           ];
           columns = [
+            # Grafana's shortest durations, as 03s, 52m or 22h, so the table fits.
             {
               name = "Age";
               expr = backup snapshotAge;
-              unit = "s";
+              unit = "clocks";
               decimals = 0;
               threshold = ui.thresholds.backupAgeSeconds;
             }
@@ -655,7 +589,8 @@ ui.dashboard {
             {
               name = "Took";
               expr = backup "restic_snapshot_duration_seconds{${node}}";
-              unit = "s";
+              unit = "clocks";
+              decimals = 0;
             }
             {
               name = "Last run";
@@ -666,8 +601,9 @@ ui.dashboard {
             }
             {
               name = "Asked";
-              expr = backup ''label_replace(1000 * node_textfile_mtime_seconds{${node}, file=~".*/restic-snapshot-.+[.]prom"}, "backup", "$1", "file", ".*/restic-snapshot-(.+)[.]prom")'';
-              unit = "dateTimeFromNow";
+              expr = backup ''label_replace(time() - node_textfile_mtime_seconds{${node}, file=~".*/restic-snapshot-.+[.]prom"}, "backup", "$1", "file", ".*/restic-snapshot-(.+)[.]prom")'';
+              unit = "clocks";
+              decimals = 0;
             }
           ];
         })
@@ -773,7 +709,7 @@ ui.dashboard {
               name = "New";
               width = 70;
               expr = "count by (instance, service, message) ((${newMessages}) and ${messageCount "[$__range]"})";
-              valueMappings = ui.mappings.newMessage;
+              valueMappings = ui.mappings.new;
             }
           ];
         })

@@ -16,17 +16,17 @@ let
   };
   shade = value: color: { inherit color value; };
 
-  thresholds = {
-    neutral = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "blue";
-          value = null;
-        }
-      ];
-    };
+  # One colour per resource on every panel; red, yellow and green are left to alerts and up or down.
+  colours = {
+    cpu = "#7aa2f7";
+    memory = "#bb9af7";
+    disk = "#73daca";
+    battery = "#9ece6a";
+    response = "#7dcfff";
+    traffic = "#ff9e64";
+  };
 
+  thresholds = {
     goodWhenZero = {
       mode = "absolute";
       steps = [
@@ -69,119 +69,12 @@ let
       ];
     };
 
-    pressure = {
+    # A link's state: 0 down, in grey as the other end may just be off; 1 slower than its port should run; 2 at that speed.
+    linkState = {
       mode = "absolute";
       steps = [
         {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 70;
-        }
-        {
-          color = "red";
-          value = 90;
-        }
-      ];
-    };
-
-    ioPressure = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 10;
-        }
-        {
-          color = "red";
-          value = 25;
-        }
-      ];
-    };
-
-    temperatureC = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 70;
-        }
-        {
-          color = "red";
-          value = 85;
-        }
-      ];
-    };
-
-    networkDeviceTemperatureC = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 65;
-        }
-        {
-          color = "red";
-          value = 75;
-        }
-      ];
-    };
-
-    linkSpeedBps = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "red";
-          value = null;
-        }
-        {
-          color = "green";
-          value = 1000000000;
-        }
-        {
-          color = "blue";
-          value = 10000000000;
-        }
-      ];
-    };
-
-    latencyMs = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
-          value = null;
-        }
-        {
-          color = "yellow";
-          value = 40;
-        }
-        {
-          color = "red";
-          value = 100;
-        }
-      ];
-    };
-
-    packetLossPercent = {
-      mode = "absolute";
-      steps = [
-        {
-          color = "green";
+          color = "#6e7280";
           value = null;
         }
         {
@@ -189,8 +82,8 @@ let
           value = 1;
         }
         {
-          color = "red";
-          value = 5;
+          color = "green";
+          value = 2;
         }
       ];
     };
@@ -344,6 +237,15 @@ let
       (shade 85 "#dcf7f0")
     ];
 
+    # Bits per second.
+    trafficShades = shades [
+      (shade 100000 "#4a2a17")
+      (shade 1000000 "#7d4220")
+      (shade 10000000 "#b9632c")
+      (shade 100000000 "#ff9e64")
+      (shade 500000000 "#ffe0c7")
+    ];
+
     # macOS's memory pressure level in the pressure shades: 2 warning, 4 critical.
     memoryPressureLevelShades = shades [
       (shade 2 "#c58527")
@@ -480,8 +382,8 @@ let
       }
     ];
 
-    # 1 marks a message seen in the last day but not the day before.
-    newMessage = [
+    # 1 marks something seen in the last day for the first time.
+    new = [
       {
         type = "value";
         options."1".text = "new";
@@ -513,6 +415,30 @@ let
             color = "red";
             text = "over 72 hours old";
           };
+        };
+      }
+    ];
+
+    # A link's state, as its threshold colours it.
+    linkState = [
+      {
+        type = "value";
+        options = {
+          "0".text = "down";
+          "1".text = "slow";
+          "2".text = "full speed";
+        };
+      }
+    ];
+
+    # A link's state in a table, where a link at full speed shows nothing.
+    linkTrouble = [
+      {
+        type = "value";
+        options = {
+          "0".text = "down";
+          "1".text = "slow";
+          "2".text = "";
         };
       }
     ];
@@ -559,22 +485,6 @@ let
       }
     ) (builtins.length targets);
 
-  colorOverride = name: color: {
-    matcher = {
-      id = "byName";
-      options = name;
-    };
-    properties = [
-      {
-        id = "color";
-        value = {
-          fixedColor = color;
-          mode = "fixed";
-        };
-      }
-    ];
-  };
-
   # Colours the series whose names match a regex, e.g. every series of one machine.
   colorOverrideMatching = regex: color: {
     matcher = {
@@ -611,108 +521,36 @@ let
       ];
     };
 
-  baseFieldConfig =
-    {
-      unit,
-      threshold,
-      valueMappings ? [ ],
-      overrides ? [ ],
-      fixedColor ? null,
-    }:
-    {
-      defaults = {
-        color =
-          if fixedColor == null then
-            {
-              mode = "thresholds";
-            }
-          else
-            {
-              inherit fixedColor;
-              mode = "fixed";
-            };
-        mappings = valueMappings;
-        thresholds = threshold;
-        inherit unit;
-      };
-      inherit overrides;
-    };
-
   # Panels give only their size; `dashboard` places them.
 
+  # A single number, green at zero and red from one up.
   stat =
     {
       title,
       w,
       h,
       expr,
-      unit ? "short",
-      threshold ? thresholds.goodWhenZero,
-      valueMappings ? [ ],
-      fixedColor ? null,
-      sparkline ? false,
     }:
     {
       inherit title;
       type = "stat";
       datasource = prometheus;
       gridPos = { inherit w h; };
-      targets = lettered [ ((if sparkline then target else instantTarget) expr "") ];
-      fieldConfig = baseFieldConfig {
-        inherit
-          fixedColor
-          threshold
-          unit
-          valueMappings
-          ;
-      };
-      options = {
-        colorMode = "value";
-        graphMode = if sparkline then "area" else "none";
-        justifyMode = "center";
-        orientation = "auto";
-        reduceOptions = {
-          calcs = [ "lastNotNull" ];
-          fields = "";
-          values = false;
+      targets = lettered [ (instantTarget expr "") ];
+      fieldConfig = {
+        defaults = {
+          color.mode = "thresholds";
+          mappings = [ ];
+          thresholds = thresholds.goodWhenZero;
+          unit = "short";
         };
-        textMode = "auto";
-        wideLayout = true;
-      };
-    };
-
-  statTargets =
-    {
-      title,
-      w,
-      h,
-      targets,
-      unit ? "short",
-      threshold ? thresholds.neutral,
-      valueMappings ? [ ],
-      overrides ? [ ],
-      fixedColor ? null,
-    }:
-    {
-      inherit title;
-      type = "stat";
-      datasource = prometheus;
-      gridPos = { inherit w h; };
-      targets = lettered targets;
-      fieldConfig = baseFieldConfig {
-        inherit
-          fixedColor
-          overrides
-          threshold
-          unit
-          valueMappings
-          ;
+        overrides = [ ];
       };
       options = {
         colorMode = "value";
         graphMode = "none";
         justifyMode = "center";
-        orientation = "horizontal";
+        orientation = "auto";
         reduceOptions = {
           calcs = [ "lastNotNull" ];
           fields = "";
@@ -883,52 +721,6 @@ let
         rowHeight = 0.9;
         legend.showLegend = false;
         tooltip.mode = "single";
-      };
-    };
-
-  barGauge =
-    {
-      title,
-      w,
-      h,
-      targets,
-      unit ? "short",
-      threshold ? thresholds.pressure,
-      valueMappings ? [ ],
-      overrides ? [ ],
-      fixedColor ? null,
-      displayMode ? "gradient",
-    }:
-    {
-      inherit title;
-      type = "bargauge";
-      datasource = prometheus;
-      gridPos = { inherit w h; };
-      targets = lettered targets;
-      fieldConfig = baseFieldConfig {
-        inherit
-          fixedColor
-          overrides
-          threshold
-          unit
-          valueMappings
-          ;
-      };
-      options = {
-        inherit displayMode;
-        maxVizHeight = 300;
-        minVizHeight = 16;
-        minVizWidth = 8;
-        namePlacement = "auto";
-        orientation = "horizontal";
-        reduceOptions = {
-          calcs = [ "lastNotNull" ];
-          fields = "";
-          values = false;
-        };
-        showUnfilled = true;
-        sizing = "auto";
-        valueMode = "color";
       };
     };
 
@@ -1155,6 +947,84 @@ let
     // (if sparklines == [ ] then { } else { maxDataPoints = 120; })
     // (if description == null then { } else { inherit description; });
 
+  # Labels that say what an alert is about; the Alerts table joins an alert's own in this order.
+  alertSubjects = [
+    "mountpoint"
+    "device"
+    "interface"
+    "name"
+    "sensor"
+    "chip"
+    "certificate"
+    "integration"
+    "controller"
+    "file"
+    "rule_group"
+    "target"
+    "subnet"
+  ];
+
+  # The alerts firing on what `matchers` select, critical first, each with what it is about and since when.
+  alerts =
+    {
+      w,
+      h,
+      matchers,
+    }:
+    mergedTable {
+      title = "Alerts";
+      inherit w h;
+      noDataText = "No alert is firing";
+      # Critical first.
+      sortBy = [
+        {
+          displayName = "Severity";
+          desc = false;
+        }
+      ];
+      # The target labels every series carries say nothing here, nor a DHCP pool's other names, and the alert's subject shows joined, as On.
+      hiddenColumns = [
+        "job"
+        "os"
+        "kind"
+        "role"
+        "address"
+        "pool"
+        "subnet_id"
+      ]
+      ++ alertSubjects;
+      renamedColumns = {
+        severity = "Severity";
+        alertname = "Alert";
+        instance = "Machine";
+        detail = "On";
+      };
+      firstColumns = [
+        "severity"
+        "alertname"
+        "instance"
+        "detail"
+      ];
+      labelColumns = {
+        Severity = {
+          width = 76;
+          colours = mappings.severityColours;
+        };
+        Machine.width = 86;
+        On.width = 120;
+      };
+      columns = [
+        {
+          name = "Since";
+          width = 92;
+          expr = ''label_join(1000 * ALERTS_FOR_STATE and ignoring (alertstate) ALERTS{alertstate="firing", severity=~"critical|warning", ${matchers}}, "detail", " ", ${
+            builtins.concatStringsSep ", " (map (label: "\"${label}\"") alertSubjects)
+          })'';
+          unit = "dateTimeFromNow";
+        }
+      ];
+    };
+
   logs =
     {
       title,
@@ -1326,6 +1196,8 @@ let
       title,
       panels,
       variables ? [ ],
+      # Where the time range starts, as Grafana writes it.
+      from ? "now-6h",
     }:
     {
       annotations.list = [ ];
@@ -1341,7 +1213,7 @@ let
       tags = [ "monitoring" ];
       templating.list = variables;
       time = {
-        from = "now-6h";
+        inherit from;
         to = "now";
       };
       timezone = "browser";
@@ -1351,9 +1223,9 @@ let
 in
 {
   inherit
-    barGauge
-    colorOverride
+    alerts
     colorOverrideMatching
+    colours
     dashboard
     labelVariable
     logs
@@ -1365,7 +1237,6 @@ in
     row
     stat
     stateTimeline
-    statTargets
     statusHistory
     target
     thresholds

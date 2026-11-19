@@ -1,58 +1,62 @@
-{ ui, queries, ... }:
+{
+  ui,
+  network,
+  queries,
+}:
 let
-  inherit (queries) router;
-
-  packets =
-    counters:
-    ''sum(rate(janus_firewall_counter_packets_total{${router},family="inet",table="filter",${counters}}[$__rate_interval])) or on() vector(0)'';
+  logged = ''{${queries.router}, transport="kernel"} |= "janus-fw "'';
+  # A packet the input chain refuses was for the router itself.
+  refused = ''${logged} | regexp `janus-fw (?P<chain>[a-z]+)-drop IN=(?P<network>\S*) .*SRC=(?P<from>\S+) DST=(?P<to>\S+) .*PROTO=(?P<protocol>\S+)( SPT=\d+ DPT=(?P<port>\d+))?` | label_format to=`{{ if eq .chain "input" }}${network.instance}{{ else }}{{ .to }}{{ end }}`'';
 in
 ui.row {
   title = "Firewall";
   panels = [
-    (ui.timeseries {
-      title = "Firewall Drops";
-      w = 8;
-      h = 8;
-      unit = "pps";
-      targets = [
-        (ui.target (packets ''counter="input_drop_default"'') "input default deny")
-        (ui.target (packets ''counter="forward_drop_default"'') "forward default deny")
-        (ui.target (packets ''counter="input_drop_invalid"'') "input invalid")
-        (ui.target (packets ''counter="forward_drop_invalid"'') "forward invalid")
-      ];
-      overrides = [
-        (ui.colorOverride "input default deny" "red")
-        (ui.colorOverride "forward default deny" "orange")
-        (ui.colorOverride "input invalid" "purple")
-        (ui.colorOverride "forward invalid" "blue")
-      ];
-    })
-    (ui.timeseries {
-      title = "Firewall Decisions";
-      w = 16;
-      h = 8;
-      unit = "pps";
-      targets = [
-        (ui.target (packets ''counter="forward_accept_trusted"'') "trusted forward")
-        (ui.target (packets ''counter=~"forward_accept_.+_to_wan"'') "internet-only wan")
-        (ui.target (packets ''counter="input_accept_dhcp_dns"'') "local dns/dhcp")
-        (ui.target (packets ''counter=~"input_accept_ssh_admin|input_accept_tailnet_admin|input_accept_tailscale_direct_udp|forward_accept_tailscale_to_local"'') "admin/tailscale")
-        (ui.target (packets ''action="drop"'') "dropped")
-      ];
-      overrides = [
-        (ui.colorOverride "trusted forward" "green")
-        (ui.colorOverride "internet-only wan" "yellow")
-        (ui.colorOverride "local dns/dhcp" "blue")
-        (ui.colorOverride "admin/tailscale" "purple")
-        (ui.colorOverride "dropped" "red")
-      ];
-    })
-
-    (ui.logs {
-      title = "Recent Firewall Drop Logs";
+    (ui.mergedTable {
+      title = "Refused";
+      description = "What the firewall refused in the picked time range, by its log, which takes at most six lines a minute. Broadcasts and the devices' discovery chatter it drops without a line.";
       w = 24;
       h = 10;
-      expr = ''{${router},transport="kernel"} |= "janus-fw "'';
+      datasource = ui.loki;
+      sortBy = [
+        {
+          displayName = "Count";
+          desc = true;
+        }
+      ];
+      renamedColumns = {
+        network = "Network";
+        from = "From";
+        to = "To";
+        protocol = "Protocol";
+        port = "Port";
+      };
+      firstColumns = [
+        "network"
+        "from"
+        "to"
+        "protocol"
+        "port"
+      ];
+      labelColumns = {
+        Network.valueMappings = queries.networkNames;
+        From.valueMappings = queries.hostNames;
+        To.valueMappings = queries.hostNames;
+        Protocol.width = 90;
+        Port.width = 80;
+      };
+      columns = [
+        {
+          name = "Count";
+          width = 80;
+          expr = "sum by (network, from, to, protocol, port) (count_over_time(${refused} [$__range]))";
+        }
+      ];
+    })
+    (ui.logs {
+      title = "Recent refusals";
+      w = 24;
+      h = 10;
+      expr = logged;
     })
   ];
 }

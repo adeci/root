@@ -1,72 +1,55 @@
-# PromQL several sections share.
-{ ui, network }:
+# Queries and names several sections share.
+network:
 let
-  inherit (network) interfaces vlans;
+  inherit (network) vlans;
 
   router = ''instance="${network.instance}"'';
-  internet = ''${router},job="smokeping",group="internet"'';
-
-  oneOf = builtins.concatStringsSep "|";
-
-  received =
-    device: ''rate(node_network_receive_bytes_total{${router},device="${device}"}[$__rate_interval])'';
-  transmitted =
-    device: ''rate(node_network_transmit_bytes_total{${router},device="${device}"}[$__rate_interval])'';
-
-  # Every panel gives a VLAN the same colour.
-  palette = [
-    "green"
-    "yellow"
-    "orange"
-    "purple"
-    "light-red"
-    "cyan"
-    "dark-green"
-    "dark-yellow"
+  named = name: expr: ''label_replace(${expr}, "network", "${name}", "", "")'';
+  # Each VLAN's name by one of its properties, e.g. its interface.
+  vlansBy =
+    property:
+    builtins.listToAttrs (
+      map (vlan: {
+        name = vlan.${property};
+        value = vlan.name;
+      }) vlans
+    );
+  # A value mapping that shows each key as its text.
+  showAs = names: [
+    {
+      type = "value";
+      options = builtins.mapAttrs (_: text: { inherit text; }) names;
+    }
   ];
-  colour =
-    index: builtins.elemAt palette (index - index / builtins.length palette * builtins.length palette);
+
+  # Each lease the router's DHCP server hands out or renews: the client's MAC and address, the address's first three octets as `network`, and the address again as `name`, for a table to show as the inventory names it.
+  leases = ''{${router}, service_name="kea-dhcp4-server.service"} |~ "DHCP4_LEASE_(ALLOC|REUSE)" | regexp `hwtype=1 (?P<mac>[0-9a-f:]+)\].* lease (?P<address>(?P<network>[0-9]+[.][0-9]+[.][0-9]+)[.][0-9]+) has been` | label_format name="{{.address}}"'';
 in
 {
   inherit
     router
-    internet
-    received
-    transmitted
+    named
+    showAs
+    leases
     ;
+  mikrotik = ''${router}, job="mikrotik"'';
 
-  total = device: "${received device} + ${transmitted device}";
-  bps = expr: "8 * (${expr})";
+  # One query per VLAN, its series named after the VLAN as `network`, joined with `or`.
+  perVlan = query: builtins.concatStringsSep " or " (map (vlan: named vlan.name (query vlan)) vlans);
 
-  # The WAN, the LAN trunk and each VLAN's gateway interface.
-  routedInterfaces = oneOf (
-    [
-      interfaces.wan
-      interfaces.lan
-    ]
-    ++ map (vlan: vlan.interface) vlans
+  # A network's name for the router's interface on it, or for the first three octets of its addresses.
+  networkNames = showAs (
+    vlansBy "interface" // vlansBy "prefix" // { ${network.interfaces.wan} = "internet"; }
   );
-  subnetIds = oneOf (map (vlan: toString vlan.id) vlans);
+  # A reserved address's host, or the router for a VLAN's gateway.
+  hostNames = showAs (
+    network.hostsByAddress // builtins.mapAttrs (_: _: network.instance) (vlansBy "gateway")
+  );
 
-  cpu = ''100 * (1 - avg(rate(node_cpu_seconds_total{${router},mode="idle"}[$__rate_interval])))'';
-
-  internetLatency = quantile: ''
-    (1000 * histogram_quantile(${quantile}, sum by (le) (rate(smokeping_response_duration_seconds_bucket{${internet}}[$__rate_interval]))))
-    or vector(0)
-  '';
-  internetLoss = ''
-    100 * (
-      1 - (
-        sum(rate(smokeping_response_duration_seconds_count{${internet}}[$__rate_interval]))
-        /
-        clamp_min(sum(rate(smokeping_requests_total{${internet}}[$__rate_interval])), 0.001)
-      )
-    )
-  '';
-
-  # One query per VLAN, named after it.
-  vlanTargets = query: map (vlan: ui.target (query vlan) vlan.name) vlans;
-  vlanColours = builtins.genList (
-    index: ui.colorOverride (builtins.elemAt vlans index).name (colour index)
-  ) (builtins.length vlans);
+  # The time of each lease, to unwrap.
+  leaseTimes = "${leases} | label_format seen=`{{ __timestamp__ | unixEpoch }}` | unwrap seen";
+  # 1 for each client that got a lease in the last day and none in the six days before.
+  newClients =
+    labels:
+    "count by (${labels}) (count_over_time(${leases} [24h])) unless on (mac) count by (mac) (count_over_time(${leases} [6d] offset 24h))";
 }

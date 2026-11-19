@@ -23,6 +23,7 @@ in
 {
   instance = inventory.router.machine;
   inherit (inventory.router) interfaces;
+  appliances = builtins.attrNames inventory.appliances;
   # By id, so every panel lists them in the same order.
   vlans = builtins.sort (a: b: a.id < b.id) (
     builtins.attrValues (builtins.mapAttrs (name: vlan: vlan // { inherit name; }) inventory.lan.vlans)
@@ -31,6 +32,20 @@ in
   cabledPorts = portsByAppliance (nearEnds ++ farEnds);
   # One appliance port for each known cable.
   cableNearEnds = portsByAppliance nearEnds;
+  # What each known cable reaches, by the appliance port it is written on, as "nexus ether2".
+  cableEnds = builtins.listToAttrs (
+    map (cable: {
+      name = "${cable.appliance} ${cable.port}";
+      value = cable.to;
+    }) steadyCables
+  );
+  # The host each reserved address belongs to.
+  hostsByAddress = builtins.listToAttrs (
+    map (host: {
+      name = inventory.lan.hosts.${host}.ip;
+      value = host;
+    }) (builtins.attrNames inventory.lan.hosts)
+  );
 
   # One query per appliance, matching its ports by `name` and `interface`, joined with `or`.
   onPorts =
