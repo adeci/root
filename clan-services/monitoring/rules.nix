@@ -109,6 +109,16 @@ let
       };
     }
     {
+      alert = "DeployReverted";
+      # The deploy guard writes it as it goes back; the next deploy-guard-confirm there, which every deploy runs, removes it.
+      expr = onlyAlwaysOn "deploy_guard_revert_timestamp_seconds";
+      labels.severity = "warning";
+      annotations = {
+        summary = "{{ $labels.instance }} went back to its previous system";
+        description = "A switch on {{ $labels.instance }} was not confirmed within its window, so it returned to the system it ran before and stays there until a switch is confirmed; see `journalctl -u deploy-guard-revert` there.";
+      };
+    }
+    {
       alert = "FilesystemFillingUp";
       expr = onlyAlwaysOn ''
         ${freeRatio} < 0.1
@@ -330,10 +340,10 @@ let
     }
     {
       alert = "TextfileMetricsStale";
-      # The disk map, what the system runs and the boot timing are written only at boot and deploy; the slowest of the rest every hour.
+      # The disk map, what the system runs, the boot timing and a deploy's revert are written only at boot and deploy; the slowest of the rest every hour.
       expr = onlyAlwaysOn ''
         node_textfile_scrape_error == 1
-        or time() - node_textfile_mtime_seconds{file!~".*/(filesystem-disks|system-version|boot-timing)[.]prom"} > 2 * 3600
+        or time() - node_textfile_mtime_seconds{file!~".*/(filesystem-disks|system-version|boot-timing|deploy-guard)[.]prom"} > 2 * 3600
       '';
       for = "15m";
       labels.severity = "warning";

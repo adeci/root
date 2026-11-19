@@ -10,5 +10,6 @@
     ext4-single-disk
 
     ./modules/router
+    ./modules/deploy-guard
   ];
 }

@@ -1,0 +1,66 @@
+--- a/clan_lib/machines/update.py
++++ b/clan_lib/machines/update.py
+@@ -566,6 +566,47 @@
+     raise ClanError(msg)
+ 
+ 
++def _confirm_switch(host: "Host", machine_name: str, system: str) -> None:
++    """Confirm the switch over a new connection, as the machine's deploy guard requires.
++
++    The guard (modules/deploy-guard in adeci/root) takes the machine back to its
++    previous system unless `deploy-guard-confirm` succeeds before its deadline
++    while the machine still runs the system the switch activated.
++    """
++    if not isinstance(host, Remote):
++        return
++    deadline = host.run(
++        ["cat", "/run/deploy-guard/deadline"],
++        RunOpts(check=False, log=Log.NONE, prefix=machine_name),
++        quiet=True,
++    )
++    # Not the switch's own connection: the next deploy will need a new one.
++    new_connection = host.override(
++        ssh_options={**host.ssh_options, "ControlPath": "none"}
++    )
++    confirmation = new_connection.run(
++        ["deploy-guard-confirm", system],
++        RunOpts(check=False, log=Log.BOTH, prefix=machine_name),
++        control_master=False,
++    )
++    if confirmation.returncode == 0:
++        return
++    # cat found no deadline: no switch was waiting, so nothing goes back.
++    if deadline.returncode == 1:
++        msg = f"deploy-guard-confirm failed on '{machine_name}' over a new connection."
++    else:
++        when = (
++            f"at {deadline.stdout.strip()}"
++            if deadline.returncode == 0
++            else "when its window ends"
++        )
++        msg = (
++            f"'{machine_name}' did not confirm this switch over a new connection, "
++            f"so it goes back to its previous system {when} unless it restarts first."
++        )
++    raise ClanError(msg)
++
++
+ @API.register
+ def run_machine_update(
+     machine: Machine,
+@@ -703,6 +744,15 @@
+     _nixos_activate(
+         config_path, target_host_root, machine.name, specialisation=specialisation
+     )
++    # Only a machine with the deploy guard waits for a confirmation; the others see nothing new.
++    if machine.select("config.?deployGuard.?window"):
++        _confirm_switch(
++            target_host_root,
++            machine.name,
++            f"{config_path}/specialisation/{specialisation}"
++            if specialisation
++            else config_path,
++        )
+ 
+ 
+ def _build_darwin_rebuild_cmd(

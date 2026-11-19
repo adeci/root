@@ -8,7 +8,14 @@
   perSystem =
     { pkgs, self', ... }:
     let
-      mkTofuWorkspace = import ./tofu-workspace { inherit inputs lib pkgs; };
+      mkTofuWorkspace = import ./tofu-workspace {
+        inherit
+          inputs
+          lib
+          pkgs
+          self'
+          ;
+      };
     in
     mkTofuWorkspace {
       name = "cloud";

@@ -15,9 +15,16 @@ let
 in
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, self', ... }:
     let
-      mkTofuWorkspace = import ../tofu-workspace { inherit inputs lib pkgs; };
+      mkTofuWorkspace = import ../tofu-workspace {
+        inherit
+          inputs
+          lib
+          pkgs
+          self'
+          ;
+      };
 
       guardedApply = pkgs.writeShellApplication {
         name = "net-guarded-apply";

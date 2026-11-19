@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   ...
 }:
@@ -10,12 +9,7 @@ let
 in
 {
   perSystem =
-    {
-      pkgs,
-      self',
-      system,
-      ...
-    }:
+    { pkgs, self', ... }:
     let
       netinstall = self'.packages.routeros-netinstall;
 
@@ -46,7 +40,7 @@ in
         in
         pkgs.writeShellApplication {
           name = "netinstall-${name}";
-          runtimeInputs = [ inputs.clan-core.packages.${system}.clan-cli ];
+          runtimeInputs = [ self'.packages.clan-cli ];
           text = "exec ${lib.getExe netinstall} \\\n  ${lib.concatStringsSep " \\\n  " flags}\n";
         };
 

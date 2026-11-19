@@ -273,6 +273,39 @@ in
   }
 
   {
+    name = "a machine that went back to its previous system warns until deploy-guard-confirm runs there again, and that file never counts as stale";
+    interval = "1m";
+    input_series = [
+      {
+        series = ''deploy_guard_revert_timestamp_seconds{instance="server", job="node"}'';
+        values = "_x10 660x170";
+      }
+      {
+        series = ''node_textfile_mtime_seconds{instance="server", job="node", file="/var/lib/prometheus-node-exporter/textfile/deploy-guard.prom"}'';
+        values = "660x180";
+      }
+    ];
+    alert_rule_test = [
+      (noAlert "DeployReverted" (minutes 9))
+      (firing "DeployReverted" (minutes 11) [
+        {
+          exp_labels = {
+            instance = "server";
+            job = "node";
+            severity = "warning";
+          };
+          exp_annotations = {
+            summary = "server went back to its previous system";
+            description = "A switch on server was not confirmed within its window, so it returned to the system it ran before and stays there until a switch is confirmed; see `journalctl -u deploy-guard-revert` there.";
+          };
+        }
+      ])
+      (noAlert "TextfileMetricsStale" (minutes 175))
+      (noAlert "DeployReverted" (minutes 190))
+    ];
+  }
+
+  {
     name = "a disk filling within a day warns on servers only, and its read-only bind mount stays quiet";
     interval = "5m";
     input_series =

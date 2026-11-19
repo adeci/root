@@ -1,10 +1,10 @@
 {
   lib,
   gitMinimal,
-  inputs,
   openssh,
   python3Packages,
   ruff,
+  self,
   stdenv,
 }:
 python3Packages.buildPythonApplication {
@@ -39,7 +39,7 @@ python3Packages.buildPythonApplication {
     "PATH"
     ":"
     (lib.makeBinPath [
-      inputs.clan-core.packages.${stdenv.hostPlatform.system}.clan-cli
+      self.packages.${stdenv.hostPlatform.system}.clan-cli
       gitMinimal
       openssh
     ])

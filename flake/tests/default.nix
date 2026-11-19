@@ -11,6 +11,7 @@
       callPackage = pkgs.newScope { inherit self inputs; };
     in
     lib.optionalAttrs (system == "x86_64-linux") {
+      checks.janus-deploy-guard-test = callPackage ../../machines/janus/tests/deploy-guard.nix { };
       checks.janus-router-test = callPackage ../../machines/janus/tests/router.nix { };
       checks.praxis-home-restore-test = callPackage ../../machines/praxis/tests/home-restore.nix { };
       checks.sequoia-paperless-test = callPackage ../../machines/sequoia/tests/paperless.nix { };
