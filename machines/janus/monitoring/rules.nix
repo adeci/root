@@ -188,4 +188,14 @@ in
       description = "{{ $labels.name }} answers pings but not its API; check the prometheus API user and the API service on it.";
     };
   }
+  {
+    alert = "RouterOSRolledBack";
+    # The marker stays until the next net-apply, so there is nothing to wait out.
+    expr = "janus_routeros_rolled_back{${router}} == 1";
+    labels.severity = "warning";
+    annotations = {
+      summary = "{{ $labels.name }} rolled back a net-apply";
+      description = "The net-apply that armed {{ $labels.name }} was not confirmed, so it restored, or tried to restore, the configuration it had before that apply; the next net-apply says which, plans that apply's changes again and clears this.";
+    };
+  }
 ]

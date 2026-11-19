@@ -1,4 +1,4 @@
-"""Appliance /system/health sensors as a Prometheus textfile."""
+"""Appliance /system/health sensors, and whether each appliance has rolled back a net-apply, as a Prometheus textfile."""
 
 import json
 import os
@@ -82,22 +82,30 @@ def emit_metric(lines, metric, value, **label_pairs):
     lines.append(f"{metric}{labels(**label_pairs)} {value}")
 
 
-def collect_device(device, password):
-    started = time.monotonic()
+def query(connection, words):
+    send_sentence(connection, words)
     rows = []
+    for sentence in read_until_done(connection):
+        if sentence and sentence[0] == "!re":
+            rows.append(sentence_attributes(sentence))
+        elif sentence and sentence[0] in ("!trap", "!fatal"):
+            raise RuntimeError(sentence_attributes(sentence).get("message", sentence[0]))
+    return rows
+
+
+def collect_device(device, password, rollback_marker):
+    started = time.monotonic()
     with socket.create_connection((device["address"], int(device.get("port", "8728"))), timeout=4) as connection:
         send_sentence(connection, ["/login", "=name=" + device["user"], "=password=" + password])
         login = read_until_done(connection)
         if login[-1][0] != "!done":
             raise RuntimeError("RouterOS API login failed")
 
-        send_sentence(connection, ["/system/health/print"])
-        for sentence in read_until_done(connection):
-            if sentence and sentence[0] == "!re":
-                rows.append(sentence_attributes(sentence))
-            elif sentence and sentence[0] in ("!trap", "!fatal"):
-                raise RuntimeError(sentence_attributes(sentence).get("message", sentence[0]))
-    return rows, time.monotonic() - started
+        rows = query(connection, ["/system/health/print"])
+        # The marker lies in whichever folder the appliance keeps files in across restarts.
+        files = query(connection, ["/file/print", "=.proplist=name"])
+        rolled_back = any(file.get("name", "").rpartition("/")[2] == rollback_marker for file in files)
+    return rows, rolled_back, time.monotonic() - started
 
 
 metric_for_unit = {
@@ -109,7 +117,7 @@ metric_for_unit = {
 }
 
 
-def main(devices_path, output_path):
+def main(devices_path, output_path, rollback_marker):
     devices = json.loads(Path(devices_path).read_text())
     password = Path(os.environ["CREDENTIALS_DIRECTORY"], "routeros-password").read_text().strip()
     output = Path(output_path)
@@ -129,15 +137,18 @@ def main(devices_path, output_path):
         "# TYPE janus_routeros_current_amperes gauge",
         "# HELP janus_routeros_power_watts RouterOS health power sensors.",
         "# TYPE janus_routeros_power_watts gauge",
+        "# HELP janus_routeros_rolled_back Whether the appliance has restored the configuration it had before a net-apply that was not confirmed.",
+        "# TYPE janus_routeros_rolled_back gauge",
     ]
 
     for device in devices:
         name = device["name"]
         address = device["address"]
         try:
-            rows, duration = collect_device(device, password)
+            rows, rolled_back, duration = collect_device(device, password, rollback_marker)
             emit_metric(lines, "janus_routeros_health_scrape_success", 1, name=name, address=address)
             emit_metric(lines, "janus_routeros_health_scrape_duration_seconds", f"{duration:.6f}", name=name, address=address)
+            emit_metric(lines, "janus_routeros_rolled_back", int(rolled_back), name=name)
             for row in rows:
                 metric = metric_for_unit.get(row.get("type", ""))
                 if not metric:

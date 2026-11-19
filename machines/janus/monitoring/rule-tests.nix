@@ -586,5 +586,37 @@ in
       ];
       alert_rule_test = [ (noAlert "RouterOSMetricsFailing" "31m") ];
     }
+
+    {
+      name = "an appliance that has rolled back a net-apply alerts at once, until the next net-apply removes its marker";
+      interval = "1m";
+      input_series = [
+        {
+          series = ''janus_routeros_rolled_back{instance="janus", name="switch"}'';
+          values = "0x30";
+        }
+        {
+          series = ''janus_routeros_rolled_back{instance="janus", name="ap"}'';
+          values = "0x9 1x10 0x10";
+        }
+      ];
+      alert_rule_test = [
+        (noAlert "RouterOSRolledBack" "9m")
+        (firing "RouterOSRolledBack" "10m" [
+          {
+            exp_labels = {
+              instance = "janus";
+              name = "ap";
+              severity = "warning";
+            };
+            exp_annotations = {
+              summary = "ap rolled back a net-apply";
+              description = "The net-apply that armed ap was not confirmed, so it restored, or tried to restore, the configuration it had before that apply; the next net-apply says which, plans that apply's changes again and clears this.";
+            };
+          }
+        ])
+        (noAlert "RouterOSRolledBack" "21m")
+      ];
+    }
   ];
 }

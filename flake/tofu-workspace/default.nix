@@ -19,6 +19,8 @@
   tunnel ? null,
   # <name> = <provider configuration>, such as routeros.nexus: apply-<name> applies only that configuration's resources, so the others' endpoints may be unreachable.
   applyAlone ? { },
+  # A program that apply and apply-<name> run in place of `tofu apply`, inside the tunnel, with the arguments tofu apply would get; it finds tofu and clan on the app's PATH.
+  apply ? null,
 }:
 let
   # Each provider's package by the name the config calls it; the base module's own is `external`, which reads clan secrets.
@@ -104,10 +106,11 @@ let
     text = builtins.readFile ./tunnel.sh;
   };
 
-  # tofu with `arguments`, inside the tunnel when the workspace has one.
+  applyCommand = if apply == null then "tofu apply" else lib.getExe apply;
+
+  # `command` with the app's arguments, inside the tunnel when the workspace has one.
   throughTunnel =
-    arguments:
-    lib.optionalString (tunnel != null) "${lib.getExe tunnelProgram} " + ''tofu ${arguments} "$@"'';
+    command: lib.optionalString (tunnel != null) "${lib.getExe tunnelProgram} " + ''${command} "$@"'';
 in
 {
   apps =
@@ -115,12 +118,19 @@ in
       (
         lib.genAttrs commands (
           command:
-          if lib.elem command reachesProviders then throughTunnel command else ''tofu ${command} "$@"''
+          if command == "apply" then
+            throughTunnel applyCommand
+          else if lib.elem command reachesProviders then
+            throughTunnel "tofu ${command}"
+          else
+            ''tofu ${command} "$@"''
         )
         // lib.mapAttrs (_: builtins.readFile) scripts
         // lib.mapAttrs' (
           alias: provider:
-          lib.nameValuePair "apply-${alias}" (throughTunnel "apply -target-file=${targetFile provider}")
+          lib.nameValuePair "apply-${alias}" (
+            throughTunnel "${applyCommand} -target-file=${targetFile provider}"
+          )
         ) applyAlone
       );
 

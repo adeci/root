@@ -614,6 +614,13 @@ in
         };
         description = "The read-only RouterOS API account metrics scraping uses; its password lives in the router's clan vars.";
       };
+
+      rollbackMarker = mkOption {
+        type = types.str;
+        readOnly = true;
+        default = "net-apply-rolled-back.txt";
+        description = "The file an appliance writes when it restores the configuration it had before a net-apply that was not confirmed; janus alerts while it is there, and the next net-apply removes it.";
+      };
     };
 
     # the other data files, untyped; references.nix checks the names they use

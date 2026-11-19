@@ -7,7 +7,7 @@
 }:
 let
   inherit (self.inventory) appliances;
-  inherit (self.inventory.routeros) exporter;
+  inherit (self.inventory.routeros) exporter rollbackMarker;
   exporterPassword = config.clan.core.vars.generators.${exporter.generator}.files.${exporter.file};
 
   mainConfigPath = "/run/prometheus-mikrotik-exporter/config.yml";
@@ -105,12 +105,12 @@ in
   };
 
   systemd.services.janus-routeros-health = {
-    description = "Export RouterOS health sensors for node_exporter";
+    description = "Export RouterOS health sensors and rollbacks for node_exporter";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${lib.getExe pkgs.python3} ${./routeros-health.py} ${healthDevices} ${config.monitoring.textfileDirectory}/janus-routeros-health.prom";
+      ExecStart = "${lib.getExe pkgs.python3} ${./routeros-health.py} ${healthDevices} ${config.monitoring.textfileDirectory}/janus-routeros-health.prom ${rollbackMarker}";
       LoadCredential = [
         "routeros-password:${exporterPassword.path}"
       ];
