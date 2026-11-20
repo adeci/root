@@ -17,4 +17,3 @@ expiry=$(tailscale status --json | jq '.Self.KeyExpiry // empty | fromdate')
 
 chmod 0644 "$temporary_file"
 mv "$temporary_file" "$output_file"
-trap - EXIT

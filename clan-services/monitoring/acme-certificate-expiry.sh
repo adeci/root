@@ -17,4 +17,3 @@ trap 'rm -f "$temporary_file"' EXIT
 
 chmod 0644 "$temporary_file"
 mv "$temporary_file" "$output_file"
-trap - EXIT
