@@ -121,7 +121,8 @@ with subtest("a backup stopped for sleep ends without a failure, and the next tr
 with subtest("a stale lock from a cut-off prune (sleep after the network drops) blocks no later backup"):
     # A run that holds the repository to itself, killed before it can remove its lock.
     praxis.succeed(f"systemd-run --unit=cut-off-prune --property=CPUQuota=1% {restic} prune")
-    praxis.wait_until_succeeds(f'test -n "$(ls {repository}/locks)"')
+    # restic writes a lock through a temporary file; only the finished one counts.
+    praxis.wait_until_succeeds(f"ls {repository}/locks | grep -qxE '[0-9a-f]{{64}}'")
     praxis.succeed("systemctl kill --signal=SIGKILL cut-off-prune.service")
     # Every backup refuses the repository while that lock is there.
     praxis.fail(f"{restic} snapshots")
