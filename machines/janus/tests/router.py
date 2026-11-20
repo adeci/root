@@ -163,16 +163,22 @@ with subtest("every host gets its reserved address, by MAC or client id, and oth
         assert ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"]), f"{host} got {address}"
         pool_addresses[vlan] = address
 
-with subtest("janus exports every lease in use, named as its reservation or as its client asked, but never as a guest or tenant asked"):
+with subtest("janus exports every lease in use with the maker its MAC names, named as its reservation or as its client asked, but never as a guest or tenant asked"):
     # The monitoring agent makes the folder on a real machine.
     janus.succeed(f"mkdir -p {textfile_directory}", "systemctl start janus-dhcp-leases.service")
     exported = janus.succeed(f"cat {textfile_directory}/janus-dhcp-leases.prom")
-    leased = set(re.findall(r'address="([^"]+)"', exported))
+    records = [dict(re.findall(r'(\w+)="([^"]*)"', line)) for line in exported.splitlines() if not line.startswith("#")]
+    leased = {record["address"] for record in records}
     assert leased == {host["ip"] for host in hosts.values()} | set(pool_addresses.values()), f"janus exported the leases of {leased}"
-    names = dict(re.findall(r'address="([^"]+)",mac="[^"]+",hostname="([^"]+)"', exported))
+    names = {record["address"]: record["hostname"] for record in records if "hostname" in record}
     expected = {host["ip"]: name for name, host in hosts.items()}
     expected.update({pool_addresses[vlan]: own_name(host) for vlan, host in pool_hosts.items() if vlan not in ("guest", "tenant")})
     assert names == expected, f"janus exported {names}, not {expected}"
+    # macvlan makes up the MACs of the pool hosts and of the hosts with a client id; the inventory's are real, but for its VMs'.
+    for record in records:
+        made_up = int(record["mac"][:2], 16) & 0x02
+        known = record["maker"] not in ("private address", "unknown maker")
+        assert record["maker"] == "private address" if made_up else known, f"{record['mac']} at {record['address']}: {record['maker']}"
 
 with subtest("an appliance's replacement, with a new MAC, gets its address by its name while the old lease is live"):
     for name in inventory["appliances"]:

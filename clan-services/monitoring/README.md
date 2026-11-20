@@ -45,6 +45,10 @@ server watches the same fleet and alerts when the main one cannot.
   machine is down its other alerts are held back. Tapping one opens the fleet
   page on the main server's Grafana, which must be on HTTPS once there is a
   backup server.
+- A warning labelled `send_resolved = "false"` is news that ends on its own,
+  such as a new device on the network, so it gets no resolved notification.
+  If Prometheus stops sending it for more than four minutes while it lasts,
+  it resolves and fires again, and that sends a second notification.
 - The servers' Alertmanagers form a cluster over the tailnet, so each alert is
   sent once: by the main server, or 15 seconds later by the backup when the
   main server is down or its delivery fails. A main server whose delivery

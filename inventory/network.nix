@@ -10,9 +10,15 @@
         tailnet = true;
       };
       iot.id = 20;
-      guest.id = 30;
+      guest = {
+        id = 30;
+        ownDevices = false;
+      };
       vault.id = 40;
-      tenant.id = 50;
+      tenant = {
+        id = 50;
+        ownDevices = false;
+      };
       mgmt = {
         id = 99;
         interface = "br-mgmt";

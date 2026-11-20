@@ -113,6 +113,11 @@ in
                   default = false;
                   description = "Whether the router advertises the VLAN to the tailnet as a subnet route.";
                 };
+                ownDevices = mkOption {
+                  type = types.bool;
+                  default = true;
+                  description = "Whether the devices on it are the household's own. Guests' and tenants' are not: the router exports no name they ask with, and none of them is reported as new.";
+                };
                 interface = mkOption {
                   type = types.str;
                   default = "vlan${toString config.id}";

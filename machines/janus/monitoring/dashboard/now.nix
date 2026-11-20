@@ -1,7 +1,8 @@
-{ ui, queries, ... }:
-let
-  client = "network, address, mac";
-in
+{
+  ui,
+  network,
+  queries,
+}:
 ui.row {
   title = "Now";
   collapsed = false;
@@ -13,11 +14,10 @@ ui.row {
     })
     (ui.mergedTable {
       title = "New clients";
-      description = "Clients that got an address from the router in the last day and in none of the six days before.";
+      description = "The devices NewDevice has reported in the last day: each took its first lease in ${toString network.newDeviceDays} days on one of the household's own networks. Name is the one it asked with, or else, in brackets, the maker its MAC names.";
       w = 10;
       h = 5;
-      datasource = ui.loki;
-      noDataText = "No client is new today";
+      noDataText = "No device is new, or there are not yet ${toString network.newDeviceDays} days of lease records to tell";
       sortBy = [
         {
           displayName = "First seen";
@@ -27,18 +27,19 @@ ui.row {
       renamedColumns = {
         network = "Network";
         address = "Address";
+        name = "Name";
         mac = "MAC";
       };
       firstColumns = [
         "network"
         "address"
+        "name"
         "mac"
       ];
-      labelColumns.Network.valueMappings = queries.networkNames;
       columns = [
         {
           name = "First seen";
-          expr = "1000 * (min by (${client}) (min_over_time(${queries.leaseTimes} [24h])) and on (mac) (${queries.newClients client}))";
+          expr = "1000 * min by (network, address, name, mac) (${queries.leaseName (network.newDevices "24h")})";
           unit = "dateTimeFromNow";
         }
       ];

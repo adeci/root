@@ -12,14 +12,34 @@ let
       switch = { };
       ap = { };
     };
-    lan.cables = [
-      (cable "sfp-sfpplus1" "server" null)
-      (cable "sfp-sfpplus2" "nas" null)
-      (cable "ether1" "ap" "ether1")
-      (cable "ether2" "laptop" null)
-      (cable "ether3" "desktop" null)
-      (cable "ether4" "printer" null)
-    ];
+    lan = {
+      cables = [
+        (cable "sfp-sfpplus1" "server" null)
+        (cable "sfp-sfpplus2" "nas" null)
+        (cable "ether1" "ap" "ether1")
+        (cable "ether2" "laptop" null)
+        (cable "ether3" "desktop" null)
+        (cable "ether4" "printer" null)
+      ];
+      vlans = {
+        trusted = {
+          id = 10;
+          prefix = "10.10.0";
+          ownDevices = true;
+        };
+        guest = {
+          id = 30;
+          prefix = "10.30.0";
+          ownDevices = false;
+        };
+        mgmt = {
+          id = 99;
+          prefix = "10.99.0";
+          ownDevices = true;
+        };
+      };
+      hosts.desktop.ip = "10.10.0.40";
+    };
   };
 
   noAlert = alertname: time: {
@@ -54,6 +74,17 @@ let
       summary = "The LAN's DNS resolver is failing";
       description = "Unbound is down or can't resolve names while the internet is up; see `systemctl status unbound` on janus.";
     };
+  };
+
+  # A NewDevice alert on the test network's trusted VLAN.
+  newDevice = labels: summary: description: {
+    exp_labels = labels // {
+      instance = "janus";
+      network = "trusted";
+      severity = "warning";
+      send_resolved = "false";
+    };
+    exp_annotations = { inherit summary description; };
   };
 in
 {
@@ -596,6 +627,149 @@ in
         ])
         (noAlert "RouterOSRolledBack" "21m")
       ];
+    }
+
+    {
+      name = "a device whose MAC had no lease in the 30 days before is new for twelve hours, by its name or else its maker; one back after ten days is not, nor a reserved host back after forty, a guest or the deploy guard's check";
+      interval = "1h";
+      input_series =
+        let
+          lease = labels: values: {
+            series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", ${labels}}'';
+            inherit values;
+          };
+          # First there on day 41.
+          newNow = "_x984 1x13";
+          # There until day 31, and back on day 41.
+          backAfterTen = "1x744 _x240 1x13";
+          # There on day 0, and back on day 41.
+          backAfterForty = "1x24 _x960 1x13";
+        in
+        [
+          (lease ''address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."'' newNow)
+          (lease ''address="10.10.0.151", mac="aa:00:00:00:00:02", hostname="laptop", maker="Intel Corporate"'' backAfterTen)
+          (lease ''address="10.10.0.152", mac="aa:00:00:00:00:03", hostname="tablet", maker="Apple, Inc."'' backAfterForty)
+          (lease ''address="10.10.0.40", mac="aa:00:00:00:00:04", hostname="desktop", maker="Dell Inc."'' backAfterForty)
+          (lease ''address="10.30.0.150", mac="aa:00:00:00:00:05", maker="Apple, Inc."'' newNow)
+          (lease ''address="10.99.0.100", mac="02:00:00:99:00:01", hostname="janus-deploy-guard", maker="private address"'' newNow)
+          (lease ''address="10.10.0.153", mac="6a:00:00:00:00:06", maker="private address"'' newNow)
+        ];
+      alert_rule_test = [
+        (firing "NewDevice" "985h" [
+          (newDevice
+            {
+              address = "10.10.0.150";
+              mac = "aa:00:00:00:00:01";
+              hostname = "phone";
+              maker = "Apple, Inc.";
+            }
+            "A new device joined trusted: phone"
+            "It took 10.10.0.150 with MAC aa:00:00:00:00:01 (Apple, Inc.), which had no lease in the 30 days before; see Clients on the network page."
+          )
+          (newDevice
+            {
+              address = "10.10.0.152";
+              mac = "aa:00:00:00:00:03";
+              hostname = "tablet";
+              maker = "Apple, Inc.";
+            }
+            "A new device joined trusted: tablet"
+            "It took 10.10.0.152 with MAC aa:00:00:00:00:03 (Apple, Inc.), which had no lease in the 30 days before; see Clients on the network page."
+          )
+          (newDevice
+            {
+              address = "10.10.0.153";
+              mac = "6a:00:00:00:00:06";
+              maker = "private address";
+            }
+            "A new device joined trusted: private address"
+            "It took 10.10.0.153 with MAC 6a:00:00:00:00:06 (private address), which had no lease in the 30 days before; see Clients on the network page."
+          )
+        ])
+        (noAlert "NewDevice" "997h")
+      ];
+    }
+
+    {
+      name = "a new device is one alert, on its first lease, for all twelve hours, though it takes a second address or gives its name only when it renews";
+      interval = "1h";
+      input_series =
+        let
+          lease = labels: values: {
+            series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", ${labels}}'';
+            inherit values;
+          };
+        in
+        [
+          # Here all along, so there are 30 days of lease records.
+          (lease ''address="10.10.0.160", mac="aa:00:00:00:00:10", hostname="server", maker="Dell Inc."'' "1x998")
+          # A second address three hours after the first.
+          (lease ''address="10.10.0.161", mac="aa:00:00:00:00:11", maker="Apple, Inc."'' "_x984 1x4")
+          (lease ''address="10.10.0.162", mac="aa:00:00:00:00:11", maker="Apple, Inc."'' "_x987 2x10")
+          # Its name only from its first renewal, two hours on.
+          (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", maker="Intel Corporate"'' "_x984 1x2")
+          (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", hostname="laptop", maker="Intel Corporate"'' "_x986 2x10")
+        ];
+      alert_rule_test =
+        let
+          firstLeases = [
+            (newDevice
+              {
+                address = "10.10.0.161";
+                mac = "aa:00:00:00:00:11";
+                maker = "Apple, Inc.";
+              }
+              "A new device joined trusted: Apple, Inc."
+              "It took 10.10.0.161 with MAC aa:00:00:00:00:11 (Apple, Inc.), which had no lease in the 30 days before; see Clients on the network page."
+            )
+            (newDevice
+              {
+                address = "10.10.0.163";
+                mac = "aa:00:00:00:00:12";
+                maker = "Intel Corporate";
+              }
+              "A new device joined trusted: Intel Corporate"
+              "It took 10.10.0.163 with MAC aa:00:00:00:00:12 (Intel Corporate), which had no lease in the 30 days before; see Clients on the network page."
+            )
+          ];
+        in
+        [
+          (firing "NewDevice" "990h" firstLeases)
+          (firing "NewDevice" "995h" firstLeases)
+          (noAlert "NewDevice" "997h")
+        ];
+    }
+
+    {
+      name = "with lease records only from day 10, a device first seen on day 25 is not reported";
+      interval = "1h";
+      input_series = [
+        {
+          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.160", mac="aa:00:00:00:00:10", hostname="server", maker="Dell Inc."}'';
+          values = "_x240 1x760";
+        }
+        {
+          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."}'';
+          values = "_x600 1x13";
+        }
+      ];
+      alert_rule_test = [ (noAlert "NewDevice" "601h") ];
+    }
+
+    {
+      name = "with three days of lease records, as the backup keeps, a device first seen then is not reported";
+      interval = "1h";
+      input_series = [
+        {
+          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.160", mac="aa:00:00:00:00:10", hostname="server", maker="Dell Inc."}'';
+          values = "_x912 1x86";
+        }
+        {
+          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."}'';
+          values = "_x984 1x13";
+        }
+      ];
+      alert_rule_test = [ (noAlert "NewDevice" "985h") ];
     }
   ];
 }

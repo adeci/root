@@ -26,11 +26,24 @@ let
         }
       ];
 
+  # A route under another doesn't take its mute times, so each says so.
+  quietMute = lib.optionalAttrs (quietHours != null) { mute_time_intervals = [ "quiet-hours" ]; };
+
   warningRoute = {
     matchers = [ ''severity="warning"'' ];
     repeat_interval = "24h";
+    # News that ends on its own, such as a new device, is told once.
+    routes = [
+      (
+        {
+          matchers = [ ''send_resolved="false"'' ];
+          receiver = "ntfy-once";
+        }
+        // quietMute
+      )
+    ];
   }
-  // lib.optionalAttrs (quietHours != null) { mute_time_intervals = [ "quiet-hours" ]; };
+  // quietMute;
 in
 {
   route = {
@@ -85,6 +98,15 @@ in
         {
           url = webhookUrl;
           send_resolved = true;
+        }
+      ];
+    }
+    {
+      name = "ntfy-once";
+      webhook_configs = [
+        {
+          url = webhookUrl;
+          send_resolved = false;
         }
       ];
     }

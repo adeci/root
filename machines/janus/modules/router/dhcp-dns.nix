@@ -21,13 +21,10 @@ let
     "--timeout=30"
   ];
   controlSocket = "/run/kea/kea-dhcp4.sock";
-  # Guests' and tenants' devices are other people's, so their leases are exported with a reservation's name only, never the one they ask with.
+  # Other people's devices, on a network not the household's own, are exported with a reservation's name only, never the one they ask with.
   leaseNames = pkgs.writeText "janus-dhcp-lease-names.json" (
     builtins.toJSON {
-      privateSubnets = map (vlan: vlans.${vlan}.id) [
-        "guest"
-        "tenant"
-      ];
+      privateSubnets = map (vlan: vlan.id) (lib.filter (vlan: !vlan.ownDevices) (lib.attrValues vlans));
       reservedAddresses = map (host: host.ip) (lib.attrValues hosts);
     }
   );
@@ -180,7 +177,7 @@ in
     after = [ "kea-dhcp4-server.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${lib.getExe pkgs.python3} ${./dhcp-leases.py} ${controlSocket} ${leaseNames} ${config.monitoring.textfileDirectory}/janus-dhcp-leases.prom";
+      ExecStart = "${lib.getExe pkgs.python3} ${./dhcp-leases.py} ${controlSocket} ${leaseNames} ${pkgs.hwdata}/share/hwdata/oui.txt ${config.monitoring.textfileDirectory}/janus-dhcp-leases.prom";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;

@@ -67,6 +67,7 @@ pkgs.runCommand "monitoring-tests"
     for severity in critical warning; do
       amtool config routes test --config.file=${alertmanagerConfig} --verify.receivers=ntfy severity=$severity
     done
+    amtool config routes test --config.file=${alertmanagerConfig} --verify.receivers=ntfy-once severity=warning send_resolved=false
 
     python3 ${./ntfy-bridge.py} ${bridgeConfig}
 

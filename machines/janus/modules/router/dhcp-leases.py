@@ -1,4 +1,4 @@
-"""Each lease Kea has in use, as a Prometheus textfile: when it was last renewed, and its client's name where that is shown."""
+"""Each lease Kea has in use, as a Prometheus textfile: when it was last renewed, its client's name where that is shown, and the maker its MAC names."""
 
 import json
 import socket
@@ -27,12 +27,30 @@ def leases(socket_path):
     return reply["arguments"]["leases"]
 
 
-def main(socket_path, settings_path, output_path):
+def makers(oui_path):
+    """The makers the IEEE lists, by the first three bytes of a MAC as Kea writes it."""
+    found = {}
+    for line in Path(oui_path).read_text(encoding="utf-8", errors="replace").splitlines():
+        prefix, separator, maker = line.partition("(hex)")
+        if separator:
+            found[prefix.strip().replace("-", ":").lower()] = maker.strip()
+    return found
+
+
+def maker_of(mac, known_makers):
+    # A device that makes its MAC up, as phones do for privacy, sets this bit, and no maker owns such a MAC.
+    if int(mac[:2], 16) & 0x02:
+        return "private address"
+    return known_makers.get(mac[:8], "unknown maker")
+
+
+def main(socket_path, settings_path, oui_path, output_path):
     settings = json.loads(Path(settings_path).read_text())
     private_subnets = set(settings["privateSubnets"])
     reserved_addresses = set(settings["reservedAddresses"])
+    known_makers = makers(oui_path)
     lines = [
-        "# HELP janus_dhcp_lease_renewed_timestamp_seconds When each lease in use was last renewed, named as its reservation or, off the guest and tenant networks, as its client asked.",
+        "# HELP janus_dhcp_lease_renewed_timestamp_seconds When each lease in use was last renewed, named as its reservation or, on the household's own networks, as its client asked, with the maker its MAC names.",
         "# TYPE janus_dhcp_lease_renewed_timestamp_seconds gauge",
     ]
     for lease in leases(socket_path):
@@ -43,6 +61,7 @@ def main(socket_path, settings_path, output_path):
         hostname = lease["hostname"].removesuffix(".")
         if hostname and (lease["subnet-id"] not in private_subnets or lease["ip-address"] in reserved_addresses):
             labels["hostname"] = hostname
+        labels["maker"] = maker_of(lease["hw-address"], known_makers)
         label_text = ",".join(f'{key}="{escape_label(value)}"' for key, value in labels.items())
         lines.append(f"janus_dhcp_lease_renewed_timestamp_seconds{{{label_text}}} {lease['cltt']}")
 

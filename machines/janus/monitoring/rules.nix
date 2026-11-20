@@ -183,4 +183,17 @@ in
       description = "The net-apply that armed {{ $labels.name }} was not confirmed, so it restored, or tried to restore, the configuration it had before that apply; the next net-apply says which, plans that apply's changes again and clears this.";
     };
   }
+  {
+    alert = "NewDevice";
+    # Twelve hours, so a device that joins in the quiet hours is still news when they end.
+    expr = network.newDevices "12h";
+    labels = {
+      severity = "warning";
+      send_resolved = "false";
+    };
+    annotations = {
+      summary = "A new device joined {{ $labels.network }}: {{ with $labels.hostname }}{{ . }}{{ else }}{{ $labels.maker }}{{ end }}";
+      description = "It took {{ $labels.address }} with MAC {{ $labels.mac }} ({{ $labels.maker }}), which had no lease in the ${toString network.newDeviceDays} days before; see Clients on the network page.";
+    };
+  }
 ]

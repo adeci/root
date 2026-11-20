@@ -1041,6 +1041,7 @@ let
     "rule_group"
     "target"
     "subnet"
+    "mac"
   ];
 
   # The alerts firing on what `matchers` select, critical first, each with what it is about and since when.
@@ -1079,7 +1080,7 @@ let
           colours = mappings.severityColours;
         };
         Machine.width = 86;
-        On.width = 120;
+        On.width = 140;
       };
       columns = [
         {

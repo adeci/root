@@ -1,4 +1,8 @@
-{ ui, queries, ... }:
+{
+  ui,
+  network,
+  queries,
+}:
 let
   client = "network, address, mac";
 in
@@ -8,7 +12,7 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Clients";
-      description = "Every client that got an address from the router in the picked time range, by its DHCP log. Name is the inventory's for a reserved address, or else the one the client asked with, except on the guest and tenant networks. Access point and Signal: where a Wi-Fi client is connected now, beside the address it holds now, and how strongly that access point hears it. Here marks a client that holds a lease from the router now: a lease lasts two hours from its last renewal, unless the client gives it back. New marks one first seen today.";
+      description = "Every client that got an address from the router in the picked time range, by its DHCP log. Name is the inventory's for a reserved address, or else the one the client asked with, except on other people's networks, or else, in brackets, the maker its MAC names. Access point and Signal: where a Wi-Fi client is connected now, beside the address it holds now, and how strongly that access point hears it. Here marks a client that holds a lease from the router now: a lease lasts two hours from its last renewal, unless the client gives it back. New marks a device NewDevice has reported in the last day: its first lease in ${toString network.newDeviceDays} days, on the household's own networks.";
       w = 24;
       # About twenty-five clients a day, plus the title and the header.
       h = 27;
@@ -64,8 +68,8 @@ ui.row {
           name = "Lease names";
           hidden = true;
           datasource = ui.prometheus;
-          # Unreserved leases renewed within the range: a reserved address has its name above, and a client that left just before the range would be a row with nothing but a name.
-          expr = ''max by (address, mac, name) (label_replace(last_over_time(janus_dhcp_lease_renewed_timestamp_seconds{${queries.router}, hostname!="", address!~"${queries.reservedAddresses}"}[$__range]) > time() - $__range_s, "name", "$1", "hostname", "(.+)"))'';
+          # Unreserved leases renewed within the range, each under its newest name: a reserved address has its name above, and a client that left just before the range would be a row with nothing but a name.
+          expr = "topk by (address, mac) (1, max by (address, mac, name) (${queries.leaseName ''last_over_time(janus_dhcp_lease_renewed_timestamp_seconds{${queries.router}, address!~"${queries.reservedAddresses}"}[$__range]) > time() - $__range_s''}))";
         }
         {
           name = "Last seen";
@@ -76,7 +80,8 @@ ui.row {
         {
           name = "New";
           width = 70;
-          expr = queries.newClients client;
+          datasource = ui.prometheus;
+          expr = "group by (address, mac) (${network.newDevices "24h"})";
           valueMappings = ui.mappings.new;
         }
       ];
