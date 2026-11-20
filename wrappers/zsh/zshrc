@@ -101,22 +101,12 @@ psvar[13]=1
 PROMPT=${PROMPT//@%m/@${$(uname -n)%%.*}}
 
 # Pure has no path length setting, so override its renderers.
-PURE_PROMPT_PATH_MAX_COLUMNS=${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
-PURE_PROMPT_PATH_MIN_COLUMNS=${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
-PURE_PROMPT_PATH_FRACTION=${PURE_PROMPT_PATH_FRACTION:-45}
-PURE_PROMPT_WORKTREE_MAX_COLUMNS=${PURE_PROMPT_WORKTREE_MAX_COLUMNS:-32}
-
+# The path gets 45% of the terminal, between 28 and 56 columns.
 _prompt_pure_path_max_columns() {
   emulate -L zsh
-  integer max=${PURE_PROMPT_PATH_MAX_COLUMNS:-56}
-  integer min=${PURE_PROMPT_PATH_MIN_COLUMNS:-28}
-  integer fraction=${PURE_PROMPT_PATH_FRACTION:-45}
-
-  if (( COLUMNS > 0 && fraction > 0 )); then
-    integer from_columns=$(( COLUMNS * fraction / 100 ))
-    (( from_columns < max )) && max=$from_columns
-  fi
-  (( max < min )) && max=$min
+  integer max=56
+  (( COLUMNS > 0 && COLUMNS * 45 / 100 < max )) && max=$(( COLUMNS * 45 / 100 ))
+  (( max < 28 )) && max=28
   print -r -- $max
 }
 
@@ -171,7 +161,7 @@ prompt_pure_precustom() {
   [[ -n $top && -f $top/.git ]] || return
   local name=${top:t}
   [[ $name == src ]] && name=${top:h:t}
-  name=$(_prompt_pure_truncate_middle "$name" "${PURE_PROMPT_WORKTREE_MAX_COLUMNS:-32}")
+  name=$(_prompt_pure_truncate_middle "$name" 32)
   psvar[23]="⎇ $name"
 }
 
