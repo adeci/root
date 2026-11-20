@@ -13,6 +13,15 @@ Backs up each machine's `clan.core.state` folders with
 
 ## Notes
 
+- `pruneOpts` keeps the newest snapshot of each of the last 14 days, 8 weeks,
+  12 months and 3 years: 30 or so once a machine has backed up for a year. It
+  counts all of a machine's snapshots as one history, whatever folders each
+  holds, so those taken before its folders changed thin out like the rest: a
+  month's last snapshot stays until that month comes round again, and the
+  machine's first snapshot until it has snapshots from three calendar years.
+  Two jobs writing to one repository would thin each other's snapshots, so
+  each needs its own `repository`; a snapshot of fewer folders taken by hand
+  counts as that day's.
 - Only the repository password is generated: set the `credentials` file (for
   S3, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) with `clan vars set`.
 - Restoring some folders restores every folder of the states holding them.

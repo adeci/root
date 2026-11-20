@@ -89,7 +89,7 @@
               "--keep-monthly 12"
               "--keep-yearly 3"
             ];
-            description = "Options for restic forget --prune.";
+            description = "Options for restic forget --prune, which applies them to all of the machine's snapshots, whatever folders each holds.";
           };
 
           checkOpts = lib.mkOption {
@@ -165,7 +165,8 @@
 
             restic = lib.getExe config.services.restic.backups.${jobName}.package;
             # forget needs the repository to itself, so it waits out a read such as clan backups list.
-            forget = "${restic} forget --prune --retry-lock 10m ${lib.concatStringsSep " " settings.pruneOpts}";
+            # By host alone: grouped by folders too, restic's default, the snapshots taken before the folders changed would never thin out.
+            forget = "${restic} forget --prune --retry-lock 10m --group-by host ${lib.concatStringsSep " " settings.pruneOpts}";
 
             whenDue = pkgs.writeShellApplication {
               name = "restic-when-due";

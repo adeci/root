@@ -257,7 +257,6 @@
           "/home/alex/.local/share/containers"
           "/home/alex/.local/share/Trash"
           "/home/alex/git/pi-repos"
-          "/home/alex/Downloads"
           "/home/alex/*.ipsw"
         ];
       };
