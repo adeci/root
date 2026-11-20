@@ -21,6 +21,7 @@
         pkgs.yubikey-manager
         pkgs.yubikey-personalization
         pkgs.libfido2
+        pkgs.age-plugin-yubikey
       ];
 
       systemd.user.services.yubikey-touch-detector = {

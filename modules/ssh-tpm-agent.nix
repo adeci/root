@@ -28,6 +28,8 @@
       environment.systemPackages = [
         pkgs.ssh-tpm-agent
         pkgs.keyutils
+        # sops and age find the user's TPM age key through it.
+        pkgs.age-plugin-tpm
       ];
 
       systemd.user.services.ssh-tpm-agent = {
