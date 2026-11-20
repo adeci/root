@@ -63,7 +63,7 @@ in
           "${toString tunnelPorts.${name}}:${appliance.api.address}:${toString appliance.api.port}"
         ) appliances;
       };
-      # A blank appliance comes up on its own while the others are unreachable or blank.
+      # `net-apply <device>`: a blank appliance comes up on its own while the others are unreachable or blank.
       applyAlone = lib.mapAttrs (name: _: "routeros.${name}") appliances;
       # Each device an apply changes restores its configuration from before, unless every device answers afterwards.
       apply = guardedApply;

@@ -44,31 +44,36 @@ in
           text = "exec ${lib.getExe netinstall} \\\n  ${lib.concatStringsSep " \\\n  " flags}\n";
         };
 
+      # Each appliance's reinstall and the API the router reaches it on, by name.
+      devices = pkgs.writeText "net-rebuild-devices.json" (
+        builtins.toJSON (
+          lib.mapAttrs (name: appliance: {
+            netinstall = lib.getExe (netinstallProgram name appliance);
+            apiAddress = appliance.api.address;
+            apiPort = appliance.api.port;
+          }) appliances
+        )
+      );
+    in
+    {
       # Reinstalls an appliance, forgets its old resources in the Terraform state and applies its configuration once the router reaches it.
-      app = name: appliance: {
-        program = pkgs.writeShellApplication {
-          name = "net-rebuild-${name}";
-          runtimeInputs = [ pkgs.openssh ];
+      apps = lib.optionalAttrs (self'.packages ? routeros-netinstall) {
+        net-rebuild.program = pkgs.writeShellApplication {
+          name = "net-rebuild";
+          runtimeInputs = [
+            pkgs.jq
+            pkgs.openssh
+          ];
           runtimeEnv = {
-            DEVICE = name;
-            NETINSTALL = lib.getExe (netinstallProgram name appliance);
+            DEVICES = devices;
             STATE = self'.apps.net-state.program;
             STATE_RM_DEVICE = self'.apps.net-state-rm-device.program;
-            APPLY = self'.apps."net-apply-${name}".program;
+            APPLY = self'.apps.net-apply.program;
             ROUTER = router.machine;
             ROUTER_HOST = config.flake.clan.inventory.machines.${router.machine}.deploy.targetHost;
-            API_ADDRESS = appliance.api.address;
-            API_PORT = toString appliance.api.port;
           };
           text = builtins.readFile ./net-rebuild.sh;
         };
       };
-    in
-    {
-      apps = lib.optionalAttrs (self'.packages ? routeros-netinstall) (
-        lib.mapAttrs' (
-          name: appliance: lib.nameValuePair "net-rebuild-${name}" (app name appliance)
-        ) appliances
-      );
     };
 }

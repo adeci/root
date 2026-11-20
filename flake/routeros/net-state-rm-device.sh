@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# net-rebuild-<device> passes --yes, as its netinstall has just wiped the device.
+# net-rebuild passes --yes, as its netinstall has just wiped the device.
 ask=true
 if [[ ${1-} == --yes ]]; then
   ask=false

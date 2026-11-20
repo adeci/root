@@ -18,9 +18,9 @@
   runtimeInputs ? [ ],
   # { host, forwards }: the commands that reach the providers' endpoints do so through one ssh connection to host, each forward <local port>:<address>:<port> listening on 127.0.0.1.
   tunnel ? null,
-  # <name> = <provider configuration>, such as routeros.nexus: apply-<name> applies only that configuration's resources, so the others' endpoints may be unreachable.
+  # <device> = <provider configuration>, such as nexus = "routeros.nexus": `apply <device>` applies only that configuration's resources, so the others' endpoints may be unreachable.
   applyAlone ? { },
-  # A program that apply and apply-<name> run in place of `tofu apply`, inside the tunnel, with the arguments tofu apply would get; it finds tofu and clan on the app's PATH.
+  # A program that apply runs in place of `tofu apply`, inside the tunnel, with the arguments tofu apply would get; it finds tofu and clan on the app's PATH.
   apply ? null,
 }:
 let
@@ -112,28 +112,38 @@ let
   # `command` with the app's arguments, inside the tunnel when the workspace has one.
   throughTunnel =
     command: lib.optionalString (tunnel != null) "${lib.getExe tunnelProgram} " + ''${command} "$@"'';
+
+  # Each applyAlone device's resource list, for -target-file.
+  aloneTargets = pkgs.writeText "${name}-apply-alone.json" (
+    builtins.toJSON (lib.mapAttrs (_: targetFile) applyAlone)
+  );
 in
 {
   apps =
-    lib.mapAttrs' (command: text: lib.nameValuePair "${appPrefix}-${command}" (app command text))
-      (
-        lib.genAttrs commands (
-          command:
-          if command == "apply" then
-            throughTunnel applyCommand
-          else if lib.elem command reachesProviders then
-            throughTunnel "tofu ${command}"
-          else
-            ''tofu ${command} "$@"''
-        )
-        // lib.mapAttrs (_: builtins.readFile) scripts
-        // lib.mapAttrs' (
-          alias: provider:
-          lib.nameValuePair "apply-${alias}" (
-            throughTunnel "${applyCommand} -target-file=${targetFile provider}"
-          )
-        ) applyAlone
-      );
+    lib.mapAttrs' (command: text: lib.nameValuePair "${appPrefix}-${command}" (app command text)) (
+      lib.genAttrs commands (
+        command:
+        if command == "apply" then
+          throughTunnel applyCommand
+        else if lib.elem command reachesProviders then
+          throughTunnel "tofu ${command}"
+        else
+          ''tofu ${command} "$@"''
+      )
+      // lib.mapAttrs (_: builtins.readFile) scripts
+    )
+    # In front of that apply: a first argument naming a device is checked before anything runs.
+    // lib.optionalAttrs (applyAlone != { }) {
+      "${appPrefix}-apply".program = pkgs.writeShellApplication {
+        name = "${appPrefix}-apply";
+        runtimeInputs = [ pkgs.jq ];
+        runtimeEnv = {
+          APPLY = lib.getExe (app "apply" (throughTunnel applyCommand)).program;
+          TARGETS = aloneTargets;
+        };
+        text = builtins.readFile ./apply-alone.sh;
+      };
+    };
 
   # Built in the sandbox, where init has only the providers above; the result is the config once it validates against their schemas.
   checks."tofu-${name}" = pkgs.runCommand "tofu-${name}" { nativeBuildInputs = [ tofu ]; } ''
