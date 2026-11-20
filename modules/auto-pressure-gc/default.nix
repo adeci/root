@@ -11,7 +11,6 @@ let
         HIGH_WATER_PERCENT = 85;
         LOW_WATER_PERCENT = 75;
         MINIMUM_PROGRESS_BYTES = 1024 * 1024 * 1024;
-        MAXIMUM_PASSES = 3;
       };
       text = builtins.readFile ./auto-pressure-gc.sh;
     };
