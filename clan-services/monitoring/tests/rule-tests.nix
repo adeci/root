@@ -1,7 +1,5 @@
 # "server" is always-on, "laptop" is not.
 let
-  minutes = count: "${toString count}m";
-
   noAlert = alertname: time: {
     inherit alertname;
     eval_time = time;
@@ -83,9 +81,9 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "HostDown" (minutes 15))
-      (firing "HostDown" (minutes 17) [ serverDown ])
-      (firing "HostDown" (minutes 40) [ serverDown ])
+      (noAlert "HostDown" "15m")
+      (firing "HostDown" "17m" [ serverDown ])
+      (firing "HostDown" "40m" [ serverDown ])
     ];
   }
 
@@ -98,11 +96,11 @@ in
         values = "1x10 0 1x10 0x3 1x10";
       }
     ];
-    alert_rule_test = map (time: noAlert "HostDown" (minutes time)) [
-      11
-      15
-      25
-      30
+    alert_rule_test = map (noAlert "HostDown") [
+      "11m"
+      "15m"
+      "25m"
+      "30m"
     ];
   }
 
@@ -138,8 +136,8 @@ in
         };
       in
       [
-        (noAlert "PublicNameDown" (minutes 10))
-        (firing "PublicNameDown" (minutes 12) [
+        (noAlert "PublicNameDown" "10m")
+        (firing "PublicNameDown" "12m" [
           (down "app.example.com" "server")
           (down "go.example.com" "cloudflare")
         ])
@@ -160,7 +158,7 @@ in
       }
     ];
     alert_rule_test = [
-      (firing "ExporterDown" (minutes 20) [
+      (firing "ExporterDown" "20m" [
         {
           exp_labels = {
             instance = "server";
@@ -190,8 +188,8 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "TunnelDown" (minutes 10))
-      (firing "TunnelDown" (minutes 12) [ tunnelDown ])
+      (noAlert "TunnelDown" "10m")
+      (firing "TunnelDown" "12m" [ tunnelDown ])
     ];
   }
 
@@ -205,8 +203,8 @@ in
       }
     ];
     alert_rule_test = [
-      (firing "TunnelDown" (minutes 12) [ tunnelDown ])
-      (noAlert "ExporterDown" (minutes 30))
+      (firing "TunnelDown" "12m" [ tunnelDown ])
+      (noAlert "ExporterDown" "30m")
     ];
   }
 
@@ -254,8 +252,8 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "SystemdUnitFailed" (minutes 9))
-      (firing "SystemdUnitFailed" (minutes 11) [
+      (noAlert "SystemdUnitFailed" "9m")
+      (firing "SystemdUnitFailed" "11m" [
         {
           exp_labels = {
             instance = "server";
@@ -286,8 +284,8 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "DeployReverted" (minutes 9))
-      (firing "DeployReverted" (minutes 11) [
+      (noAlert "DeployReverted" "9m")
+      (firing "DeployReverted" "11m" [
         {
           exp_labels = {
             instance = "server";
@@ -300,8 +298,8 @@ in
           };
         }
       ])
-      (noAlert "TextfileMetricsStale" (minutes 175))
-      (noAlert "DeployReverted" (minutes 190))
+      (noAlert "TextfileMetricsStale" "175m")
+      (noAlert "DeployReverted" "190m")
     ];
   }
 
@@ -328,7 +326,7 @@ in
       in
       mount "server" "/" "0" ++ mount "server" "/nix/store" "1" ++ mount "laptop" "/" "0";
     alert_rule_test = [
-      (noAlert "FilesystemFillingUp" (minutes 60))
+      (noAlert "FilesystemFillingUp" "60m")
       (firing "FilesystemFillingUp" "3h" [
         {
           exp_labels = {
@@ -374,7 +372,7 @@ in
       }
     ];
     alert_rule_test = [
-      (firing "FilesystemReadOnly" (minutes 6) [
+      (firing "FilesystemReadOnly" "6m" [
         {
           exp_labels = {
             instance = "server";
@@ -534,10 +532,10 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "BackupFailed" (minutes 5))
-      (firing "BackupFailed" (minutes 7) [ laptopBackupFailed ])
-      (firing "BackupFailed" (minutes 100) [ laptopBackupFailed ])
-      (noAlert "BackupFailed" (minutes 130))
+      (noAlert "BackupFailed" "5m")
+      (firing "BackupFailed" "7m" [ laptopBackupFailed ])
+      (firing "BackupFailed" "100m" [ laptopBackupFailed ])
+      (noAlert "BackupFailed" "130m")
     ];
   }
 
@@ -552,10 +550,10 @@ in
       }
     ];
     alert_rule_test = [
-      (firing "BackupFailed" (minutes 7) [ laptopBackupFailed ])
-      (firing "BackupFailed" (minutes 62) [ laptopBackupFailed ])
-      (firing "BackupFailed" (minutes 500) [ laptopBackupFailed ])
-      (firing "BackupFailed" (minutes 800) [ laptopBackupFailed ])
+      (firing "BackupFailed" "7m" [ laptopBackupFailed ])
+      (firing "BackupFailed" "62m" [ laptopBackupFailed ])
+      (firing "BackupFailed" "500m" [ laptopBackupFailed ])
+      (firing "BackupFailed" "800m" [ laptopBackupFailed ])
     ];
   }
 
@@ -669,7 +667,7 @@ in
       }
     ];
     alert_rule_test = [
-      (firing "HardwareTooHot" (minutes 11) [
+      (firing "HardwareTooHot" "11m" [
         {
           exp_labels = {
             instance = "server";
@@ -696,8 +694,8 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "AlertDeliveryFailing" (minutes 29))
-      (firing "AlertDeliveryFailing" (minutes 31) [
+      (noAlert "AlertDeliveryFailing" "29m")
+      (firing "AlertDeliveryFailing" "31m" [
         {
           exp_labels = {
             instance = "server";
@@ -723,10 +721,10 @@ in
         values = "0x14 1x40";
       }
     ];
-    alert_rule_test = map (time: noAlert "AlertDeliveryFailing" (minutes time)) [
-      20
-      31
-      50
+    alert_rule_test = map (noAlert "AlertDeliveryFailing") [
+      "20m"
+      "31m"
+      "50m"
     ];
   }
 ]
