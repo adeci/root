@@ -7,7 +7,6 @@ import time
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import NoReturn
 
 from . import Error, ui
 from .mac import NIX_BIN, CommandError, Mac, connect, run, secrets_tarball
@@ -74,51 +73,13 @@ class Setup:
     steps: tuple[Step, ...]
 
 
-_KINDS = {dict: "an object", list: "a list", str: "a string", int: "a number"}
-
-
-def _reject(field: str, expected: str, value: object) -> NoReturn:
-    msg = f"{SETUP_JSON}: {field} should be {expected}, not {json.dumps(value)}"
-    raise Error(msg)
-
-
-def _expect[T](value: object, kind: type[T], field: str) -> T:
-    # Python counts a bool as an int; no field here is one.
-    if isinstance(value, bool) or not isinstance(value, kind):
-        _reject(field, _KINDS[kind], value)
-    return value
-
-
-def _parse_step(value: object, field: str) -> Step:
-    step = _expect(value, dict, field)
-    check = step.get("check")
-    if check is not None and not isinstance(check, str):
-        _reject(f"{field}.check", "a string or null", check)
-    restart = _expect(step.get("restart"), list, f"{field}.restart")
-    if not all(isinstance(service, str) for service in restart):
-        _reject(f"{field}.restart", "a list of strings", restart)
-    return Step(
-        name=_expect(step.get("name"), str, f"{field}.name"),
-        url=_expect(step.get("url"), str, f"{field}.url"),
-        instructions=_expect(step.get("instructions"), str, f"{field}.instructions"),
-        check=check,
-        restart=tuple(restart),
-    )
-
-
 def parse_setup(text: str) -> Setup:
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError as e:
-        msg = f"{SETUP_JSON}: {e}"
-        raise Error(msg) from None
-    setup = _expect(data, dict, "the top level")
-    steps = _expect(setup.get("steps"), list, "steps")
-    return Setup(
-        user=_expect(setup.get("user"), str, "user"),
-        uid=_expect(setup.get("uid"), int, "uid"),
-        steps=tuple(_parse_step(step, f"steps[{i}]") for i, step in enumerate(steps)),
+    data = json.loads(text)
+    steps = tuple(
+        Step(s["name"], s["url"], s["instructions"], s["check"], tuple(s["restart"]))
+        for s in data["steps"]
     )
+    return Setup(data["user"], data["uid"], steps)
 
 
 def deployed_setup(mac: Mac) -> Setup | None:

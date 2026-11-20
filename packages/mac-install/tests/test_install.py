@@ -62,32 +62,6 @@ def test_parse_takes_steps_without_a_check() -> None:
     assert setup.steps[0].check is None
 
 
-@pytest.mark.parametrize(
-    ("text", "message"),
-    [
-        ("not json", r"/etc/mac-setup\.json: Expecting value"),
-        ("[]", r"the top level should be an object, not \[\]"),
-        (setup_json(uid="501"), r"uid should be a number, not \"501\""),
-        # Python's bool is an int; JSON's true is not.
-        (setup_json(uid=True), r"uid should be a number, not true"),
-        (setup_json(steps=["x"]), r"steps\[0\] should be an object"),
-        (setup_json(steps=[{}]), r"steps\[0\]\.restart should be a list, not null"),
-        (
-            setup_json(steps=[{"restart": [1]}]),
-            r"steps\[0\]\.restart should be a list of strings",
-        ),
-        (setup_json(steps=[{"restart": []}]), r"steps\[0\]\.name should be a string"),
-        (
-            setup_json(steps=[{"check": 1}]),
-            r"steps\[0\]\.check should be a string or null",
-        ),
-    ],
-)
-def test_parse_says_what_is_wrong_and_where(text: str, message: str) -> None:
-    with pytest.raises(Error, match=message):
-        parse_setup(text)
-
-
 @pytest.fixture
 def macbook(
     commands: Commands, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
