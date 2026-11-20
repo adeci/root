@@ -1,7 +1,8 @@
 # shellcheck shell=bash
 # One known client on the mgmt bridge, always with the same address and name, must get a lease from janus and resolve a name through the resolver it names.
 namespace=deploy-guard
-trap 'ip netns delete "$namespace" 2>/dev/null || true' EXIT
+udhcpc_log=$(mktemp)
+trap 'ip netns delete "$namespace" 2>/dev/null || true; rm -f "$udhcpc_log"' EXIT
 ip netns delete "$namespace" 2>/dev/null || true
 ip netns add "$namespace"
 # Deleting the namespace deletes the client's end of the pair, and the pair with it.
@@ -10,7 +11,9 @@ ip link set deploy-guard master "$BRIDGE" up
 ip -n "$namespace" link set lo up
 ip -n "$namespace" link set client up
 
-if ! resolver=$(ip netns exec "$namespace" "$BUSYBOX" udhcpc -i client -n -q -t 5 -T 2 -x "hostname:$CLIENT_NAME" -s "$ON_LEASE"); then
+# udhcpc reports every step, which is worth reading only when no lease comes.
+if ! resolver=$(ip netns exec "$namespace" "$BUSYBOX" udhcpc -i client -n -q -t 5 -T 2 -x "hostname:$CLIENT_NAME" -s "$ON_LEASE" 2>"$udhcpc_log"); then
+  cat "$udhcpc_log" >&2
   echo "No lease from janus on $BRIDGE."
   exit 1
 fi
