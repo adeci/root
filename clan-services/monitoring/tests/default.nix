@@ -12,7 +12,7 @@ let
   ruleTests = yaml.generate "fleet-rules-test.yml" {
     rule_files = [ "${rulesFile}" ];
     evaluation_interval = "1m";
-    tests = import ./rule-tests.nix;
+    tests = import ./rule-tests.nix ++ import ./backup-cost-tests.nix;
   };
 
   alertWithoutSeverity = import ../rules.nix {

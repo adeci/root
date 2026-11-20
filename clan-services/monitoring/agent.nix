@@ -236,6 +236,19 @@ in
             text = builtins.readFile ./restic-snapshots.sh;
           };
 
+          # One "<backup>\t<path>" line for each path in a backup's `paths` or `exclude`: what it holds, or what it leaves out.
+          backupPaths =
+            option:
+            pkgs.writeText "restic-${option}" (
+              lib.concatLines (
+                lib.concatLists (
+                  lib.mapAttrsToList (
+                    backup: job: map (path: "${backup}\t${path}") job.${option}
+                  ) config.services.restic.backups
+                )
+              )
+            );
+
           # Every prober has IPv4; one without an IPv6 route would fail each name that has an IPv6 address.
           httpProbe.preferred_ip_protocol = "ip4";
         in
@@ -376,11 +389,13 @@ in
           };
 
           systemd.services.restic-snapshots = lib.mkIf (config.services.restic.backups != { }) {
-            description = "Export each backup's newest snapshot for node_exporter";
+            description = "Export each backup's snapshots, size and folders for node_exporter";
             startAt = "hourly";
             serviceConfig = {
               Type = "oneshot";
-              ExecStart = "${lib.getExe resticSnapshots} ${textfileDirectory} ${lib.escapeShellArgs (lib.attrNames config.services.restic.backups)}";
+              ExecStart = "${lib.getExe resticSnapshots} ${textfileDirectory} ${backupPaths "paths"} ${backupPaths "exclude"} ${lib.escapeShellArgs (lib.attrNames config.services.restic.backups)}";
+              # Each repository's stored size and the snapshots it was counted for, as STATE_DIRECTORY.
+              StateDirectory = "restic-snapshots";
             };
           };
 

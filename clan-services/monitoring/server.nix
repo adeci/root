@@ -172,8 +172,16 @@
             machineRules = lib.mapAttrs (_: agent: agent.settings.rules) agents;
           };
 
+          # The machines the inventory's restic instance backs up, which the backups page expects to report.
+          backupClients = lib.attrNames (self.inventory.clanInstances.restic.roles.client.machines or { });
           dashboards = lib.foldl' lib.attrsets.unionOfDisjoint (import ./dashboards (
-            lib.mapAttrs (machine: _: machineLabels machine) agents
+            lib.mapAttrs (
+              machine: _:
+              machineLabels machine
+              // {
+                backsUp = lib.elem machine backupClients;
+              }
+            ) agents
           )) (lib.mapAttrsToList (_: agent: agent.settings.dashboards) agents);
           dashboardDirectory = pkgs.linkFarm "monitoring-grafana-dashboards" (
             lib.mapAttrsToList (name: dashboard: {

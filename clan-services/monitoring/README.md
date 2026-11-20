@@ -21,13 +21,24 @@ server watches the same fleet and alerts when the main one cannot.
   `monitoring.textfileDirectory`. On NixOS, Vector ships the journal to Loki
   and buffers it on disk while the server is out of reach; a Mac has no
   journal, so it serves metrics only. A NixOS agent with restic backups asks
-  each repository for its newest snapshot every hour, which BackupStale goes
-  by; on a machine that is not always on, LaptopBackupStale counts only the
-  time the server reaches it, and BackupFailed reports a failed run. One with
-  `probes` runs blackbox_exporter, which requests each address when a server
-  scrapes it, once a minute.
+  each repository every hour for its snapshots, which BackupStale goes by,
+  and reports how many it keeps, the oldest, what the last 7 days added and
+  the folders and exclude patterns of each backup; it counts what the
+  repository stores again only once the snapshots have changed, or the next
+  hour after a count that failed. On a machine that is not always on,
+  LaptopBackupStale counts only the time the server reaches it, and
+  BackupFailed reports a failed run. One with `probes` runs
+  blackbox_exporter, which requests each address when a server scrapes it,
+  once a minute.
 
 ## Notes
+
+- The fleet page shows how old each machine's newest snapshot is, and links
+  to the Backups page: every machine with or without a backup (a machine the
+  inventory's `restic` instance backs up shows as set up before it first
+  reports), what each repository holds and for how long, and what B2 charges
+  for it. B2's price lives in `dashboards/backup-cost.nix`, with where and
+  when it was read; the free 10 GB come off the account's total.
 
 - Each alert is its own ntfy notification, at high priority when critical. A
   resolved alert's notification is replaced by a silent one, and while a

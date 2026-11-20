@@ -1,4 +1,4 @@
-# The machines the agents run on, each as { os, kind }.
+# The machines the agents run on, each as { os, kind, backsUp }.
 machines:
 let
   ui = import ./lib.nix;
@@ -15,35 +15,10 @@ let
   smart = ''job=~"smartctl|node", ${selected}'';
   machine = "instance, os, kind";
 
-  # A colour per machine, unique within its kind: the machines, sorted by name, take the palette in turn.
-  palette = [
-    "#F2495C"
-    "#FF9830"
-    "#FADE2A"
-    "#73BF69"
-    "#3CC6D0"
-    "#5794F2"
-    "#B877D9"
-    "#FF85C8"
-    "#C8C8C8"
-  ];
+  # A colour per machine, unique within its kind.
   machinesByKind = builtins.groupBy (name: machines.${name}.kind) (builtins.attrNames machines);
   machineColours = builtins.concatLists (
-    builtins.attrValues (
-      builtins.mapAttrs (
-        _: names:
-        let
-          sorted = builtins.sort builtins.lessThan names;
-          count = builtins.length palette;
-        in
-        builtins.genList (
-          index:
-          ui.colorOverrideMatching "^${builtins.elemAt sorted index}( |$)" (
-            builtins.elemAt palette (index - index / count * count)
-          )
-        ) (builtins.length sorted)
-      ) machinesByKind
-    )
+    builtins.attrValues (builtins.mapAttrs (_: ui.coloursByName) machinesByKind)
   );
   linuxMachineCount = builtins.length (
     builtins.filter (name: machines.${name}.os == "linux") (builtins.attrNames machines)
@@ -104,17 +79,9 @@ let
   up = kind: ''max by (${machine}) (up{${node}, kind="${kind}"})'';
   # A public name's reading from the last request to it.
   publicName = metric: ''max by (name) (${metric}{job="probe"})'';
-  # A backup's reading: from its repository's newest snapshot, or from a series named after the backup.
-  backup = expr: "max by (instance, backup) (${expr})";
-  snapshotAge = "(time() - restic_snapshot_timestamp_seconds{${node}})";
-  # How many of its two ages a backup has passed: 36 and 72 hours on a server, 3 and 7 days by the clock on a laptop, whose alerts count only its time on.
-  backupStaleness =
-    let
-      passed =
-        matchers: old: tooOld:
-        "(time() - restic_snapshot_timestamp_seconds{${matchers}} > bool ${old}) + (time() - restic_snapshot_timestamp_seconds{${matchers}} > bool ${tooOld})";
-    in
-    "(${passed servers "36 * 3600" "72 * 3600"}) or (${passed laptops "3 * 86400" "7 * 86400"})";
+  # How old each machine's newest snapshot is, as the backups page shows it too.
+  backupFreshness = import ./backup-freshness.nix;
+  backupClients = builtins.filter (name: machines.${name}.backsUp) (builtins.attrNames machines);
   # Idle time against all CPU time, not against the step: a machine up for only part of a step would read near 100 %.
   cpuBusy =
     matchers:
@@ -244,6 +211,8 @@ in
 ui.dashboard {
   uid = "fleet";
   title = "Fleet";
+  # Which machines back up, what they store and what it costs.
+  links.Backups = "backups";
   # os and kind match everything when All; the host picker's All is the hosts they leave, which also narrows the journal, whose lines have no os or kind.
   variables = [
     (ui.labelVariable {
@@ -555,77 +524,11 @@ ui.dashboard {
       title = "Backups";
       collapsed = false;
       panels = [
-        (ui.mergedTable {
-          title = "Backups";
-          description = "Each repository's newest snapshot, as its machine found it when it last asked, which it does every hour. A server's backup is old after 36 hours and too old after 72, a laptop's after 3 and 7 days.";
-          w = 15;
-          # Eight backups, the laptops' among them, plus the title and the header; a table this short needs one more for its last row.
-          h = 11;
-          sortBy = [
-            {
-              displayName = "Host";
-              desc = false;
-            }
-          ];
-          renamedColumns = {
-            instance = "Host";
-            backup = "Backup";
-          };
-          firstColumns = [
-            "instance"
-            "backup"
-          ];
-          columns = [
-            # Grafana's shortest durations, as 03s, 52m or 22h, so the table fits.
-            {
-              name = "Age";
-              expr = backup snapshotAge;
-              unit = "clocks";
-              decimals = 0;
-            }
-            {
-              name = "Fresh";
-              expr = backup backupStaleness;
-              colours = ui.mappings.backupAge;
-            }
-            {
-              name = "Size";
-              expr = backup "restic_snapshot_size_bytes{${node}}";
-              unit = "bytes";
-            }
-            {
-              name = "Added";
-              expr = backup "restic_snapshot_added_bytes{${node}}";
-              unit = "bytes";
-            }
-            {
-              name = "Took";
-              expr = backup "restic_snapshot_duration_seconds{${node}}";
-              unit = "clocks";
-              decimals = 0;
-            }
-            {
-              name = "Last run";
-              # 1 unless the backup's unit is in the failed state.
-              expr = "1 - ${backup ''label_replace(node_systemd_unit_state{${node}, name=~"restic-backups-.+[.]service", state="failed"}, "backup", "$1", "name", "restic-backups-(.+)[.]service")''}";
-              threshold = ui.thresholds.goodWhenOne;
-              valueMappings = ui.mappings.passed;
-            }
-            {
-              name = "Asked";
-              expr = backup ''label_replace(time() - node_textfile_mtime_seconds{${node}, file=~".*/restic-snapshot-.+[.]prom"}, "backup", "$1", "file", ".*/restic-snapshot-(.+)[.]prom")'';
-              unit = "clocks";
-              decimals = 0;
-            }
-          ];
-        })
-        (ui.stateTimeline {
-          title = "Fresh";
-          w = 9;
-          h = 11;
-          targets = [ (ui.target "max by (instance) (${backupStaleness})" "{{instance}}") ];
-          threshold = ui.thresholds.goodWhenZero;
-          valueMappings = ui.mappings.backupAge;
+        (backupFreshness.timeline {
+          matchers = node;
+          w = 24;
+          # Half a grid unit per machine that backs up, plus the title: thin rows.
+          h = builtins.length backupClients / 2 + 2;
         })
       ];
     })

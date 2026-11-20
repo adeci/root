@@ -33,6 +33,17 @@ let
   };
 
   thresholds = {
+    # A number with nothing to judge, in the text's colour.
+    plain = {
+      mode = "absolute";
+      steps = [
+        {
+          color = "text";
+          value = null;
+        }
+      ];
+    };
+
     goodWhenZero = {
       mode = "absolute";
       steps = [
@@ -406,6 +417,27 @@ let
       }
     ];
 
+    # Whether a machine backs up: 2 with a snapshot, 1 set up but without one yet, 0 not at all, in grey as that is known.
+    backedUp = [
+      {
+        type = "value";
+        options = {
+          "0" = {
+            color = "#6e7280";
+            text = "no";
+          };
+          "1" = {
+            color = "yellow";
+            text = "none yet";
+          };
+          "2" = {
+            color = "green";
+            text = "yes";
+          };
+        };
+      }
+    ];
+
     # A link's state, as its threshold colours it.
     linkState = [
       {
@@ -489,6 +521,33 @@ let
     ];
   };
 
+  # Colours that tell up to nine series apart.
+  palette = [
+    "#F2495C"
+    "#FF9830"
+    "#FADE2A"
+    "#73BF69"
+    "#3CC6D0"
+    "#5794F2"
+    "#B877D9"
+    "#FF85C8"
+    "#C8C8C8"
+  ];
+
+  # A colour for each of `names`, none repeating among up to nine: sorted, the names take the palette in turn.
+  coloursByName =
+    names:
+    let
+      sorted = builtins.sort builtins.lessThan names;
+      count = builtins.length palette;
+    in
+    builtins.genList (
+      index:
+      colorOverrideMatching "^${builtins.elemAt sorted index}( |$)" (
+        builtins.elemAt palette (index - index / count * count)
+      )
+    ) (builtins.length sorted);
+
   queryOverride =
     refId:
     {
@@ -510,13 +569,17 @@ let
 
   # Panels give only their size; `dashboard` places them.
 
-  # A single number, green at zero and red from one up.
+  # A single number, by default green at zero and red from one up.
   stat =
     {
       title,
       w,
       h,
       expr,
+      description ? null,
+      unit ? "short",
+      decimals ? null,
+      threshold ? thresholds.goodWhenZero,
     }:
     {
       inherit title;
@@ -528,9 +591,10 @@ let
         defaults = {
           color.mode = "thresholds";
           mappings = [ ];
-          thresholds = thresholds.goodWhenZero;
-          unit = "short";
-        };
+          thresholds = threshold;
+          inherit unit;
+        }
+        // (if decimals == null then { } else { inherit decimals; });
         overrides = [ ];
       };
       options = {
@@ -545,6 +609,25 @@ let
         };
         textMode = "auto";
         wideLayout = true;
+      };
+    }
+    // (if description == null then { } else { inherit description; });
+
+  # Words in Markdown, shown as they are.
+  text =
+    {
+      title,
+      w,
+      h,
+      content,
+    }:
+    {
+      inherit title;
+      type = "text";
+      gridPos = { inherit w h; };
+      options = {
+        mode = "markdown";
+        inherit content;
       };
     };
 
@@ -680,6 +763,7 @@ let
       targets,
       valueMappings,
       threshold,
+      description ? null,
     }:
     {
       inherit title;
@@ -709,7 +793,8 @@ let
         legend.showLegend = false;
         tooltip.mode = "single";
       };
-    };
+    }
+    // (if description == null then { } else { inherit description; });
 
   # Hides, renames and orders a table's columns: `firstColumns` lead, in order, and the rest follow.
   organize =
@@ -1182,12 +1267,22 @@ let
       variables ? [ ],
       # Where the time range starts, as Grafana writes it.
       from ? "now-6h",
+      # Other pages, linked at the top: each title with its page's uid.
+      links ? { },
     }:
     {
       annotations.list = [ ];
       editable = false;
       fiscalYearStartMonth = 0;
       graphTooltip = 1;
+      links = builtins.attrValues (
+        builtins.mapAttrs (title: uid: {
+          inherit title;
+          type = "link";
+          url = "/d/${uid}";
+          icon = "dashboard";
+        }) links
+      );
       panels = number (
         if builtins.all (panel: panel.type == "row") panels then stack panels else (flow 0 panels).panels
       );
@@ -1210,6 +1305,7 @@ in
     alerts
     colorOverrideMatching
     colours
+    coloursByName
     dashboard
     labelVariable
     logs
@@ -1224,6 +1320,7 @@ in
     stateTimeline
     statusHistory
     target
+    text
     thresholds
     timeseries
     ;
