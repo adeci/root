@@ -52,6 +52,11 @@ in
       instances = config.flake.inventory.clanInstances;
     };
     modules = services;
+    # Admin keys live on a YubiKey and in the laptops' TPMs: sops needs their plugins.
+    secrets.age.plugins = [
+      "age-plugin-yubikey"
+      "age-plugin-tpm"
+    ];
     # Every module gets self and inputs.
     specialArgs = { inherit self inputs; };
   };

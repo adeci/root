@@ -1,5 +1,17 @@
 [
   {
+    "publickey": "age1tag1qvjyz93mzkc8u9zvke8kwfsctd2eymj68hm27rm9d9r9eyw2mmmvxrrjvmj",
+    "type": "age"
+  },
+  {
+    "publickey": "age1tag1qvkj4hnds7swrk3dw2n40sqcu77yamst3ytnwhxl94ucheu5g0zkx9k9g7l",
+    "type": "age"
+  },
+  {
+    "publickey": "age1yubikey1qfnh66zl75m5x7gtzc575r0zn3umlpk40vscfvnlq5l2evu6488fyjna66n",
+    "type": "age"
+  },
+  {
     "publickey": "age1z79yvslw7ndglk44hhuwka9469e43fdygyxrd2x3yp6gxhfn7peqv4p70d",
     "type": "age"
   }
