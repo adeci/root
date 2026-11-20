@@ -77,8 +77,8 @@ let
     };
 
   resticBucket = b2.buckets.resticBackups;
-  resticInstance = self.clan.inventory.instances.restic or null;
-  resticClients = if resticInstance == null then { } else resticInstance.roles.client.machines or { };
+  resticClient = self.clan.inventory.instances.restic.roles.client;
+  resticClients = resticClient.machines;
   resticKeyName = machine: "restic_${safeName machine}";
   # Inventory settings are modules; merge the role's and the machine's like clan does.
   resticClientSettings =
@@ -86,7 +86,7 @@ let
     (lib.evalModules {
       modules = [
         { freeformType = lib.types.lazyAttrsOf lib.types.anything; }
-        resticInstance.roles.client.settings
+        resticClient.settings
         resticClients.${machine}.settings
       ];
     }).config;
