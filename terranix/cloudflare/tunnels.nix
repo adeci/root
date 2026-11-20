@@ -6,7 +6,7 @@
   ...
 }:
 let
-  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret safeName setClanVar;
+  inherit (import ../lib.nix { inherit clan-cli lib; }) clanSecret safeName setClanVar;
   inherit (self.inventory.cloudflare) tunnels tunnelToken zones;
   inherit (import ./lib.nix { inherit lib zones; }) zoneOf;
 

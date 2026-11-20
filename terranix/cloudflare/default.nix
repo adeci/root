@@ -1,11 +1,10 @@
 {
   clan-cli,
-  config,
   lib,
   ...
 }:
 let
-  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret;
+  inherit (import ../lib.nix { inherit clan-cli lib; }) clanSecret;
 in
 {
   imports = [

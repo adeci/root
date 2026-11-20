@@ -7,7 +7,7 @@
 }:
 let
   inherit (self.inventory) b2;
-  inherit (import ./lib.nix { inherit clan-cli config lib; }) clanSecret safeName setClanVar;
+  inherit (import ./lib.nix { inherit clan-cli lib; }) clanSecret safeName setClanVar;
 
   # Private and encrypted; hidden file versions go after a week.
   privateBucket = name: purpose: {

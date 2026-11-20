@@ -9,7 +9,7 @@
 let
   inherit (self.inventory) appliances lan;
   inherit (self.inventory.routeros) admin exporter;
-  inherit (import ../lib.nix { inherit clan-cli config lib; }) clanSecret safeName setClanVar;
+  inherit (import ../lib.nix { inherit clan-cli lib; }) clanSecret safeName setClanVar;
 
   # The router's address on an appliance's management VLAN.
   routerAddress = appliance: lan.vlans.${appliance.lan.vlan}.gateway;
