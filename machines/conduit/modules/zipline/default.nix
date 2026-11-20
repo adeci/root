@@ -12,6 +12,17 @@ let
   port = 3002;
   domain = self.inventory.cloudflare.dns.shares.host;
   staging = "/var/cache/zipline";
+
+  bootstrapAdmin = pkgs.writeShellApplication {
+    name = "zipline-bootstrap-admin";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.jq
+    ];
+    runtimeEnv.PORT = port;
+    text = builtins.readFile ./bootstrap-admin.sh;
+  };
 in
 {
   # Only the database (users, file metadata, settings) is backed up; objects live in B2.
@@ -96,9 +107,7 @@ in
       LoadCredential = [
         "admin.json:${config.clan.core.vars.generators.zipline-admin.files."credentials.json".path}"
       ];
-      ExecStartPost = [
-        "${lib.getExe pkgs.nodejs_24} ${./bootstrap-admin.mjs} %d/admin.json"
-      ];
+      ExecStartPost = [ "${lib.getExe bootstrapAdmin} %d/admin.json" ];
       TimeoutStartSec = 120;
     };
     # Interrupted uploads are disposable; reserve >=12 GiB disk (not tmpfs) per uploader.
