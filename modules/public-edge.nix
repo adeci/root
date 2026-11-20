@@ -3,21 +3,10 @@
     { config, lib, ... }:
     let
       inherit (config.publicEdge) streams;
-      safeName =
-        builtins.replaceStrings
-          [
-            "-"
-            "."
-          ]
-          [
-            "_"
-            "_"
-          ];
-
-      listenerKey = stream: "${stream.protocol}:${toString stream.listen}";
+      safeName = builtins.replaceStrings [ "-" "." ] [ "_" "_" ];
 
       names = map (stream: stream.name) streams;
-      listenerKeys = map listenerKey streams;
+      listenerKeys = map (stream: "${stream.protocol}:${toString stream.listen}") streams;
 
       streamsFor = protocol: lib.filter (stream: stream.protocol == protocol) streams;
       publicPortsFor = protocol: lib.unique (map (stream: stream.listen) (streamsFor protocol));
