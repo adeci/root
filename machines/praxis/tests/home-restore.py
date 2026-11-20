@@ -39,7 +39,7 @@ def show(unit, prop):
 
 
 def try_now(says):
-    """Runs the hourly try at once and waits for it to say why it did what it did."""
+    """Run the hourly try now and wait for it to log `says`."""
     praxis.succeed(f"systemctl start {when_due}")
     invocation = show(when_due, "InvocationID")
     praxis.wait_until_succeeds(f"journalctl _SYSTEMD_INVOCATION_ID={invocation} -o cat | grep -qF '{says}'")
@@ -54,7 +54,7 @@ def wait_for_snapshots(count):
 start_all()
 praxis.wait_for_unit("multi-user.target")
 
-with subtest("a home with commits on no remote, build output, caches and what Alex leaves out"):
+with subtest("a home with unpushed commits, build output, caches and excluded files"):
     for path, content in kept.items():
         praxis.succeed(f"mkdir -p $(dirname {home}/{path}) && echo '{content}' > {home}/{path}")
     for path in left_out:
@@ -104,7 +104,7 @@ with subtest("a backup stopped for sleep ends without a failure, and the next tr
         f"mkdir -p {home}/Videos && head --bytes=64M /dev/urandom > {home}/Videos/clip.bin",
         f"systemctl set-property --runtime {backup} CPUQuota=1%",
     )
-    # A day later the backup is due again; a whole day, so each snapshot has a day of its own and the keep rule keeps them all.
+    # A full day on, so each snapshot gets its own day and the keep rule keeps them all.
     praxis.succeed("date --set='+1 day'")
     try_now("Starting the backup")
     invocation = show(backup, "InvocationID")
@@ -118,7 +118,7 @@ with subtest("a backup stopped for sleep ends without a failure, and the next tr
     try_now("Starting the backup")
     wait_for_snapshots(2)
 
-with subtest("the lock a cleanup leaves when it is cut off, as a sleep after the network went down does, stops no later backup"):
+with subtest("a stale lock from a cut-off prune (sleep after the network drops) blocks no later backup"):
     # A run that holds the repository to itself, killed before it can remove its lock.
     praxis.succeed(f"systemd-run --unit=cut-off-prune --property=CPUQuota=1% {restic} prune")
     praxis.wait_until_succeeds(f'test -n "$(ls {repository}/locks)"')
@@ -130,7 +130,7 @@ with subtest("the lock a cleanup leaves when it is cut off, as a sleep after the
     wait_for_snapshots(3)
     assert show(backup, "Result") == "success"
 
-with subtest("a repository that answers with an error makes the try start the backup, which fails, rather than wait"):
+with subtest("a repository error makes the try start the backup and fail, rather than wait"):
     praxis.succeed(f"mv {repository}/config /tmp/config && echo damaged > {repository}/config")
     try_now("Starting the backup")
     praxis.wait_until_succeeds(f"systemctl is-failed --quiet {backup}")
@@ -148,10 +148,10 @@ with subtest("the snapshots can be browsed in a mount"):
     praxis.succeed("systemctl stop restic-mount.service")
     praxis.fail("mountpoint --quiet /mnt/restic")
 
-with subtest("the whole home comes back as clan backups restore brings it, with its commits and without what the list leaves out"):
+with subtest("clan backups restore brings the whole home back with its commits, minus the excludes"):
     name = json.loads(praxis.succeed(list_backups))[-1]["name"]
     praxis.succeed(f"rm -rf {home}")
-    # clan backups restore runs this on the machine with NAME and FOLDERS set; the home state has no restore commands around it.
+    # As clan backups restore runs it: NAME and FOLDERS set, no restore commands for home.
     praxis.succeed(f"NAME={name} FOLDERS={home} {restore}")
     for path, content in kept.items():
         assert praxis.succeed(f"cat {home}/{path}").strip() == content, path
@@ -163,7 +163,7 @@ with subtest("the whole home comes back as clan backups restore brings it, with 
     praxis.succeed(f"test -e {home}/git/project/target/CACHEDIR.TAG")
 
 with subtest("snapshots of an earlier folder list thin out with the newer ones, as one history"):
-    # Three of the notes alone in a month half a year back; then the home a day apart for 13 days, and a week apart for six weeks before those.
+    # Three notes-only snapshots ~6 months back; home daily for 13 days, weekly for 6 weeks before.
     now = datetime.fromtimestamp(int(praxis.succeed("date +%s")), timezone.utc)
     month = now.year * 12 + now.month - 7
     earlier = [datetime(month // 12, month % 12 + 1, day, 3, tzinfo=timezone.utc) for day in [1, 7, 14]]
@@ -172,6 +172,6 @@ with subtest("snapshots of an earlier folder list thin out with the newer ones, 
     for days in [*range(1, 14), *range(14, 56, 7)]:
         praxis.succeed(f"{restic} backup --quiet --time '{now - timedelta(days=days):%Y-%m-%d %H:%M:%S}' {home}")
     praxis.succeed(f"systemctl start {backup}")
-    # The newer snapshots fill the 14 days and the 8 weeks: of the three, their month keeps its newest, and the oldest stays while months are left.
+    # Of the three, their month keeps its newest; the oldest stays while monthly slots remain.
     notes = [snapshot["date"][:10] for snapshot in json.loads(praxis.succeed(list_backups)) if snapshot["paths"] == [f"{home}/notes"]]
     assert notes == [f"{earlier[0]:%Y-%m-%d}", f"{earlier[2]:%Y-%m-%d}"], notes

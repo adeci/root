@@ -21,5 +21,5 @@ as a CI server for GitHub repositories.
   - permissions: Checks read & write, Pull requests read-only, plus the usual
     contents, metadata and commit statuses
   - events: push, pull request, check run, check suite
-- A public App lets anyone install it and enable their repos: bound that with
+- A public App lets anyone install it on their repos: limit that with
   `github.userAllowlist` and `prApproval.enable`.

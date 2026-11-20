@@ -8,7 +8,7 @@ let
   services = import ../clan-services { inherit inputs; };
   inherit (config.flake.inventory) tailnet;
 
-  # Clan inventory from a machine table: each machine's tags and class, deployed over the tailnet.
+  # Clan inventory from a machine table: tags and class, deployed over the tailnet.
   mkInventory =
     {
       domain,
@@ -57,7 +57,6 @@ in
       "age-plugin-yubikey"
       "age-plugin-tpm"
     ];
-    # Every module gets self and inputs.
     specialArgs = { inherit self inputs; };
   };
 }

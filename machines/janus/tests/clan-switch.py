@@ -1,4 +1,4 @@
-# clan-switch.py ADDRESS SYSTEM: switches janus to the system and confirms the switch with the patched clan-cli's own functions, as `clan machines update` does.
+# clan-switch.py ADDRESS SYSTEM: switch and confirm as `clan machines update` does.
 import logging
 import sys
 from pathlib import Path

@@ -34,7 +34,7 @@ let
   ];
 in
 {
-  # Reading it fails while there are problems, listing them all; a type error fails even where nothing reads the value.
+  # Lists every problem; deepSeq so type errors fail even in values nothing reads.
   flake.inventory =
     if problems == [ ] then
       builtins.deepSeq typed (removeAttrs inventory [ "assertions" ])

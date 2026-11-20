@@ -9,7 +9,6 @@
     let
       metricsFile = "${config.monitoring.textfileDirectory}/deploy-guard.prom";
 
-      # One executable per check, named after it.
       checks = pkgs.linkFarm "deploy-guard-checks" (
         lib.mapAttrs (
           name: command: pkgs.writeShellScript "deploy-guard-check-${name}" command
@@ -58,18 +57,18 @@
       options.deployGuard = {
         window = lib.mkOption {
           type = lib.types.ints.positive;
-          description = "Seconds a switch waits to be confirmed, by `clan machines update` or by hand with `deploy-guard-confirm`, before the machine goes back to the system it ran before.";
+          description = "Seconds to confirm a switch (`clan machines update` or `deploy-guard-confirm`) before the machine reverts.";
         };
 
         checks = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = { };
-          description = "Shell commands, by name, that succeed while the machine does its job; they run with coreutils and systemd on the PATH. A switch is confirmed only if each one that passed just before it passes after it.";
+          description = "Health checks by name, run with coreutils and systemd on PATH. A switch is confirmed only if every check that passed before it still passes.";
         };
       };
 
       config = {
-        # Pre-switch checks run in name order, so this one follows home-links and nixpkgs' switchInhibitors: a switch they refuse arms nothing.
+        # Name order puts this after home-links and switchInhibitors: refused switches don't arm.
         system.preSwitchChecks.wait-for-confirmation = ''${lib.getExe arm} "$1" "$2"'';
 
         environment.systemPackages = [ confirm ];

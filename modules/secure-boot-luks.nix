@@ -21,7 +21,7 @@
       };
 
       disko.devices.disk.main = {
-        # Partition labels derive from this name; the default "main" would collide with other disko-made disks such as installer sticks.
+        # Partition labels use this; "main" would clash with installer sticks.
         name = config.networking.hostName;
         type = "disk";
         content = {
@@ -53,7 +53,8 @@
                   "luks2"
                 ];
                 settings = {
-                  # The passphrase prompt stays until a TPM2 key is enrolled (once Secure Boot is on: systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/disk/by-partlabel/disk-<host>-root), or when the TPM refuses.
+                  # Passphrase prompt until TPM2 is enrolled, after Secure Boot is on:
+                  # systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/disk/by-partlabel/disk-<host>-root
                   crypttabExtraOpts = [ "tpm2-device=auto" ];
                 };
                 content = {

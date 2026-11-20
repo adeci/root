@@ -1,4 +1,4 @@
-"""Each lease Kea has in use, as a Prometheus textfile: when it was last renewed, its client's name where that is shown, and the maker its MAC names."""
+"""Kea's in-use leases as a Prometheus textfile: last renewal, client name where shown, MAC maker."""
 
 import json
 import socket
@@ -15,7 +15,7 @@ def escape_label(value):
 
 def leases(socket_path):
     with socket.socket(socket.AF_UNIX) as connection:
-        # A Kea that accepts and never answers fails this run, and the next one asks again.
+        # A hung Kea fails this run; the next run retries.
         connection.settimeout(5)
         connection.connect(socket_path)
         connection.sendall(json.dumps({"command": "lease4-get-all"}).encode())
@@ -28,7 +28,7 @@ def leases(socket_path):
 
 
 def makers(oui_path):
-    """The makers the IEEE lists, by the first three bytes of a MAC as Kea writes it."""
+    """IEEE OUI makers by MAC prefix, formatted as Kea writes it."""
     found = {}
     for line in Path(oui_path).read_text(encoding="utf-8", errors="replace").splitlines():
         prefix, separator, maker = line.partition("(hex)")
@@ -38,7 +38,7 @@ def makers(oui_path):
 
 
 def maker_of(mac, known_makers):
-    # A device that makes its MAC up, as phones do for privacy, sets this bit, and no maker owns such a MAC.
+    # Locally administered bit: a made-up MAC (phones do this for privacy), no maker.
     if int(mac[:2], 16) & 0x02:
         return "private address"
     return known_makers.get(mac[:8], "unknown maker")
@@ -50,7 +50,7 @@ def main(socket_path, settings_path, oui_path, output_path):
     reserved_addresses = set(settings["reservedAddresses"])
     known_makers = makers(oui_path)
     lines = [
-        "# HELP janus_dhcp_lease_renewed_timestamp_seconds When each lease in use was last renewed, named as its reservation or, on the household's own networks, as its client asked, with the maker its MAC names.",
+        "# HELP janus_dhcp_lease_renewed_timestamp_seconds When each lease in use was last renewed, named as its reservation or, on own networks, as its client asked, with its MAC's maker.",
         "# TYPE janus_dhcp_lease_renewed_timestamp_seconds gauge",
     ]
     for lease in leases(socket_path):

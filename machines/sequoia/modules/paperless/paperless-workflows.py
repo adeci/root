@@ -77,7 +77,7 @@ def main() -> None:
     if not Tag.objects.filter(is_inbox_tag=True).exists():
         plain_tag("Inbox", owner, inbox=True)
 
-    # Ordered first so the owner is saved before the AI runs; the AI only reuses tags, types and correspondents that owner can see.
+    # First, so the AI only reuses tags, types and correspondents the owner can see.
     assign = WorkflowAction.objects.create(type=Action.ASSIGNMENT, assign_owner=owner)
     assign.assign_tags.set(Tag.objects.filter(is_inbox_tag=True))
 

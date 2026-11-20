@@ -15,7 +15,7 @@
 
       services.greetd = {
         enable = true;
-        # logind treats a default session as a greeter, which polkit's agents can't register for: boot uses initial_session, and default_session logs in again after a logout.
+        # logind counts default_session as a greeter (no polkit agent): use it only after logout.
         settings.initial_session = niri;
         settings.default_session = niri;
       };

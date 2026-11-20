@@ -34,7 +34,7 @@ in
 {
   inherit hostExpression zoneOf;
 
-  # Requests to the hostname matching the rule's paths, methods and expression, whichever it gives.
+  # Matches the rule's paths, methods and expression, whichever it has.
   ruleExpression =
     hostname: rule:
     let
@@ -51,7 +51,7 @@ in
     else
       hostExpression hostname [ (allOf conditions) ];
 
-  # Requests to the hostname under the path, from any of the user-agent prefixes if there are some.
+  # Requests to the hostname under the path, from any of the user-agent prefixes if given.
   skipExpression =
     hostname: path: userAgentPrefixes:
     hostExpression hostname (

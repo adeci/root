@@ -56,7 +56,7 @@ in
       };
     };
 
-    # The mgmt VLAN arrives untagged on the mgmt port and tagged on the LAN trunk; one bridge joins both.
+    # mgmt is untagged on the mgmt port and tagged on the trunk; a bridge joins both.
     "20-mgmt" = {
       matchConfig.Name = interfaces.mgmt;
       linkConfig.RequiredForOnline = "no";

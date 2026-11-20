@@ -10,7 +10,7 @@ table=$1
 clobbered=false
 while IFS=$'\t' read -r link _; do
   if [[ -e $link && ! -L $link ]]; then
-    echo "home.links: $link would be clobbered: it exists and is not a link. Move it away, then switch again." >&2
+    echo "home.links: $link exists and is not a link; move it away and switch again." >&2
     clobbered=true
   fi
 done <"$table"
@@ -21,7 +21,7 @@ if [[ $check_only == true ]]; then
   exit 0
 fi
 
-# The table the last run linked, whichever generation that was; with none, nothing is removed.
+# Table from the last run, any generation; without one, remove nothing.
 record=${STATE_DIRECTORY:?}/linked
 declare -A named
 while IFS=$'\t' read -r link _; do
@@ -29,11 +29,11 @@ while IFS=$'\t' read -r link _; do
 done <"$table"
 if [[ -f $record ]]; then
   while IFS=$'\t' read -r link target; do
-    # Only while it is the link that run made: anything else in its place is the user's.
+    # Only if it still points where the last run left it.
     if [[ -z ${named[$link]-} && -L $link && $(readlink "$link") == "$target" ]]; then
       echo "home.links: removing $link, whose entry is gone"
       rm "$link"
-      # Then the folders this leaves empty, up to the home.
+      # And the folders left empty, up to $HOME.
       folder=$(dirname "$link")
       while [[ $folder != "$HOME" ]] && rmdir "$folder" 2>/dev/null; do
         folder=$(dirname "$folder")

@@ -30,7 +30,7 @@
         title = ''{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ index .Annotations "summary" }}'';
         description = ''{{ index .Annotations "description" }}'';
         headers = {
-          # ntfy replaces the notification that has the same sequence ID, so each alert keeps one.
+          # ntfy replaces a notification with the same sequence ID: one per alert.
           X-Sequence-ID = "{{ .Fingerprint }}";
           X-Click = clickUrl;
         };

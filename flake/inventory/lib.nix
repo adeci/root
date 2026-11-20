@@ -44,7 +44,7 @@ in
       byte: lib.fixedWidthString 2 "0" (lib.toLower (lib.toHexString byte))
     ) ([ 0 ] ++ map lib.strings.charToInt (lib.stringToCharacters text));
 
-  # Where a cable leads, as { name, port }, port being null when it names none; null when malformed.
+  # { name, port }, port null if not named; null when malformed.
   parseCableEnd =
     end:
     let
@@ -58,7 +58,7 @@ in
         port = lib.elemAt parts 2;
       };
 
-  # What a port carries: the VLAN it sends untagged, if any, and the VLANs it tags, sorted.
+  # The untagged VLAN, if any, and the tagged ones sorted.
   carriedVlans = untagged: tagged: {
     inherit untagged;
     tagged = lib.sort lib.lessThan (lib.unique tagged);

@@ -12,7 +12,7 @@ fi
 all_state="$(tofu state pull)"
 resources=()
 for device in "$@"; do
-  # What the state records under the device's provider configuration, so also what the config has dropped since, or a device gone from the inventory.
+  # By provider alias, so it also finds resources dropped from the config or inventory.
   mapfile -t matched < <(echo "$all_state" | jq -r --arg device "$device" '.resources[] | select(.provider | endswith("].\($device)")) | (if .mode == "data" then "data." else "" end) + .type + "." + .name')
   resources+=("${matched[@]}")
 done

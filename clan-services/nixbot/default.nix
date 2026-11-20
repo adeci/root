@@ -102,7 +102,7 @@
             example = {
               "github:owner/repo" = [ "cachix" ];
             };
-            description = "Effect secrets per repo. A name from `sharedEffectSecrets` is that secret; any other is prompted for this repo alone, and effects read it with `readSecretString <name> .token`";
+            description = "Effect secrets per repo. Names in `sharedEffectSecrets` use that secret; others are prompted for this repo alone. Effects read them with `readSecretString <name> .token`";
           };
 
           sharedEffectSecrets = lib.mkOption {
@@ -133,7 +133,7 @@
                 passphrase.description = "Passphrase of the private key";
               };
             };
-            description = "Secrets prompted once, for every repo that names them in `effectSecrets`: each field with what to enter for it. Effects read a field with `readSecretString <name> .<field>`";
+            description = "Secrets prompted once for every repo naming them in `effectSecrets`, each field with what to enter. Effects read a field with `readSecretString <name> .<field>`";
           };
         };
       };
@@ -267,7 +267,7 @@
               '';
             };
 
-            # Fixed-output builds share the host network: keep CI code off loopback, the LAN and the tailnet.
+            # Fixed-output builds share the host network: keep CI off loopback, LAN and tailnet.
             networking.firewall.extraCommands = builtins.readFile ./build-egress-start.sh;
             networking.firewall.extraStopCommands = builtins.readFile ./build-egress-stop.sh;
 

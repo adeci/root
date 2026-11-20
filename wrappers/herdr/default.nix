@@ -5,7 +5,7 @@
   config = {
     package = pkgs.herdr;
 
-    # Only the config moves (session.json, logs and sockets stay in ~/.config/herdr); the client-spawned server inherits this.
+    # Config only (state stays in ~/.config/herdr); the spawned server inherits it.
     env.HERDR_CONFIG_PATH = "${./config.toml}";
 
     # For the lazygit popup in config.toml.

@@ -80,8 +80,7 @@ with subtest("stopping a seat returns only its GPU and seed"):
     leviathan.succeed("test -e /run/microvm-seeds/scylla.img")
 
 with subtest("a seat whose VM unit cannot run anything still returns its GPU"):
-    # As on leviathan, where a NUMA policy for a memoryless node failed every
-    # command in the unit, its own stop commands included.
+    # Seen on leviathan: NUMA policy on a memoryless node failed every command, stop included.
     leviathan.succeed(
         "mkdir -p /run/systemd/system/microvm@charybdis.service.d"
         " && printf '[Service]\\nNUMAPolicy=preferred\\nNUMAMask=7\\n'"

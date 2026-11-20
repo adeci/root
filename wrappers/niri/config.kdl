@@ -50,8 +50,7 @@ window-rule {
     clip-to-geometry true
 }
 
-// Chromium and Electron multiply touchpad scroll by 12; 0.15 was tuned on a
-// touchpad. window-scroll-factor-touchpad-only.patch keeps mouse wheels native.
+// Chromium and Electron scroll 12x on touchpads; a patch keeps mouse wheels native.
 window-rule {
     match app-id="(?i)^(google-chrome|chromium|chromium-browser|brave-browser|slack|discord|vesktop|element|signal|1password|code|cursor|obsidian|bitwarden|spotify|steam)$"
     scroll-factor 0.15
@@ -182,7 +181,7 @@ binds {
 }
 
 debug {
-    // A notification's action asks for focus without a valid serial; honoring it lets the click bring the window up.
+    // Notification actions ask for focus without a valid serial.
     honor-xdg-activation-with-invalid-serial
 }
 

@@ -91,11 +91,11 @@
       # Servers keep clan's networkd default.
       networking.networkmanager.enable = true;
       networking.useNetworkd = false;
-      # facter turns DHCP on for every interface, which starts dhcpcd beside NetworkManager's own client.
+      # facter enables DHCP everywhere, running dhcpcd next to NetworkManager's client.
       hardware.facter.detected.dhcp.enable = false;
 
       services.gnome.gnome-keyring.enable = true;
-      # Apps store secrets in the login keyring, never in one they create themselves.
+      # Apps use the login keyring, not one of their own.
       systemd.user.tmpfiles.rules = [
         "d %h/.local/share/keyrings 0700 - - -"
         "f+ %h/.local/share/keyrings/default 0600 - - - login"
@@ -164,11 +164,11 @@
       system.defaults = {
         dock = {
           autohide = true;
-          # Effectively no Dock: nothing pinned, and it waits about 15 minutes before showing.
+          # Effectively no Dock: nothing pinned, ~15 minute delay.
           autohide-delay = 1000.0;
           persistent-apps = [ ];
           persistent-others = [ ];
-          # Tiling window managers park hidden windows in a bottom corner; a bottom Dock covers the sliver.
+          # Tiling WMs park hidden windows in a bottom corner; the Dock covers the sliver.
           orientation = "bottom";
           # Keeps Mission Control's thumbnails usable while windows are parked off-screen.
           expose-group-apps = true;
@@ -180,7 +180,7 @@
           wvous-bl-corner = 1;
           wvous-br-corner = 1;
         };
-        # One Space across displays: separate Spaces confuse window managers about focus. Takes effect after logging out.
+        # Separate Spaces confuse WMs about focus. Needs a logout.
         spaces.spans-displays = true;
         finder = {
           AppleShowAllExtensions = true;
@@ -209,7 +209,7 @@
             DSDontWriteNetworkStores = true;
             DSDontWriteUSBStores = true;
           };
-          # Spotlight as a launcher: apps and System Settings only, nothing from the web. Each rule here turns a result source off.
+          # Spotlight as a launcher: apps and System Settings only. Each rule disables a source.
           "com.apple.Spotlight".EnabledPreferenceRules = [
             "Custom.relatedContents"
             "System.files"
@@ -256,7 +256,7 @@
         };
       };
 
-      # Re-register the bundles nix-darwin rsyncs into /Applications/Nix Apps: LaunchServices keeps their old signature and kills the next launch with "Launch Constraint Violation".
+      # LaunchServices keeps stale signatures for Nix Apps: "Launch Constraint Violation".
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           if [[ -d "/Applications/Nix Apps" ]]; then

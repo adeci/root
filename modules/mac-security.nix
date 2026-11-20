@@ -9,7 +9,7 @@
 
     # Security responses install on their own; macOS versions only when chosen.
     system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
-    # A full path: activation runs as root, and a bare domain would land in root's own preferences.
+    # Full path: activation runs as root, and a bare domain hits root's own prefs.
     system.defaults.CustomSystemPreferences."/Library/Preferences/com.apple.SoftwareUpdate" = {
       AutomaticCheckEnabled = true;
       AutomaticDownload = true;

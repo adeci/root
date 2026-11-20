@@ -69,7 +69,7 @@ add_keys() {
 add_keys /var/root root
 add_keys "$HOME" "$(id -un)"
 
-# Only a click can turn this on, and the person running this is at the Mac; mac-install verifies it.
+# Needs a click; mac-install checks it later.
 open "x-apple.systempreferences:com.apple.Sharing-Settings.extension"
 
 ips=$(ifconfig | awk '/inet / && $2 != "127.0.0.1" { print $2 }' | paste -sd ' ' -)

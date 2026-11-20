@@ -19,7 +19,7 @@
     restartAfterFreeze = true;
   };
 
-  # 16 GB: the Linux VM gets 8 GiB, at most two Mac builds run at once, macOS keeps the rest.
+  # 16 GB: 8 GiB for the Linux VM, two Mac builds at once, the rest for macOS.
   nix.settings.max-jobs = 2;
   nix.linux-builder.config.virtualisation = {
     cores = 8;

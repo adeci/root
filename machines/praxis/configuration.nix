@@ -33,7 +33,7 @@
 
   tailscaleTravel.defaultExitNode = "sequoia";
 
-  # Backed up by the restic instance in inventory/clan-instances.nix, which lists what it leaves out.
+  # Restic instance and its excludes: inventory/clan-instances.nix.
   clan.core.state.home.folders = [ "/home/alex" ];
 
   wrappers.btop.settings.cpu_sensor = "k10temp/Tctl";
@@ -95,7 +95,7 @@
     inputs.mandate.packages.${pkgs.stdenv.hostPlatform.system}.mandate
   ];
 
-  # RP2350/RP2040 boards in BOOTSEL mode, for whoever sits at the machine; numbered 70 for the reason given in the sdwire module.
+  # RP2350/RP2040 in BOOTSEL for the seat user; 70 for the reason in the sdwire module.
   services.udev.packages = [
     (pkgs.writeTextDir "lib/udev/rules.d/70-rp2040.rules" ''
       SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", TAG+="uaccess"

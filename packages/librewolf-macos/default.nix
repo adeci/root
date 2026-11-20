@@ -24,7 +24,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  # The bundle must stay as shipped: fixup would strip and patch files its code signature covers.
+  # fixup would break the code signature.
   dontFixup = true;
 
   meta = {

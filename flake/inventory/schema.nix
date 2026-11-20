@@ -11,7 +11,7 @@ let
     textClientId
     ;
 
-  # The whole inventory. Inside an entry's own submodule, `config` is that entry.
+  # `config` is shadowed inside entry submodules.
   inventory = config;
 
   models = import ./routeros-models.nix;
@@ -23,7 +23,6 @@ let
     merge = lib.options.mergeEqualOption;
   };
 
-  # Each of these accepts only the names the inventory defines.
   vlanName = types.enum (lib.attrNames inventory.lan.vlans);
   hostName = types.enum (lib.attrNames inventory.lan.hosts);
   routerPortLabel = types.enum (lib.attrNames inventory.router.ports);
@@ -58,8 +57,6 @@ let
 in
 {
   options = {
-    # lan
-
     lan = {
       domain = mkOption {
         type = types.str;
@@ -74,7 +71,7 @@ in
               options = {
                 id = mkOption {
                   type = types.ints.between 1 4094;
-                  description = "The VLAN's 802.1Q tag. It also numbers the VLAN's addresses: VLAN 20 is 10.20.0.0/24.";
+                  description = "The VLAN's 802.1Q tag, which also numbers its addresses: VLAN 20 is 10.20.0.0/24.";
                 };
                 prefix = mkOption {
                   type = types.str;
@@ -99,13 +96,13 @@ in
                     type = ipv4Address;
                     readOnly = true;
                     default = "${config.prefix}.100";
-                    description = "The first address the router's DHCP server hands out. Reserved addresses stay outside the pool.";
+                    description = "First address the router's DHCP server hands out. Reserved addresses stay outside the pool.";
                   };
                   end = mkOption {
                     type = ipv4Address;
                     readOnly = true;
                     default = "${config.prefix}.250";
-                    description = "The last address the router's DHCP server hands out.";
+                    description = "Last address the router's DHCP server hands out.";
                   };
                 };
                 tailnet = mkOption {
@@ -116,12 +113,12 @@ in
                 ownDevices = mkOption {
                   type = types.bool;
                   default = true;
-                  description = "Whether the devices on it are the household's own. Guests' and tenants' are not: the router exports no name they ask with, and none of them is reported as new.";
+                  description = "Whether its devices are personal ones. Off for guests and tenants: the router exports none of their requested names and reports none as new.";
                 };
                 interface = mkOption {
                   type = types.str;
                   default = "vlan${toString config.id}";
-                  description = "The router's interface holding the VLAN's gateway: its 802.1Q device vlan<id>, or a bridge that device joins.";
+                  description = "Router interface holding the VLAN's gateway: its 802.1Q device vlan<id>, or a bridge that device joins.";
                 };
               };
             }
@@ -131,7 +128,7 @@ in
 
       fallbackNetwork = mkOption {
         type = types.str;
-        description = "The block every appliance's fallbackAddress lies in, written without host bits as RouterOS takes it; the appliances' ssh and API admit it beside the management VLAN.";
+        description = "Block every appliance's fallbackAddress is in, without host bits as RouterOS wants; appliance ssh and API allow it besides the management VLAN.";
       };
 
       dns = mkOption {
@@ -156,7 +153,7 @@ in
           }
         );
         default = { };
-        description = "Names the router serves to the LAN and, through Tailscale split DNS, to the tailnet, each under the service it is for, which reads its name from here. A name points at either a LAN host (lan) or a machine's tailnet address (tailnet).";
+        description = "Names the router serves to the LAN and, via Tailscale split DNS, the tailnet, keyed by the service that reads them. Each points at a LAN host (lan) or a machine's tailnet address (tailnet).";
       };
 
       hosts = mkOption {
@@ -164,7 +161,7 @@ in
         readOnly = true;
         default =
           let
-            # The same record for every kind of host, so readers needn't know where it was written.
+            # One record shape for every kind of host.
             host = lan: {
               inherit (lan) ip vlan;
               mac = lan.mac or null;
@@ -186,7 +183,7 @@ in
               ) machine.lan.extra
             )
           ) inventory.machines;
-        description = "Every reserved LAN address by host name, each as { mac, clientId, ip, vlan, publishDns }: the machines (and their extra NICs), vms, devices and appliances below. An appliance's mac is null, as its reservation goes by its clientId.";
+        description = "Every reserved LAN address by host name, as { mac, clientId, ip, vlan, publishDns }: machines (and their extra NICs), vms, devices and appliances. Appliances have a null mac; their reservation uses clientId.";
       };
 
       cables = mkOption {
@@ -209,11 +206,9 @@ in
             ) (lib.filterAttrs (_: settings: settings.cable != null) appliance.ports)
           ) inventory.appliances
         );
-        description = "Every cable recorded on an appliance port below, once, as { appliance, port, to, toPort }: the port it is written on and the host, appliance or router it leads to. toPort is null when the cable names no port or NIC there.";
+        description = "Every cable recorded on an appliance port, once, as { appliance, port, to, toPort }: where it's written and where it leads. toPort is null when the cable names no port or NIC there.";
       };
     };
-
-    # tailnet
 
     tailnet = {
       domain = mkOption {
@@ -225,13 +220,13 @@ in
         type = types.str;
         readOnly = true;
         default = "100.64.0.0/10";
-        description = "Tailscale's CGNAT range, which every tailnet address falls inside.";
+        description = "Tailscale's CGNAT range; every tailnet address is in it.";
       };
 
       deviceTags = mkOption {
         type = types.attrsOf (types.listOf types.str);
         default = { };
-        description = "ACL tags set on tailnet devices through the Tailscale API, by hostname. Every machine on the tailnet that isn't portable also carries tag:server.";
+        description = "ACL tags set via the Tailscale API, by hostname. Every non-portable machine on the tailnet also gets tag:server.";
       };
 
       addresses = mkOption {
@@ -243,8 +238,6 @@ in
         description = "The tailnet address of each machine below that has one.";
       };
     };
-
-    # router
 
     router = {
       machine = mkOption {
@@ -280,8 +273,6 @@ in
       };
     };
 
-    # machines
-
     machines = mkOption {
       type = types.attrsOf (
         types.submodule {
@@ -301,7 +292,7 @@ in
             tailnet = mkOption {
               type = types.nullOr tailnetAddress;
               default = null;
-              description = "Its tailnet address. Tailscale assigns it, so a reinstall can change it.";
+              description = "Its tailnet address. Tailscale assigns it; a reinstall can change it.";
             };
             lan = mkOption {
               type = types.nullOr (
@@ -323,7 +314,7 @@ in
                         }
                       );
                       default = { };
-                      description = "More NICs on the machine's VLAN, such as a BMC; each becomes a host named <machine>-<label>.";
+                      description = "Extra NICs on the machine's VLAN, e.g. a BMC; each becomes host <machine>-<label>.";
                     };
                   };
                 }
@@ -337,8 +328,6 @@ in
       default = { };
       description = "The clan machines; the clan inventory is built from these.";
     };
-
-    # vms
 
     vms = mkOption {
       type = types.attrsOf (
@@ -354,8 +343,6 @@ in
       );
       default = { };
     };
-
-    # devices
 
     devices = mkOption {
       type = types.attrsOf (
@@ -376,11 +363,8 @@ in
       description = "LAN devices this repo doesn't manage, such as a printer or a guest's laptop.";
     };
 
-    # appliances
-
     appliances =
       let
-        # One port of an appliance, given the appliance's name and settings.
         port =
           applianceName: appliance:
           types.submodule (
@@ -408,7 +392,7 @@ in
                 trunk = mkOption {
                   type = types.bool;
                   default = false;
-                  description = "Whether the port carries every VLAN of the switch, tagged; on the management port the appliance's own VLAN stays untagged.";
+                  description = "Whether the port carries every switch VLAN tagged; on the management port the appliance's own VLAN stays untagged.";
                 };
                 carries = mkOption {
                   type = types.attrs;
@@ -425,7 +409,7 @@ in
                       carriedVlans null appliance.vlans
                     else
                       carriedVlans (if bridged config.vlan then config.vlan else null) (lib.filter bridged config.tagged);
-                  description = "What the port carries, as { untagged, tagged }. The management port carries the appliance's own VLAN untagged and tags its Wi-Fi VLANs or, as a trunk, the switch's other VLANs. Any other port carries only VLANs the switch bridges.";
+                  description = "What the port carries, as { untagged, tagged }. The management port carries the appliance's VLAN untagged and tags its Wi-Fi VLANs or, as a trunk, the switch's other VLANs. Other ports carry only VLANs the switch bridges.";
                 };
                 poe = mkOption {
                   type = types.nullOr (
@@ -441,7 +425,7 @@ in
                 cable = mkOption {
                   type = types.nullOr cableEnd;
                   default = null;
-                  description = ''Where the cable in this port leads: a host ("sequoia"), one NIC of a host ("leviathan:eno12399np0"), a port of another appliance ("axon:sfp-sfpplus1") or a router port by its chassis label ("janus:eth5"). Each cable is written once; the other end of a cable to an appliance or the router is derived.'';
+                  description = ''Where this port's cable leads: a host ("sequoia"), a host NIC ("leviathan:eno12399np0"), another appliance's port ("axon:sfp-sfpplus1") or a router port by chassis label ("janus:eth5"). Write each cable once; the other end is derived for appliances and the router.'';
                 };
                 label = mkOption {
                   type = types.nullOr types.str;
@@ -452,7 +436,7 @@ in
                       leadsTo.name
                     else
                       "${leadsTo.name} ${leadsTo.port}";
-                  description = "The port's comment on the appliance: where its cable leads. Set it only on a port without a recorded cable.";
+                  description = "The port's comment on the appliance: where its cable leads. Set only on ports without a recorded cable.";
                 };
               };
             }
@@ -481,7 +465,7 @@ in
                         type = types.str;
                         readOnly = true;
                         default = textClientId name;
-                        description = "The DHCP client id its first-boot script has the management port's DHCP client send: its name. The reservation matches it instead of a MAC, so a replacement unit gets the address with no edit.";
+                        description = "DHCP client id the first-boot script sends on the management port: its name. The reservation matches it, so a replacement unit gets the same address unedited.";
                       };
                     };
                   };
@@ -503,7 +487,7 @@ in
                 };
                 managementPort = mkOption {
                   type = types.str;
-                  description = "The port it is managed through. It stays out of the bridge and keeps a DHCP client for the management address.";
+                  description = "Port it's managed through; kept out of the bridge, with a DHCP client for the management address.";
                 };
                 fallbackPort = mkOption {
                   type = types.str;
@@ -527,7 +511,7 @@ in
                 wifi = mkOption {
                   type = types.nullOr (types.nonEmptyListOf wifiName);
                   default = null;
-                  description = "The Wi-Fi networks an access point broadcasts: the first from each radio's main interface, the others as virtual interfaces. Null on a switch.";
+                  description = "Wi-Fi networks an access point broadcasts: the first on each radio's main interface, the rest as virtual interfaces. Null on a switch.";
                 };
                 ports = mkOption {
                   type = types.attrsOf (port name config);
@@ -535,7 +519,7 @@ in
                 };
               };
 
-              # Every port of the model, so each one has its settings and label.
+              # Every model port, so each gets settings and a label.
               config.ports = lib.genAttrs models.${config.model}.ports (_: { });
             }
           )
@@ -543,8 +527,6 @@ in
         default = { };
         description = "The MikroTik switches and access points, and what each of their ports carries and is cabled to.";
       };
-
-    # wifi
 
     wifi = mkOption {
       type = types.attrsOf (
@@ -588,7 +570,7 @@ in
       description = "The Wi-Fi networks; each access point lists the ones it broadcasts.";
     };
 
-    # routeros, which the appliances run (not in network.nix)
+    # Not from network.nix.
 
     routeros = {
       models = mkOption {
@@ -617,18 +599,18 @@ in
           file = "password";
           user = "prometheus";
         };
-        description = "The read-only RouterOS API account metrics scraping uses; its password lives in the router's clan vars.";
+        description = "Read-only RouterOS API account for metrics scraping; its password is in the router's clan vars.";
       };
 
       rollbackMarker = mkOption {
         type = types.str;
         readOnly = true;
         default = "net-apply-rolled-back.txt";
-        description = "The file an appliance writes when it restores the configuration it had before a net-apply that was not confirmed; janus alerts while it is there, and the next net-apply removes it.";
+        description = "File an appliance writes when it rolls back an unconfirmed net-apply; janus alerts while it exists, and the next net-apply removes it.";
       };
     };
 
-    # the other data files, untyped; references.nix checks the names they use
+    # Untyped; references.nix checks the names they use.
 
     b2 = mkOption {
       type = types.raw;
@@ -655,8 +637,6 @@ in
       description = "inventory/tailscale-policy.nix: the tailnet's access policy.";
     };
 
-    # the rules, from rules.nix and references.nix
-
     assertions = mkOption {
       type = types.listOf types.attrs;
       default = [ ];
@@ -664,7 +644,7 @@ in
     };
   };
 
-  # The servers: every machine on the tailnet that isn't a portable one.
+  # Servers: every tailnet machine that isn't portable.
   config.tailnet.deviceTags = lib.mapAttrs (_: _: [ "tag:server" ]) (
     lib.filterAttrs (
       _: machine: machine.tailnet != null && !lib.elem "portable" machine.tags

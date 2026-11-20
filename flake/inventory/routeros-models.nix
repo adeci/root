@@ -28,7 +28,7 @@ builtins.mapAttrs (_: withPorts) {
     extraPackages = [ "wifi-qcom" ];
     etherPorts = 2;
     sfpPorts = 0;
-    # The radios' interface names, the same on every unit: wifi1 is 5GHz and wifi2 2.4GHz.
+    # Same on every unit: wifi1 is 5GHz, wifi2 is 2.4GHz.
     radios = [
       "wifi1"
       "wifi2"

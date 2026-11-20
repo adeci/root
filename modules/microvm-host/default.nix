@@ -157,7 +157,7 @@
         {
           assertions = lib.mapAttrsToList (name: _: {
             assertion = lib.stringLength "vm-${name}" <= 15;
-            message = "microvmHost.vms.${name}: its tap interface vm-${name} is longer than the 15 characters Linux allows.";
+            message = "microvmHost.vms.${name}: tap name vm-${name} is over Linux's 15-character limit.";
           }) host.vms;
 
           microvm.vms = lib.mapAttrs (name: vm: {
@@ -227,7 +227,7 @@
                   "microvm@${name}".serviceConfig = {
                     Slice = "microvm.slice";
                     Restart = "no";
-                    # Skip microvm.nix's shutdown when the guest already powered off; it would wait on an empty $MAINPID and fail the unit.
+                    # Guest already off: microvm-shutdown would wait on an empty $MAINPID and fail.
                     ExecStop = [
                       ""
                       (pkgs.writeShellScript "microvm-${name}-shutdown" ''
@@ -246,7 +246,7 @@
                     serviceConfig = {
                       ExecStartPre = [ "${lib.getExe releaseGpu} ${vm.gpu}" ];
                       ExecStartPost = lib.optional (holders != "") "-${systemctl} start ${holders}";
-                      # However the VM ends, even if it fails before starting.
+                      # Runs even if the VM fails to start.
                       ExecStopPost = [ "${lib.getExe reclaimGpu} ${vm.gpu}" ];
                     };
                   };

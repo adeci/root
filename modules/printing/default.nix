@@ -11,7 +11,7 @@
       services.printing = {
         enable = true;
         drivers = [ xeroxPpd ];
-        # cups-browsed would add a second queue for the Xerox; CUPS lists discovered printers by itself.
+        # Would add a duplicate Xerox queue; CUPS finds printers itself.
         browsed.enable = false;
       };
       hardware.printers = {
@@ -22,7 +22,7 @@
             location = "Home";
             # No trailing slash: the printer rejects ipp/print/, though it advertises it.
             deviceUri = "ipp://${self.inventory.lan.hosts.printer.ip}/ipp/print";
-            # A stored PPD: "everywhere" asks the printer when CUPS starts, which fails away from home.
+            # "everywhere" queries the printer at CUPS start, which fails away from home.
             model = "xerox-workcentre-6605dn.ppd";
           }
         ];

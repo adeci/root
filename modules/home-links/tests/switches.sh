@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 set -euo pipefail
 
-# Switches as NixOS and nix-darwin make them, in a scratch home, with stand-ins for store paths.
+# Scratch home, fake store paths.
 export HOME=$PWD/home STATE_DIRECTORY=$PWD/state
 mkdir -p "$HOME" "$STATE_DIRECTORY" store
 one=$PWD/store/one
@@ -15,7 +15,7 @@ fail() {
   exit 1
 }
 
-# The table for the given "path target" pairs, paths relative to the home.
+# Args: "path target" pairs, paths relative to $HOME.
 write_table() {
   : >table
   while (($# > 0)); do
@@ -24,7 +24,6 @@ write_table() {
   done
 }
 
-# The pre-switch check, then the run.
 switch() {
   write_table "$@"
   home-links --check table
@@ -39,7 +38,7 @@ absent() {
   [[ ! -e $HOME/$1 && ! -L $HOME/$1 ]] || fail "$1 is still there"
 }
 
-# Made by a switch from before there was a record.
+# Link from before the record existed.
 ln -s "$one" "$HOME/.before-record"
 
 switch .changed "$one" .dropped "$one" .dangling "$gone" .repointed "$one" .replaced "$one" \
@@ -49,7 +48,7 @@ points_at .deep/er/link "$one"
 points_at "Application Support/link" "$one"
 cmp table "$STATE_DIRECTORY/linked" || fail "the record is not the table"
 
-# The user's own changes, and a target that is gone.
+# Manual changes, and a target that's gone.
 ln -sfn "$mine" "$HOME/.repointed"
 rm "$HOME/.replaced"
 echo mine >"$HOME/.replaced"
@@ -63,7 +62,7 @@ points_at .changed "$two"
 absent .dropped
 absent .dangling
 points_at .repointed "$mine"
-[[ -f $HOME/.replaced && ! -L $HOME/.replaced ]] || fail ".replaced is no longer the user's file"
+[[ -f $HOME/.replaced && ! -L $HOME/.replaced ]] || fail ".replaced was overwritten"
 absent .deep
 absent .shared/link
 [[ -f $HOME/.shared/own ]] || fail ".shared/own is gone"
@@ -86,7 +85,7 @@ switch
 absent .changed
 [[ -f $STATE_DIRECTORY/linked && ! -s $STATE_DIRECTORY/linked ]] || fail "the record is not empty"
 
-# A home that held nothing but a link stays, though its folders go.
+# The home itself stays when its folders go.
 export HOME=$PWD/bare
 mkdir "$HOME"
 switch .config/foo/config.toml "$one"

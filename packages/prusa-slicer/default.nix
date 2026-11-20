@@ -6,7 +6,7 @@
   symlinkJoin,
 }:
 let
-  # WebKit's gamepad support calls libmanette → hidapi, whose hid_get_device_info() returns an invalid non-NULL pointer (0x31) for some hidraw devices.
+  # WebKit gamepads use hidapi, whose hid_get_device_info() returns 0x31 on some devices.
   hidapi-fix = runCommand "hidapi-fix" { nativeBuildInputs = [ gcc ]; } ''
     mkdir -p $out/lib
     gcc -shared -fPIC -o $out/lib/hidapi-fix.so ${./hidapi-fix.c} -ldl

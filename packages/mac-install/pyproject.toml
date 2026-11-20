@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mac-install"
 version = "0.1.0"
-description = "First install of a Mac primed by bootstrap.sh, and the System Settings steps its configuration declares"
+description = "First install of a bootstrapped Mac, plus its System Settings steps"
 requires-python = ">=3.13"
 
 [project.scripts]

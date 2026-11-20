@@ -12,7 +12,7 @@ let
   dataDir = "/srv/paperless";
 
   workflows = ./paperless-workflows.py;
-  # The workflows are applied again only when this changes, so edits made in the UI stay until then.
+  # Reapplied only when this changes, so UI edits stick until then.
   workflowsDeclaration = "${workflows} ai=${lib.boolToString config.paperlessAi.enable}";
 
   applyWorkflows = pkgs.writeShellApplication {
@@ -81,7 +81,7 @@ in
 
       exporter.enable = true;
 
-      # OCR defaults (English, rotate, deskew, clean, PDF/A) fit; setting a language would rebuild Paperless from source.
+      # OCR defaults fit; setting a language would rebuild Paperless from source.
       settings = {
         PAPERLESS_ADMIN_USER = config.system.primaryUser;
         PAPERLESS_DATE_ORDER = "MDY";

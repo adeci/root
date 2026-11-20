@@ -6,17 +6,17 @@ let
         type = lib.types.attrsOf lib.types.pathInStore;
         default = { };
         example = lib.literalExpression ''{ ".config/foo/config.toml" = fooConfig; }'';
-        description = "Store paths to link into the primary user's home, keyed by path relative to it. A real file in a link's place stops the switch. A link whose entry goes away is removed at the next switch, with the folders that leaves empty, unless it has been replaced or pointed elsewhere.";
+        description = "Store paths to link into the primary user's home, by relative path. A real file in the way stops the switch. Dropped entries are removed at the next switch, with folders left empty, unless the link was replaced or repointed.";
       };
 
-      # A . or .. part could slip a link past the real-file check, or the empty-folder walk out of the home.
+      # . or .. could dodge the real-file check or walk the cleanup out of the home.
       config.assertions = lib.mapAttrsToList (path: _: {
         assertion = !lib.any (part: part == "" || part == "." || part == "..") (lib.splitString "/" path);
-        message = "home.links.\"${path}\" is not a path inside the home: keys are relative, with no empty, . or .. part.";
+        message = "home.links.\"${path}\": keys must be relative to the home, with no empty, . or .. parts.";
       }) config.home.links;
     };
 
-  # The command that makes the links and removes those of dropped entries, and the table it reads: one "link<TAB>target" line per entry.
+  # Table lines are "link<TAB>target".
   homeLinks =
     {
       config,
@@ -89,10 +89,10 @@ in
         ${command} --check ${table}
       '';
       system.activationScripts.postActivation.text = ''
-        # nix-darwin has no StateDirectory: the user's run keeps its record in a /var/lib folder made for it here.
+        # nix-darwin has no StateDirectory.
         mkdir -p /var/lib/home-links
         chown ${config.system.primaryUser} /var/lib/home-links
-        # Not asPrimaryUser: its launchctl asuser needs a login session, which a headless Mac lacks after a reboot.
+        # Not asPrimaryUser: a headless Mac has no login session after reboot.
         /usr/bin/sudo -H -u ${config.system.primaryUser} -- /usr/bin/env STATE_DIRECTORY=/var/lib/home-links ${command} ${table}
       '';
     };

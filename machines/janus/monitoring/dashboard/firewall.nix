@@ -13,7 +13,7 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Refused";
-      description = "What the firewall refused in the picked time range, by its log, which takes at most six lines a minute. Broadcasts and the devices' discovery chatter it drops without a line.";
+      description = "Refused in the picked range, by the firewall log (at most six lines a minute). Broadcasts and discovery chatter are dropped without a line.";
       w = 24;
       h = 10;
       datasource = ui.loki;

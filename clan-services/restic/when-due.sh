@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Starts the backup once it is due, unless no network comes up, it is metered or the repository's server is out of reach; says why not.
+# Start the backup when due, unless offline, metered or the server is unreachable.
 restic=/run/current-system/sw/bin/restic-$JOB_NAME
 
 # After a sleep this runs before NetworkManager has the network back.
@@ -13,7 +13,7 @@ if [[ $(nmcli --terse --fields METERED general) == yes* ]]; then
   exit 0
 fi
 
-# Any answer from an S3 server will do; one that refuses the key is then the backup's failure, not a reason to wait.
+# Any answer will do; a refused key is the backup's failure, not a reason to wait.
 if [[ "$REPOSITORY" == s3:* ]]; then
   server=${REPOSITORY#s3:}
   server=${server#*://}

@@ -25,14 +25,14 @@ let
   # Read-only bind mounts such as the Nix store would repeat their filesystem's alerts.
   writable = "on (instance, mountpoint) node_filesystem_readonly == 0";
 
-  # The agent asks each repository for its newest snapshot every hour; 0 while there is none.
+  # Reported hourly by the agent; 0 before the first snapshot.
   snapshotAge = "time() - restic_snapshot_timestamp_seconds";
   staleBackup = "The newest snapshot in its {{ $labels.backup }} repository is {{ $value | humanizeDuration }} old; see `systemctl status restic-backups-{{ $labels.backup }}` on {{ $labels.instance }}.";
-  # A laptop's newest snapshot as it last reported it, so a night asleep keeps its alerts.
+  # Last reported value, so alerts survive a night asleep.
   laptopSnapshot = "last_over_time(restic_snapshot_timestamp_seconds[1d] @ end())";
-  # How long a laptop has been on since that snapshot: the half hours of the last 30 days in which it reported it.
+  # Time on since that snapshot: half hours of the last 30 days that reported it.
   laptopSnapshotAge = "count_over_time((restic_snapshot_timestamp_seconds == ${laptopSnapshot})[30d:30m]) * 1800";
-  staleLaptopBackup = "It has been on for {{ $value | humanizeDuration }} of the last 30 days since the newest snapshot in its {{ $labels.backup }} repository. It backs up only on AC power, on a network that is not metered and with the repository answering; `journalctl -u restic-{{ $labels.backup }}-when-due` on {{ $labels.instance }} says what was missing.";
+  staleLaptopBackup = "On for {{ $value | humanizeDuration }} of the last 30 days since the newest snapshot in its {{ $labels.backup }} repository. Backups need AC power, an unmetered network and a reachable repository; `journalctl -u restic-{{ $labels.backup }}-when-due` on {{ $labels.instance }} says which was missing.";
 
   alwaysOnRecords = map (instance: {
     record = "instance:always_on";
@@ -44,7 +44,7 @@ let
   dataFilesystem = ''job="node", ${disk}, mountpoint!~"/boot(/.*)?"'';
 
   diskRecords = [
-    # The physical disk under each filesystem device: the agent's map on Linux, the device name on a Mac.
+    # Physical disk per filesystem device: the agent's map on Linux, the device name on macOS.
     {
       record = "device:disk:info";
       expr = ''
@@ -77,13 +77,13 @@ let
     }
     {
       alert = "PublicNameDown";
-      # Whatever serves it: a name's instance need not be an always-on machine.
+      # No onlyAlwaysOn: a name's instance needn't be an always-on machine.
       expr = "probe_success == 0";
       for = "5m";
       labels.severity = "critical";
       annotations = {
         summary = "{{ $labels.name }} does not answer";
-        description = "Requests to {{ $labels.name }}, which {{ $labels.instance }} serves, have failed for 5 minutes; see Public names on the fleet page.";
+        description = "Requests to {{ $labels.name }}, served by {{ $labels.instance }}, have failed for 5 minutes; see Public names on the fleet page.";
       };
     }
     {
@@ -94,7 +94,7 @@ let
       labels.severity = "critical";
       annotations = {
         summary = "The Cloudflare tunnel of {{ $labels.instance }} is down";
-        description = "cloudflared on {{ $labels.instance }} has no connection to Cloudflare, so the public names it serves don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
+        description = "cloudflared on {{ $labels.instance }} has no connection to Cloudflare, so its public names don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
       };
     }
     {
@@ -110,12 +110,12 @@ let
     }
     {
       alert = "DeployReverted";
-      # The deploy guard writes it as it goes back; the next deploy-guard-confirm there, which every deploy runs, removes it.
+      # Written on revert; the next deploy's deploy-guard-confirm removes it.
       expr = onlyAlwaysOn "deploy_guard_revert_timestamp_seconds";
       labels.severity = "warning";
       annotations = {
         summary = "{{ $labels.instance }} went back to its previous system";
-        description = "A switch on {{ $labels.instance }} was not confirmed within its window, so it returned to the system it ran before and stays there until a switch is confirmed; see `journalctl -u deploy-guard-revert` there.";
+        description = "A switch on {{ $labels.instance }} wasn't confirmed in time, so it went back to its previous system until a switch is confirmed; see `journalctl -u deploy-guard-revert` there.";
       };
     }
     {
@@ -175,7 +175,7 @@ let
     }
     {
       alert = "FilesystemReadOnly";
-      # A filesystem whose every mount is read-only, as after the kernel remounts it on errors.
+      # Every mount read-only, as after the kernel remounts on errors.
       expr = onlyAlwaysOn ''
         max by (instance, device) (
           node_filesystem_readonly{${disk}} == 1
@@ -243,7 +243,7 @@ let
     }
     {
       alert = "LaptopBackupStale";
-      # Or a snapshot older than those 30 days on a laptop on for a day of them, which the count alone never reaches at an hour or two a day.
+      # Or a day on with a snapshot older than 30 days: light use never reaches 3 days.
       expr = onlyLaptops "${laptopSnapshotAge} > 3 * 86400 or (${laptopSnapshotAge} >= 86400 and time() - ${laptopSnapshot} > 30 * 86400)";
       labels.severity = "warning";
       annotations = {
@@ -262,7 +262,7 @@ let
     }
     {
       alert = "BackupFailed";
-      # On an always-on machine it is a SystemdUnitFailed; a laptop asleep keeps the state it last reported.
+      # Always-on machines get SystemdUnitFailed; a sleeping laptop keeps its last state.
       expr = onlyLaptops ''last_over_time(node_systemd_unit_state{name=~"restic-backups-.+[.]service", state="failed"}[1d]) == 1'';
       # The hourly retry clears the failed state while it runs.
       keep_firing_for = "1h";
@@ -289,7 +289,7 @@ let
       labels.severity = "warning";
       annotations = {
         summary = "The Tailscale key of {{ $labels.instance }} expires soon";
-        description = "It expires in {{ $value | humanizeDuration }}, and the machine then leaves the tailnet; sign it in again, or turn off key expiry for it in the admin console.";
+        description = "It expires in {{ $value | humanizeDuration }}, then the machine leaves the tailnet; sign it in again or turn off its key expiry in the admin console.";
       };
     }
     {
@@ -316,7 +316,7 @@ let
     }
     {
       alert = "ExporterDown";
-      # node_exporter has HostDown and cloudflared TunnelDown; a probe that can't be scraped is its prober's blackbox job down.
+      # node and cloudflared have their own alerts; a failed probe scrape is blackbox down.
       expr = onlyAlwaysOn ''up{job!~"node|cloudflared|probe"} == 0'';
       for = "15m";
       labels.severity = "warning";
@@ -327,7 +327,7 @@ let
     }
     {
       alert = "DriveDegrading";
-      # A count that stays put is the owner's call; one that grows, or a failed self-assessment, is news.
+      # A steady count is fine; growth or a failed self-test alerts.
       expr = onlyAlwaysOn ''
         delta(smartctl_device_attribute{attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable", attribute_value_type="raw"}[1d]) > 0
         or smartctl_device_smart_status == 0
@@ -335,12 +335,12 @@ let
       labels.severity = "warning";
       annotations = {
         summary = "Drive {{ $labels.device }} in {{ $labels.instance }} is degrading";
-        description = "Its bad-sector counts grew in the last day, or SMART says it failed; see its row under Drives on the fleet page, and `smartctl -a` on {{ $labels.instance }}.";
+        description = "Bad-sector counts grew in the last day, or SMART failed; see Drives on the fleet page and `smartctl -a` on {{ $labels.instance }}.";
       };
     }
     {
       alert = "TextfileMetricsStale";
-      # The disk map, what the system runs, the boot timing and a deploy's revert are written only at boot and deploy; the slowest of the rest every hour.
+      # These are only written at boot and deploy; the slowest of the rest hourly.
       expr = onlyAlwaysOn ''
         node_textfile_scrape_error == 1
         or time() - node_textfile_mtime_seconds{file!~".*/(filesystem-disks|system-version|boot-timing|deploy-guard)[.]prom"} > 2 * 3600
@@ -378,7 +378,7 @@ let
     }
     {
       alert = "AlertDeliveryFailing";
-      # Alertmanager retries an undelivered notification every 5 minutes: the window always holds the next failure while delivery is broken, and drops a lone one well within the 15 minutes.
+      # Retried every 5 min: 7m always spans the next failure, a lone one drops out within 15m.
       expr = "sum without (reason) (rate(alertmanager_notifications_failed_total[7m])) > 0";
       for = "15m";
       labels.severity = "critical";

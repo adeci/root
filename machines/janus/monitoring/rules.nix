@@ -16,7 +16,7 @@ let
 
   unitInactive = unit: ''node_systemd_unit_state{${router}, name="${unit}", state="active"} == 0'';
 
-  # mikrotik_monitor_rate is in Mb/s; SFP+ ports should link at 10 Gb/s, copper ports at 1 Gb/s.
+  # Rate is in Mb/s: SFP+ should link at 10 Gb/s, copper at 1 Gb/s.
   slowFibreCables = network.onPorts network.cableNearEnds (
     ports: ''mikrotik_monitor_rate{${mikrotik}, ${ports}, interface=~"sfp-sfpplus.+"} < 10000''
   );
@@ -54,7 +54,7 @@ in
     labels.severity = "warning";
     annotations = {
       summary = "The router's latency prober has stopped pinging";
-      description = "{{ $value }} of its pingers exited with an error, so InternetPacketLoss can't see the internet; see `journalctl -u prometheus-smokeping-exporter` on {{ $labels.instance }}, and restart it.";
+      description = "{{ $value }} pingers exited, so InternetPacketLoss is blind; see `journalctl -u prometheus-smokeping-exporter` on {{ $labels.instance }} and restart it.";
     };
   }
   {
@@ -109,7 +109,7 @@ in
   }
   {
     alert = "ClockUnsynchronised";
-    # chrony leaves node_timex_sync_status and the offset at 0 even when synchronised; its maximum error is 16 s when not.
+    # chrony leaves sync_status and offset at 0 even when synced; maxerror is 16 s when not.
     expr = ''
       node_timex_maxerror_seconds{${router}} > 1
       unless on (instance) (${internetDown})
@@ -118,7 +118,7 @@ in
     labels.severity = "warning";
     annotations = {
       summary = "The router's clock is unsynchronised";
-      description = "Its maximum error is {{ $value | humanizeDuration }}, and the switches and access points take their time from it; see `chronyc sources` on {{ $labels.instance }}.";
+      description = "Max error {{ $value | humanizeDuration }}; switches and APs take their time from it. See `chronyc sources` on {{ $labels.instance }}.";
     };
   }
   {
@@ -175,17 +175,17 @@ in
   }
   {
     alert = "RouterOSRolledBack";
-    # The marker stays until the next net-apply, so there is nothing to wait out.
+    # The marker stays until the next net-apply: nothing to wait out.
     expr = "janus_routeros_rolled_back{${router}} == 1";
     labels.severity = "warning";
     annotations = {
       summary = "{{ $labels.name }} rolled back a net-apply";
-      description = "The net-apply that armed {{ $labels.name }} was not confirmed, so it restored, or tried to restore, the configuration it had before that apply; the next net-apply says which, plans that apply's changes again and clears this.";
+      description = "{{ $labels.name }} restored, or tried to restore, its config after an unconfirmed net-apply. The next net-apply says which, replans and clears this.";
     };
   }
   {
     alert = "NewDevice";
-    # Twelve hours, so a device that joins in the quiet hours is still news when they end.
+    # 12h so an overnight join is still news in the morning.
     expr = network.newDevices "12h";
     labels = {
       severity = "warning";
@@ -193,7 +193,7 @@ in
     };
     annotations = {
       summary = "A new device joined {{ $labels.network }}: {{ with $labels.hostname }}{{ . }}{{ else }}{{ $labels.maker }}{{ end }}";
-      description = "It took {{ $labels.address }} with MAC {{ $labels.mac }} ({{ $labels.maker }}), which had no lease in the ${toString network.newDeviceDays} days before; see Clients on the network page.";
+      description = "It took {{ $labels.address }} with MAC {{ $labels.mac }} ({{ $labels.maker }}), unseen for ${toString network.newDeviceDays} days; see Clients on the network page.";
     };
   }
 ]

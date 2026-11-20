@@ -9,19 +9,19 @@ let
   inherit (self.inventory.routeros) exporter;
   sshKeys = import "${pkgs.path}/nixos/tests/ssh-keys.nix" pkgs;
   clan-cli = self.packages.${pkgs.stdenv.hostPlatform.system}.clan-cli;
-  # The path clan-cli's patch selects to tell whether a machine waits for a confirmation.
+  # The option clan-cli's patch reads to tell if a machine waits for confirmation.
   guardPath = builtins.match ''.*machine\.select\("config\.\?([^"]*)"\).*'' (
     builtins.readFile ../../../packages/clan-cli/confirm-switch.patch
   );
 
-  # Each cable into janus is a network of its own in the test; the WAN cable leads nowhere, as in an ISP outage.
+  # One network per cable; the WAN leads nowhere, like an ISP outage.
   cables = {
     wan = 1;
     lan = 2;
     mgmt = 3;
   };
 
-  # What a host's DHCP client does with a lease: takes the address, the default route and the DNS server.
+  # Take the lease's address, default route and DNS server.
   udhcpcScript = pkgs.writeShellScript "udhcpc-script" ''
     [ "$1" = bound ] || exit 0
     ip address add "$ip/$mask" dev "$interface"
@@ -29,7 +29,7 @@ let
     echo "nameserver $dns" > "/etc/netns/$(ip netns identify)/resolv.conf"
   '';
 in
-# Were it missing on janus, clan would skip the confirmation and janus would go back after every deploy.
+# Without it clan skips the confirmation and janus reverts after every deploy.
 assert
   guardPath != null
   && lib.hasAttrByPath (lib.splitString ".?" (builtins.head guardPath)) self.nixosConfigurations.janus.config;
@@ -57,7 +57,7 @@ pkgs.testers.runNixOSTest {
       # As clan-core sets it on janus; the test's stand-in for clan leaves it on.
       systemd.network.wait-online.enable = false;
 
-      # As janus boots (modules/ext4-single-disk.nix), so a revert's boot default shows in GRUB's menu.
+      # Boot as janus does (ext4-single-disk.nix), so GRUB shows a revert's default.
       virtualisation.useBootLoader = true;
       virtualisation.useEFIBoot = true;
       boot.loader.grub = {
@@ -91,7 +91,7 @@ pkgs.testers.runNixOSTest {
       specialisation = {
         harmless.configuration = {
           environment.etc.deploy-guard-test.text = "harmless";
-          # Refuses a switch to it while the file exists, as a pre-switch check such as home-links can.
+          # Refuse switching while the file exists, as a pre-switch check like home-links can.
           system.preSwitchChecks.refuseWhileMarked = "test ! -e /run/deploy-guard-test-refuse";
         };
         closesSsh.configuration.services.openssh.ports = [ 2222 ];
@@ -99,7 +99,7 @@ pkgs.testers.runNixOSTest {
         breaksDhcp.configuration.services.kea.dhcp4.settings.subnet4 = lib.mkForce [ ];
         # Unbound keeps running and answers only janus itself.
         breaksDns.configuration.services.unbound.settings.server.interface = lib.mkForce [ "127.0.0.1" ];
-        # Both change, so the switch stops both, and stopping switch-killer kills the switch with Kea down.
+        # Both change, so the switch stops both and dies with Kea down.
         diesMidSwitch.configuration.systemd.services = {
           switch-killer.environment.SWITCH = lib.mkForce "dies";
           kea-dhcp4-server.environment.SWITCH = "dies";
@@ -115,7 +115,7 @@ pkgs.testers.runNixOSTest {
       };
     };
 
-  # Plays the switch and the hosts on it, each host in a network namespace of its own.
+  # The switch and its hosts, one netns per host.
   nodes.clients = {
     virtualisation.interfaces = {
       trunk.vlan = cables.lan;

@@ -5,7 +5,7 @@
   quietHours,
 }:
 let
-  # Alertmanager times can't wrap past midnight, so an evening-to-morning window is split in two.
+  # Alertmanager times can't wrap past midnight: split an overnight window in two.
   quietTimes =
     if quietHours.start < quietHours.end then
       [
@@ -26,13 +26,13 @@ let
         }
       ];
 
-  # A route under another doesn't take its mute times, so each says so.
+  # Child routes don't inherit mute times.
   quietMute = lib.optionalAttrs (quietHours != null) { mute_time_intervals = [ "quiet-hours" ]; };
 
   warningRoute = {
     matchers = [ ''severity="warning"'' ];
     repeat_interval = "24h";
-    # News that ends on its own, such as a new device, is told once.
+    # One-off news, such as a new device: notify once.
     routes = [
       (
         {
@@ -48,7 +48,7 @@ in
 {
   route = {
     receiver = "ntfy";
-    # The bridge posts one notification per alert, so grouping alerts would only repeat them.
+    # The bridge notifies per alert anyway; grouping would only repeat them.
     group_by = [ "..." ];
     group_wait = "30s";
     group_interval = "5m";
@@ -64,7 +64,7 @@ in
       equal = [ "instance" ];
     }
     {
-      # The router down means its site is offline: one alert, not one for every machine behind it.
+      # Router down = site offline: one alert, not one per machine behind it.
       source_matchers = [
         ''alertname="HostDown"''
         ''role="router"''
@@ -75,7 +75,7 @@ in
       ];
     }
     {
-      # A tunnel that is down takes its names with it: one alert, not one for each name.
+      # Tunnel down: one alert, not one per name.
       source_matchers = [ ''alertname="TunnelDown"'' ];
       target_matchers = [ ''alertname="PublicNameDown"'' ];
       equal = [ "instance" ];

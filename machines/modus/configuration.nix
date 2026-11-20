@@ -29,10 +29,10 @@
 
   tailscaleTravel.defaultExitNode = "sequoia";
 
-  # Backed up by the restic instance in inventory/clan-instances.nix, which lists what it leaves out.
+  # Restic instance and its excludes: inventory/clan-instances.nix.
   clan.core.state.home.folders = [ "/home/alex" ];
 
-  # The firmware write-protects the memory's SPD chip, so spd5118 fails to restore itself on every resume.
+  # Firmware write-protects the SPD chip, so spd5118 fails to restore on every resume.
   boot.blacklistedKernelModules = [ "spd5118" ];
 
   wrappers.niri.machineConfig = # kdl

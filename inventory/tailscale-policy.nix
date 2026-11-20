@@ -6,14 +6,14 @@
   ...
 }:
 let
-  # The owner's tailnet login.
+  # Personal tailnet login.
   owner = "alex.decious@gmail.com";
 
   nixosMachines = builtins.filter (name: machines.${name}.class == "nixos") (
     builtins.attrNames tailnet.addresses
   );
 
-  # The machines a clan instance gives a role: those it names, and those with a tag it names (all, nixos and darwin are clan's own).
+  # Machines an instance gives a role, by name or tag (all, nixos, darwin are clan's).
   roleMachines =
     instance: role:
     let
@@ -34,7 +34,7 @@ let
     builtins.attrNames tailnet.deviceTags
   );
 
-  # The ports of each agent's own exporters, from its settings in the monitoring instance: blackbox_exporter answers for its probes.
+  # Each agent's exporter ports; 9115 is blackbox_exporter for its probes.
   exporterPorts = builtins.mapAttrs (
     _: agent:
     builtins.sort builtins.lessThan (
@@ -47,7 +47,7 @@ in
   hosts = tailnet.addresses;
 
   grants = [
-    # The owner's devices administer every machine, and deploy to it as root@<machine>.<tailnet domain>.
+    # Admin devices reach every machine and deploy as root.
     {
       src = [ "autogroup:member" ];
       dst = [
@@ -56,13 +56,13 @@ in
       ];
       ip = [ "tcp:22" ];
     }
-    # Deploys build on leviathan, which copies each closure to its machine.
+    # Deploys build on leviathan, which copies closures out.
     {
       src = [ "leviathan" ];
       dst = nixosMachines;
       ip = [ "tcp:22" ];
     }
-    # Remote builds, as the builders' nix user; daedalus's Linux VM is reached through daedalus.
+    # Remote builds as the nix user; daedalus's Linux VM goes through daedalus.
     {
       src = roleMachines "builders" "client";
       dst = roleMachines "builders" "server";
@@ -77,7 +77,7 @@ in
       dst = roleMachines "harmonia" "server";
       ip = [ "tcp:5000" ];
     }
-    # Prometheus scrapes every machine's node and SMART exporters,
+    # Prometheus scrapes node and SMART exporters everywhere,
     {
       src = monitoringServers;
       dst = [
@@ -106,7 +106,7 @@ in
         "udp:9094"
       ];
     }
-    # Every Linux machine ships its journal to Loki on sequoia, and the owner's devices open Grafana there.
+    # Linux journals go to Loki on sequoia; personal devices open Grafana there.
     {
       src = [
         "autogroup:member"
@@ -132,7 +132,7 @@ in
       dst = roleMachines "syncthing" "peer";
       ip = [ "tcp:22000" ];
     }
-    # mandate: its app on 443, and the agent identities of the owner's machines on its agent port.
+    # mandate: app on 443, agent port for personal machines' agent identities.
     {
       src = [ "autogroup:member" ];
       dst = [ "lachesis" ];
@@ -152,7 +152,7 @@ in
         "udp:24460"
       ];
     }
-    # Through janus's route to the trusted VLAN: the resolver of the split-DNS names,
+    # Via janus's route to trusted: the split-DNS resolver,
     {
       src = [ "autogroup:member" ];
       dst = [ lan.vlans.trusted.gateway ];
@@ -170,7 +170,7 @@ in
       ];
       ip = [ "tcp:443" ];
     }
-    # and clotho's initrd, which waits there for its disk passphrase.
+    # and clotho's initrd, for its disk passphrase.
     {
       src = [ "autogroup:member" ];
       dst = [ lan.hosts.clotho.ip ];
@@ -194,7 +194,7 @@ in
       dst = [ "tag:adeci-installer" ];
       ip = [ "*" ];
     }
-    # The owner's devices reach every port on leviathan, as shared users do, for services started there by hand.
+    # Personal devices reach any port on leviathan, like shared users, for ad-hoc services.
     {
       src = [ "autogroup:member" ];
       dst = [ "leviathan" ];
@@ -206,7 +206,7 @@ in
       dst = [ "leviathan" ];
       ip = [ "*" ];
     }
-    # Agent machines, e.g. Grok Bot: only mandate's agent port on lachesis, never the owner side.
+    # Agent machines (e.g. Grok Bot): only mandate's agent port on lachesis.
     {
       src = [ "tag:agent" ];
       dst = [ "lachesis" ];
@@ -354,7 +354,7 @@ in
         "aegis:22000"
       ];
     }
-    # The owner's devices reach no database, exporter or gossip port off leviathan, and through the route only what it serves.
+    # No database, exporter or gossip ports off leviathan; via the route only what it serves.
     {
       src = owner;
       deny = [
@@ -367,7 +367,7 @@ in
       ]
       ++ map (name: "${name}:9100") (builtins.filter (name: name != "leviathan") servers);
     }
-    # Servers reach laptops only to scrape, sync and deploy, and open a shell only for deploys and remote builds.
+    # Servers reach laptops only to scrape, sync, deploy; SSH only for deploys and builds.
     {
       src = "conduit";
       deny = [

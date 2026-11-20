@@ -5,7 +5,7 @@ if ((${#GPU_HOLDERS[@]} > 0)); then
   systemctl stop "${GPU_HOLDERS[@]}"
 fi
 
-# The NVIDIA driver blocks unbinding a GPU anything still has open, so refuse while any process, CUDA or graphics, holds its /dev/nvidia<minor>.
+# nvidia blocks unbinding a GPU that's still open; refuse while /dev/nvidia<minor> is held.
 if [[ $GPU_HOST_DRIVER == nvidia ]]; then
   minor=$(sed -n 's/^Device Minor:[[:space:]]*//p' "/proc/driver/nvidia/gpus/$gpu/information")
   # find fails on processes that exit while it walks /proc.

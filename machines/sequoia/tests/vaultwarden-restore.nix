@@ -35,7 +35,7 @@ pkgs.testers.runNixOSTest {
       ../modules/vaultwarden
     ];
 
-    # The real file is set with clan vars set, so nothing generates it; a local repository needs no credentials.
+    # The real file comes from `clan vars set`; a local repository needs no credentials.
     clan.core.vars.generators.restic-credentials.script = ''touch "$out/env"'';
   };
 

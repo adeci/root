@@ -16,14 +16,14 @@ let
     mgmt = 3;
   };
 
-  # The ISP's end of janus's WAN cable, and a host on the internet behind it, both played by the isp machine.
+  # The isp machine plays the ISP gateway and an internet host behind it.
   wanGateway = "198.51.100.1";
   internet = {
     name = "example.com";
     address = "203.0.113.10";
   };
 
-  # The internet's root zone, signed with a key janus trusts in place of the real root's; every NTP pool server is the internet host.
+  # Root zone signed with a test trust anchor; *.pool.ntp.org is the internet host.
   rootZone = pkgs.runCommand "root-zone" { nativeBuildInputs = [ pkgs.ldns.examples ]; } ''
     cat > root.zone <<EOF
     . 3600 IN SOA a.root-servers.net. hostmaster.root-servers.net. 1 1800 900 604800 86400
@@ -39,7 +39,7 @@ let
     cp "$key.ds" "$out/trust-anchor"
   '';
 
-  # What a host's DHCP client does with a lease: takes the address, the default route and the DNS server.
+  # Take the lease's address, default route and DNS server.
   udhcpcScript = pkgs.writeShellScript "udhcpc-script" ''
     [ "$1" = bound ] || exit 0
     ip address add "$ip/$mask" dev "$interface"
@@ -47,7 +47,7 @@ let
     echo "nameserver $dns" > "/etc/netns/$(ip netns identify)/resolv.conf"
   '';
 
-  # Prints the address a host's DHCP client is given, leaving the host as it was.
+  # Print the offered address without configuring it.
   udhcpcPrintScript = pkgs.writeShellScript "udhcpc-print" ''[ "$1" = bound ] && echo "$ip"'';
 in
 pkgs.testers.runNixOSTest {
@@ -68,15 +68,14 @@ pkgs.testers.runNixOSTest {
       ${router.interfaces.mgmt}.vlan = cables.mgmt;
     };
 
-    # The ports janus's monitoring agent settings give its exporters.
     monitoring.exporters = (import ../monitoring self.inventory).exporters;
-    # The real password is set with clan vars set, so nothing generates it; no RouterOS device answers here anyway.
+    # The real password comes from `clan vars set`; no RouterOS device answers here anyway.
     clan.core.vars.generators.${exporter.generator}.script = ''touch "$out/${exporter.file}"'';
-    # As base.nix runs it on every machine; the firewall decides who reaches it.
+    # As base.nix does; the firewall decides who reaches it.
     services.openssh.enable = true;
-    # As clan-core has it on the real machine, so network-online.target doesn't wait for the WAN.
+    # As clan-core sets it: network-online.target doesn't wait for the WAN.
     systemd.network.wait-online.enable = false;
-    # The key a trusted host forwards ports through janus with, as the network apps do.
+    # For trusted hosts' ssh -L through janus, as the network apps do.
     users.users.root.openssh.authorizedKeys.keys = [ sshKeys.snakeOilPublicKey ];
     services.unbound = {
       enableRootTrustAnchor = false;
@@ -119,7 +118,7 @@ pkgs.testers.runNixOSTest {
         file = "${rootZone}/root.zone";
       };
     };
-    # The internet's time server: its own clock, as good as a stratum 1 server's.
+    # Internet time server: local clock as stratum 1.
     services.chrony = {
       enable = true;
       servers = [ ];
@@ -131,7 +130,7 @@ pkgs.testers.runNixOSTest {
     environment.systemPackages = [ pkgs.dnsutils ];
   };
 
-  # Plays the switches and every host on them, each host in a network namespace of its own.
+  # The switches and every host on them, one netns per host.
   nodes.clients = {
     virtualisation.interfaces = {
       trunk.vlan = cables.lan;

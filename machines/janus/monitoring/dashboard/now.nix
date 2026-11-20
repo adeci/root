@@ -14,7 +14,7 @@ ui.row {
     })
     (ui.mergedTable {
       title = "New clients";
-      description = "The devices NewDevice has reported in the last day: each took its first lease in ${toString network.newDeviceDays} days on one of the household's own networks. Name is the one it asked with, or else, in brackets, the maker its MAC names.";
+      description = "Devices NewDevice reported in the last day: first lease in ${toString network.newDeviceDays} days on own networks. Name: the one it asked with, else (MAC maker).";
       w = 10;
       h = 5;
       noDataText = "No device is new, or there are not yet ${toString network.newDeviceDays} days of lease records to tell";

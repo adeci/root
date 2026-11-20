@@ -53,13 +53,13 @@ in
       };
     };
 
-    # term-sessions shells out to zmx and consult-ripgrep runs rg; the daemon's PATH is the system profile, not the shell's.
+    # For term-sessions (zmx) and consult-ripgrep; the daemon doesn't get the shell's PATH.
     runtimePkgs = [
       pkgs.ripgrep
       pkgs.zmx
     ];
 
-    # The launcher shows only the client, as "Emacs" (it starts a daemon if none runs); share/applications is a single symlink filesToExclude can't prune, so rebuild it.
+    # Launcher shows only the client, as "Emacs"; filesToExclude can't prune a symlinked dir.
     buildCommand.launcherEntries = {
       after = [ "symlinkScript" ];
       data = ''

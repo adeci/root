@@ -70,7 +70,7 @@
 
       environment.systemPackages = [ pkgs.aerospace ];
 
-      # macOS grants Accessibility to the process launchd spawns; the config's store path here restarts it on change.
+      # Accessibility is granted to the process launchd spawns; config path change restarts it.
       launchd.user.agents.aerospace.serviceConfig = {
         ProgramArguments = [
           "/Applications/Nix Apps/AeroSpace.app/Contents/MacOS/AeroSpace"
@@ -94,7 +94,7 @@
         width = 2.0;
         hidpi = true;
         style = "round";
-        # Below, the window's own drop shadow darkens the border's bottom and right edges.
+        # Below, the window shadow darkens the bottom and right edges.
         order = "above";
       };
     };

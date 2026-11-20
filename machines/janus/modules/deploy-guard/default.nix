@@ -8,7 +8,7 @@ let
   inherit (self.inventory.lan) domain hosts vlans;
   checkClient = import ./check-client.nix;
 
-  # What the client does with its lease: takes the address, and prints the resolver the lease names.
+  # Take the address and print the lease's resolver.
   onLease = pkgs.writeShellScript "janus-lease-check-bound" ''
     [ "$1" = bound ] || exit 0
     ${lib.getExe' pkgs.iproute2 "ip"} address add "$ip/$mask" dev "$interface"
@@ -28,7 +28,7 @@ let
       BRIDGE = vlans.mgmt.interface;
       MAC = checkClient.mac;
       CLIENT_NAME = checkClient.name;
-      # A name Unbound answers from the inventory, so the check needs nothing beyond janus.
+      # Served from the inventory, so the check needs nothing beyond janus.
       NAME = "nexus.${domain}";
       ADDRESS = hosts.nexus.ip;
     };

@@ -12,7 +12,7 @@
       ];
 
       boot = {
-        # nixos-hardware's downstream Raspberry Pi kernel is often uncached; the generic aarch64 one boots a Pi 4 without local kernel builds.
+        # nixos-hardware's RPi kernel is often uncached; generic aarch64 boots a Pi 4 fine.
         kernelPackages = lib.mkForce pkgs.linuxPackages;
 
         loader = {
@@ -21,7 +21,7 @@
         };
       };
 
-      # A boot file is written only when it differs, and then by rename: the SD card is spared, and a power cut cannot leave half a file.
+      # Write only on change, via rename: spares the SD card, safe on power loss.
       system.activationScripts.raspberryPi4BootFiles = # bash
         ''
           install_boot_file() {

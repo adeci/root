@@ -34,7 +34,7 @@ let
     };
     exp_annotations = {
       summary = "The Cloudflare tunnel of server is down";
-      description = "cloudflared on server has no connection to Cloudflare, so the public names it serves don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
+      description = "cloudflared on server has no connection to Cloudflare, so its public names don't answer; see `systemctl status 'cloudflared-tunnel-*'` there.";
     };
   };
 
@@ -51,7 +51,7 @@ let
           "laptop has gone days of use without a backup"
         else
           "laptop has gone a week of use without a backup";
-      description = "It has been on for ${on} of the last 30 days since the newest snapshot in its state repository. It backs up only on AC power, on a network that is not metered and with the repository answering; `journalctl -u restic-state-when-due` on laptop says what was missing.";
+      description = "On for ${on} of the last 30 days since the newest snapshot in its state repository. Backups need AC power, an unmetered network and a reachable repository; `journalctl -u restic-state-when-due` on laptop says which was missing.";
     };
   };
 
@@ -70,7 +70,7 @@ let
 in
 [
   {
-    name = "a server whose node_exporter stops answering is down after 5 minutes, a laptop never is";
+    name = "a server is down after 5 minutes without node_exporter, a laptop never is";
     interval = "1m";
     input_series = [
       {
@@ -107,7 +107,7 @@ in
   }
 
   {
-    name = "a public name that stops answering alerts after 5 minutes, whatever serves it; one failed request does not";
+    name = "a public name that stops answering alerts after 5 minutes, whatever serves it; one failed request doesn't";
     interval = "1m";
     input_series = [
       {
@@ -133,7 +133,7 @@ in
           };
           exp_annotations = {
             summary = "${name} does not answer";
-            description = "Requests to ${name}, which ${instance} serves, have failed for 5 minutes; see Public names on the fleet page.";
+            description = "Requests to ${name}, served by ${instance}, have failed for 5 minutes; see Public names on the fleet page.";
           };
         };
       in
@@ -147,7 +147,7 @@ in
   }
 
   {
-    name = "a prober that can't be scraped is one missing exporter, not one for each of its probes";
+    name = "an unscrapable prober is one ExporterDown, not one per probe";
     interval = "1m";
     input_series = [
       {
@@ -196,7 +196,7 @@ in
   }
 
   {
-    name = "a tunnel whose cloudflared stops is down too, and is not a missing exporter";
+    name = "a stopped cloudflared is TunnelDown, not ExporterDown";
     interval = "1m";
     input_series = [
       {
@@ -229,7 +229,7 @@ in
           };
           exp_annotations = {
             summary = "The Tailscale key of server expires soon";
-            description = "It expires in 13d 22h 0m 0s, and the machine then leaves the tailnet; sign it in again, or turn off key expiry for it in the admin console.";
+            description = "It expires in 13d 22h 0m 0s, then the machine leaves the tailnet; sign it in again or turn off its key expiry in the admin console.";
           };
         }
       ])
@@ -273,7 +273,7 @@ in
   }
 
   {
-    name = "a machine that went back to its previous system warns until deploy-guard-confirm runs there again, and that file never counts as stale";
+    name = "a reverted deploy warns until the next deploy-guard-confirm, and its file is never stale";
     interval = "1m";
     input_series = [
       {
@@ -296,7 +296,7 @@ in
           };
           exp_annotations = {
             summary = "server went back to its previous system";
-            description = "A switch on server was not confirmed within its window, so it returned to the system it ran before and stays there until a switch is confirmed; see `journalctl -u deploy-guard-revert` there.";
+            description = "A switch on server wasn't confirmed in time, so it went back to its previous system until a switch is confirmed; see `journalctl -u deploy-guard-revert` there.";
           };
         }
       ])
@@ -391,7 +391,7 @@ in
   }
 
   {
-    name = "a server's backup warns once its newest snapshot is a day and a half old and is critical after three days";
+    name = "a server's backup warns at 36 hours old and is critical at 72";
     interval = "1h";
     input_series = [
       {
@@ -434,7 +434,7 @@ in
   }
 
   {
-    name = "a laptop's backup warns once it has been on for three days since its newest snapshot and is critical after a week; the days it is off do not count";
+    name = "a laptop's backup warns after 3 days on and is critical after 7; time off doesn't count";
     interval = "5m";
     input_series = [
       {
@@ -471,7 +471,7 @@ in
   }
 
   {
-    name = "a laptop on for an hour and a half a day warns once it has been on for a day of the last 30 days, its snapshot being older than them";
+    name = "a laptop on 1.5 hours a day warns after a day on once its snapshot is older than 30 days";
     interval = "30m";
     input_series = [
       {
@@ -487,7 +487,7 @@ in
   }
 
   {
-    name = "a laptop that never backed up, whose agent reports its newest snapshot as taken at 0, warns once it has been on for a day";
+    name = "a laptop that never backed up (snapshot time 0) warns after a day on";
     interval = "30m";
     input_series = [
       {
@@ -520,7 +520,7 @@ in
   }
 
   {
-    name = "a laptop's failed backup is reported until an hour after a try succeeds, a server's is a failed unit";
+    name = "a laptop's failed backup fires until an hour after a success; a server's is a failed unit";
     interval = "1m";
     input_series = [
       {
@@ -542,12 +542,12 @@ in
   }
 
   {
-    name = "a laptop whose key is refused fails at every hourly try and stays reported throughout, a night asleep included";
+    name = "a laptop whose key is refused fails every hourly retry and stays reported, a night asleep included";
     interval = "1m";
     input_series = [
       {
         series = ''node_systemd_unit_state{instance="laptop", name="restic-backups-state.service", state="failed"}'';
-        # Failed, each hourly try failing again after a few minutes, then ten hours asleep, and still failed on waking.
+        # Fails every hourly retry, sleeps ten hours, still failed on waking.
         values = "0x5 1x54 0x3 1x54 0x3 1x54 _x600 1x30";
       }
     ];
@@ -560,7 +560,7 @@ in
   }
 
   {
-    name = "a drive warns while its bad-sector count grows or SMART fails it, not for a count that stays put";
+    name = "a drive warns on growing bad sectors or failed SMART, not on a steady count";
     interval = "1h";
     input_series = [
       {
@@ -589,7 +589,7 @@ in
           };
           exp_annotations = {
             summary = "Drive sdd in server is degrading";
-            description = "Its bad-sector counts grew in the last day, or SMART says it failed; see its row under Drives on the fleet page, and `smartctl -a` on server.";
+            description = "Bad-sector counts grew in the last day, or SMART failed; see Drives on the fleet page and `smartctl -a` on server.";
           };
         }
       ])
@@ -602,7 +602,7 @@ in
           };
           exp_annotations = {
             summary = "Drive nvme0 in server is degrading";
-            description = "Its bad-sector counts grew in the last day, or SMART says it failed; see its row under Drives on the fleet page, and `smartctl -a` on server.";
+            description = "Bad-sector counts grew in the last day, or SMART failed; see Drives on the fleet page and `smartctl -a` on server.";
           };
         }
       ])

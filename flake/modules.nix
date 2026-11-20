@@ -7,8 +7,7 @@ let
     let
       features = nixEntries dir;
 
-      # `key` keeps a feature imported twice to one copy; `_class` rejects wrong-class imports.
-      # Set on the module itself: wrapping it would reorder merging.
+      # key dedupes, _class rejects the wrong class; set inline, as wrapping reorders merging.
       identify =
         class: path: module:
         let

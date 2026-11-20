@@ -14,7 +14,7 @@ if [[ "$hook" == pre-backup ]]; then
     exit 1
   fi
 
-  # A run cut off while it held the repository to itself, as a forget step stopped by sleep once the network is gone, leaves a lock every backup refuses; unlock removes only such locks, and finds no repository (10) before the first backup.
+  # Clear locks left by cut-off exclusive runs (e.g. forget at sleep); 10 means no repository yet.
   status=0
   "/run/current-system/sw/bin/restic-$JOB_NAME" unlock || status=$?
   if [[ "$status" -ne 0 && "$status" -ne 10 ]]; then

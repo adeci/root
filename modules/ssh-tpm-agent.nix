@@ -28,7 +28,7 @@
       environment.systemPackages = [
         pkgs.ssh-tpm-agent
         pkgs.keyutils
-        # sops and age find the user's TPM age key through it.
+        # For sops/age with a TPM age key.
         pkgs.age-plugin-tpm
       ];
 

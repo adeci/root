@@ -17,7 +17,7 @@ in
 }).overrideAttrs
   (old: {
     nativeBuildInputs = old.nativeBuildInputs ++ [ imagemagick ];
-    # withSystemVencord still lets a vencordDir saved in Vesktop's state.json win over the store's Vencord.
+    # Otherwise a vencordDir in Vesktop's state.json beats withSystemVencord.
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/main/vencordFilesDir.ts \
         --replace-fail 'State.store.vencordDir || ' ""

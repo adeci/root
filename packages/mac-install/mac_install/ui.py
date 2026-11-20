@@ -49,7 +49,7 @@ def would(action: str) -> None:
 
 @contextlib.contextmanager
 def terminal() -> Iterator[int]:
-    """The terminal of the person running this, without what was typed before now."""
+    """The controlling terminal, with typed-ahead input flushed."""
     try:
         fd = os.open(TTY, os.O_RDWR | os.O_NOCTTY)
     except OSError as e:

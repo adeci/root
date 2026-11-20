@@ -11,7 +11,7 @@ from .install import flake_root, install, settings
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="mac-install",
-        description="Install a Mac primed by the bootstrap, then walk through the System Settings steps its configuration declares. Run it from the flake's repository.",
+        description="Install a bootstrapped Mac and walk through its System Settings steps. Run from the flake's repository.",
     )
     commands = parser.add_subparsers(dest="command", required=True)
 

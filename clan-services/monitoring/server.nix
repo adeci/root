@@ -8,10 +8,9 @@
         host = lib.mkOption {
           type = lib.types.str;
           description = ''
-            Fully qualified hostname every agent uses to reach this server. Must
-            resolve to this machine from every agent — typically the Tailscale
-            MagicDNS name. Also used as the nginx `server_name` agents push
-            their journal to.
+            Fully qualified hostname agents use to reach this server, usually
+            its Tailscale MagicDNS name. Must resolve to this machine from every
+            agent. Also the nginx `server_name` agents push their journal to.
           '';
           example = "monitor.example.ts.net";
         };
@@ -30,12 +29,11 @@
           type = lib.types.bool;
           default = false;
           description = ''
-            A backup server scrapes every agent and evaluates the same rules as
-            the main server, and notifies through its own delivery when the
-            main server has not: it is down, or its delivery fails. It keeps no
-            logs and shows no dashboards, so only `agentDomain`, `retentionDays`
-            and `alertDelivery` apply to it. One server of an instance is the
-            main one.
+            A backup server scrapes every agent with the same rules as the main
+            server, and notifies through its own delivery when the main server
+            is down or its delivery fails. No logs or dashboards, so only
+            `agentDomain`, `retentionDays` and `alertDelivery` apply. One server
+            of an instance is the main one.
           '';
         };
 
@@ -154,7 +152,7 @@
           agents = roles.agent.machines;
           ntfyDelivery = settings.alertDelivery.ntfy;
           main = !settings.backup;
-          # The other servers, whose Alertmanagers form a cluster with this one's over the tailnet.
+          # Other servers; their Alertmanagers cluster with this one over the tailnet.
           peers = lib.attrNames (lib.removeAttrs roles.server.machines [ machineName ]);
           clustered = ntfyDelivery.enable && peers != [ ];
           tailnetAddress = machine: self.inventory.machines.${machine}.tailnet;
@@ -172,7 +170,7 @@
             machineRules = lib.mapAttrs (_: agent: agent.settings.rules) agents;
           };
 
-          # The machines the inventory's restic instance backs up, which the backups page expects to report.
+          # Restic clients from the inventory, which the backups page expects to report.
           backupClients = lib.attrNames (self.inventory.clanInstances.restic.roles.client.machines or { });
           dashboards = lib.foldl' lib.attrsets.unionOfDisjoint (import ./dashboards (
             lib.mapAttrs (
@@ -198,7 +196,7 @@
           grafanaVirtualHost = config.services.nginx.virtualHosts.${settings.grafana.domain};
           grafanaTls = grafanaVirtualHost.forceSSL || grafanaVirtualHost.onlySSL || grafanaVirtualHost.addSSL;
           grafanaUrl = "${if grafanaTls then "https" else "http"}://${settings.grafana.domain}/";
-          # A backup has no Grafana: its notifications open the main server's, which that server's assertion keeps on HTTPS.
+          # A backup has no Grafana: link to the main server's, asserted to be HTTPS.
           mainServer = lib.head (
             lib.filter (server: !server.settings.backup) (lib.attrValues roles.server.machines)
           );
@@ -244,7 +242,7 @@
             ) agents
           );
 
-          # The default ports of node_exporter, smartctl_exporter and blackbox_exporter; SMART comes from NixOS agents only.
+          # Default exporter ports; SMART from NixOS agents only.
           agentExporters =
             machine: agent:
             {
@@ -258,7 +256,7 @@
             }
             // agent.settings.exporters;
 
-          # A probe is a scrape of its prober's blackbox_exporter; the __param labels tell it the address and the check.
+          # A probe scrapes the prober's blackbox_exporter; __param labels set address and module.
           probes = lib.concatLists (
             lib.mapAttrsToList (
               machine: agent:
@@ -284,8 +282,7 @@
             }
           ];
 
-          # The silences, which a backup server only copies; metrics and logs refill as the machines report.
-          # Alertmanager runs under a dynamic user, so /var/lib/alertmanager is only a link to this folder.
+          # Only silences: metrics and logs refill. DynamicUser, hence /var/lib/private.
           clan.core.state = lib.mkIf (main && ntfyDelivery.enable) {
             monitoring.folders = [ "/var/lib/private/alertmanager" ];
           };
@@ -300,7 +297,7 @@
           };
 
           clan.core.vars.generators = lib.optionalAttrs main {
-            # Grafana's NixOS module requires an explicit secret_key since 26.05; a generated one keeps stored secrets stable across rebuilds.
+            # Grafana's module needs an explicit secret_key since 26.05.
             grafana-secret = {
               files.key = { };
               runtimeInputs = [ pkgs.openssl ];
@@ -348,7 +345,7 @@
             ++ lib.optional (probes != [ ]) {
               job_name = "probe";
               metrics_path = "/probe";
-              # Every scrape is a request to the name, and each server scrapes.
+              # Each scrape is a request to the name, from every server.
               scrape_interval = "1m";
               static_configs = probes;
             };
@@ -367,11 +364,11 @@
               if clustered then
                 [
                   "--cluster.advertise-address=${tailnetAddress machineName}:${toString ports.alertmanagerCluster}"
-                  # Peers notify in the order of their names, each 15 seconds after the one before and only what is still unsent: the main server first.
+                  # Peers notify in name order, 15 s apart, only what is still unsent: main first.
                   "--cluster.peer-name=${if main then "1" else "2"}-${machineName}"
                 ]
               else
-                # A lone Alertmanager needs no gossip mesh, which fails to start before the network has an address.
+                # No gossip mesh alone: it fails to start before the network has an address.
                 [ "--cluster.listen-address=" ];
             configuration = import ./alertmanager.nix {
               inherit lib;
@@ -484,7 +481,7 @@
               security = {
                 disable_gravatar = true;
                 secret_key = "$__file{/run/credentials/grafana.service/grafana-secret-key}";
-                # Grafana takes this when it first creates its database; `grafana cli admin reset-admin-password` changes it later.
+                # Only read on first start; later use `grafana cli admin reset-admin-password`.
                 admin_password = "$__file{/run/credentials/grafana.service/grafana-admin-password}";
                 cookie_secure = grafanaTls;
               };
@@ -561,7 +558,7 @@
             virtualHosts = lib.mkMerge [
               {
                 ${settings.host}.locations = {
-                  # Agents push their journal here and nowhere else: the rest of Loki's API reads and deletes logs.
+                  # Push only: the rest of Loki's API reads and deletes logs.
                   "= /loki/loki/api/v1/push" = {
                     basicAuthFile = "/run/nginx/credentials/loki-auth-htpasswd";
                     proxyPass = "http://127.0.0.1:${toString ports.loki}/loki/api/v1/push";
@@ -588,7 +585,7 @@
             serviceConfig.LoadCredential = [
               "loki-auth-htpasswd:${config.clan.core.vars.generators.loki-auth.files.htpasswd.path}"
             ];
-            # preStart runs as root with $CREDENTIALS_DIRECTORY; the symlink lets nginx's workers read the auth files.
+            # preStart runs as root; the link lets nginx's workers read the credentials.
             preStart = lib.mkAfter ''
               ln -sfn "$CREDENTIALS_DIRECTORY" /run/nginx/credentials
             '';

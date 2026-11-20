@@ -10,7 +10,7 @@ let
   # The machines the inventory backs up.
   clients = builtins.filter (name: machines.${name}.backsUp) (builtins.attrNames machines);
 
-  # A machine's reading as it last reported it within the 30 days Prometheus keeps, so a laptop that is asleep or away keeps its row.
+  # Last report within the 30 days Prometheus keeps, so a laptop asleep or away keeps its row.
   latest = aggregation: selector: "${aggregation} by (instance) (last_over_time(${selector}[30d]))";
   newestSnapshot = latest "max" "restic_snapshot_timestamp_seconds{${node}}";
 
@@ -19,7 +19,7 @@ let
     { title, expr }:
     ui.stat {
       inherit title expr;
-      description = "What a month would cost then if each repository keeps growing as it did over the last four weeks, as the table below shows; Prometheus keeps 30 days, so no trend is older. A repository that has reported for less than 28 days counts at today's size: in its first weeks nothing is forgotten yet, and one backup to the next is no trend. One that shrank, as when old snapshots go, counts as not growing.";
+      description = "Monthly cost then, if each repository keeps growing as over the last four weeks (Prometheus keeps 30 days), as in the table below. A repository with under 28 days of reports counts at today's size: nothing is pruned yet in its first weeks, and one backup to the next is no trend. Shrinking counts as no growth.";
       w = 6;
       h = 4;
       unit = "currencyUSD";
@@ -39,7 +39,7 @@ ui.dashboard {
       panels = [
         (ui.mergedTable {
           title = "Machines";
-          description = "Every machine of the fleet. Backed up: yes; none yet for a machine the inventory backs up that has taken no snapshot, or not reported one since it was set up; or no. Fresh judges the newest snapshot by the clock: a server's is old after 36 hours and too old after 72, a laptop's after 3 and 7 days. Took is how long the newest snapshot took, and Last run whether the last try failed. Checked is when the machine last read its repository, which it does every hour while it is on.";
+          description = "Every machine in the fleet. Backed up: yes, no, or none yet for a machine the inventory backs up that has taken no snapshot or not reported one since setup. Fresh: newest snapshot age by the clock; a server's is old after 36 hours and too old after 72, a laptop's after 3 and 7 days. Took: how long the newest snapshot took. Last run: whether the last try failed. Checked: when the machine last read its repository, hourly while on.";
           w = 13;
           # A grid unit per machine, plus the title and the header.
           h = machineCount + 2;
@@ -117,11 +117,11 @@ ui.dashboard {
           w = 24;
           h = 3;
           # The numbers of the restic service's default pruneOpts, which the inventory keeps.
-          content = "Each machine keeps the newest snapshot of each of the last **14 days**, **8 weeks**, **12 months** and **3 years**, all its snapshots counted as one history: 30 or so once it has backed up for a year. A month's last snapshot stays until that month comes round again, and the oldest reach back up to three years.";
+          content = "Each machine keeps the newest snapshot of each of the last **14 days**, **8 weeks**, **12 months** and **3 years**, all its snapshots as one history: about 30 after a year of backups. A month's last snapshot stays until that month comes round again, and the oldest go back up to three years.";
         })
         (ui.mergedTable {
           title = "Repositories";
-          description = "Each machine's repository in B2, as the machine last read it. Newest size is what the newest snapshot holds, before deduplication and compression; Stored, what all the snapshots take up in B2. Added is what the snapshots of the last 7 days added, which a laptop that is away cannot tell.";
+          description = "Each machine's repository in B2, as the machine last read it. Newest size: what the newest snapshot holds, before deduplication and compression. Stored: what all the snapshots take up in B2. Added: what the last 7 days of snapshots added; unknown for a laptop that's away.";
           w = 24;
           # Eight backups today, plus the title and the header.
           h = 10;
@@ -222,7 +222,7 @@ ui.dashboard {
       panels = [
         (ui.stat {
           title = "Stored";
-          description = "What the backups take up in B2: restic's count of the data their snapshots use, deduplicated and compressed. B2 bills a little more: what a prune leaves unused, up to 5 % of a repository, restic's index, and for a week after a prune the hidden copies of what it removed, sequoia's first thinning included.";
+          description = "What the backups take up in B2: restic's count of their snapshots' data, deduplicated and compressed. B2 bills a little more: space a prune leaves unused (up to 5 % of a repository), restic's index, and for a week after a prune the hidden copies of what it removed, sequoia's first thinning included.";
           w = 6;
           h = 4;
           expr = "sum(${cost.stored})";
@@ -231,7 +231,7 @@ ui.dashboard {
         })
         (ui.stat {
           title = "Per month now";
-          description = "At B2's price of $6.95 per TB for 30 days. The first 10 GB are free once for the whole account, which also holds Zipline's shares and the Terraform state, not counted here.";
+          description = "At B2's $6.95 per TB for 30 days. The first 10 GB are free once per account, which also holds Zipline's shares and the Terraform state (not counted here).";
           w = 6;
           h = 4;
           expr = cost.bill cost.stored;
@@ -249,7 +249,7 @@ ui.dashboard {
         })
         (ui.mergedTable {
           title = "By machine";
-          description = "Each machine's part of the monthly bill, by its part of what is stored. Growth is over the last four weeks, a repository that shrank counting as not growing, and the last two columns carry it on for 12 months. They stay empty until a machine has reported for 28 days, as its first weeks overstate its growth; the bills above count it at today's size until then.";
+          description = "Each machine's share of the monthly bill, by its share of what is stored. Growth is over the last four weeks, shrinking counting as none; the last two columns carry it 12 months on. They stay empty until a machine has reported for 28 days, as its first weeks overstate growth; the bills above use today's size until then.";
           w = 12;
           # Eight backups today, plus the title and the header.
           h = 10;

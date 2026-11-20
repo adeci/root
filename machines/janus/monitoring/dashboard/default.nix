@@ -8,7 +8,7 @@ in
 ui.dashboard {
   uid = "atlas-network";
   title = "Network / Router";
-  # A day, so the night's outages and changes still show in the morning.
+  # A day, so overnight outages and changes still show in the morning.
   from = "now-24h";
   panels = map section [
     ./now.nix

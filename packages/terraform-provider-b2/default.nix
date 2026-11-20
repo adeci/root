@@ -36,7 +36,7 @@ stdenvNoCC.mkDerivation {
   nativeBuildInputs = [ unzip ];
   sourceRoot = ".";
 
-  # Byte for byte the released binary, the same one the registry serves.
+  # Same bytes as the registry serves.
   dontFixup = true;
 
   # The layout of nixpkgs' terraform-providers, which opentofu.withPlugins reads.

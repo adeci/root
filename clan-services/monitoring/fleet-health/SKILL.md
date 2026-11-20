@@ -1,11 +1,11 @@
 ---
 name: fleet-health
-description: Check the health of alex's machines (the root clan fleet) — failing services, recurring errors and warnings, slow boots or shutdowns, full disks, failing drives, heat, pending updates and reboots — by querying the fleet's Prometheus (metrics) and Loki (journals) on sequoia.
+description: Check the health of the root clan fleet (failing services, recurring errors and warnings, slow boots or shutdowns, full disks, failing drives, heat, pending updates and reboots) by querying the fleet's Prometheus (metrics) and Loki (journals) on sequoia.
 ---
 
 # Querying
 
-Prometheus and Loki run on sequoia and listen on localhost only; query them over SSH. Both keep 30 days. When sequoia is down, conduit (`root@conduit.cymric-daggertooth.ts.net`) answers the same PromQL from its own Prometheus, which keeps 3 days and no logs.
+Prometheus and Loki run on sequoia and listen on localhost only; query them over SSH. Both keep 30 days. If sequoia is down, conduit (`root@conduit.cymric-daggertooth.ts.net`) has its own Prometheus for the same PromQL: 3 days, no logs.
 
 ```bash
 s=root@sequoia.cymric-daggertooth.ts.net

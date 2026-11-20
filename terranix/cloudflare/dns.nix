@@ -30,7 +30,7 @@ in
   resource.cloudflare_dns_record = lib.mkMerge [
     (lib.mapAttrs (
       _: record:
-      # Cloudflare's automatic TTL, which provider v4 assumed and v5 wants said.
+      # Automatic TTL: provider v4 assumed it, v5 wants it explicit.
       {
         ttl = 1;
       }
@@ -56,7 +56,7 @@ in
           port = (ingressStream record.ingressStream).listen;
         };
       }
-      # Cloudflare repeats an SRV record's priority at the top level, where provider v5 would otherwise plan to clear it.
+      # Cloudflare repeats SRV priority at top level; v5 would plan to clear it otherwise.
       // lib.optionalAttrs (record ? data.priority) {
         inherit (record.data) priority;
       }

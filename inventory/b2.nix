@@ -6,7 +6,7 @@ in
   inherit region;
   s3Endpoint = "s3.${region}.backblazeb2.com";
 
-  # Holds the Terraform state, so it is made by hand rather than managed with the others.
+  # Holds the Terraform state, so made by hand.
   stateBucket = "adeci-terraform-state";
 
   buckets = {

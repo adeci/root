@@ -32,7 +32,7 @@ in
     account_id = clanSecret "cloudflare-account-id";
     tunnel_id = tunnelId machine;
 
-    # In the order of the names, so renaming a service leaves the rules where they are.
+    # Sorted by name, so renaming a service doesn't reorder the rules.
     config.ingress =
       map (route: {
         hostname = route.host;
@@ -42,7 +42,7 @@ in
         { service = "http_status:404"; }
       ];
 
-    # Cloudflare still returns the empty origin_request provider v4 always sent; leaving it out would plan a change to every tunnel.
+    # Cloudflare still returns provider v4's empty origin_request; omitting it plans a change everywhere.
     config.origin_request = { };
   }) tunnels;
 

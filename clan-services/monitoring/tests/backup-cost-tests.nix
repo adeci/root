@@ -1,4 +1,4 @@
-# The backups page's cost queries, as it runs them, against what the machines report.
+# The backups page's cost queries against what the machines report.
 let
   cost = import ../dashboards/backup-cost.nix;
 
@@ -13,7 +13,7 @@ let
 in
 [
   {
-    name = "the free 10 GB come off the account's total once, not off each machine";
+    name = "the free 10 GB come off the account total once, not off each machine";
     interval = "1h";
     input_series = [
       (stored "server" "6000000000x2")
@@ -54,7 +54,7 @@ in
   }
 
   {
-    name = "a repository that has reported for 28 days carries its growth on, and one that shrank counts as not growing";
+    name = "after 28 days a repository's growth is projected, and shrinking counts as no growth";
     interval = "1d";
     input_series = [
       # Growing by 1 GB a day.
@@ -96,7 +96,7 @@ in
   }
 
   {
-    name = "its second backup makes no growth either";
+    name = "a second backup makes no growth either";
     interval = "1h";
     input_series = [
       # The next day's backup adds a gigabyte.

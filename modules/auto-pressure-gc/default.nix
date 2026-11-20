@@ -16,13 +16,13 @@ let
       text = builtins.readFile ./auto-pressure-gc.sh;
     };
 
-  # Nix's own collection acts whenever a path enters the store, so it covers a big build between two runs of the timer.
+  # Nix's own GC runs as paths are added, covering big builds between timer runs.
   nixSettings = {
     min-free = 10 * 1024 * 1024 * 1024;
     max-free = 50 * 1024 * 1024 * 1024;
   };
 
-  # Only removes old generations; this collector frees their paths when the disk needs room.
+  # Only deletes old generations; auto-pressure-gc frees their paths.
   nixGc = {
     automatic = true;
     options = "--delete-older-than 14d --max-freed 0";

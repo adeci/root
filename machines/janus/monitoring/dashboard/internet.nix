@@ -2,7 +2,7 @@
 let
   inherit (queries) router;
 
-  # One series per target: the router's pings to its ISP's gateway and two hosts on the internet, and its question to its own resolver.
+  # One series per target: ISP gateway, two internet hosts, and the router's own resolver.
   probe =
     labels: pings: lookup:
     ''max by (${labels}) (${pings}{${router}, group=~"wan|internet"}) or max by (${labels}) (label_replace(label_replace(${lookup}{${router}}, "target", "resolver", "", ""), "address", "$1", "query", "(.+)"))'';
@@ -14,7 +14,7 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Internet";
-      description = "Once a minute the router pings each address three times, and asks its own resolver for the name. Peak is the slowest answer in the picked time range, beside its course over that range.";
+      description = "Once a minute: three pings to each address, and a lookup on the router's own resolver. Peak: the slowest answer in the picked range, beside its course.";
       w = 15;
       # Four targets, plus the title and the header.
       h = 6;

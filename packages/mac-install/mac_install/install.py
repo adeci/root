@@ -28,7 +28,7 @@ def flake_root() -> Path:
 
 
 def nix_eval(machine: str, attr: str, *flags: str) -> str:
-    """`nix eval` of the flake, saying so when it failed because there is no such machine."""
+    """`nix eval` on the flake; says so if the machine doesn't exist."""
     argv = ["nix", "eval", *flags, f".#{attr}"]
     try:
         return run(argv, capture=True, quiet=True).stdout
@@ -135,7 +135,7 @@ def declared_setup(machine: str) -> Setup | None:
 
 
 def restart(mac: Mac, setup: Setup, step: Step) -> None:
-    # Apps only appear in a Privacy list once they've run, and need a restart to pick up a grant.
+    # Apps show up in Privacy lists only after running, and need a restart for a grant.
     for service in step.restart:
         # launchctl spells a service in the user's session gui/<uid>/<label>.
         target = service
@@ -147,7 +147,7 @@ def restart(mac: Mac, setup: Setup, step: Step) -> None:
 
 
 def take_through(mac: Mac, setup: Setup, step: Step) -> bool:
-    """Open the step's page as the user and wait until it's done; False when they skipped it."""
+    """Open the step's page and wait until it's done; False if skipped."""
     ui.todo(f"{step.name}: {step.instructions}")
     restart(mac, setup, step)
     mac.open_as(setup.uid, setup.user, step.url)
@@ -169,7 +169,7 @@ def take_through(mac: Mac, setup: Setup, step: Step) -> bool:
 
 
 def system_settings(mac: Mac, setup: Setup | None) -> list[Step]:
-    """Take the person through each step that isn't done; returns the ones they skipped."""
+    """Walk through each step not yet done; return the skipped ones."""
     ui.section("System Settings")
     if setup is None or not setup.steps:
         ui.line("nothing declared")
@@ -191,8 +191,7 @@ def remind(machine: str, skipped: list[Step]) -> None:
 
 def full_disk_access(mac: Mac, uid: int, user: str) -> None:
     ui.section("Full Disk Access for remote users")
-    # Activation writes files macOS guards even from root, like /etc/pam.d; SSH sessions only get past that with this on.
-    # New connections each time: a session opened before the toggle keeps running without it.
+    # Activation writes /etc/pam.d and co., guarded even from root; only new SSH sessions get it.
     if mac.succeeds(FDA_CHECK, fresh=True):
         ui.done("on")
         return
@@ -215,7 +214,7 @@ def full_disk_access(mac: Mac, uid: int, user: str) -> None:
 
 def filevault(mac: Mac) -> None:
     ui.section("FileVault")
-    # A warning, not a stop: turning it on is a separate decision, and it can wait.
+    # Warn only; turning it on can wait.
     if mac.succeeds("fdesetup isactive"):
         ui.done("on")
     else:
@@ -250,7 +249,7 @@ def upload_secrets(mac: Mac, machine: str) -> None:
 
 def copy_flake(mac: Mac) -> str:
     ui.section("Copying the flake")
-    # The Mac trusts only cache.nixos.org's key, so inputs this machine got from other caches need --no-check-sigs.
+    # The Mac only trusts cache.nixos.org; inputs from other caches need --no-check-sigs.
     store = f"ssh-ng://{mac.target}?remote-program={NIX_BIN}/nix-daemon"
     archive = ["nix", "flake", "archive", "--json"]
     if mac.dry_run:
@@ -270,7 +269,7 @@ def first_switch(mac: Mac, flake_path: str, machine: str) -> None:
     if mac.dry_run:
         current = mac.read("readlink /run/current-system || true").strip()
         ui.line(f"now running {current}" if current else "no nix-darwin system yet")
-    # What `darwin-rebuild switch` does: set the system profile, then activate. The installer's nix.conf would block nix-darwin's.
+    # As darwin-rebuild switch does. The installer's nix.conf would block nix-darwin's.
     if mac.succeeds("[ -e /etc/nix/nix.conf ] && [ ! -L /etc/nix/nix.conf ]"):
         mac.change("mv /etc/nix/nix.conf /etc/nix/nix.conf.before-nix-darwin")
     attr = shlex.quote(f"{flake_path}#darwinConfigurations.{machine}.system")

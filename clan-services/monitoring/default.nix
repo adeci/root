@@ -31,10 +31,10 @@ in
       options.monitoring.exporters = lib.mkOption {
         type = lib.types.attrsOf lib.types.port;
         readOnly = true;
-        description = "The ports of this machine's exporters by job, from its agent settings; the machine's modules make each exporter listen on its port.";
+        description = "This machine's exporter ports by job, from its agent settings. Its modules make each exporter listen there.";
       };
 
-      # Agents push their journal with the password; the server's nginx checks it against the htpasswd.
+      # Agents push their journal with the password; nginx checks it against the htpasswd.
       config.clan.core.vars.generators.loki-auth = {
         share = true;
         files = {

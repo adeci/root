@@ -4,7 +4,7 @@
     {
       environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.sdwire-cli ];
 
-      # uaccess gives the device to whoever sits at the machine. Its rules must sort before systemd's 73-seat-late.rules, which services.udev.extraRules (99-local.rules) does not.
+      # uaccess must sort before 73-seat-late.rules; extraRules is 99-local.rules.
       services.udev.packages = [
         (pkgs.writeTextDir "lib/udev/rules.d/70-sdwire.rules" ''
           # The USB device, and its block device for dd without sudo.

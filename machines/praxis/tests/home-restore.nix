@@ -8,7 +8,7 @@ let
 
   resticClient = (import ../../../clan-services/restic).roles.client;
 
-  # praxis's settings from the inventory, the exclude list every client shares among them, checked against the role's interface.
+  # praxis's inventory settings, shared excludes included, checked against the interface.
   resticSettings =
     (lib.evalModules {
       modules = [
@@ -40,7 +40,7 @@ pkgs.testers.runNixOSTest {
     clan.core.state.home.folders = [ "/home/alex" ];
     users.users.alex.isNormalUser = true;
 
-    # The real file is set with clan vars set, so nothing generates it; a local repository needs no credentials.
+    # The real file comes from `clan vars set`; a local repository needs no credentials.
     clan.core.vars.generators.restic-credentials.script = ''touch "$out/env"'';
 
     # The hourly try asks NetworkManager whether the network is metered.

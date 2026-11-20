@@ -12,7 +12,7 @@
         powerOnBoot = true;
       };
       services.blueman.enable = true;
-      # Installs libinput's udev rules, which niri's libinput reads too; the option's other settings are for X11.
+      # For libinput's udev rules, which niri uses too; the rest is X11-only.
       services.libinput.enable = true;
       powerManagement.enable = true;
       services.upower.enable = true;

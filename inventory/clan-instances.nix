@@ -32,7 +32,7 @@
 
   monitoring =
     let
-      # A public name's probe: its health path, under what serves the name.
+      # Probe a public name's health path, labelled with what serves it.
       probe = extra: entry: {
         name = entry.host;
         value = {
@@ -70,7 +70,7 @@
             };
           };
           machines = {
-            # hetzner cloud VM: its disk is QEMU's, with no SMART data. off-site so it asks every public name for its health path
+            # Hetzner VM: QEMU disk, no SMART data. Off-site, so it probes every public name.
             conduit.settings = {
               smart.enable = false;
               probes = builtins.listToAttrs (tunnelProbes ++ edgeProbes ++ redirectProbes);
@@ -99,11 +99,11 @@
               grafana.domain = lan.dns.atlas.host;
               retentionDays = 30;
               loki.retentionDays = 30;
-              # By the public name, as phones reach it: when that way is broken the delivery fails, and conduit's goes out.
+              # By public name, as phones reach it; if that's broken, conduit's delivery goes out.
               alertDelivery.ntfy.baseUrl = "https://${cloudflare.tunnels.sequoia.ntfy.host}";
             };
 
-            # Outside the house: it still sees the fleet when home is offline, and alerts when sequoia cannot.
+            # Off-site: still sees the fleet when home is down, and alerts when sequoia can't.
             conduit.settings = {
               backup = true;
               retentionDays = 3;
@@ -159,7 +159,7 @@
         # signs and notarizes macos software with rcodesign, doesnt have to be on macos.
         sharedEffectSecrets.apple_developer_id = {
           key = {
-            description = "Developer ID Application private key (PEM), the one its signing request was made from";
+            description = "Developer ID Application private key (PEM) its signing request was made from";
             multiline = true;
           };
           certificate = {
@@ -266,7 +266,7 @@
           { config, ... }:
           {
             clan.core.vars.generators.${bucket.credentials.generator}.script = ''
-              echo "${config.clan.core.settings.machine.name} has no B2 key yet: run nix run .#tf-apply, which makes one and sets it as ${bucket.credentials.generator}/${bucket.credentials.file}, then deploy again." >&2
+              echo "${config.clan.core.settings.machine.name} has no B2 key yet: nix run .#tf-apply creates it as ${bucket.credentials.generator}/${bucket.credentials.file}, then deploy again." >&2
               exit 1
             '';
           }

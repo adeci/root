@@ -22,7 +22,7 @@ let
   };
   shade = value: color: { inherit color value; };
 
-  # One colour per resource on every panel; red, yellow and green are left to alerts and up or down.
+  # One colour per resource; red, yellow and green are kept for alerts and up/down.
   colours = {
     cpu = "#7aa2f7";
     memory = "#bb9af7";
@@ -86,7 +86,7 @@ let
       ];
     };
 
-    # A link's state: 0 down, in grey as the other end may just be off; 1 slower than its port should run; 2 at that speed.
+    # 0 down (grey: the other end may just be off), 1 below the port's speed, 2 full speed.
     linkState = {
       mode = "absolute";
       steps = [
@@ -279,7 +279,7 @@ let
       }
     ];
 
-    # Nothing to see at zero, so only a value above it stands out.
+    # Blank at zero, so only a value above it stands out.
     blankZero = [
       {
         type = "value";
@@ -339,7 +339,7 @@ let
       }
     ];
 
-    # macOS's memory pressure level by name only, for a strip that colours it by its shades.
+    # Names only, for a strip coloured by its shades.
     memoryPressureLevelNames = [
       {
         type = "value";
@@ -396,7 +396,7 @@ let
       }
     ];
 
-    # How many of its two ages a backup has passed: a server's 36 and 72 hours, a laptop's 3 and 7 days.
+    # Ages passed: a server's 36 and 72 hours, a laptop's 3 and 7 days.
     backupAge = [
       {
         type = "value";
@@ -417,7 +417,7 @@ let
       }
     ];
 
-    # Whether a machine backs up: 2 with a snapshot, 1 set up but without one yet, 0 not at all, in grey as that is known.
+    # 2 has a snapshot, 1 set up but none yet, 0 no backup (grey: that's known).
     backedUp = [
       {
         type = "value";
@@ -485,7 +485,7 @@ let
       range = false;
     };
 
-  # An instant query whose result Grafana shows as a table: Loki's always is, Prometheus's when asked.
+  # Instant query shown as a table: always for Loki, on request for Prometheus.
   tableTarget =
     datasource: expr:
     if datasource == loki then
@@ -534,7 +534,7 @@ let
     "#C8C8C8"
   ];
 
-  # A colour for each of `names`, none repeating among up to nine: sorted, the names take the palette in turn.
+  # Sorted names take the palette in turn: no repeats among up to nine.
   coloursByName =
     names:
     let
@@ -613,7 +613,7 @@ let
     }
     // (if description == null then { } else { inherit description; });
 
-  # Words in Markdown, shown as they are.
+  # Markdown, shown as is.
   text =
     {
       title,
@@ -727,7 +727,7 @@ let
       type = "status-history";
       gridPos = { inherit w h; };
       targets = lettered targets;
-      # A cell per point: a coarse step, each value the average over it, keeps the rows drawable.
+      # One cell per point: a coarse step, each cell its average, keeps the rows drawable.
       maxDataPoints = 150;
       interval = "5m";
       fieldConfig = {
@@ -822,7 +822,7 @@ let
       };
     };
 
-  # How a table column shows its values, all optional: `unit`, `decimals`, `width` in pixels, `threshold` or `colours` (value mappings) to colour the text, `valueMappings`, `noValue`, and a colour for a `bar` from 0 to 100 or a `sparkline` of the time range.
+  # Optional: unit, decimals, width, threshold, valueMappings, colours, noValue, bar, sparkline.
   columnOverride = column: {
     matcher = {
       id = "byName";
@@ -890,9 +890,8 @@ let
   };
   property = id: value: { inherit id value; };
 
-  # One row per label set the queries share, one column per query; `renamedColumns` names the label columns.
-  # A sparkline column's query runs over the time range; a column with `hidden = true` only brings its rows.
-  # A column with its own `datasource` brings that source's rows, e.g. a Prometheus column in a Loki table.
+  # One row per label set the queries share, one column per query.
+  # Columns: `sparkline` spans the time range, `hidden` only adds rows, `datasource` overrides.
   mergedTable =
     {
       title,
@@ -903,11 +902,11 @@ let
       hiddenColumns ? [ ],
       renamedColumns ? { },
       firstColumns ? [ ],
-      # How label columns show, by the name shown and as for `columns`, e.g. { Host.width = 85; }.
+      # Label columns by displayed name, as for `columns`, e.g. { Host.width = 85; }.
       labelColumns ? { },
-      # Columns to sort the rows by, first one first, e.g. [ { displayName = "Host"; desc = false; } ].
+      # Sort columns in order, e.g. [ { displayName = "Host"; desc = false; } ].
       sortBy ? [ ],
-      # Joins the queries' rows on this label in place of merging them, as a sparkline needs: beside its trend, an empty query stops a merge.
+      # Join on this label instead of merging: next to a sparkline, an empty query stops a merge.
       joinBy ? null,
       # Shown in place of the table while no query returns anything.
       noDataText ? null,
@@ -922,7 +921,7 @@ let
         ) columns
       );
       prometheusColumns = builtins.filter (column: datasourceOf column == prometheus) columns;
-      # Each column with its refId and the field Grafana gives its values: "Trend #A" for a sparkline, else "Value #A", or just "Value" for the only Prometheus query.
+      # Grafana names the values "Trend #A", "Value #A", or "Value" for a lone Prometheus query.
       queryColumns = builtins.genList (
         index:
         let
@@ -972,7 +971,7 @@ let
         inherit sortBy;
       };
       transformations =
-        # Limited to its own query: otherwise it makes a trend of every single-row result too.
+        # Its own query only, or every single-row result becomes a trend too.
         map (column: {
           id = "timeSeriesTable";
           options.${column.refId}.stat = "max";
@@ -1016,7 +1015,7 @@ let
                   value = column.name;
                 }) queryColumns
               );
-            # A sparkline's frame leads the others, so the query columns are put in their order too.
+            # A sparkline's frame comes first, so order the query columns too.
             firstColumns = if firstColumns == [ ] then [ ] else firstColumns ++ fields queryColumns;
           })
         ];
@@ -1025,7 +1024,7 @@ let
     // (if sparklines == [ ] then { } else { maxDataPoints = 120; })
     // (if description == null then { } else { inherit description; });
 
-  # Labels that say what an alert is about; the Alerts table joins an alert's own in this order.
+  # What an alert is about; the Alerts table joins these labels in this order.
   alertSubjects = [
     "mountpoint"
     "device"
@@ -1044,7 +1043,7 @@ let
     "mac"
   ];
 
-  # The alerts firing on what `matchers` select, critical first, each with what it is about and since when.
+  # Firing alerts for `matchers`, critical first, with what they're about and since when.
   alerts =
     {
       w,
@@ -1086,7 +1085,7 @@ let
         {
           name = "Since";
           width = 92;
-          # Only the labels shown, so no other label of an alert becomes a column of its own.
+          # Only the shown labels, or every other label becomes a column.
           expr = ''max by (severity, alertname, instance, detail) (label_join(1000 * ALERTS_FOR_STATE and ignoring (alertstate) ALERTS{alertstate="firing", severity=~"critical|warning", ${matchers}}, "detail", " ", ${
             builtins.concatStringsSep ", " (map (label: "\"${label}\"") alertSubjects)
           }))'';
@@ -1132,7 +1131,7 @@ let
       type = "row";
     };
 
-  # Panels go left to right on the 24-wide grid, wrapping onto a new line as tall as its tallest panel.
+  # Left to right on the 24-wide grid, wrapping below the line's tallest panel.
   flow =
     top:
     let
@@ -1167,7 +1166,7 @@ let
       panels = [ ];
     };
 
-  # Rows stack down the page; Grafana keeps a collapsed row's panels inside it and an open row's after it.
+  # Grafana keeps a collapsed row's panels inside it, an open row's after it.
   stack =
     let
       addRow =
@@ -1228,7 +1227,7 @@ let
       panels = [ ];
     } panels).panels;
 
-  # A multi-select picker over a label's values, all of them at first; queries match it as `label=~"$name"`.
+  # Multi-select over a label's values, all at first; match it as `label=~"$name"`.
   labelVariable =
     {
       name,

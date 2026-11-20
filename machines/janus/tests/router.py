@@ -6,7 +6,7 @@ inventory = json.loads(inventory_json)
 vlans = inventory["lan"]["vlans"]
 hosts = inventory["lan"]["hosts"]
 
-# firewall.nix's zones: what each VLAN's hosts may reach through janus besides replies, "wan" being the internet.
+# firewall.nix's zones, "wan" being the internet.
 zones = {
     "trusted": (set(vlans) - {"mgmt"}) | {"wan"},
     "iot": {"wan"},
@@ -18,13 +18,13 @@ zones = {
 assert set(zones) == set(vlans), f"the test has zones for {sorted(zones)}, the inventory has VLANs {sorted(vlans)}"
 # The VLANs firewall.nix lets ssh into janus.
 admin_vlans = {"trusted", "mgmt"}
-# LPD, IPP and JetDirect, which firewall.nix lets guests print with, and the printer's web page, which it doesn't.
+# Guests may print (LPD, IPP, JetDirect) but not reach the printer's web page.
 print_ports = [515, 631, 9100]
 web_port = 80
 # An appliance's ssh port, which trusted hosts reach only through janus.
 appliance_ssh_port = 22
 
-# The appliance cabled to janus's mgmt port plugs in there; every other host comes in on the trunk.
+# The appliance cabled to janus's mgmt port plugs in there; everything else on the trunk.
 mgmt_port_host = next(
     cable["appliance"]
     for cable in inventory["lan"]["cables"]
@@ -44,7 +44,7 @@ def netns(host):
 
 
 def plug_in(host, port, mac=None):
-    """Gives a host a network namespace of its own and a link, with its MAC, on a port of the switch."""
+    """Give a host its own netns and a macvlan link, with its MAC, on a switch port."""
     option = f"address {mac}" if mac else ""
     clients.succeed(
         f"ip link add link {port} name {host} {option} type macvlan mode bridge",
@@ -61,12 +61,12 @@ def own_name(host):
     return f"{host}-own"
 
 
-# One pool host gives its name in the client FQDN option, as some laptops do; Kea keeps it fully qualified, ending in a dot.
+# One pool host sends the client FQDN option, as some laptops do; Kea keeps the trailing dot.
 fqdn_host = pool_hosts["iot"]
 
 
 def lease(host, client_id=None):
-    """Runs the host's DHCP client, asking with its own name and its client id if it has one, until it is bound; returns its address."""
+    """Run udhcpc with the host's own name and client id until bound; return the address."""
     name = f"-F {own_name(host)}" if host == fqdn_host else f"-x hostname:{own_name(host)}"
     option = f"-x 0x3d:{client_id.replace(':', '')}" if client_id else ""
     clients.succeed(f"{netns(host)} {busybox} udhcpc -i {host} -n -q -s {udhcpc_script} {name} {option}")
@@ -74,7 +74,7 @@ def lease(host, client_id=None):
 
 
 def resolve(host, name, tcp=False):
-    """The addresses the host's resolver, the one DHCP gave it, answers for a name, over UDP or TCP."""
+    """Addresses the host's DHCP-given resolver returns for a name, over UDP or TCP."""
     option = "+tcp" if tcp else ""
     return clients.succeed(f"{netns(host)} dig +short {option} {name}").split()
 
@@ -86,7 +86,7 @@ def flags(host, name):
     return header.removeprefix(";; flags:").split(";")[0].split()
 
 
-# A probe that should get through may take its time on a busy machine; one that should not gets a second.
+# Expected successes get 5 s on a busy machine; expected failures get 1 s.
 def ping(host, address, answered=True):
     """Checks that a ping from the host is answered, or that it is not."""
     if answered:
@@ -105,7 +105,7 @@ def connect(host, address, port, accepted=True):
 
 def get_time(host, server, answered=True):
     """Checks that the host's NTP client gets the time from a server, or that the server does not answer it."""
-    # Polling every second, the client needs three answers; one that comes late on a busy machine fails the try, so an expected success may take another.
+    # chronyd needs three answers; a late one on a busy machine fails the try, so retry.
     if answered:
         clients.wait_until_succeeds(f"{netns(host)} chronyd -Q -t 10 'server {server} iburst minpoll 0'", timeout=60)
     else:
@@ -140,7 +140,7 @@ with subtest("the latency prober pings the internet once the ISP answers, though
         f"curl -sf http://127.0.0.1:{smokeping_port}/metrics | grep -Eq '^smokeping_requests_total\\{{.*\\}} [1-9]'", timeout=60
     )
 
-# The switch: the trunk carries every VLAN to janus's LAN port, tagged, and the mgmt link carries mgmt to its mgmt port.
+# The switch: every VLAN tagged on the trunk, mgmt untagged on the mgmt link.
 clients.succeed("ip link set trunk up", "ip link set mgmt up")
 for vlan, settings in vlans.items():
     clients.succeed(
@@ -163,7 +163,7 @@ with subtest("every host gets its reserved address, by MAC or client id, and oth
         assert ip_address(pool["start"]) <= ip_address(address) <= ip_address(pool["end"]), f"{host} got {address}"
         pool_addresses[vlan] = address
 
-with subtest("janus exports every lease in use with the maker its MAC names, named as its reservation or as its client asked, but never as a guest or tenant asked"):
+with subtest("janus exports in-use leases with maker and name, never a guest's or tenant's own name"):
     # The monitoring agent makes the folder on a real machine.
     janus.succeed(f"mkdir -p {textfile_directory}", "systemctl start janus-dhcp-leases.service")
     exported = janus.succeed(f"cat {textfile_directory}/janus-dhcp-leases.prom")
@@ -174,7 +174,7 @@ with subtest("janus exports every lease in use with the maker its MAC names, nam
     expected = {host["ip"]: name for name, host in hosts.items()}
     expected.update({pool_addresses[vlan]: own_name(host) for vlan, host in pool_hosts.items() if vlan not in ("guest", "tenant")})
     assert names == expected, f"janus exported {names}, not {expected}"
-    # macvlan makes up the MACs of the pool hosts and of the hosts with a client id; the inventory's are real, but for its VMs'.
+    # macvlan makes up MACs for pool and client-id hosts; inventory MACs are real, except VMs'.
     for record in records:
         made_up = int(record["mac"][:2], 16) & 0x02
         known = record["maker"] not in ("private address", "unknown maker")
@@ -255,7 +255,7 @@ with subtest("janus answers ssh on the admin VLANs only, and the router modules'
 with subtest("a trusted host reaches an appliance's API through ssh -L via janus, and not directly"):
     host = pool_hosts["trusted"]
     api = appliance_apis[mgmt_port_host]
-    # janus's own reader asks every appliance each half minute, and would take the listener's one answer.
+    # janus-routeros-health polls every 30 s and would take the listener's one answer.
     janus.succeed("systemctl stop janus-routeros-health.timer janus-routeros-health.service")
     answer(mgmt_port_host, api["port"], mgmt_port_host)
     connect(host, api["address"], api["port"], accepted=False)

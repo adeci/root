@@ -12,9 +12,9 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Clients";
-      description = "Every client that got an address from the router in the picked time range, by its DHCP log. Name is the inventory's for a reserved address, or else the one the client asked with, except on other people's networks, or else, in brackets, the maker its MAC names. Access point and Signal: where a Wi-Fi client is connected now, beside the address it holds now, and how strongly that access point hears it. Here marks a client that holds a lease from the router now: a lease lasts two hours from its last renewal, unless the client gives it back. New marks a device NewDevice has reported in the last day: its first lease in ${toString network.newDeviceDays} days, on the household's own networks.";
+      description = "DHCP clients in the picked range, by the DHCP log. Name: the inventory's for a reserved address, else the one the client asked with (not on other people's networks), else (MAC maker). Access point and Signal: the Wi-Fi client's AP now, beside its current address, and how strongly that AP hears it. Here: holds a lease now; leases last two hours from the last renewal unless released. New: reported by NewDevice in the last day, first lease in ${toString network.newDeviceDays} days on own networks.";
       w = 24;
-      # About twenty-five clients a day, plus the title and the header.
+      # ~25 clients a day, plus title and header.
       h = 27;
       datasource = ui.loki;
       sortBy = [
@@ -47,7 +47,7 @@ ui.row {
           name = "Signal";
           width = 80;
           datasource = ui.prometheus;
-          # Each client once: on the access point that hears it best, as one it has just left may still list it, and beside its newest lease, as one on another network may not have expired yet.
+          # One row per client: the AP that hears it best (the old one may still list it), newest lease.
           expr = ''max by (mac, access_point, address) (label_replace(topk by (mac) (1, janus_routeros_wifi_client_signal_dbm{${queries.router}}), "access_point", "$1", "name", "(.+)") * on (mac) group_left (address) group by (mac, address) (topk by (mac) (1, janus_dhcp_lease_renewed_timestamp_seconds{${queries.router}})))'';
           unit = "dBm";
         }
@@ -68,7 +68,7 @@ ui.row {
           name = "Lease names";
           hidden = true;
           datasource = ui.prometheus;
-          # Unreserved leases renewed within the range, each under its newest name: a reserved address has its name above, and a client that left just before the range would be a row with nothing but a name.
+          # Unreserved leases renewed in range, by newest name; reserved ones are named above.
           expr = "topk by (address, mac) (1, max by (address, mac, name) (${queries.leaseName ''last_over_time(janus_dhcp_lease_renewed_timestamp_seconds{${queries.router}, address!~"${queries.reservedAddresses}"}[$__range]) > time() - $__range_s''}))";
         }
         {

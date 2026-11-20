@@ -14,7 +14,7 @@ let
   # A value and the path in network.nix it is written at.
   valueAt = path: value: { inherit path value; };
 
-  # One rule per value among `values` (each from valueAt): only one path holds it. `what` names the value in messages.
+  # Each value in `values` (from valueAt) may sit at one path only.
   usedOnce =
     what: values:
     lib.mapAttrsToList (
@@ -56,10 +56,8 @@ let
   cablePath = cable: "appliances.${cable.appliance}.ports.${cable.port}.cable";
   leadsTo = cable: if cable.toPort == null then cable.to else "${cable.to}:${cable.toPort}";
 
-  # Whether a cable leads to a host rather than to an appliance or the router.
   leadsToHost = cable: !(appliances ? ${cable.to}) && cable.to != router.machine;
 
-  # Whether a cable to an appliance or the router names a port it has.
   leadsToExistingPort =
     cable:
     if appliances ? ${cable.to} then
@@ -90,7 +88,7 @@ let
     else
       carriedVlans null [ ];
 
-  # What the port a cable leads to carries; null where the inventory can't tell: a named NIC, or a machine off the LAN.
+  # What the far end carries; null if unknown (a named NIC, or a host off the LAN).
   carriedWhereItLeads =
     cable:
     if appliances ? ${cable.to} then
@@ -101,8 +99,6 @@ let
       carriedVlans hosts.${cable.to}.vlan [ ]
     else
       null;
-
-  # The rules
 
   uniqueVlanIds = usedOnce "id" (
     lib.mapAttrsToList (name: vlan: valueAt "lan.vlans.${name}.id" (toString vlan.id)) vlans

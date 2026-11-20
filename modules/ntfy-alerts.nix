@@ -105,13 +105,12 @@
           '';
       };
 
-      # ntfy runs under a dynamic user, so /var/lib/ntfy-sh is only a link to this folder.
+      # DynamicUser: /var/lib/ntfy-sh is just a link to this.
       clan.core.state.ntfy.folders = [
         "/var/lib/private/ntfy-sh"
       ];
 
-      # Auth is provisioned from the generated EnvironmentFile so hashes/tokens never enter the Nix store.
-      # The machine names the server with `base-url` and puts that name in front of it.
+      # Auth comes from the env file to keep hashes out of the store; machine sets base-url.
       services.ntfy-sh = {
         enable = true;
         environmentFile = config.clan.core.vars.generators.ntfy-alerts.files."ntfy.env".path;

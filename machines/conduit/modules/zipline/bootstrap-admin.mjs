@@ -29,17 +29,16 @@ function argumentsFor(args) {
   // Literal addresses avoid DNS rebinding; node:http ignores environment proxies.
   if (!/^http:\/\/(?:127\.0\.0\.1|\[::1\])(?::[0-9]+)?\/?$/.test(origin)) {
     throw new BootstrapError(
-      "The origin must be an HTTP loopback literal (127.0.0.1 or [::1]), with an optional port and no path.",
+      "origin must be http://127.0.0.1 or http://[::1], optional port, no path",
     );
   }
   let url;
   try {
     url = new URL(origin);
   } catch {
-    throw new BootstrapError("The loopback origin is invalid.");
+    throw new BootstrapError("invalid origin");
   }
-  if (url.port === "0")
-    throw new BootstrapError("The loopback origin must use a nonzero port.");
+  if (url.port === "0") throw new BootstrapError("origin port must not be 0");
   return { file: files[0], origin: url.origin };
 }
 
@@ -49,7 +48,7 @@ async function credentialsFrom(path) {
     credentials = JSON.parse(await readFile(path, "utf8"));
   } catch {
     throw new BootstrapError(
-      "The administrator credential file must be readable JSON containing username and password.",
+      "admin file must be JSON with username and password",
     );
   }
   if (
@@ -65,7 +64,7 @@ async function credentialsFrom(path) {
     )
   ) {
     throw new BootstrapError(
-      "The administrator credential file must contain only nonempty, unpadded username and password strings.",
+      "admin file must hold only nonempty, unpadded username and password",
     );
   }
   return credentials;
@@ -80,7 +79,7 @@ function clientFor(origin) {
       headers["content-length"] = Buffer.byteLength(payload);
     }
     return new Promise((resolve, reject) => {
-      // No redirect following, DNS lookup, proxy agent, or environment proxy support.
+      // No redirects, DNS lookups or proxies.
       const request = httpRequest(
         `${origin}${path}`,
         {
@@ -164,24 +163,20 @@ async function waitForSetup(client) {
       if (result.status === 200 && result.data?.firstSetup === true)
         return true;
       if (result.status < 500)
-        throw new BootstrapError(
-          "Zipline returned an unexpected setup response.",
-        );
+        throw new BootstrapError("unexpected /api/setup response");
     } catch (error) {
       if (!(error instanceof ConnectionError)) throw error;
     }
     const remaining = deadline - Date.now();
     if (remaining > 0) await delay(Math.min(500, remaining));
   }
-  throw new BootstrapError(
-    "Zipline did not become ready on its loopback API within 60 seconds.",
-  );
+  throw new BootstrapError("Zipline not ready after 60 s");
 }
 
 async function main() {
   const { file, origin } = argumentsFor(process.argv.slice(2));
   const client = clientFor(origin);
-  // An initialized instance is dashboard-owned: never log in or reconcile credentials.
+  // Already set up: the dashboard owns the admin.
   if (!(await waitForSetup(client))) return;
   const admin = await credentialsFrom(file);
   // Zipline's setup endpoint does not create a session.
@@ -195,16 +190,14 @@ async function main() {
     user.username !== admin.username ||
     user.role !== "SUPERADMIN"
   ) {
-    throw new BootstrapError(
-      "Zipline returned an unexpected bootstrap administrator identity.",
-    );
+    throw new BootstrapError("setup returned an unexpected admin user");
   }
 }
 
 main().catch((error) => {
-  // Never print raw exceptions, response bodies, credentials, cookies, or API tokens.
+  // Keep credentials and API responses out of the journal.
   console.error(
-    `zipline-bootstrap-admin: ${error instanceof BootstrapError ? error.message : "Administrator bootstrap failed unexpectedly; credentials and API responses have been withheld."}`,
+    `zipline-bootstrap-admin: ${error instanceof BootstrapError ? error.message : "admin bootstrap failed; details withheld"}`,
   );
   process.exitCode = 1;
 });

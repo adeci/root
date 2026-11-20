@@ -6,8 +6,7 @@ temporary_file=$(mktemp "$output_file.XXXXXX")
 report=$(mktemp)
 trap 'rm -f "$temporary_file" "$report"' EXIT
 
-# smartctl's exit status is a bit mask; bits 0 and 1 mean it read nothing. Apple's controller
-# rejects the request for its error log, which sets bit 2, and the rest of the report is complete.
+# Bits 0-1: nothing read. Apple's SSD rejects the error log request (bit 2); the rest is complete.
 status=0
 smartctl --json --all "$disk" > "$report" || status=$?
 if (( status & 3 )); then
@@ -25,7 +24,7 @@ cpu_temperature=$(macmon pipe --samples 1 | jq '.temp.cpu_temp_avg')
 # Empty on a Mac without a battery.
 battery_health=$(/usr/sbin/system_profiler -json SPPowerDataType | jq '.SPPowerDataType[].sppower_battery_health_info.sppower_battery_health_maximum_capacity // empty | rtrimstr("%") | tonumber / 100')
 
-# The drive's metrics have the names and labels smartctl_exporter gives them on Linux.
+# Same names and labels as smartctl_exporter on Linux.
 {
   echo '# HELP smartctl_device The drive and its model.'
   echo '# TYPE smartctl_device gauge'

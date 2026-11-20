@@ -1,6 +1,6 @@
 # shellcheck shell=bash
-# deploy-guard-confirm [SYSTEM], over a new connection after a switch: keeps it if each check that passed before it passes now.
-# Given the system the switch activated, it refuses once the machine runs another, as after a revert.
+# deploy-guard-confirm [SYSTEM], over a new connection after a switch.
+# With SYSTEM, refuses once the machine runs another (e.g. after a revert).
 system=${1-}
 state=/run/deploy-guard
 shopt -s nullglob
@@ -15,7 +15,7 @@ if [[ -n $system && $(readlink -f /run/current-system) != "$(readlink -f "$syste
 fi
 if ! systemctl --quiet is-active deploy-guard-revert.timer; then
   echo "No switch is waiting to be confirmed."
-  # Reaching the machine after a revert clears the revert's report, as a confirmation does.
+  # Reaching the machine after a revert clears the revert metric.
   rm -f "$METRICS_FILE"
   exit 0
 fi

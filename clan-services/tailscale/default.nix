@@ -58,9 +58,9 @@
               # First in the list, so a machine's own flags follow and win.
               extraSetFlags = lib.mkBefore ([ "--accept-routes=false" ] ++ settings.flags);
             };
-            # Tailscale's own netfilter rule accepts tailscale0 before this firewall sees it; the tailnet policy filters it.
+            # Tailscale's netfilter rule accepts tailscale0 first; the tailnet policy filters it.
             networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
-            # Stay active after the one-shot run, so a deploy that changes the flags restarts it and applies them.
+            # RemainAfterExit, so a deploy that changes the flags restarts it.
             systemd.services.tailscaled-set = lib.mkIf (config.services.tailscale.extraSetFlags != [ ]) {
               serviceConfig.RemainAfterExit = true;
             };

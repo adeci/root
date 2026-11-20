@@ -19,14 +19,14 @@ let
       };
 
       programs.ssh.extraConfig = lib.mkMerge [
-        # Not for root: on a build host, whoever is root could reuse its open connections to the machines it deployed.
+        # Not for root: on a build host, root could reuse connections to deployed machines.
         ''
           Match host *.${config.clan.core.settings.domain} !localuser root
             ControlMaster auto
             ControlPersist 10m
             ControlPath ~/.ssh/cm-%C
         ''
-        # The catch-all goes after every feature's specific Host blocks: ssh takes the first value it finds for each option.
+        # Catch-all last: ssh uses the first value it finds per option.
         (lib.mkAfter ''
           Host *
             AddKeysToAgent yes
@@ -77,9 +77,9 @@ in
       ];
 
       users.mutableUsers = false;
-      # Secrets install through a systemd unit that restarts consumers itself; activation-script restarts are deprecated.
+      # Activation-script restarts are deprecated.
       sops.useSystemdActivation = true;
-      # Long enough to press a key for an older generation; NixOS's default waits 5 seconds every boot.
+      # Default waits 5 s every boot; 1 s is enough to pick an older generation.
       boot.loader.timeout = lib.mkDefault 1;
 
       services.openssh = {
@@ -155,7 +155,7 @@ in
         '';
       };
 
-      # macOS sshd sets no locale, so ssh sessions (and tmux started from them) would mangle non-ASCII/Nerd Font glyphs in the C locale.
+      # macOS sshd sets no locale; C locale mangles Nerd Font glyphs over ssh and in tmux.
       environment.variables.LANG = "en_US.UTF-8";
 
       system.activationScripts.postActivation.text = # bash

@@ -41,7 +41,7 @@
     {
       options.publicEdge.streams = lib.mkOption {
         default = [ ];
-        description = "Public L4 streams: each forwards its listen port to its upstream and opens that port in the firewall.";
+        description = "Public L4 streams forwarded to an upstream; opens their ports in the firewall.";
         type = lib.types.listOf (
           lib.types.submodule {
             options = {
@@ -100,7 +100,7 @@
 
           services.nginx = {
             enable = true;
-            # A variable proxy_pass lets nginx reload while MagicDNS is down; Quad100 resolves its names.
+            # Variable proxy_pass so nginx can reload while MagicDNS is down.
             streamConfig = lib.mkAfter ''
               resolver 100.100.100.100 valid=30s ipv6=off;
 

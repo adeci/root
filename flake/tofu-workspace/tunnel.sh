@@ -2,7 +2,7 @@
 control=$(mktemp -d)
 close_tunnel() {
   ssh -q -S "$control/socket" -O exit "$TUNNEL_HOST" || true
-  # Once backgrounded, ssh reports only here, as when the host cannot reach a forward's endpoint.
+  # Once backgrounded, ssh only reports here, e.g. when the host can't reach an endpoint.
   cat "$control/log" >&2
   rm -rf "$control"
 }
@@ -13,8 +13,7 @@ for forward in $TUNNEL_FORWARDS; do
   forwards+=(-L "127.0.0.1:$forward")
 done
 
-# Its own master: one shared through the user's ControlMaster setting would keep the forwards after the command, and their ControlPersist would close this one while tofu waits for a yes.
-# A host that is down, or a local port that is taken, fails the command at once; a path that dies later ends it within a minute, where tofu would wait for ever.
+# Own master: a shared one keeps the forwards, and its ControlPersist can close this mid-prompt.
 if ! ssh -f -N -M -S "$control/socket" -o ControlPersist=no \
   -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ExitOnForwardFailure=yes -E "$control/log" \
   "${forwards[@]}" "$TUNNEL_HOST"; then

@@ -1,5 +1,5 @@
 {
-  # The machine sets disko.devices.disk.main's device and its name (the installed partition labels derive from it), and declares its swap partition.
+  # Machine sets disk.main's device, its name (partition labels use it) and swap.
   nixos = {
     boot.loader.grub = {
       efiSupport = true;

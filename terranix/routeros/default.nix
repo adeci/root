@@ -22,7 +22,7 @@ in
 
   clanSecrets = [ admin.secret ];
 
-  # The net apps' tunnel through the router forwards each appliance's API to its port in tunnelPorts.
+  # The net apps' tunnel forwards each appliance's API to its port in tunnelPorts.
   provider.routeros = lib.mapAttrsToList (name: _: {
     alias = name;
     hosturl = "api://127.0.0.1:${toString tunnelPorts.${name}}";
@@ -42,13 +42,13 @@ in
     servers = [ (routerAddress appliance) ];
   }) appliances;
 
-  # The time zone lookup asks MikroTik's cloud, which the router never lets them reach.
+  # Time zone autodetect asks MikroTik's cloud, which the router blocks.
   resource.routeros_system_clock = lib.mapAttrs (name: _: {
     provider = "routeros.${name}";
     time_zone_autodetect = false;
   }) appliances;
 
-  # The exporter's account: one password on every appliance, kept in the router's clan vars, reachable only from the router.
+  # One exporter password on every appliance, kept in the router's clan vars.
   resource.random_password.routeros_exporter = {
     length = 32;
     special = false;
@@ -101,7 +101,7 @@ in
         winbox = 8291;
         api-ssl = 8729;
       };
-      # The logins that stay answer only the management VLAN, which the router reaches them on, and the fallback network.
+      # Only from the management VLAN and the fallback network.
       logins = appliance: {
         ssh = 22;
         api = appliance.api.port;
@@ -154,7 +154,7 @@ in
     discover_interface_list = "none";
   }) appliances;
 
-  # Their bridges carry the clients' IPv6 without needing any of their own.
+  # Bridges pass the clients' IPv6 without needing their own.
   resource.routeros_ipv6_settings = lib.mapAttrs (name: _: {
     provider = "routeros.${name}";
     disable_ipv6 = true;

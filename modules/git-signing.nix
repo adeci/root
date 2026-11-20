@@ -12,7 +12,7 @@ let
       signing = config.gitSigning;
       profile = config.system.primaryUserProfile;
 
-      # Signs through this machine's own agent, also in sessions that forward another machine's.
+      # Always sign with the local agent, even when another is forwarded.
       sshKeygen = pkgs.writeShellScript "ssh-keygen-device" ''
         SSH_AUTH_SOCK=${lib.escapeShellArg signing.agentSocket} exec ${pkgs.openssh}/bin/ssh-keygen "$@"
       '';
@@ -33,7 +33,7 @@ let
         key = lib.mkOption {
           type = lib.types.nullOr lib.types.str;
           default = null;
-          description = "Comment of the primary user's SSH key that signs commits here; null leaves commits unsigned.";
+          description = "Comment of the SSH key that signs commits; null for unsigned.";
         };
         agentSocket = lib.mkOption {
           type = lib.types.str;

@@ -8,7 +8,7 @@
 let
   inherit (self.inventory) lan machines;
   inherit (lan) vlans hosts;
-  # The address each name in lan.dns resolves to: a LAN host's, or a machine's tailnet address.
+  # lan.dns names resolve to a LAN host's address or a machine's tailnet address.
   dnsAddresses = lib.mapAttrs' (
     _: record:
     lib.nameValuePair record.host (
@@ -21,7 +21,7 @@ let
     "--timeout=30"
   ];
   controlSocket = "/run/kea/kea-dhcp4.sock";
-  # Other people's devices, on a network not the household's own, are exported with a reservation's name only, never the one they ask with.
+  # Off own networks, export only reservation names, never the name a client asks with.
   leaseNames = pkgs.writeText "janus-dhcp-lease-names.json" (
     builtins.toJSON {
       privateSubnets = map (vlan: vlan.id) (lib.filter (vlan: !vlan.ownDevices) (lib.attrValues vlans));
@@ -129,7 +129,7 @@ in
         rrset-cache-size = "32m";
       };
 
-      # With systemd-resolved off, Unbound forwards tailnet names to MagicDNS for local services.
+      # resolved is off, so forward tailnet names to MagicDNS.
       forward-zone = [
         {
           name = "ts.net.";

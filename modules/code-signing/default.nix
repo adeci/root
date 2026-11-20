@@ -19,7 +19,7 @@
             identifier = lib.mkOption {
               type = lib.types.str;
               example = "git.felix.borders";
-              description = "Signing identifier; together with the key, it is what macOS recognises across rebuilds.";
+              description = "Signing identifier; with the key, how macOS recognises the binary across rebuilds.";
             };
             path = lib.mkOption {
               type = lib.types.str;
@@ -30,7 +30,7 @@
             package = lib.mkOption {
               type = lib.types.package;
               readOnly = true;
-              # Depends on the source, so a launchd agent running it restarts once a new build is signed.
+              # Depends on source, so launchd agents restart after re-signing.
               default = pkgs.runCommand name { inherit (config) source; } ''
                 mkdir -p $out/bin
                 ln -s ${config.path} $out/bin/${name}

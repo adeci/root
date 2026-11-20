@@ -1,4 +1,4 @@
-# Builds a Terraform workspace, its tofu apps with the providers Nix builds, and a check that its config validates against them.
+# A Terraform workspace: tofu apps on Nix-built providers, plus a validate check.
 {
   inputs,
   lib,
@@ -16,15 +16,15 @@
   scripts ? { },
   # Packages the scripts need besides tofu, git and clan, such as jq.
   runtimeInputs ? [ ],
-  # { host, forwards }: the commands that reach the providers' endpoints do so through one ssh connection to host, each forward <local port>:<address>:<port> listening on 127.0.0.1.
+  # { host, forwards }: one ssh connection; forwards are <local port>:<address>:<port>.
   tunnel ? null,
-  # <device> = <provider configuration>, such as nexus = "routeros.nexus": `apply <device>` applies only that configuration's resources, so the others' endpoints may be unreachable.
+  # e.g. nexus = "routeros.nexus": `apply nexus` touches only that provider's resources.
   applyAlone ? { },
-  # A program that apply runs in place of `tofu apply`, inside the tunnel, with the arguments tofu apply would get; it finds tofu and clan on the app's PATH.
+  # Runs instead of `tofu apply`, inside the tunnel, with its arguments; tofu and clan are on PATH.
   apply ? null,
 }:
 let
-  # Each provider's package by the name the config calls it; the base module's own is `external`, which reads clan secrets.
+  # `external` is the base module's, for reading clan secrets.
   allProviders = providers // {
     external = pkgs.terraform-providers.hashicorp_external;
   };
@@ -61,7 +61,7 @@ let
     "destroy"
   ];
 
-  # The addresses of the resources a provider configuration manages, for -target-file, which targets everything when empty.
+  # Addresses a provider config manages, for -target-file (empty targets everything).
   targetFile =
     provider:
     let
@@ -77,7 +77,7 @@ let
     assert lib.assertMsg (addresses != [ ]) "the ${name} config has no resources of ${provider}";
     pkgs.writeText "${name}-${provider}-resources" (lib.concatLines addresses);
 
-  # Runs `text` in .terraform/<name>, with the config installed and the state bucket's credentials exported.
+  # Runs `text` in .terraform/<name> with the config installed and state credentials exported.
   app = command: text: {
     program = pkgs.writeShellApplication {
       name = "${appPrefix}-${command}";
@@ -132,7 +132,7 @@ in
       )
       // lib.mapAttrs (_: builtins.readFile) scripts
     )
-    # In front of that apply: a first argument naming a device is checked before anything runs.
+    # Checks a leading device argument before anything runs.
     // lib.optionalAttrs (applyAlone != { }) {
       "${appPrefix}-apply".program = pkgs.writeShellApplication {
         name = "${appPrefix}-apply";
@@ -145,7 +145,7 @@ in
       };
     };
 
-  # Built in the sandbox, where init has only the providers above; the result is the config once it validates against their schemas.
+  # In the sandbox init sees only these providers; the result is the validated config.
   checks."tofu-${name}" = pkgs.runCommand "tofu-${name}" { nativeBuildInputs = [ tofu ]; } ''
     cp ${configFile} config.tf.json
     tofu init -backend=false

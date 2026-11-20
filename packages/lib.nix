@@ -1,6 +1,6 @@
 { makeWrapper, symlinkJoin }:
 {
-  # Electron's keyring detection fails on tiling WMs (niri, sway); wraps the cached app instead of rebuilding it.
+  # Electron can't find the keyring on tiling WMs; wrapping keeps the cached build.
   withLibsecret =
     app:
     let
@@ -13,7 +13,7 @@
       postBuild = ''
         wrapProgram $out/bin/${exe} --add-flags "--password-store=gnome-libsecret"
 
-        # Desktop entries exec the wrapper by absolute path, independent of PATH.
+        # Exec the wrapper by absolute path, not whatever is on PATH.
         for entry in ${app}/share/applications/*.desktop; do
           target=$out/share/applications/$(basename "$entry")
           rm "$target"

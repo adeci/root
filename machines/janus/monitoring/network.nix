@@ -3,12 +3,12 @@ inventory:
 let
   router = ''instance="${inventory.router.machine}"'';
 
-  # A portable machine comes and goes, so the port it docks into isn't expected to stay up.
+  # Portable machines come and go; their dock ports aren't expected up.
   steadyCables = builtins.filter (
     cable: !(builtins.elem "portable" (inventory.machines.${cable.to}.tags or [ ]))
   ) inventory.lan.cables;
 
-  # The port each cable is written on.
+  # Appliance end of each cable.
   nearEnds = map (cable: {
     inherit (cable) appliance port;
   }) steadyCables;
@@ -21,7 +21,6 @@ let
     builtins.attrValues (builtins.mapAttrs (name: vlan: vlan // { inherit name; }) inventory.lan.vlans)
   );
 
-  # The host each reserved address belongs to.
   hostsByAddress = builtins.listToAttrs (
     map (host: {
       name = inventory.lan.hosts.${host}.ip;
@@ -55,7 +54,7 @@ in
     ;
   # One appliance port for each known cable.
   cableNearEnds = portsByAppliance nearEnds;
-  # What each known cable reaches, by the appliance port it is written on, as "nexus ether2".
+  # Machine at the other end of each cable, keyed like "nexus ether2".
   cableEnds = builtins.listToAttrs (
     map (cable: {
       name = "${cable.appliance} ${cable.port}";
@@ -75,7 +74,7 @@ in
       map (appliance: query (matchers appliance)) (builtins.attrNames portsOf)
     );
 
-  # Each device new to the household's own networks within `within`, once, by its first lease there, named after its network as `network`: its MAC had no lease, on any network, in the 30 days before. A reserved address is known, and so is the deploy guard's check. Silent until there are 30 days of lease records, which a backup that keeps fewer days never has.
+  # New MACs on own networks; silent until there are 30 days of lease records.
   newDevices =
     within:
     let

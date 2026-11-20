@@ -2,7 +2,7 @@ import json
 
 url = f"http://127.0.0.1:{port}"
 email = "restore-test@example.com"
-# Clients send a hash of the master password, which the server only compares, so any string stands in for it.
+# The server only compares the master password hash, so any string works.
 password_hash = "restore-test"
 
 
@@ -41,7 +41,7 @@ with subtest("an account the admin invites registers and opens a session"):
         )
     )
     authorization = f"-H 'Authorization: Bearer {session['access_token']}'"
-    # Answers only while the account and its device are in the database and the key that signed the session is on disk.
+    # Needs the account and device in the database and the session signing key on disk.
     profile = f"curl -fsS {authorization} {url}/api/accounts/profile"
     assert json.loads(sequoia.succeed(profile))["email"] == email
 
@@ -51,19 +51,19 @@ with subtest("the unit the timer starts takes one snapshot of the state's folder
     snapshots = json.loads(sequoia.succeed(list_backups))
     assert [snapshot["paths"] for snapshot in snapshots] == [folders], snapshots
 
-with subtest("without its data and the copy the backup took, Vaultwarden no longer knows the session"):
+with subtest("without its data or the backup copy, Vaultwarden forgets the session"):
     sequoia.succeed("systemctl stop vaultwarden.service")
     sequoia.succeed(f"rm -rf {data_dir} {' '.join(folders)}")
     sequoia.succeed("systemctl start vaultwarden.service")
     wait_until_alive()
     sequoia.fail(profile)
 
-with subtest("restoring the snapshot as clan backups restore does brings the account and its session back"):
+with subtest("restoring like `clan backups restore` brings back the account and its session"):
     # clan backups restore runs these on the machine for each state, with NAME and FOLDERS set.
     env = f"NAME={snapshots[0]['name']} FOLDERS={':'.join(folders)}"
     for command in [pre_restore, restore, post_restore]:
         sequoia.succeed(f"{env} {command}")
-        # The worst case of clan's SSH round trips between steps: a server one step starts is up before the next runs.
+        # Worst case of clan's SSH round trips: a server one step starts is up before the next.
         sequoia.wait_until_succeeds(f"! systemctl -q is-active vaultwarden.service || curl -fsS {url}/alive")
     sequoia.succeed(f"curl -fsS {url}/alive")
     assert json.loads(sequoia.succeed(profile))["email"] == email

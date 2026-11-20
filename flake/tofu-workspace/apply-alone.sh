@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# A first argument that is not a tofu flag names the device to apply alone; tofu gets every argument after it, as it gets all of them without one.
+# A leading non-flag argument names the device to apply alone; tofu gets the rest.
 is_device() {
   jq -e --arg device "$1" 'has($device)' "$TARGETS" >/dev/null
 }
@@ -13,7 +13,7 @@ if [[ $# -gt 0 && $1 != -* ]]; then
   device=$1
   shift
 fi
-# tofu would refuse a device name anywhere else only after the tunnel, the secrets and the guard's survey of the devices.
+# tofu would reject a device name elsewhere only after the tunnel, secrets and device survey.
 for argument in "$@"; do
   if ! is_device "$argument"; then
     continue

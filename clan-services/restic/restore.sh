@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# clan backups restore sets NAME and FOLDERS, and runs each state's restore commands around this script.
+# clan backups restore sets NAME and FOLDERS and runs the restore commands around this.
 if [[ "${NAME:-}" == "" ]]; then
   echo "No backup name given via NAME environment variable" >&2
   exit 1

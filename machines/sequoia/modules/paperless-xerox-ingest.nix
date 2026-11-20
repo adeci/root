@@ -75,7 +75,7 @@ in
     '';
   };
 
-  # Typed firewall options can't restrict by source; raw rules admit only the printer instead of opening FTP to all.
+  # Typed firewall options can't filter by source; raw rules admit only the printer.
   networking.firewall.extraCommands = ''
     ${iptables} -A nixos-fw -s ${lan.hosts.printer.ip} -p tcp --dport 21 -j ACCEPT
     ${iptables} -A nixos-fw -s ${lan.hosts.printer.ip} -p tcp --dport ${toString ftpPassivePorts.from}:${toString ftpPassivePorts.to} -j ACCEPT

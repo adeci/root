@@ -5,7 +5,7 @@
   ...
 }:
 let
-  # Builds each of a flake's NixOS and darwin machines whose platform is `system`; a machine with evaluation warnings fails instead, since its build only prints them.
+  # Builds machines for `system`; eval warnings fail, as a build only prints them.
   mkMachineChecks =
     flake: system:
     let
@@ -54,10 +54,10 @@ in
           home-links = callPackage ../modules/home-links/tests { };
         }
         // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-          # Alert rules, routing and the ntfy bridge, all of which run on the Linux monitoring server.
+          # Alert rules, routing and the ntfy bridge; the monitoring server is Linux.
           monitoring = callPackage ../clan-services/monitoring/tests { };
 
-          # janus's and leviathan's own alert rules, grouped as the server loads them, against the cases beside them.
+          # janus's and leviathan's own alert rules, grouped as the server loads them.
           machine-rules =
             let
               ruleTests = {

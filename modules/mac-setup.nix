@@ -63,7 +63,7 @@
             type = lib.types.listOf lib.types.str;
             default = [ ];
             example = [ "gui/org.nixos.aerospace" ];
-            description = "launchd services restarted afterwards: gui/<label> in the user's session, system/<label> otherwise.";
+            description = "launchd services restarted afterwards: gui/<label> in the login session, system/<label> otherwise.";
           };
         };
       };

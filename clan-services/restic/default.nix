@@ -53,14 +53,13 @@
             type = lib.types.bool;
             default = true;
             description = ''
-              Whether this machine is meant to be on at all times. One that is
-              not, such as a laptop, tries every hour instead of following
-              `timerConfig`, and backs up once its newest snapshot is 20 hours
-              old, on AC power, on a network that comes up within a minute and
-              that NetworkManager does not call metered, and with an S3
-              repository's server answering within 10 seconds; a repository
-              that answers with an error makes the backup run and fail. Its
-              backup stops when it goes to sleep, and the next try picks up
+              Whether the machine is always on. If not (e.g. a laptop) it tries
+              hourly instead of following `timerConfig`, and backs up once its
+              newest snapshot is 20 hours old, on AC power, on a network that
+              comes up within a minute and that NetworkManager doesn't call
+              metered, with an S3 repository's server answering within 10
+              seconds; a repository answering with an error makes the backup
+              run and fail. Sleep stops the backup; the next try picks up
               where it stopped.
             '';
           };
@@ -134,7 +133,7 @@
               ) states
             );
 
-            # One "<state>\t<hook>\t<command>" line per state backup command, hook being pre-backup or post-backup.
+            # "<state>\t<hook>\t<command>" lines; hook is pre-backup or post-backup.
             stateCommands = pkgs.writeText "restic-state-commands.tsv" (
               lib.concatMapStrings (
                 state:
@@ -164,8 +163,7 @@
             };
 
             restic = lib.getExe config.services.restic.backups.${jobName}.package;
-            # forget needs the repository to itself, so it waits out a read such as clan backups list.
-            # By host alone: grouped by folders too, restic's default, the snapshots taken before the folders changed would never thin out.
+            # --retry-lock waits out reads like clan backups list; by host so old folder sets thin out.
             forget = "${restic} forget --prune --retry-lock 10m --group-by host ${lib.concatStringsSep " " settings.pruneOpts}";
 
             whenDue = pkgs.writeShellApplication {
@@ -215,7 +213,7 @@
                   "--tag ${machineName}"
                 ];
                 initialize = true;
-                # A laptop sleeps when its owner says so, and its backup stops.
+                # Laptops sleep on demand, stopping the backup.
                 inhibitsSleep = settings.alwaysOn;
                 environmentFile =
                   config.clan.core.vars.generators.${settings.credentials.generator}.files.${settings.credentials.file}.path;
@@ -228,11 +226,11 @@
                 {
                   # For restic-<job> mount: that command runs with this unit's PATH.
                   path = [ fusermount ];
-                  # A step after the backup rather than one more ExecStart, and a single command: systemd runs the next command of a stopped run when the stopped one ends cleanly, as a laptop's does.
+                  # Not a second ExecStart: systemd would still run that after a clean stop at sleep.
                   serviceConfig.ExecStartPost = lib.mkIf (settings.pruneOpts != [ ]) forget;
                 }
                 (lib.mkIf (!settings.alwaysOn) {
-                  # Stopped for sleep, restic exits with 130 and the scripts around it die by SIGTERM; the next try resumes the upload.
+                  # On sleep restic exits 130 and its wrappers die by SIGTERM; the next try resumes.
                   conflicts = [ "sleep.target" ];
                   before = [ "sleep.target" ];
                   serviceConfig.SuccessExitStatus = "130 SIGTERM";

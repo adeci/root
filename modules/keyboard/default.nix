@@ -68,8 +68,7 @@
           }
         ];
 
-      # A copy, not a home.links link: Karabiner misses changes to a linked karabiner.json.
-      # Made as the user, so a missing ~/.config does not end up owned by root.
+      # Copy as the user: Karabiner misses symlink changes; root mustn't own ~/.config.
       system.activationScripts.postActivation.text = # bash
         lib.mkAfter ''
           echo "installing karabiner config..."

@@ -17,7 +17,7 @@ def netns(host):
 
 
 def plug_in(host):
-    """Gives a host a network namespace of its own and a link on the trusted VLAN."""
+    """Give a host its own netns and a link on the trusted VLAN."""
     clients.succeed(
         f"ip link add link trunk.{trusted['id']} name {host} type macvlan mode bridge",
         f"ip netns add {host}",
@@ -29,7 +29,7 @@ def plug_in(host):
 
 
 def lease(host, attempts=3):
-    """Runs the host's DHCP client until it is bound, or until it gives up."""
+    """Run udhcpc until bound or it gives up."""
     return f"{netns(host)} {busybox} udhcpc -i {host} -n -q -t {attempts} -s {udhcpc_script}"
 
 
@@ -53,7 +53,7 @@ def confirm(system):
 
 
 def clan_switch(system):
-    """Switches janus with the patched clan-cli's own activation and confirmation, over its own connection."""
+    """Switch janus with the patched clan-cli's activation and confirmation, over its own connection."""
     return f"{netns('deployer')} env PYTHONPATH={clan_lib} {clan_python} {clan_switch_script} {gateway} {system} < /dev/null 2>&1"
 
 
@@ -66,7 +66,7 @@ def now():
 
 
 def deploy(system):
-    """Switches janus as clan does: the profile, the boot default, then the live switch in a transient unit."""
+    """Switch as clan does: profile, boot default, then the live switch in a transient unit."""
     janus.succeed(f"nix-env --profile /nix/var/nix/profiles/system --set {system}")
     janus.succeed(f"{system}/bin/switch-to-configuration boot")
     status, output = janus.execute(
@@ -77,14 +77,14 @@ def deploy(system):
 
 
 def runs(system):
-    """Checks that janus runs the system and boots it next: GRUB's default is its first entry."""
+    """Check that janus runs the system and boots it next (GRUB's first entry)."""
     janus.succeed(f'test "$(readlink -f /run/current-system)" = {system}')
     janus.succeed(f'test "$(readlink -f /nix/var/nix/profiles/system)" = {system}')
     janus.succeed(f"grep -m 1 -o 'init=[^ ]*' /boot/grub/grub.cfg | grep -qx 'init={system}/init'")
 
 
 def wait_for_revert(since):
-    """Waits until janus has gone back to its previous system after `since`, by its clock; a revert just before it may share its second."""
+    """Wait for a revert after `since` by janus's clock; one just before may share its second."""
     janus.wait_until_succeeds(
         f"test \"$(sed -n 's/^deploy_guard_revert_timestamp_seconds //p' {metrics_file})\" -gt {since}",
         timeout=dt.timedelta(seconds=window + 120),
@@ -122,7 +122,7 @@ with subtest("the lease check leaves janus's mgmt bridge as it found it"):
     janus.fail("ip link show deploy-guard")
     janus.fail("ip netns list | grep -q deploy-guard")
 
-with subtest("a switch clan confirms over a new connection stays, though a check that failed before it still fails"):
+with subtest("a switch confirmed over a new connection stays, even with a check that already failed"):
     output = clients.succeed(clan_switch(harmless))
     assert "upstream already fails" in output, output
     assert "goes back to its previous system at" in output, output
@@ -132,7 +132,7 @@ with subtest("a switch clan confirms over a new connection stays, though a check
     runs(harmless)
     janus.fail(f"test -e {metrics_file}")
 
-with subtest("a switch that shuts ssh out goes back when its window ends, though the deploy's own connection lasts"):
+with subtest("a switch that locks out ssh reverts after its window, though the deploy's connection lasts"):
     since = now()
     closes_ssh = specialisation("closesSsh")
     # clan's own connection outlives the switch; only a new one shows the lockout.
@@ -145,11 +145,11 @@ with subtest("a switch that shuts ssh out goes back when its window ends, though
     runs(harmless)
     # A confirmation that only gets through once janus is back does not count.
     assert "no longer runs" in clients.fail(confirm(closes_ssh))
-    # The next deploy, which finds janus already on the system it builds, clears the revert's report.
+    # The next deploy, finding janus already on its system, clears the revert report.
     assert "No switch is waiting" in clients.succeed(confirm(harmless))
     janus.fail(f"test -e {metrics_file}")
 
-with subtest("a revert that the previous system refuses leaves janus wholly on the new system, and its unit failed"):
+with subtest("a revert the previous system refuses leaves janus on the new system, its unit failed"):
     deploy(original)
     janus.succeed("touch /run/deploy-guard-test-refuse")
     janus.wait_until_succeeds(

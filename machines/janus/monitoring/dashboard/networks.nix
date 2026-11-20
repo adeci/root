@@ -10,7 +10,7 @@ let
   bits =
     direction: interface:
     ''8 * rate(node_network_${direction}_bytes_total{${router}, device="${interface}"}[$__rate_interval])'';
-  # As the clients see it: what the router sends into a VLAN is down, and what it takes in from the internet.
+  # Clients' view: down is what the router sends into a VLAN or takes from the internet.
   down = "sum by (network) (${named "internet" (bits "receive" wan)} or ${
     perVlan (vlan: bits "transmit" vlan.interface)
   })";
@@ -25,7 +25,7 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Networks";
-      description = "The internet through the WAN port, and each VLAN. Clients holds an address from the router. Peak is the busiest moment in the picked time range, beside its course.";
+      description = "The internet via the WAN port, and each VLAN. Clients: holding an address from the router. Peak: the busiest moment in the picked range, beside its course.";
       w = 15;
       # The internet and each VLAN, plus the title and the header.
       h = builtins.length network.vlans + 3;

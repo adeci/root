@@ -4,7 +4,7 @@ shift
 
 state=$(tailscale status --json --peers=false | jq -r .BackendState)
 case $state in
-  # Only a logged-out Mac uses the key: logging in again with it, a user's key, would take the Mac's tags away.
+  # Only when logged out: re-login with a user's key would drop the Mac's tags.
   NeedsLogin)
     tailscale up --auth-key="file:$auth_key_file" --timeout=30s "$@"
     ;;

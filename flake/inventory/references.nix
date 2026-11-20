@@ -11,29 +11,24 @@ let
 
   isMachine = name: config.machines ? ${name};
 
-  # A rule that the name written at `path` is a machine.
   mustBeMachine = path: name: {
     assertion = isMachine name;
     message = "${path}: ${name} is not a machine";
   };
 
-  # A rule that the name written at `path` is an edge in ingress.nix.
   mustBeEdge = path: name: {
     assertion = ingress.edges ? ${name};
     message = "${path}: ${name} is not an edge in inventory/ingress.nix";
   };
 
-  # The values that occur more than once in a list.
   usedMoreThanOnce =
     values: lib.unique (lib.filter (value: lib.count (other: other == value) values > 1) values);
-
-  # The rules
 
   tunnelMachines = map (name: mustBeMachine "inventory/cloudflare.nix tunnels.${name}" name) (
     lib.attrNames cloudflare.tunnels
   );
 
-  # Tunnel and redirect entries are keyed by service, so nothing else keeps a name to one entry.
+  # Entries are keyed by service, so nothing else stops a host appearing twice.
   uniquePublicHosts =
     let
       reused = usedMoreThanOnce (
@@ -136,7 +131,7 @@ let
     ) clanInstances
   );
 
-  # Stands in for a policy test, which can't take autogroup:shared as its source (tailscale/tailscale#4416).
+  # Policy tests can't use autogroup:shared as src (tailscale/tailscale#4416).
   sharedUserDestinations = map (
     grant:
     let

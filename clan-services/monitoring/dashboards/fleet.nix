@@ -3,7 +3,7 @@ machines:
 let
   ui = import ./lib.nix;
 
-  # Every panel matches the three pickers, but for the public names, which belong to no machine they list.
+  # Every panel but the public names, which belong to no listed machine, matches the pickers.
   selected = ''os=~"$os", kind=~"$kind", instance=~"$host"'';
   # The jobs keep out the Alloy-era series still stored under the same names.
   node = ''job="node", ${selected}'';
@@ -11,7 +11,7 @@ let
   macos = ''${node}, os="macos"'';
   servers = ''${node}, kind="server"'';
   laptops = ''${node}, kind="laptop"'';
-  # Linux drives report through smartctl_exporter; a Mac's internal SSD through node_exporter's text files.
+  # Linux drives via smartctl_exporter; a Mac's internal SSD via node_exporter's text files.
   smart = ''job=~"smartctl|node", ${selected}'';
   machine = "instance, os, kind";
 
@@ -64,7 +64,7 @@ let
         repeat = "kind";
       }
     );
-  # Half the page wide, both Macs in one graph: they are a server and a laptop, whose colours differ.
+  # Both Macs in one half-width graph: a server and a laptop, so their colours differ.
   macLines =
     panel:
     lines (
@@ -79,14 +79,14 @@ let
   up = kind: ''max by (${machine}) (up{${node}, kind="${kind}"})'';
   # A public name's reading from the last request to it.
   publicName = metric: ''max by (name) (${metric}{job="probe"})'';
-  # How old each machine's newest snapshot is, as the backups page shows it too.
+  # Shared with the backups page.
   backupFreshness = import ./backup-freshness.nix;
   backupClients = builtins.filter (name: machines.${name}.backsUp) (builtins.attrNames machines);
-  # Idle time against all CPU time, not against the step: a machine up for only part of a step would read near 100 %.
+  # Idle over all CPU time, not the step: a machine up for part of a step would read near 100 %.
   cpuBusy =
     matchers:
     ''100 * (1 - sum by (${machine}) (rate(node_cpu_seconds_total{mode="idle", ${matchers}}[$__rate_interval])) / sum by (${machine}) (rate(node_cpu_seconds_total{${matchers}}[$__rate_interval])))'';
-  # Linux reports what is available; on a Mac, Activity Monitor's "Memory Used" is app memory, wired and compressed.
+  # On a Mac, Activity Monitor's "Memory Used": app memory, wired and compressed.
   memoryUsed = matchers: ''
     100 * max by (${machine}) (
       1 - node_memory_MemAvailable_bytes{${matchers}} / node_memory_MemTotal_bytes{${matchers}}
@@ -106,13 +106,13 @@ let
     "100 * max by (instance) (${named "cpu"} or ${named "memory"} or ${named "io"})";
   macMemoryPressure = "max by (instance) (macos_memory_pressure_level{${macos}})";
   cpuChips = ''chip_name=~"coretemp|k10temp|cpu_thermal"'';
-  # Averaged per step: some sensors swing by ten degrees from one scrape to the next. A Mac reports its cores' average, from its health job.
+  # Per-step average: some sensors swing ten degrees between scrapes. Macs report a core average.
   cpuTemperature =
     matchers:
     "max by (${machine}) (avg_over_time(node_hwmon_temp_celsius{${matchers}}[$__rate_interval]) * on (instance, chip) group_left (chip_name) node_hwmon_chip_names{${matchers}, ${cpuChips}}) or max by (${machine}) (macos_cpu_temperature_celsius{${matchers}})";
-  # Whole disks: NVMe namespaces, SCSI, SATA and virtio disks and SD cards, not partitions, device mapper or optical drives.
+  # Whole disks (NVMe, SCSI, SATA, virtio, SD cards), not partitions, device mapper or optical.
   physicalDisks = ''device=~"nvme[0-9]+n[0-9]+|[hsv]d[a-z]+|xvd[a-z]+|mmcblk[0-9]+"'';
-  # Received plus sent. Loopback is lo on Linux, lo0 on macOS; the busiest interface stands for the machine, so bridges don't count twice.
+  # Received plus sent on the busiest interface, so bridges don't count twice.
   networkTraffic =
     matchers:
     let
@@ -125,7 +125,7 @@ let
     "rate(node_disk_read_bytes_total{${matchers}}[$__rate_interval]) + rate(node_disk_written_bytes_total{${matchers}}[$__rate_interval])";
   # vm_stat's page-ins plus page-outs, which node_exporter names swapped in and out.
   paging = "max by (instance) (rate(node_memory_swapped_in_bytes_total{${macos}}[$__rate_interval]) + rate(node_memory_swapped_out_bytes_total{${macos}}[$__rate_interval]))";
-  # A laptop battery's reading, not a peripheral's (scope "Device") such as a headset's; a Mac calls its battery's type InternalBattery.
+  # A laptop's battery, not a peripheral's (scope "Device"); a Mac's type is InternalBattery.
   laptopBattery =
     reading:
     ''max by (${machine}) (${reading} * on (instance, power_supply) group_left () node_power_supply_info{${laptops}, type=~"Battery|InternalBattery", scope!="Device"})'';
@@ -133,7 +133,7 @@ let
   batteryCharge = laptopBattery "(node_power_supply_capacity{${laptops}} or 100 * node_power_supply_current_capacity{${laptops}} / node_power_supply_max_capacity{${laptops}})";
   batteryHealth = "clamp_max(100 * (${laptopBattery "(node_power_supply_energy_full{${laptops}} / node_power_supply_energy_full_design{${laptops}} or node_power_supply_charge_full{${laptops}} / node_power_supply_charge_full_design{${laptops}})"} or max by (${machine}) (macos_battery_health_ratio{${laptops}})), 100)";
   laptopsOnline = "up{${laptops}} == 1";
-  # dbus-broker logs "Ignoring duplicate name" at error level whenever a user manager starts; it is not a failure.
+  # dbus-broker logs this at error level whenever a user manager starts; not a failure.
   journalErrors = ''{instance=~"$host", level=~"emerg|alert|crit|err"} != "Ignoring duplicate name"'';
   # Each line says where it's from.
   recentErrors = ''${journalErrors} | line_format "{{.instance}} {{.service_name}}: {{__line__}}"'';
@@ -213,7 +213,7 @@ ui.dashboard {
   title = "Fleet";
   # Which machines back up, what they store and what it costs.
   links.Backups = "backups";
-  # os and kind match everything when All; the host picker's All is the hosts they leave, which also narrows the journal, whose lines have no os or kind.
+  # Host's All is the hosts os and kind leave, which narrows the journal too (no os/kind there).
   variables = [
     (ui.labelVariable {
       name = "os";
@@ -293,7 +293,7 @@ ui.dashboard {
         })
         (machineTable {
           title = "Servers";
-          description = "Peak is the highest CPU use in the picked time range, beside its course over that range.";
+          description = "Peak is the highest CPU use in the picked time range, beside its trend.";
           w = 24;
           # A grid unit per server, plus the title and the header.
           h = builtins.length (machinesByKind.server or [ ]) + 2;
@@ -310,7 +310,7 @@ ui.dashboard {
             {
               name = "Alerts";
               width = 80;
-              # The worst alert on each server, matched on instance alone as some alerts carry no os or kind; 0, shown blank, keeps the column when none fires.
+              # Matched on instance alone as some alerts lack os and kind; 0 keeps the column.
               expr = ''max by (instance) (2 * ALERTS{alertstate="firing", severity="critical"} or ALERTS{alertstate="firing", severity="warning"}) * on (instance) group_left (os, kind) group by (${machine}) (up{${servers}}) or 0 * ${up "server"}'';
               threshold = ui.thresholds.alertSeverity;
               valueMappings = ui.mappings.alertSeverity;
@@ -446,7 +446,7 @@ ui.dashboard {
       panels = [
         (ui.mergedTable {
           title = "Public names";
-          description = "Each name as the last request to it found it, one a minute. Peak is the slowest response in the picked time range, beside its course over that range. Tunnel counts the connections to Cloudflare its machine holds: four when healthy.";
+          description = "Each name as of the last request to it, one a minute. Peak is the slowest response in the picked time range, beside its trend. Tunnel counts its machine's connections to Cloudflare: four when healthy.";
           w = 15;
           # Eight names today, plus the title and the header.
           h = 10;
@@ -842,7 +842,7 @@ ui.dashboard {
             }
           ];
           renamedColumns.instance = "Host";
-          # Ready and Finished count from the start of the kernel; Finished waits for catch-up jobs such as a missed backup.
+          # Ready and Finished count from the kernel's start; Finished includes catch-up jobs.
           columns = [
             {
               name = "Ready";

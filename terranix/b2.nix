@@ -43,7 +43,7 @@ let
     "readBucketEncryption"
   ];
 
-  # Writes a key to a machine's clan var as an env file; terraform_data echoes its input unredacted, so only the key ID goes there.
+  # terraform_data echoes its input unredacted, so only the key ID goes there.
   keyToClanVar =
     {
       keyName,
@@ -106,7 +106,7 @@ in
     application_key = clanSecret "b2-admin-application-key";
   };
 
-  # B2 refuses to delete a bucket that still holds files, but only at apply; this stops any plan that would destroy or replace it.
+  # B2 refuses to delete a non-empty bucket only at apply; this stops it at plan.
   resource.b2_bucket.restic_backups = privateBucket resticBucket.name "restic-backups" // {
     lifecycle.prevent_destroy = true;
   };

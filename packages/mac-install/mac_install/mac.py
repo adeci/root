@@ -65,7 +65,7 @@ def run(  # noqa: PLR0913 - the options are keyword-only
 
 
 def probe(address: str) -> None:
-    """Fail with what to do about it unless something answers on port 22."""
+    """Fail with a hint unless something answers on port 22."""
     try:
         socket.create_connection((address, 22), timeout=5).close()
     except ConnectionRefusedError:
@@ -149,7 +149,7 @@ def record(key: HostKey, known_hosts: Path) -> None:
 
 
 def secrets_tarball(directory: Path) -> bytes:
-    """`directory` as root:wheel will own it on the Mac, with the modes clan gave each file."""
+    """`directory` as a root:wheel tarball, keeping clan's file modes."""
 
     def as_root(info: tarfile.TarInfo) -> tarfile.TarInfo:
         info.uid, info.gid, info.uname, info.gname = 0, 0, "root", "wheel"
@@ -173,7 +173,7 @@ class Mac:
     dry_run: bool
     # The shared connection's socket.
     control: Path
-    # ssh options that make the key --dry-run trusts for its own run the only one.
+    # --dry-run pins the confirmed key without touching known_hosts.
     pinned: list[str]
     awake: subprocess.Popen[bytes] | None = None
 
@@ -208,7 +208,7 @@ class Mac:
         self.change(f"launchctl asuser {uid} sudo -u {user} open {url}", fresh=fresh)
 
     def keep_awake(self) -> None:
-        """caffeinate in its own session with a terminal, so the hangup when it ends stops it, even if this machine drops off."""
+        """caffeinate over its own tty, so hangup stops it even if this machine drops off."""
         if self.dry_run:
             ui.would("keep the Mac awake while this runs (lid open)")
             return
@@ -236,7 +236,7 @@ class Mac:
 
 @contextlib.contextmanager
 def connect(address: str, *, dry_run: bool) -> Iterator[Mac]:
-    """root on the Mac, over a host key that known_hosts has or the person running this confirmed."""
+    """root on the Mac, over a host key that is known or confirmed by hand."""
     ui.section(f"Host key of {address}")
     probe(address)
     key = scan(address)

@@ -5,7 +5,7 @@
   ...
 }:
 let
-  # Hetzner's rescue console and initial setup only, so hardware-backed keys. Picked by comment, so reordering the user's sshKeys doesn't replace the server.
+  # Hardware keys for rescue and setup, by name so reordering sshKeys keeps the server.
   rescueKeys = [
     "praxis-tpm"
     "modus-tpm"
@@ -19,7 +19,7 @@ in
     public_key = self.users.alex.keyNamed name;
   });
 
-  # nixos-anywhere replaces the Ubuntu image; never let create-time fields force a replacement (wipes disk, new IP).
+  # nixos-anywhere replaces the image; never rebuild over create-time fields (wipes disk, new IP).
   resource.hcloud_server.conduit = {
     name = "conduit";
     server_type = "cpx11";

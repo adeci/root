@@ -10,7 +10,7 @@ let
   inherit (self.inventory.routeros) models;
   inherit (import ../lib.nix { inherit clan-cli lib; }) clanSecret;
 
-  # The management port keeps untagged DHCP management and carries each Wi-Fi VLAN as a tagged sub-interface with a bridge of its own, without vlan_filtering.
+  # Each Wi-Fi VLAN: tagged sub-interface on the management port, own bridge, no vlan_filtering.
   accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != null) appliances;
 
   authenticationTypes = {
@@ -22,13 +22,13 @@ let
     ];
   };
 
-  # The radios pre-exist after netinstall; the import blocks find them by name and bring them into state on first apply.
+  # Radios exist after netinstall; the import blocks bring them into state on first apply.
   radios = accessPoint: models.${accessPoint.model}.radios;
 
   # The VLANs an access point's networks join.
   wifiVlans = accessPoint: lib.unique (map (network: wifi.${network}.vlan) accessPoint.wifi);
 
-  # A resource for each Wi-Fi VLAN or network of each access point, named <access point>_<VLAN or network>.
+  # One resource per access point and Wi-Fi VLAN or network, named <ap>_<key>.
   forEachAccessPoint =
     keys: resource:
     lib.concatMapAttrs (
@@ -103,7 +103,7 @@ in
     }
   );
 
-  # Each radio's main interface broadcasts the access point's first network, and a virtual interface each other network.
+  # The first network on each radio's main interface, the rest as virtual interfaces.
   resource.routeros_wifi = lib.concatMapAttrs (
     name: accessPoint:
     let

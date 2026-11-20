@@ -104,7 +104,7 @@ let
         timeZone = lib.mkOption {
           type = lib.types.nullOr lib.types.str;
           default = null;
-          description = "Time zone of the machines this profile is the primary user of, unless they track their location.";
+          description = "Time zone for machines where this profile is the primary user, unless they track location.";
         };
         keyNamed = lib.mkOption {
           type = lib.types.functionTo lib.types.str;

@@ -12,7 +12,7 @@
 
 ;;;; Look
 
-;; fixed-pitch and variable-pitch would otherwise fall back to other fonts in the tab bar, help and manuals.
+;; Otherwise the tab bar, help and manuals fall back to other fonts.
 (dolist (face '(default fixed-pitch variable-pitch))
   (set-face-attribute face nil :family "CaskaydiaMono Nerd Font Mono"))
 (set-face-attribute 'default nil :height 110 :weight 'semibold)

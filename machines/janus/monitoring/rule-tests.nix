@@ -1,4 +1,4 @@
-# The rules on a small test network, so the cases don't change with the real cabling.
+# Small test network so the cases don't change with the real cabling.
 let
   cable = port: to: toPort: {
     appliance = "switch";
@@ -131,7 +131,7 @@ in
     }
 
     {
-      name = "losing 5% of the pings stays quiet; losing a quarter alerts once the ten-minute average has been over 10% for 15 minutes";
+      name = "5% ping loss stays quiet; 25% alerts once the 10m average is over 10% for 15m";
       interval = "1m";
       input_series = [
         {
@@ -183,7 +183,7 @@ in
     }
 
     {
-      name = "a prober whose pingers have exited alerts at once, even while the ISP gateway is down; one whose pingers all run does not";
+      name = "exited pingers alert at once, even with the ISP gateway down; running ones do not";
       interval = "1m";
       input_series = [
         {
@@ -206,7 +206,7 @@ in
             };
             exp_annotations = {
               summary = "The router's latency prober has stopped pinging";
-              description = "2 of its pingers exited with an error, so InternetPacketLoss can't see the internet; see `journalctl -u prometheus-smokeping-exporter` on janus, and restart it.";
+              description = "2 pingers exited, so InternetPacketLoss is blind; see `journalctl -u prometheus-smokeping-exporter` on janus and restart it.";
             };
           }
         ])
@@ -303,7 +303,7 @@ in
     }
 
     {
-      name = "a pool 95% leased for half an hour alerts once, not again for its subnet's totals; one 85% leased does not";
+      name = "a pool 95% leased for 30m alerts once, not again for subnet totals; 85% does not";
       interval = "5m";
       input_series = [
         {
@@ -352,7 +352,7 @@ in
     }
 
     {
-      name = "a clock whose maximum error has been over a second for half an hour is unsynchronised; one at 0.9 s is not";
+      name = "clock max error over 1 s for 30m alerts; 0.9 s does not";
       interval = "1m";
       input_series = [
         {
@@ -371,7 +371,7 @@ in
             };
             exp_annotations = {
               summary = "The router's clock is unsynchronised";
-              description = "Its maximum error is 16s, and the switches and access points take their time from it; see `chronyc sources` on janus.";
+              description = "Max error 16s; switches and APs take their time from it. See `chronyc sources` on janus.";
             };
           }
         ])
@@ -428,7 +428,7 @@ in
     }
 
     {
-      name = "cables linked below their port's speed for an hour alert at their near end; ports at full speed or down do not";
+      name = "cables below port speed for an hour alert at the near end; full speed or down ports do not";
       interval = "5m";
       input_series =
         let
@@ -483,7 +483,7 @@ in
     }
 
     {
-      name = "an appliance whose hottest sensor stays over 85°C for 15 minutes is too hot, one at 80°C is not";
+      name = "an appliance over 85°C for 15m alerts; 80°C does not";
       interval = "1m";
       input_series = [
         {
@@ -598,7 +598,7 @@ in
     }
 
     {
-      name = "an appliance that has rolled back a net-apply alerts at once, until the next net-apply removes its marker";
+      name = "a rolled-back appliance alerts at once, until the next net-apply clears the marker";
       interval = "1m";
       input_series = [
         {
@@ -621,7 +621,7 @@ in
             };
             exp_annotations = {
               summary = "ap rolled back a net-apply";
-              description = "The net-apply that armed ap was not confirmed, so it restored, or tried to restore, the configuration it had before that apply; the next net-apply says which, plans that apply's changes again and clears this.";
+              description = "ap restored, or tried to restore, its config after an unconfirmed net-apply. The next net-apply says which, replans and clears this.";
             };
           }
         ])
@@ -630,7 +630,7 @@ in
     }
 
     {
-      name = "a device whose MAC had no lease in the 30 days before is new for twelve hours, by its name or else its maker; one back after ten days is not, nor a reserved host back after forty, a guest or the deploy guard's check";
+      name = "an unseen MAC is new for 12h, by name or maker; not one back after ten days, a reserved host, a guest or the guard check";
       interval = "1h";
       input_series =
         let
@@ -664,7 +664,7 @@ in
               maker = "Apple, Inc.";
             }
             "A new device joined trusted: phone"
-            "It took 10.10.0.150 with MAC aa:00:00:00:00:01 (Apple, Inc.), which had no lease in the 30 days before; see Clients on the network page."
+            "It took 10.10.0.150 with MAC aa:00:00:00:00:01 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
           )
           (newDevice
             {
@@ -674,7 +674,7 @@ in
               maker = "Apple, Inc.";
             }
             "A new device joined trusted: tablet"
-            "It took 10.10.0.152 with MAC aa:00:00:00:00:03 (Apple, Inc.), which had no lease in the 30 days before; see Clients on the network page."
+            "It took 10.10.0.152 with MAC aa:00:00:00:00:03 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
           )
           (newDevice
             {
@@ -683,7 +683,7 @@ in
               maker = "private address";
             }
             "A new device joined trusted: private address"
-            "It took 10.10.0.153 with MAC 6a:00:00:00:00:06 (private address), which had no lease in the 30 days before; see Clients on the network page."
+            "It took 10.10.0.153 with MAC 6a:00:00:00:00:06 (private address), unseen for 30 days; see Clients on the network page."
           )
         ])
         (noAlert "NewDevice" "997h")
@@ -691,7 +691,7 @@ in
     }
 
     {
-      name = "a new device is one alert, on its first lease, for all twelve hours, though it takes a second address or gives its name only when it renews";
+      name = "a new device is one alert for all 12h, despite a second address or a name only on renewal";
       interval = "1h";
       input_series =
         let
@@ -720,7 +720,7 @@ in
                 maker = "Apple, Inc.";
               }
               "A new device joined trusted: Apple, Inc."
-              "It took 10.10.0.161 with MAC aa:00:00:00:00:11 (Apple, Inc.), which had no lease in the 30 days before; see Clients on the network page."
+              "It took 10.10.0.161 with MAC aa:00:00:00:00:11 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
             )
             (newDevice
               {
@@ -729,7 +729,7 @@ in
                 maker = "Intel Corporate";
               }
               "A new device joined trusted: Intel Corporate"
-              "It took 10.10.0.163 with MAC aa:00:00:00:00:12 (Intel Corporate), which had no lease in the 30 days before; see Clients on the network page."
+              "It took 10.10.0.163 with MAC aa:00:00:00:00:12 (Intel Corporate), unseen for 30 days; see Clients on the network page."
             )
           ];
         in
@@ -757,7 +757,7 @@ in
     }
 
     {
-      name = "with three days of lease records, as the backup keeps, a device first seen then is not reported";
+      name = "with only the backup's three days of lease records, nothing is reported";
       interval = "1h";
       input_series = [
         {

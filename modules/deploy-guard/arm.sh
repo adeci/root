@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# switch-to-configuration runs this before it changes anything, with the system it switches to and its action.
+# Pre-switch check: $1 is the new system, $2 the action.
 new=$1
 action=$2
 state=/run/deploy-guard
@@ -12,18 +12,18 @@ current=$(readlink -f /run/current-system)
 if [[ $current == "$(readlink -f "$new")" ]]; then
   exit 0
 fi
-# The revert switches back itself, and nothing reverts that.
+# Don't arm for the revert's own switch.
 if systemctl --quiet is-active deploy-guard-revert.service; then
   exit 0
 fi
 
 if systemctl --quiet is-active deploy-guard-revert.timer; then
-  # A switch on top of one still unconfirmed gets a fresh window, back to the system from before both.
+  # Stacked unconfirmed switch: new window, still back to the original system.
   systemctl restart deploy-guard-revert.timer
 else
   rm -rf "$state"
   mkdir -p "$state/passed"
-  # Also a root for the garbage collector, so the system to go back to stays in the store.
+  # GC root, so the previous system stays in the store.
   nix-store --realise "$current" --add-root "$state/previous" >/dev/null
   for check in "$CHECKS"/*; do
     if timeout 30 "$check" >/dev/null 2>&1; then
@@ -32,7 +32,7 @@ else
       echo "deploy-guard: ${check##*/} already fails, so it does not count against this switch"
     fi
   done
-  # A revert that failed stays a failed unit, for the fleet's alert, until a later switch arms anew.
+  # A failed revert stays failed (for the alert) until the next switch arms.
   systemctl reset-failed deploy-guard-revert.service 2>/dev/null || true
   systemd-run --quiet --unit=deploy-guard-revert --on-active="$WINDOW_SECONDS" --timer-property=AccuracySec=1s "$REVERT"
 fi

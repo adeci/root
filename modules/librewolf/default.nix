@@ -49,7 +49,7 @@ in
 
       home.links.".librewolf/librewolf.overrides.cfg" = pkgs.writeText "librewolf.overrides.cfg" prefs;
 
-      # Registers the app first, as Launch Services may not have seen a freshly copied bundle yet.
+      # Register first: Launch Services may not know a freshly copied bundle yet.
       system.activationScripts.postActivation.text = ''
         ${asUser} /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f "/Applications/Nix Apps/LibreWolf.app" || true

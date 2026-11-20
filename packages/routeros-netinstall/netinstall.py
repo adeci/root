@@ -78,7 +78,7 @@ def routeros_hex(value, label):
         data = bytes.fromhex(value.replace(":", ""))
     except ValueError:
         raise SystemExit(f"ERROR: {label} {value} is not hex bytes.")
-    # RouterOS sends a value written 0x… as those bytes, unconverted.
+    # RouterOS sends 0x... values as raw bytes.
     return f"0x{data.hex()}"
 
 
@@ -102,7 +102,7 @@ def render_setup_script(admin_user, admin_password, management_port, client_id, 
         f"/ip dhcp-client add interface={management_port} dhcp-options=hostname,clientid_name disabled=no",
     ]
     if fallback_port:
-        # A client id must be unique on its subnet (RFC 2132, 9.14), so this port keeps its MAC-based one.
+        # Client ids must be unique per subnet (RFC 2132, 9.14); keep the MAC-based one.
         lines.append(f"/ip dhcp-client add interface={fallback_port} disabled=no")
     return "".join(f"{line}\n" for line in lines)
 
@@ -146,7 +146,7 @@ def main():
         args.fallback_port,
     )
 
-    print(f"RouterOS Netinstall — {args.device}, a {args.model} ({args.arch}, v{args.version})")
+    print(f"RouterOS Netinstall: {args.device}, a {args.model} ({args.arch}, v{args.version})")
     print("")
     print("Prerequisites:")
     print("  1. Device in Netinstall mode (hold reset 15s: flash → solid → off → release)")

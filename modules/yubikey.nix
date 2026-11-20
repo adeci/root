@@ -6,7 +6,7 @@
 
       services.udev.packages = [ pkgs.yubikey-personalization ];
 
-      # pcscd's own rule lets in only the session at the screen; SSH and TTY logins need the keys too.
+      # pcscd only allows the local seat; let wheel in over SSH and TTY too.
       security.polkit.extraConfig = ''
         polkit.addRule(function(action, subject) {
           if ((action.id == "org.debian.pcsc-lite.access_pcsc" ||

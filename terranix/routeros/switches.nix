@@ -23,10 +23,10 @@ let
       untagged = lib.filter (port: switch.ports.${port}.carries.untagged == vlan) (bridgePorts switch);
     });
 
-  # A management port that tags VLANs stays out of the bridge, its IP on the untagged VLAN; each tagged VLAN joins the bridge through a sub-interface, so a single-cable switch configures in one apply.
+  # Tagged VLANs join the bridge via sub-interfaces, so a single-cable switch configures in one apply.
   uplinkVlans = switch: switch.ports.${switch.managementPort}.carries.tagged;
 
-  # A reference, not the plain name, so the sub-interface exists before the bridge entries that name it.
+  # A reference, so the sub-interface exists before bridge entries name it.
   uplink = name: vlan: config.resource.routeros_interface_vlan."${name}_uplink_${vlan}" "name";
 in
 {

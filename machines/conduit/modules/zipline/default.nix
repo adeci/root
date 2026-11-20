@@ -79,7 +79,7 @@ in
       FILES_MAX_FILE_SIZE = "2gb";
       FILES_MAX_FILES_PER_UPLOAD = 1;
       FILES_ASSUME_MIMETYPES = "true";
-      # Zipline 4.8 sandboxes raw files (CSP, nosniff) and caps users at four partial sessions with a 30-min idle expiry.
+      # Zipline 4.8 sandboxes raw files and caps users at 4 partial sessions, 30-min idle expiry.
       CHUNKS_ENABLED = "true";
       CHUNKS_SIZE = "25mb";
       CHUNKS_MAX = "25mb";
@@ -101,7 +101,7 @@ in
       ];
       TimeoutStartSec = 120;
     };
-    # Interrupted uploads are disposable; reserve >=12 GiB of disk (not tmpfs) per uploader, as app limits aren't a quota.
+    # Interrupted uploads are disposable; reserve >=12 GiB disk (not tmpfs) per uploader.
     preStart = ''
       ${lib.getExe pkgs.findutils} ${staging} -mindepth 1 -delete
     '';
@@ -135,7 +135,7 @@ in
         client_body_timeout 120s;
       '';
       locations = {
-        # Only the local startup helper may create the first admin, so visitors can't claim a fresh instance.
+        # Only the local bootstrap helper may create the first admin.
         "= /api/setup".return = "403";
         "/api/upload" = {
           proxyPass = "http://127.0.0.1:${toString port}";

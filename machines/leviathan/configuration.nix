@@ -28,7 +28,7 @@
   system.primaryUser = self.users.alex.username;
   cloudflared.token = self.inventory.cloudflare.tunnelToken;
 
-  # leviathan overruns its RAM at peaks; a swapfile, unlike zram, moves the overflow out of memory.
+  # RAM overruns at peaks; a swapfile, unlike zram, moves the overflow out of memory.
   swapDevices = [
     {
       device = "/swapfile";
@@ -48,10 +48,10 @@
     "w /sys/kernel/mm/transparent_hugepage/khugepaged/defrag - - - - 1"
   ];
 
-  # The SATA drives answer SMART only through the MegaRAID controller; their /dev/sd* paths fail.
+  # SATA drives answer SMART only via the MegaRAID controller, not /dev/sd*.
   services.prometheus.exporters.smartctl.extraFlags = [ "--smartctl.device-exclude=^sd" ];
   systemd.services.prometheus-smartctl-exporter = {
-    # smartd creates the controller's ioctl node root-only; the exporter's group gets access before each start.
+    # smartd makes the ioctl node root-only; grant the exporter's group before each start.
     after = [ "smartd.service" ];
     serviceConfig = {
       DeviceAllow = lib.mkOverride 50 [ "char-megaraid_sas_ioctl rw" ];
@@ -64,7 +64,7 @@
   # Users' SSH clients multiplex more than sshd's default 10 sessions over one connection.
   services.openssh.settings.MaxSessions = 64;
 
-  # A process left in a logged-out SSH session held the reboot of 13 Nov for systemd's full 90 seconds.
+  # A leftover process in a logged-out SSH session held the 13 Nov reboot for the full 90 s.
   systemd.units."session-.scope" = {
     text = ''
       [Scope]

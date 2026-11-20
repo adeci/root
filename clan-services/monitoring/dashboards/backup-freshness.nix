@@ -1,8 +1,8 @@
-# How old each machine's newest snapshot is, as both the backups and the fleet pages show it.
+# Snapshot age, shared by the backups and fleet pages.
 let
   ui = import ./lib.nix;
 
-  # How many of its two ages a machine's newest snapshot has passed by the clock: a server's 36 and 72 hours and a laptop's 3 and 7 days, the ages the fleet's alerts use, though a laptop's alerts count only its time on. `snapshot` reads the newest snapshot's time on one kind of machine.
+  # 0-2 ages passed by the clock, as in the alerts, though laptop alerts count time on only.
   staleness =
     snapshot:
     let
@@ -17,7 +17,7 @@ in
 {
   inherit staleness;
 
-  # The machines `matchers` select, each fresh, old or too old over the time range.
+  # Fresh, old or too old over the time range, for the machines `matchers` select.
   timeline =
     {
       matchers,
@@ -26,7 +26,7 @@ in
     }:
     ui.stateTimeline {
       title = "Fresh";
-      description = "How old each machine's newest snapshot is: a server's backup is old after 36 hours and too old after 72, a laptop's after 3 and 7 days.";
+      description = "Age of each machine's newest snapshot. A server's backup is old after 36 hours and too old after 72, a laptop's after 3 and 7 days.";
       inherit w h;
       targets = [
         (ui.target (staleness (

@@ -2,7 +2,7 @@
 output_file=$1
 nixpkgs_revision=$2
 nixpkgs_time=$3
-# The system being activated, compared with the booted one; macOS passes none, having no kernel of its own to swap.
+# The activated system, to compare with the booted one; none on macOS.
 system=${4:-}
 
 switch_time=$(stat --format=%Y /nix/var/nix/profiles/system)
@@ -23,7 +23,7 @@ trap 'rm -f "$temporary_file"' EXIT
   echo "system_switch_timestamp_seconds $switch_time"
   if [ -n "$system" ]; then
     reboot_required=0
-    # At boot the booted system is the one being activated, and its link does not exist yet.
+    # Activating at boot: /run/booted-system doesn't exist yet.
     if [ -e /run/booted-system ]; then
       for part in kernel initrd kernel-modules; do
         if [ "$(readlink -f "$system/$part")" != "$(readlink -f "/run/booted-system/$part")" ]; then

@@ -1,5 +1,4 @@
 let
-  # The command that records what a system runs, for node_exporter.
   recordSystemVersion =
     {
       config,
@@ -18,7 +17,6 @@ let
       self.inputs.nixpkgs.rev or "unknown"
     } ${toString self.inputs.nixpkgs.lastModified}";
 
-  # The command that records when a machine's Tailscale key expires, for node_exporter.
   recordTailscaleKeyExpiry =
     {
       config,
@@ -49,10 +47,10 @@ in
           type = lib.types.bool;
           default = true;
           description = ''
-            Whether this machine is meant to be online at all times. Only
-            always-on machines alert: when they stop answering, and on failed
-            units, filling disks and hardware errors. Turn it off for laptops
-            and handhelds, which then only show up on dashboards.
+            Whether this machine should be online at all times. Only always-on
+            machines alert when down, and on failed units, filling disks and
+            hardware errors. Turn it off for laptops and handhelds, which then
+            alert only on their backups.
           '';
         };
 
@@ -60,9 +58,8 @@ in
           type = lib.types.listOf lib.types.str;
           default = [ ];
           description = ''
-            node_exporter collectors to enable besides the ones this service
-            enables for the machine's system. See the node_exporter README for
-            the collector list.
+            node_exporter collectors to enable on top of this service's
+            defaults. See the node_exporter README for the list.
           '';
           example = [
             "conntrack"
@@ -74,9 +71,8 @@ in
           type = lib.types.attrsOf lib.types.port;
           default = { };
           description = ''
-            The machine's Prometheus exporters besides node_exporter, by job
-            name, at the port each listens on. The server scrapes them over the
-            tailnet; the machine's modules read the ports from
+            The machine's other Prometheus exporters, by job name and port. The
+            server scrapes them over the tailnet; modules read the ports from
             `monitoring.exporters`.
           '';
           example = {
@@ -94,22 +90,21 @@ in
                 };
                 instance = lib.mkOption {
                   type = lib.types.str;
-                  description = "What serves the name. The probe's metrics carry it as `instance`, so the name's alert is held back while that machine is down.";
+                  description = "Machine serving the name. The probe's metrics carry it as `instance`, so the alert is held back while that machine is down.";
                 };
                 redirect = lib.mkOption {
                   type = lib.types.bool;
                   default = false;
-                  description = "Whether the name is up when it answers with a redirect, which is then not followed.";
+                  description = "Count a redirect as up, without following it.";
                 };
               };
             }
           );
           default = { };
           description = ''
-            Addresses this machine requests over HTTP for the servers (NixOS),
-            by the public name each one checks. A name is up while its address
-            answers with a 2xx status. The machine runs blackbox_exporter,
-            which makes one request whenever a server scrapes a probe.
+            HTTP checks this machine runs for the servers (NixOS), by public
+            name. A name is up while its address answers 2xx. Runs
+            blackbox_exporter, one request per server scrape.
           '';
           example = {
             "example.com" = {
@@ -122,7 +117,7 @@ in
         smart.enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Export the drives' SMART health (NixOS); off for a virtual machine, whose disks have none.";
+          description = "Export the drives' SMART health (NixOS). Off for VMs, whose disks have none.";
         };
 
         extraLabels = lib.mkOption {
@@ -138,10 +133,10 @@ in
           type = lib.types.listOf lib.types.attrs;
           default = [ ];
           description = ''
-            Prometheus alerting and recording rules about this machine's own
-            metrics, which the server evaluates as one group named after the
-            machine. Every alert needs `labels.severity`: `critical` notifies
-            at any hour, `warning` outside the server's quiet hours.
+            Prometheus alerting and recording rules on this machine's own
+            metrics, evaluated by the server as one group named after the
+            machine. Every alert needs `labels.severity`: `critical` notifies at
+            any hour, `warning` outside the server's quiet hours.
           '';
           example = [
             {
@@ -158,7 +153,7 @@ in
           type = lib.types.attrsOf lib.types.attrs;
           default = { };
           description = ''
-            Grafana dashboard models about this machine, by name. The server
+            Grafana dashboard models for this machine, by name. The server
             provisions them next to its own; names must be unique across agents.
           '';
         };
@@ -236,7 +231,7 @@ in
             text = builtins.readFile ./restic-snapshots.sh;
           };
 
-          # One "<backup>\t<path>" line for each path in a backup's `paths` or `exclude`: what it holds, or what it leaves out.
+          # One "<backup>\t<path>" line per entry in each backup's `paths` or `exclude`.
           backupPaths =
             option:
             pkgs.writeText "restic-${option}" (
@@ -249,7 +244,7 @@ in
               )
             );
 
-          # Every prober has IPv4; one without an IPv6 route would fail each name that has an IPv6 address.
+          # A prober without an IPv6 route would fail every name with an IPv6 address.
           httpProbe.preferred_ip_protocol = "ip4";
         in
         {
@@ -264,7 +259,6 @@ in
 
           services.prometheus.exporters.smartctl.enable = settings.smart.enable;
 
-          # It requests an address only when a server scrapes that probe.
           services.prometheus.exporters.blackbox = lib.mkIf (settings.probes != { }) {
             enable = true;
             configFile = yaml.generate "blackbox.yml" {
@@ -321,12 +315,12 @@ in
           services.vector = {
             enable = true;
             journaldAccess = true;
-            # Offline, stopping would wait on the server; what isn't sent stays in the disk buffer.
+            # Don't hold up shutdown on the server; unsent lines stay in the disk buffer.
             gracefulShutdownLimitSecs = 5;
             settings = {
               data_dir = "/var/lib/vector";
 
-              # The credentials systemd hands the service, by name; the vars end them with a newline.
+              # The vars end with a newline.
               secret.credentials = {
                 type = "directory";
                 path = "/run/credentials/vector.service";
@@ -335,7 +329,7 @@ in
 
               sources.journal.type = "journald";
 
-              # Queries match levels by syslog name; kernel lines have no unit, so they go by their program.
+              # Syslog level names; kernel lines have no unit, so use the program.
               transforms.labelled = {
                 type = "remap";
                 inputs = [ "journal" ];
@@ -362,7 +356,7 @@ in
                   user = lokiAuth.files.username.value;
                   password = "SECRET[credentials.loki-auth-password]";
                 };
-                # While the server is out of reach the journal waits here, then in the journal itself.
+                # Holds lines while the server is unreachable; past that, the journal does.
                 buffer = {
                   type = "disk";
                   max_size = 512 * 1024 * 1024;
@@ -374,7 +368,7 @@ in
           };
 
           systemd.services.vector = {
-            # Stops before tailscaled at shutdown, while it can still reach the server.
+            # Stop before tailscaled, while the server is still reachable.
             after = [ "tailscaled.service" ];
             serviceConfig.LoadCredential = [ "loki-auth-password:${lokiAuth.files.password.path}" ];
           };
@@ -394,7 +388,7 @@ in
             serviceConfig = {
               Type = "oneshot";
               ExecStart = "${lib.getExe resticSnapshots} ${textfileDirectory} ${backupPaths "paths"} ${backupPaths "exclude"} ${lib.escapeShellArgs (lib.attrNames config.services.restic.backups)}";
-              # Each repository's stored size and the snapshots it was counted for, as STATE_DIRECTORY.
+              # Caches each repository's size and the snapshots it was counted for.
               StateDirectory = "restic-snapshots";
             };
           };
@@ -408,7 +402,7 @@ in
             };
           };
 
-          # The fleet dashboard's per-disk panels group filesystems by the disk under them.
+          # For the fleet dashboard's per-disk panels.
           systemd.services.filesystem-disks = {
             description = "Map mounted filesystems to their physical disks for node_exporter";
             wantedBy = [ "multi-user.target" ];
@@ -420,8 +414,7 @@ in
             };
           };
 
-          # Once a boot: how long it took, and the shutdown before it. A simple service's start is done at once,
-          # so the boot can finish while the script waits for it to.
+          # simple, not oneshot: the boot can finish while the script waits for it.
           systemd.services.boot-timing = {
             description = "Export this boot's and the last shutdown's timing for node_exporter";
             wantedBy = [ "multi-user.target" ];
@@ -431,7 +424,7 @@ in
             };
           };
 
-          # On every boot and switch; given the activated system, it also tells whether its kernel waits for a reboot.
+          # Every boot and switch; $systemConfig lets it flag a pending reboot.
           system.activationScripts.system-version.text = "${
             recordSystemVersion {
               inherit
@@ -474,13 +467,13 @@ in
           assertions = [
             {
               assertion = tailnetAddress != null;
-              message = "@adeci/monitoring: the Mac ${machineName} needs its tailnet address, machines.${machineName}.tailnet in inventory/network.nix, for node_exporter to listen on.";
+              message = "@adeci/monitoring: ${machineName} needs machines.${machineName}.tailnet in inventory/network.nix for node_exporter to listen on.";
             }
           ];
 
           services.prometheus.exporters.node = {
             enable = true;
-            # The application firewall allows a program on every network, so it listens on the tailnet only.
+            # The app firewall allows a program on every network: listen on the tailnet only.
             listenAddress = lib.mkIf (tailnetAddress != null) tailnetAddress;
             enabledCollectors = [
               "cpu"
@@ -497,25 +490,25 @@ in
             ++ settings.extraCollectors;
             extraFlags = [
               "--collector.disable-defaults"
-              # The rest are the sealed system volume at /, macOS's helper volumes and the secrets ramdisk.
+              # Skips the sealed system volume, macOS helper volumes and the secrets ramdisk.
               "--collector.filesystem.mount-points-include=^/(System/Volumes/Data|nix)$"
               "--collector.textfile.directory=${textfileDirectory}"
             ];
           };
 
-          # Before launchd starts the exporter: the application firewall only lets in listeners allowed before they started.
+          # Before launchd starts it: the firewall only admits listeners allowed beforehand.
           system.activationScripts.preActivation.text = ''
             ${socketfilterfw} --add ${nodeExporter} > /dev/null
             ${socketfilterfw} --unblockapp ${nodeExporter} > /dev/null
             mkdir -p ${textfileDirectory}
           '';
 
-          # What node_exporter cannot read on a Mac: the internal SSD's SMART data, which needs root, the memory pressure level, the CPU temperature and the battery's health.
+          # What node_exporter can't get on macOS; SMART needs root.
           launchd.daemons.macos-health = {
             command = "${lib.getExe macosHealth} ${textfileDirectory}/macos-health.prom";
             serviceConfig = {
               RunAtLoad = true;
-              # The page's temperature is as old as the last run.
+              # Dashboard temperatures are only as fresh as the last run.
               StartInterval = 60;
               StandardErrorPath = "/var/log/macos-health.log";
             };
@@ -530,7 +523,7 @@ in
             };
           };
 
-          # On every deploy: a Mac changes what it runs only then, and the file outlasts reboots.
+          # Deploys only: a Mac's system changes only then, and the file survives reboots.
           system.activationScripts.postActivation.text = recordSystemVersion {
             inherit
               config

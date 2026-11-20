@@ -29,7 +29,7 @@ bytes_to_low_water() {
   local used=$1 available=$2
   local numerator
 
-  # GNU df's percentage is used / (used + available), without reserved blocks; solve 100 * (used - freed) <= LOW_WATER_PERCENT * (used + available).
+  # df's % is used/(used+available): solve 100*(used-freed) <= LOW_WATER_PERCENT*(used+available).
   numerator=$((
     (100 - LOW_WATER_PERCENT) * used -
     LOW_WATER_PERCENT * available
@@ -44,7 +44,7 @@ if ! above_water_mark "$used" "$available" "$HIGH_WATER_PERCENT"; then
   exit 0
 fi
 
-# After a collection that missed low water, rescanning the same roots is futile; like Nix's own auto-GC, wait until available space falls by 3%.
+# Missed low water last time: wait for free space to drop 3%, like Nix's own auto-GC.
 previous_size=0
 available_after_collection=0
 if [[ -r "$state_file" ]] && read -r previous_size available_after_collection < "$state_file" &&
@@ -52,7 +52,7 @@ if [[ -r "$state_file" ]] && read -r previous_size available_after_collection < 
    [[ "$available_after_collection" =~ ^[0-9]+$ ]] &&
    (( size == previous_size )) &&
    (( available * 100 > available_after_collection * 97 )); then
-  echo "Disk utilization is $percent%, but available space has not fallen by 3% since the previous garbage collection; skipping"
+  echo "Disk utilization is $percent%, but free space hasn't dropped 3% since the last GC; skipping"
   exit 0
 fi
 
@@ -79,7 +79,7 @@ while (( pass <= MAXIMUM_PASSES )); do
   fi
 
   if (( progress < MINIMUM_PROGRESS_BYTES )); then
-    echo "Garbage collection made less than $MINIMUM_PROGRESS_BYTES bytes of filesystem progress; suppressing another scan until available space falls by 3%" >&2
+    echo "GC freed less than $MINIMUM_PROGRESS_BYTES bytes; waiting for free space to drop 3%" >&2
     break
   fi
 
@@ -90,7 +90,7 @@ printf '%s %s\n' "$size" "$available" > "$state_file.tmp"
 mv "$state_file.tmp" "$state_file"
 
 if above_water_mark "$used" "$available" "$HIGH_WATER_PERCENT"; then
-  echo "Garbage collection completed with $used of $size bytes used ($percent%), but utilization remains above the high-water mark; it will retry after available space falls by 3%" >&2
+  echo "GC done: $used of $size bytes used ($percent%), still above high water; retrying once free space drops 3%" >&2
 else
   echo "Garbage collection completed with $used of $size bytes used ($percent%)"
 fi

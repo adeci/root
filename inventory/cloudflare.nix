@@ -29,9 +29,7 @@ in
     "adeci.net"
   ];
 
-  # Keys are clan machine names: each machine receives its tunnel's token as a clan var.
-  # A tunnel sends each name to a local port; the service behind it reads both from its entry.
-  # A name with a `healthPath`, here or below, is asked for it from outside: see the monitoring instance.
+  # Keyed by machine, which gets its tunnel token as a clan var; healthPaths are probed.
   tunnels = {
     sequoia = {
       vault = {

@@ -92,7 +92,7 @@ def test_parse_says_what_is_wrong_and_where(text: str, message: str) -> None:
 def macbook(
     commands: Commands, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> Commands:
-    """A Mac primed by the bootstrap, a flake that configures it, and a person who confirms its key."""
+    """A bootstrapped Mac, a flake for it, and a confirmed host key."""
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(mac, "probe", lambda address: None)
     monkeypatch.setattr(ui, "ask", lambda question: True)

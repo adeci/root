@@ -14,33 +14,30 @@ Backs up each machine's `clan.core.state` folders with
 ## Notes
 
 - `pruneOpts` keeps the newest snapshot of each of the last 14 days, 8 weeks,
-  12 months and 3 years: 30 or so once a machine has backed up for a year. It
-  counts all of a machine's snapshots as one history, whatever folders each
-  holds, so those taken before its folders changed thin out like the rest: a
-  month's last snapshot stays until that month comes round again, and the
-  machine's first snapshot until it has snapshots from three calendar years.
-  Two jobs writing to one repository would thin each other's snapshots, so
-  each needs its own `repository`; a snapshot of fewer folders taken by hand
-  counts as that day's.
+  12 months and 3 years: about 30 after a year of backups. All of a machine's
+  snapshots count as one history whatever folders each holds, so those from
+  before a folder change thin out like the rest. A month's last snapshot stays
+  until that month comes round again; the first snapshot stays until there are
+  snapshots from three calendar years. Two jobs on one repository would thin
+  each other's snapshots, so give each its own `repository`. A snapshot of
+  fewer folders taken by hand counts as that day's.
 - Only the repository password is generated: set the `credentials` file (for
   S3, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) with `clan vars set`.
-- Restoring some folders restores every folder of the states holding them.
-  `restic-restore` runs no state commands: `clan backups restore` runs them
+- Restoring some folders restores every folder of their states.
+  `restic-restore` runs no state commands; `clan backups restore` runs them
   around it.
-- A state folder must be a real folder: restic saves a symlink without what it
-  points to, so the backup fails on one. A service that runs under a dynamic
-  user keeps its data in `/var/lib/private/<name>`; `/var/lib/<name>` is only
-  a link to it.
-- A machine with `alwaysOn = false`, such as a laptop, has no nightly timer:
-  `restic-<job>-when-due` runs every hour, and after a sleep or a boot that
-  missed one, and starts the backup once the newest snapshot is 20 hours old.
-  It is skipped on battery, and waits while no network comes up within a
-  minute, on a network NetworkManager calls metered, or while an S3
-  repository's server does not answer within 10 seconds; its journal says why.
-  A repository that answers with an error, such as a refused key, makes the
-  backup run and fail. `restic-create` still starts a backup at once. Going to
-  sleep stops the backup without a failure, and the next run reuses what was
-  uploaded.
+- A state folder must be a real folder: restic saves a symlink without its
+  target, so the backup fails on one. Services with a dynamic user keep their
+  data in `/var/lib/private/<name>`; `/var/lib/<name>` is only a link.
+- With `alwaysOn = false` (laptops) there's no nightly timer:
+  `restic-<job>-when-due` runs hourly and after a sleep or boot that missed a
+  run, and starts the backup once the newest snapshot is 20 hours old. It
+  skips on battery, and waits if no network comes up within a minute, the
+  network is metered per NetworkManager, or an S3 repository's server doesn't
+  answer within 10 seconds; its journal says why. A repository that answers
+  with an error, such as a refused key, makes the backup run and fail.
+  `restic-create` still starts a backup at once. Sleep stops the backup without
+  a failure, and the next run reuses what was uploaded.
 
 ## Restoring
 

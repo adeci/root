@@ -34,7 +34,7 @@
 
       options.microvmGuest.secrets = lib.mkOption {
         default = { };
-        description = "Secrets the VM needs, each provided by its host from a clan vars generator, root-only at `path`.";
+        description = "Secrets from host-side clan vars generators, root-only at `path`.";
         type = lib.types.attrsOf (
           lib.types.submodule (
             { name, config, ... }:

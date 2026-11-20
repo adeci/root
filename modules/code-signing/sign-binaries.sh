@@ -28,7 +28,7 @@ sign() {
   echo "signing $name..."
   install -d "$(dirname "$path")"
   install -m 755 "$source" "$path.new"
-  # Ad-hoc signatures change with every build, and macOS forgets privacy grants such as Accessibility with them.
+  # Ad-hoc signatures change every build, and macOS drops privacy grants with them.
   /usr/bin/codesign --force --keychain "$keychain" --sign "$fingerprint" --identifier "$identifier" "$path.new"
   mv -f "$path.new" "$path"
   echo "$source" > "$STATE_DIRECTORY/$name.source"

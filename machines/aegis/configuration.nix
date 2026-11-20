@@ -25,7 +25,7 @@ in
     ext4-single-disk
   ];
 
-  # Backed up by the restic instance in inventory/clan-instances.nix, which lists what it leaves out.
+  # Restic instance and its excludes: inventory/clan-instances.nix.
   clan.core.state.home.folders = [ "/home/alex" ];
 
   wrappers.niri.machineConfig = # kdl
@@ -61,7 +61,7 @@ in
     }
   );
 
-  # Sandy Bridge exposes GPU utilization through perf events rather than sysfs.
+  # Sandy Bridge exposes GPU usage through perf events, not sysfs.
   security.wrappers = {
     btop-perfmon = {
       owner = "root";

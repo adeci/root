@@ -1,4 +1,4 @@
-"""Appliance /system/health sensors, whether each appliance has rolled back a net-apply, and the access points' Wi-Fi clients, as a Prometheus textfile."""
+"""RouterOS health sensors, net-apply rollbacks and AP Wi-Fi clients as a Prometheus textfile."""
 
 import json
 import os
@@ -21,7 +21,7 @@ def encode_length(length):
     return b"\xf0" + length.to_bytes(4, "big")
 
 
-# A reply as long as an access point's clients can arrive in pieces.
+# Long replies, like an AP's client list, arrive in pieces.
 def receive(connection, size):
     data = b""
     while len(data) < size:
@@ -111,7 +111,7 @@ def collect_device(device, password, rollback_marker):
             raise RuntimeError("RouterOS API login failed")
 
         rows = query(connection, ["/system/health/print"])
-        # The marker lies in whichever folder the appliance keeps files in across restarts.
+        # The marker sits in whatever folder survives restarts on that appliance.
         files = query(connection, ["/file/print", "=.proplist=name"])
         rolled_back = any(file.get("name", "").rpartition("/")[2] == rollback_marker for file in files)
         clients = []
@@ -154,7 +154,7 @@ def main(devices_path, output_path, rollback_marker):
         "# TYPE janus_routeros_current_amperes gauge",
         "# HELP janus_routeros_power_watts RouterOS health power sensors.",
         "# TYPE janus_routeros_power_watts gauge",
-        "# HELP janus_routeros_rolled_back Whether the appliance has restored the configuration it had before a net-apply that was not confirmed.",
+        "# HELP janus_routeros_rolled_back Whether the appliance restored its config after an unconfirmed net-apply.",
         "# TYPE janus_routeros_rolled_back gauge",
         "# HELP janus_routeros_wifi_client_signal_dbm How strongly an access point hears each of its Wi-Fi clients.",
         "# TYPE janus_routeros_wifi_client_signal_dbm gauge",

@@ -38,7 +38,7 @@ in
 {
   imports = [ wlib.wrapperModules.neovim ];
 
-  # Heavy servers (rust-analyzer, vtsls, pyright, clangd, bashls) come from project devshells; init.lua enables whichever are found.
+  # Heavy servers come from project devshells; init.lua enables what it finds.
   options.languageServers = lib.mkEnableOption "the small language servers and formatters on nvim's PATH";
 
   config = {

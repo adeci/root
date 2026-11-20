@@ -26,7 +26,7 @@ let
       ''oifname "${wan}" counter name forward_accept_guest_to_wan accept''
       ''oifname "${vlans.trusted.interface}" ip daddr ${hosts.printer.ip} tcp dport { 515, 631, 9100 } counter name forward_accept_guest_to_printer accept''
     ];
-    # Hosts holding credentials, on their own VLAN because hosts sharing one reach each other past Janus.
+    # Hosts with credentials, on their own VLAN: hosts sharing one bypass Janus.
     vault = [ ''oifname "${wan}" counter name forward_accept_vault_to_wan accept'' ];
     # Untrusted hosted workloads; whatever hosts them keeps them apart from each other.
     tenant = [ ''oifname "${wan}" counter name forward_accept_tenant_to_wan accept'' ];
@@ -49,8 +49,7 @@ let
     vlans.mgmt.interface
   ];
 
-  # Requests LAN devices send on their own, dropped without a log line: NAT-PMP and PCP port mapping (5351),
-  # SSDP (1900), MikroTik neighbour discovery (5678) and IP Cloud (15252), Syncthing (21027) and Steam (27036) discovery.
+  # Unlogged chatter: SSDP, NAT-PMP/PCP, MikroTik MNDP and IP Cloud, Syncthing, Steam.
   chatterPorts = "{ 1900, 5351, 5678, 15252, 21027, 27036 }";
 
   chains = ''
@@ -66,7 +65,7 @@ let
       iifname ${gatewayInterfaces} tcp dport 53 counter name input_accept_dhcp_dns accept
       iifname "${vlans.mgmt.interface}" udp dport 123 counter name input_accept_ntp accept
 
-      # Tunnel traffic is authenticated by WireGuard; Tailscale ACLs remain the peer policy boundary.
+      # WireGuard authenticates the tunnel; Tailscale ACLs decide who gets in.
       iifname "${wan}" udp dport 41641 counter name input_accept_tailscale_direct_udp accept
 
       # Tailnet is the admin plane for Janus itself.

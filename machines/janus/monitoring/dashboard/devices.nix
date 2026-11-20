@@ -6,21 +6,21 @@
 let
   inherit (queries) router mikrotik;
 
-  # One series per device, named as `name`: the router's reading, then each appliance's.
+  # One series per device as `name`: the router, then each appliance.
   device =
     routerReading: applianceReading:
     ''max by (name) (label_replace(${routerReading}, "name", "${network.instance}", "", "") or ${applianceReading})'';
   appliancesUp = ''label_replace(janus_network_probe_up{${router}, group="routeros"}, "name", "$1", "target", "(.+)")'';
   up = device ''up{${router}, job="node"}'' appliancesUp;
-  # An alert about an appliance names it, as `name` or `target`; any other is about the router.
+  # Appliance alerts carry `name` or `target`; the rest are the router's.
   severity = ''label_replace(2 * ALERTS{${router}, alertstate="firing", severity="critical"} or ALERTS{${router}, alertstate="firing", severity="warning"}, "name", "$1", "target", "(.+)")'';
 
-  # Each appliance port on a known cable, named as `port` "nexus ether2".
+  # Ports on known cables, as `port` "nexus ether2".
   onCables =
     query:
     ''label_join(${network.onPorts network.cableNearEnds query}, "port", " ", "name", "interface")'';
   perPort = aggregation: query: "${aggregation} by (port) (${onCables query})";
-  # 0 down, 1 slow, 2 at full speed. mikrotik_monitor_rate is in Mb/s; SFP+ ports should link at 10 Gb/s, copper ports at 1 Gb/s. A port down has no rate.
+  # 0 down (no rate), 1 slow, 2 full speed: 10 Gb/s SFP+, 1 Gb/s copper; rate is Mb/s.
   linkState = onCables (ports: ''
     mikrotik_monitor_status{${mikrotik}, ${ports}} * (1 + (
       mikrotik_monitor_rate{${mikrotik}, ${ports}, interface=~"sfp-sfpplus.+"} >= bool 10000
@@ -35,7 +35,7 @@ ui.row {
   panels = [
     (ui.mergedTable {
       title = "Devices";
-      description = "The router and the appliances. Restarts counts those in the picked time range. Wi-Fi clients counts those on an access point now, as it lists them: a client that has just roamed can count on both access points for a moment.";
+      description = "The router and the appliances. Restarts: in the picked range. Wi-Fi clients: on an AP now, as it lists them; one that just roamed can count on both APs for a moment.";
       w = 24;
       # The router and each appliance, plus the title and the header.
       h = builtins.length network.appliances + 3;
@@ -99,7 +99,7 @@ ui.row {
         {
           name = "Restarts";
           width = 90;
-          # An appliance's uptime starts a new series when its RouterOS version changes, so its restarts are counted on the highest.
+          # Uptime starts a new series on each RouterOS upgrade; count restarts on the highest.
           expr = device ''changes(node_boot_time_seconds{${router}, job="node"}[$__range])'' "resets((max by (name) (mikrotik_system_uptime{${mikrotik}}))[$__range:1m])";
           valueMappings = ui.mappings.blankZero;
         }
@@ -112,7 +112,7 @@ ui.row {
     })
     (ui.mergedTable {
       title = "Links";
-      description = "Each known cable at the appliance port it is written on. Link downs counts those in the picked time range. Traffic is the busiest moment in that range, beside its course.";
+      description = "Each known cable at its appliance port. Link downs: in the picked range. Traffic: the busiest moment in that range, beside its course.";
       w = 15;
       # A grid unit per cable, plus the title and the header.
       h = builtins.length (builtins.attrNames network.cableEnds) + 2;

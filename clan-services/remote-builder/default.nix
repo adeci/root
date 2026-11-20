@@ -68,8 +68,8 @@
             );
             default = null;
             description = ''
-              nix-darwin servers with the linux-builder feature: its Linux VM, which
-              clients reach by jumping through this server over SSH.
+              nix-darwin servers with linux-builder: the Linux VM, reached by
+              jumping through this server over SSH.
             '';
           };
         };
@@ -149,7 +149,7 @@
             users.users.nix = {
               uid = 550;
               home = "/var/empty";
-              # zsh reads nix-darwin's /etc/zshenv even for `ssh … nix-daemon --stdio`, which puts nix-daemon on PATH.
+              # zsh reads /etc/zshenv even for `ssh … nix-daemon --stdio`, so nix-daemon is on PATH.
               shell = "/bin/zsh";
             };
 
@@ -160,7 +160,7 @@
               fi
             '';
 
-            # Key options can't refuse remote forwards once port-forwarding is on; last, as a Match block runs to the end of its file.
+            # Key options can't refuse remote forwards once port-forwarding is on; last, as Match runs to EOF.
             services.openssh.extraConfig = lib.mkIf (settings.linuxBuilder != null) (
               lib.mkAfter ''
                 Match User nix
@@ -224,7 +224,7 @@
             inherit (config.clan.core.settings) domain;
             servers = lib.removeAttrs roles.server.machines [ machineName ];
 
-            # x86_64 Linux builds i686 natively; emulated systems are read from binfmt, as nix.settings depends on distributedBuilds.
+            # x86_64 Linux builds i686 natively; binfmt, as nix.settings depends on distributedBuilds.
             system = pkgs.stdenv.hostPlatform.system;
             nativeSystems = [
               system
@@ -293,9 +293,7 @@
               Host ${hostName}
                 StrictHostKeyChecking accept-new
 
-              # Nix manages its own SSH connections: disable any ControlMaster a user/system ssh config enables for this host.
-              # An unreachable builder should fail the build in seconds, not after the TCP timeout.
-              # The key is named here too for jumps to the server's Linux VM, which don't get Nix's -i.
+              # No ControlMaster: Nix manages its own connections. IdentityFile: jumps don't get Nix's -i.
               Match host ${hostName} user nix
                 IdentityFile ${key}
                 ControlMaster no
@@ -303,7 +301,7 @@
                 ConnectTimeout 10
             '';
 
-            # nix-darwin's linux-builder listens on the server's loopback; the VM boots on the first connection.
+            # linux-builder listens on the server's loopback; the VM boots on first connection.
             linuxBuilderSsh = serverName: ''
               Host ${serverName}-linux-builder
                 HostName localhost

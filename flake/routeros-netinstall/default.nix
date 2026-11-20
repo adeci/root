@@ -13,7 +13,7 @@ in
     let
       netinstall = self'.packages.routeros-netinstall;
 
-      # Reinstalls an appliance with its model's packages, leaving a DHCP client on each port it is managed through; the management port's sends the appliance's name.
+      # Reinstall with the model's packages and DHCP clients; the management port's sends the name.
       netinstallProgram =
         name: appliance:
         let
@@ -56,7 +56,7 @@ in
       );
     in
     {
-      # Reinstalls an appliance, forgets its old resources in the Terraform state and applies its configuration once the router reaches it.
+      # Reinstall, forget old state, apply once the router reaches it.
       apps = lib.optionalAttrs (self'.packages ? routeros-netinstall) {
         net-rebuild.program = pkgs.writeShellApplication {
           name = "net-rebuild";
