@@ -156,12 +156,6 @@
           peers = lib.attrNames (lib.removeAttrs roles.server.machines [ machineName ]);
           clustered = ntfyDelivery.enable && peers != [ ];
           tailnetAddress = machine: self.inventory.machines.${machine}.tailnet;
-          ntfyGenerator = config.clan.core.vars.generators.${ntfyDelivery.configGenerator} or null;
-          ntfyCredentialsFile =
-            if ntfyGenerator == null then
-              throw "@adeci/monitoring: alertDelivery.ntfy requires clan vars generator '${ntfyDelivery.configGenerator}'"
-            else
-              ntfyGenerator.files."alertmanager-ntfy.yml".path;
 
           yaml = pkgs.formats.yaml { };
           rules = import ./rules.nix {
@@ -187,11 +181,6 @@
               path = pkgs.writeText "monitoring-grafana-${name}.json" (builtins.toJSON dashboard);
             }) dashboards
           );
-          homeDashboard =
-            if dashboards ? ${settings.grafana.homeDashboard} then
-              settings.grafana.homeDashboard
-            else
-              throw "@adeci/monitoring: grafana.homeDashboard '${settings.grafana.homeDashboard}' is none of the dashboards: ${lib.concatStringsSep ", " (lib.attrNames dashboards)}";
           # The machine, not this service, turns on TLS for Grafana's virtual host.
           grafanaVirtualHost = config.services.nginx.virtualHosts.${settings.grafana.domain};
           grafanaTls = grafanaVirtualHost.forceSSL || grafanaVirtualHost.onlySSL || grafanaVirtualHost.addSSL;
@@ -385,7 +374,9 @@
 
           services.prometheus.alertmanager-ntfy = lib.mkIf ntfyDelivery.enable {
             enable = true;
-            extraConfigFiles = [ ntfyCredentialsFile ];
+            extraConfigFiles = [
+              config.clan.core.vars.generators.${ntfyDelivery.configGenerator}.files."alertmanager-ntfy.yml".path
+            ];
             settings = import ./ntfy-bridge.nix {
               inherit (ntfyDelivery) baseUrl topic;
               listenAddress = "127.0.0.1:${toString ports.ntfyBridge}";
@@ -466,7 +457,7 @@
                 news_feed_enabled = false;
               };
 
-              dashboards.default_home_dashboard_path = "${dashboardDirectory}/${homeDashboard}.json";
+              dashboards.default_home_dashboard_path = "${dashboardDirectory}/${settings.grafana.homeDashboard}.json";
 
               database = {
                 type = "postgres";
@@ -488,7 +479,7 @@
 
               users = {
                 default_theme = "dark";
-                home_page = "/d/${dashboards.${homeDashboard}.uid}";
+                home_page = "/d/${dashboards.${settings.grafana.homeDashboard}.uid}";
                 viewers_can_edit = false;
               };
 
