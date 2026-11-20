@@ -3,6 +3,7 @@
     { config, lib, ... }:
     let
       guest = config.microvmGuest;
+      seedMountPoint = "/run/seed";
     in
     {
       options.microvmGuest.adminKeys = lib.mkOption {
@@ -24,11 +25,6 @@
           type = lib.types.ints.positive;
           readOnly = true;
           default = 8;
-        };
-        mountPoint = lib.mkOption {
-          type = lib.types.str;
-          readOnly = true;
-          default = "/run/seed";
         };
       };
 
@@ -67,7 +63,7 @@
                 path = lib.mkOption {
                   type = lib.types.str;
                   readOnly = true;
-                  default = "${guest.seed.mountPoint}/${config.seedPath}";
+                  default = "${seedMountPoint}/${config.seedPath}";
                 };
               };
             }
@@ -122,7 +118,7 @@
             neededForBoot = true;
           })
           // {
-            ${guest.seed.mountPoint} = {
+            ${seedMountPoint} = {
               device = "/dev/disk/by-label/${guest.seed.label}";
               fsType = "ext4";
               options = [ "ro" ];
