@@ -17,7 +17,7 @@ ui.row {
       description = "Devices NewDevice reported in the last day: first lease in ${toString network.newDeviceDays} days on own networks. Name: the one it asked with, else (MAC maker).";
       w = 10;
       h = 5;
-      noDataText = "No device is new, or there are not yet ${toString network.newDeviceDays} days of lease records to tell";
+      noDataText = "No new device reported";
       sortBy = [
         {
           displayName = "First seen";

@@ -74,7 +74,7 @@ in
       map (appliance: query (matchers appliance)) (builtins.attrNames portsOf)
     );
 
-  # New MACs on own networks; silent until there are 30 days of lease records.
+  # New MACs on own networks.
   newDevices =
     within:
     let
@@ -83,6 +83,8 @@ in
         vlan:
         ''label_replace(min_over_time(janus_dhcp_lease_renewed_timestamp_seconds{${router}, address=~"${dotsOnly vlan.prefix}[.].+", address!~"${reservedAddresses}", mac!="${guardCheck.mac}"}[${within}]), "network", "${vlan.name}", "", "")'';
       ownVlans = builtins.filter (vlan: vlan.ownDevices) vlans;
+      # A server keeping fewer days of records would take a returning device for a new one.
+      keepsEnough = "prometheus_tsdb_retention_limit_seconds >= ${toString newDeviceDays} * 86400";
     in
-    "bottomk by (mac) (1, (${builtins.concatStringsSep " or " (map onNetwork ownVlans)}) unless on (mac) present_over_time(${leases}[${toString newDeviceDays}d] offset ${within})) and on () present_over_time(${leases}[${within}] offset ${toString newDeviceDays}d)";
+    "bottomk by (mac) (1, (${builtins.concatStringsSep " or " (map onNetwork ownVlans)}) unless on (mac) present_over_time(${leases}[${toString newDeviceDays}d] offset ${within})) and on () ${keepsEnough}";
 }

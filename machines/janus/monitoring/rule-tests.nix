@@ -86,6 +86,17 @@ let
     };
     exp_annotations = { inherit summary description; };
   };
+
+  lease = labels: values: {
+    series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", ${labels}}'';
+    inherit values;
+  };
+
+  # The evaluating server's own Prometheus, keeping `days` of records.
+  retention = days: {
+    series = ''prometheus_tsdb_retention_limit_seconds{job="prometheus"}'';
+    values = "${toString (days * 86400)}x800";
+  };
 in
 {
   rules = import ./rules.nix network;
@@ -630,32 +641,22 @@ in
     }
 
     {
-      name = "an unseen MAC is new for 12h, by name or maker; not one back after ten days, a reserved host, a guest or the guard check";
+      name = "a device is new for 12h from its first lease, by name or maker, with records only hours old; not a reserved host, a guest or the guard check";
       interval = "1h";
       input_series =
         let
-          lease = labels: values: {
-            series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", ${labels}}'';
-            inherit values;
-          };
-          # First there on day 41.
-          newNow = "_x984 1x13";
-          # There until day 31, and back on day 41.
-          backAfterTen = "1x744 _x240 1x13";
-          # There on day 0, and back on day 41.
-          backAfterForty = "1x24 _x960 1x13";
+          firstLease = "_ 1x13";
         in
         [
-          (lease ''address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."'' newNow)
-          (lease ''address="10.10.0.151", mac="aa:00:00:00:00:02", hostname="laptop", maker="Intel Corporate"'' backAfterTen)
-          (lease ''address="10.10.0.152", mac="aa:00:00:00:00:03", hostname="tablet", maker="Apple, Inc."'' backAfterForty)
-          (lease ''address="10.10.0.40", mac="aa:00:00:00:00:04", hostname="desktop", maker="Dell Inc."'' backAfterForty)
-          (lease ''address="10.30.0.150", mac="aa:00:00:00:00:05", maker="Apple, Inc."'' newNow)
-          (lease ''address="10.99.0.100", mac="02:00:00:99:00:01", hostname="janus-deploy-guard", maker="private address"'' newNow)
-          (lease ''address="10.10.0.153", mac="6a:00:00:00:00:06", maker="private address"'' newNow)
+          (retention network.newDeviceDays)
+          (lease ''address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."'' firstLease)
+          (lease ''address="10.10.0.40", mac="aa:00:00:00:00:04", hostname="desktop", maker="Dell Inc."'' firstLease)
+          (lease ''address="10.30.0.150", mac="aa:00:00:00:00:05", maker="Apple, Inc."'' firstLease)
+          (lease ''address="10.99.0.100", mac="02:00:00:99:00:01", hostname="janus-deploy-guard", maker="private address"'' firstLease)
+          (lease ''address="10.10.0.153", mac="6a:00:00:00:00:06", maker="private address"'' firstLease)
         ];
       alert_rule_test = [
-        (firing "NewDevice" "985h" [
+        (firing "NewDevice" "2h" [
           (newDevice
             {
               address = "10.10.0.150";
@@ -668,16 +669,6 @@ in
           )
           (newDevice
             {
-              address = "10.10.0.152";
-              mac = "aa:00:00:00:00:03";
-              hostname = "tablet";
-              maker = "Apple, Inc.";
-            }
-            "A new device joined trusted: tablet"
-            "It took 10.10.0.152 with MAC aa:00:00:00:00:03 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
-          )
-          (newDevice
-            {
               address = "10.10.0.153";
               mac = "6a:00:00:00:00:06";
               maker = "private address";
@@ -686,30 +677,48 @@ in
             "It took 10.10.0.153 with MAC 6a:00:00:00:00:06 (private address), unseen for 30 days; see Clients on the network page."
           )
         ])
-        (noAlert "NewDevice" "997h")
+        (noAlert "NewDevice" "13h")
+      ];
+    }
+
+    {
+      name = "a device back after ten days is not new, one back after 31 days is";
+      interval = "1h";
+      input_series = [
+        (retention network.newDeviceDays)
+        # There on day 21, back on day 31.
+        (lease ''address="10.10.0.151", mac="aa:00:00:00:00:02", hostname="laptop", maker="Intel Corporate"'' "_x504 1 _x239 1x2")
+        # There on day 0, back on day 31.
+        (lease ''address="10.10.0.152", mac="aa:00:00:00:00:03", hostname="tablet", maker="Apple, Inc."'' "1 _x743 1x2")
+      ];
+      alert_rule_test = [
+        (firing "NewDevice" "745h" [
+          (newDevice
+            {
+              address = "10.10.0.152";
+              mac = "aa:00:00:00:00:03";
+              hostname = "tablet";
+              maker = "Apple, Inc.";
+            }
+            "A new device joined trusted: tablet"
+            "It took 10.10.0.152 with MAC aa:00:00:00:00:03 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
+          )
+        ])
       ];
     }
 
     {
       name = "a new device is one alert for all 12h, despite a second address or a name only on renewal";
       interval = "1h";
-      input_series =
-        let
-          lease = labels: values: {
-            series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", ${labels}}'';
-            inherit values;
-          };
-        in
-        [
-          # Here all along, so there are 30 days of lease records.
-          (lease ''address="10.10.0.160", mac="aa:00:00:00:00:10", hostname="server", maker="Dell Inc."'' "1x998")
-          # A second address three hours after the first.
-          (lease ''address="10.10.0.161", mac="aa:00:00:00:00:11", maker="Apple, Inc."'' "_x984 1x4")
-          (lease ''address="10.10.0.162", mac="aa:00:00:00:00:11", maker="Apple, Inc."'' "_x987 2x10")
-          # Its name only from its first renewal, two hours on.
-          (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", maker="Intel Corporate"'' "_x984 1x2")
-          (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", hostname="laptop", maker="Intel Corporate"'' "_x986 2x10")
-        ];
+      input_series = [
+        (retention network.newDeviceDays)
+        # A second address three hours after the first.
+        (lease ''address="10.10.0.161", mac="aa:00:00:00:00:11", maker="Apple, Inc."'' "_ 1x4")
+        (lease ''address="10.10.0.162", mac="aa:00:00:00:00:11", maker="Apple, Inc."'' "_x4 2x10")
+        # Its name only from its first renewal, two hours on.
+        (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", maker="Intel Corporate"'' "_ 1x2")
+        (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", hostname="laptop", maker="Intel Corporate"'' "_x3 2x10")
+      ];
       alert_rule_test =
         let
           firstLeases = [
@@ -734,42 +743,21 @@ in
           ];
         in
         [
-          (firing "NewDevice" "990h" firstLeases)
-          (firing "NewDevice" "995h" firstLeases)
-          (noAlert "NewDevice" "997h")
+          (firing "NewDevice" "6h" firstLeases)
+          (firing "NewDevice" "11h" firstLeases)
+          (noAlert "NewDevice" "13h")
         ];
-    }
-
-    {
-      name = "with lease records only from day 10, a device first seen on day 25 is not reported";
-      interval = "1h";
-      input_series = [
-        {
-          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.160", mac="aa:00:00:00:00:10", hostname="server", maker="Dell Inc."}'';
-          values = "_x240 1x760";
-        }
-        {
-          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."}'';
-          values = "_x600 1x13";
-        }
-      ];
-      alert_rule_test = [ (noAlert "NewDevice" "601h") ];
     }
 
     {
       name = "with only the backup's three days of lease records, nothing is reported";
       interval = "1h";
       input_series = [
-        {
-          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.160", mac="aa:00:00:00:00:10", hostname="server", maker="Dell Inc."}'';
-          values = "_x912 1x86";
-        }
-        {
-          series = ''janus_dhcp_lease_renewed_timestamp_seconds{instance="janus", address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."}'';
-          values = "_x984 1x13";
-        }
+        (retention 3)
+        # Back after a week: to the backup, a first lease.
+        (lease ''address="10.10.0.150", mac="aa:00:00:00:00:01", hostname="phone", maker="Apple, Inc."'' "_ 1x13")
       ];
-      alert_rule_test = [ (noAlert "NewDevice" "985h") ];
+      alert_rule_test = [ (noAlert "NewDevice" "2h") ];
     }
   ];
 }
