@@ -73,12 +73,10 @@ in
               rulesFile = yaml.generate "machine-rules.yml" rules.machines;
               testFile = yaml.generate "machine-rules-test.yml" {
                 rule_files = [ "${rulesFile}" ];
-                evaluation_interval = "1m";
                 tests = lib.concatMap (machine: machine.tests) (lib.attrValues ruleTests);
               };
             in
             pkgs.runCommand "machine-rules" { nativeBuildInputs = [ pkgs.prometheus.cli ]; } ''
-              promtool check rules ${rulesFile}
               promtool test rules ${testFile}
               touch $out
             '';

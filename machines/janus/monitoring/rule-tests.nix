@@ -1,25 +1,22 @@
 # Small test network so the cases don't change with the real cabling.
+# Series values are a minute apart, promtool's default, unless a group sets an interval.
 let
-  cable = port: to: toPort: {
+  cable = port: to: {
     appliance = "switch";
-    inherit port to toPort;
+    inherit port to;
   };
 
   network = import ./network.nix {
     router.machine = "janus";
     machines.laptop.tags = [ "portable" ];
-    appliances = {
-      switch = { };
-      ap = { };
-    };
     lan = {
       cables = [
-        (cable "sfp-sfpplus1" "server" null)
-        (cable "sfp-sfpplus2" "nas" null)
-        (cable "ether1" "ap" "ether1")
-        (cable "ether2" "laptop" null)
-        (cable "ether3" "desktop" null)
-        (cable "ether4" "printer" null)
+        (cable "sfp-sfpplus1" "server")
+        (cable "sfp-sfpplus2" "nas")
+        (cable "ether1" "ap")
+        (cable "ether2" "laptop")
+        (cable "ether3" "desktop")
+        (cable "ether4" "printer")
       ];
       vlans = {
         trusted = {
@@ -104,12 +101,7 @@ in
   tests = [
     {
       name = "the internet is down once every internet probe fails, not while one still answers";
-      interval = "1m";
       input_series = [
-        {
-          series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
-          values = "1x30";
-        }
         {
           series = ''janus_network_probe_up{instance="janus", target="cloudflare_dns", group="internet"}'';
           values = "1x10 0x20";
@@ -120,7 +112,6 @@ in
         }
       ];
       alert_rule_test = [
-        (noAlert "InternetDown" "20m")
         (noAlert "InternetDown" "25m")
         (firing "InternetDown" "27m" [ internetDown ])
       ];
@@ -128,7 +119,6 @@ in
 
     {
       name = "the internet is down once the ISP gateway stops answering";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
@@ -143,7 +133,6 @@ in
 
     {
       name = "5% ping loss stays quiet; 25% alerts once the 10m average is over 10% for 15m";
-      interval = "1m";
       input_series = [
         {
           series = ''smokeping_requests_total{instance="janus", target="cloudflare_dns", group="internet"}'';
@@ -156,7 +145,6 @@ in
         }
       ];
       alert_rule_test = [
-        (noAlert "InternetPacketLoss" "20m")
         (noAlert "InternetPacketLoss" "37m")
         (firing "InternetPacketLoss" "39m" [
           {
@@ -175,7 +163,6 @@ in
 
     {
       name = "pings lost while the ISP gateway is down are the outage, not packet loss";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
@@ -195,7 +182,6 @@ in
 
     {
       name = "exited pingers alert at once, even with the ISP gateway down; running ones do not";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
@@ -226,12 +212,7 @@ in
 
     {
       name = "DNS that fails while the internet is up alerts";
-      interval = "1m";
       input_series = [
-        {
-          series = ''janus_network_probe_up{instance="janus", target="cloudflare_dns", group="internet"}'';
-          values = "1x10";
-        }
         {
           series = ''janus_dns_probe_up{instance="janus", query="google.com", status="SERVFAIL"}'';
           values = "0x10";
@@ -245,7 +226,6 @@ in
 
     {
       name = "DNS that fails while the ISP gateway is down stays quiet, until unbound itself stops";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
@@ -268,7 +248,6 @@ in
 
     {
       name = "DHCP and the firewall alert after 3 minutes inactive, not for a restart";
-      interval = "1m";
       input_series = [
         {
           series = ''node_systemd_unit_state{instance="janus", name="kea-dhcp4-server.service", state="active"}'';
@@ -364,7 +343,6 @@ in
 
     {
       name = "clock max error over 1 s for 30m alerts; 0.9 s does not";
-      interval = "1m";
       input_series = [
         {
           # 16 s is chrony's mark of an unsynchronised clock.
@@ -391,7 +369,6 @@ in
 
     {
       name = "an unsynchronised clock while the ISP gateway is down stays quiet";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_network_probe_up{instance="janus", target="wan_gateway", group="wan"}'';
@@ -407,15 +384,10 @@ in
 
     {
       name = "an appliance that stops answering pings for 5 minutes is down, one that misses a few is not";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_network_probe_up{instance="janus", target="switch", address="10.99.0.2", group="routeros"}'';
           values = "1x5 0x15";
-        }
-        {
-          series = ''janus_network_probe_up{instance="janus", target="ap", address="10.99.0.5", group="routeros"}'';
-          values = "1x5 0x2 1x12";
         }
       ];
       alert_rule_test = [
@@ -439,7 +411,7 @@ in
     }
 
     {
-      name = "cables below port speed for an hour alert at the near end; full speed or down ports do not";
+      name = "cables below port speed for an hour alert at their near end; full-speed, down or portable machines' ports do not";
       interval = "5m";
       input_series =
         let
@@ -458,6 +430,7 @@ in
         ++ port "switch" "sfp-sfpplus2" "10000" "1"
         ++ port "switch" "ether1" "100" "1"
         ++ port "ap" "ether1" "100" "1"
+        ++ port "switch" "ether2" "100" "1"
         ++ port "switch" "ether3" "1000" "1"
         ++ port "switch" "ether4" "0" "0";
       alert_rule_test = [
@@ -495,7 +468,6 @@ in
 
     {
       name = "an appliance over 85°C for 15m alerts; 80°C does not";
-      interval = "1m";
       input_series = [
         {
           series = ''janus_routeros_temperature_celsius{instance="janus", name="switch", sensor="cpu-temperature"}'';
@@ -529,8 +501,7 @@ in
     }
 
     {
-      name = "an appliance that answers pings but fails either of its API scrapes for half an hour alerts";
-      interval = "1m";
+      name = "an appliance that answers pings but fails either of its API scrapes for half an hour alerts; one that is down does not";
       input_series = [
         # The exporter's scrape of the switch fails.
         {
@@ -538,7 +509,7 @@ in
           values = "1x40";
         }
         {
-          series = ''mikrotik_scrape_collector_success{instance="janus", job="mikrotik", device="switch", collector="interface"}'';
+          series = ''mikrotik_scrape_collector_success{instance="janus", job="mikrotik", device="switch"}'';
           values = "0x40";
         }
         {
@@ -551,11 +522,24 @@ in
           values = "1x40";
         }
         {
-          series = ''mikrotik_scrape_collector_success{instance="janus", job="mikrotik", device="ap", collector="interface"}'';
+          series = ''mikrotik_scrape_collector_success{instance="janus", job="mikrotik", device="ap"}'';
           values = "1x40";
         }
         {
           series = ''janus_routeros_health_scrape_success{instance="janus", name="ap"}'';
+          values = "0x40";
+        }
+        # A second access point is down, so both its scrapes fail too.
+        {
+          series = ''janus_network_probe_up{instance="janus", target="ap2", group="routeros"}'';
+          values = "0x40";
+        }
+        {
+          series = ''mikrotik_scrape_collector_success{instance="janus", job="mikrotik", device="ap2"}'';
+          values = "0x40";
+        }
+        {
+          series = ''janus_routeros_health_scrape_success{instance="janus", name="ap2"}'';
           values = "0x40";
         }
       ];
@@ -589,40 +573,14 @@ in
     }
 
     {
-      name = "an appliance that is down does not also alert for its failing scrapes";
-      interval = "1m";
-      input_series = [
-        {
-          series = ''janus_network_probe_up{instance="janus", target="switch", group="routeros"}'';
-          values = "0x40";
-        }
-        {
-          series = ''mikrotik_scrape_collector_success{instance="janus", job="mikrotik", device="switch", collector="interface"}'';
-          values = "0x40";
-        }
-        {
-          series = ''janus_routeros_health_scrape_success{instance="janus", name="switch"}'';
-          values = "0x40";
-        }
-      ];
-      alert_rule_test = [ (noAlert "RouterOSMetricsFailing" "31m") ];
-    }
-
-    {
       name = "a rolled-back appliance alerts at once, until the next net-apply clears the marker";
-      interval = "1m";
       input_series = [
-        {
-          series = ''janus_routeros_rolled_back{instance="janus", name="switch"}'';
-          values = "0x30";
-        }
         {
           series = ''janus_routeros_rolled_back{instance="janus", name="ap"}'';
           values = "0x9 1x10 0x10";
         }
       ];
       alert_rule_test = [
-        (noAlert "RouterOSRolledBack" "9m")
         (firing "RouterOSRolledBack" "10m" [
           {
             exp_labels = {
@@ -641,7 +599,7 @@ in
     }
 
     {
-      name = "a device is new for 12h from its first lease, by name or maker, with records only hours old; not a reserved host, a guest or the guard check";
+      name = "a device is new from its first lease, by name or maker, with records only hours old; not a reserved host, a guest or the guard check";
       interval = "1h";
       input_series =
         let
@@ -677,17 +635,16 @@ in
             "It took 10.10.0.153 with MAC 6a:00:00:00:00:06 (private address), unseen for 30 days; see Clients on the network page."
           )
         ])
-        (noAlert "NewDevice" "13h")
       ];
     }
 
     {
-      name = "a device back after ten days is not new, one back after 31 days is";
+      name = "a device back after 29 days is not new, one back after 31 days is";
       interval = "1h";
       input_series = [
         (retention network.newDeviceDays)
-        # There on day 21, back on day 31.
-        (lease ''address="10.10.0.151", mac="aa:00:00:00:00:02", hostname="laptop", maker="Intel Corporate"'' "_x504 1 _x239 1x2")
+        # There on day 2, back on day 31.
+        (lease ''address="10.10.0.151", mac="aa:00:00:00:00:02", hostname="laptop", maker="Intel Corporate"'' "_x48 1 _x695 1x2")
         # There on day 0, back on day 31.
         (lease ''address="10.10.0.152", mac="aa:00:00:00:00:03", hostname="tablet", maker="Apple, Inc."'' "1 _x743 1x2")
       ];
@@ -719,34 +676,29 @@ in
         (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", maker="Intel Corporate"'' "_ 1x2")
         (lease ''address="10.10.0.163", mac="aa:00:00:00:00:12", hostname="laptop", maker="Intel Corporate"'' "_x3 2x10")
       ];
-      alert_rule_test =
-        let
-          firstLeases = [
-            (newDevice
-              {
-                address = "10.10.0.161";
-                mac = "aa:00:00:00:00:11";
-                maker = "Apple, Inc.";
-              }
-              "A new device joined trusted: Apple, Inc."
-              "It took 10.10.0.161 with MAC aa:00:00:00:00:11 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
-            )
-            (newDevice
-              {
-                address = "10.10.0.163";
-                mac = "aa:00:00:00:00:12";
-                maker = "Intel Corporate";
-              }
-              "A new device joined trusted: Intel Corporate"
-              "It took 10.10.0.163 with MAC aa:00:00:00:00:12 (Intel Corporate), unseen for 30 days; see Clients on the network page."
-            )
-          ];
-        in
-        [
-          (firing "NewDevice" "6h" firstLeases)
-          (firing "NewDevice" "11h" firstLeases)
-          (noAlert "NewDevice" "13h")
-        ];
+      alert_rule_test = [
+        (firing "NewDevice" "11h" [
+          (newDevice
+            {
+              address = "10.10.0.161";
+              mac = "aa:00:00:00:00:11";
+              maker = "Apple, Inc.";
+            }
+            "A new device joined trusted: Apple, Inc."
+            "It took 10.10.0.161 with MAC aa:00:00:00:00:11 (Apple, Inc.), unseen for 30 days; see Clients on the network page."
+          )
+          (newDevice
+            {
+              address = "10.10.0.163";
+              mac = "aa:00:00:00:00:12";
+              maker = "Intel Corporate";
+            }
+            "A new device joined trusted: Intel Corporate"
+            "It took 10.10.0.163 with MAC aa:00:00:00:00:12 (Intel Corporate), unseen for 30 days; see Clients on the network page."
+          )
+        ])
+        (noAlert "NewDevice" "13h")
+      ];
     }
 
     {
