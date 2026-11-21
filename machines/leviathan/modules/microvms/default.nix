@@ -26,6 +26,19 @@ let
         ];
         text = builtins.readFile ./idle-poweroff.sh;
       };
+
+      # World of Warcraft and Blizzard's other games have no Linux version and are not on Steam.
+      battlenet = pkgs.writeShellApplication {
+        name = "battlenet";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.umu-launcher
+          pkgs.util-linux
+        ];
+        runtimeEnv.PROTONPATH = pkgs.proton-ge-bin.steamcompattool;
+        text = builtins.readFile ./battlenet.sh;
+      };
     in
     {
       imports = [ self.modules.nixos.wrappers ];
@@ -37,6 +50,22 @@ let
 
       config = {
         microvmGuest.adminKeys = self.users.alex.sshKeys;
+
+        # Steam reads thousands of small files from the store at every start; over the host's share that took 20 s.
+        microvmGuest.storeOnDisk = true;
+
+        # Steam's home screen shows an error without a time zone.
+        time.timeZone = self.users.alex.timeZone;
+
+        # Steam's Deck interface waits ten seconds for NetworkManager before it signs in.
+        networking.networkmanager.enable = true;
+        systemd.network = {
+          networks."10-lan".enable = false;
+          wait-online.enable = false;
+        };
+
+        # Games don't ask for 2 MiB pages; with this they get them. Random memory reads took 29% less time.
+        boot.kernelParams = [ "transparent_hugepage=always" ];
 
         microvmGuest.secrets.tailscale-gaming = {
           shared = true;
@@ -104,6 +133,22 @@ let
                     "steam://open/bigpicture"
                   ];
                   steam_integration = true;
+                }
+                {
+                  title = "Battle.net";
+                  command = [ (lib.getExe battlenet) ];
+                }
+                # Moonshine's compositor can't resize a window, and WowUp at its starting size cuts its own
+                # buttons off. labwc lets it be maximised.
+                {
+                  title = "WoW addons";
+                  command = [
+                    (lib.getExe pkgs.labwc)
+                    "--session"
+                    (lib.getExe pkgs.wowup-cf)
+                  ];
+                  # labwc stalls at start inside Moonshine's compositor with hardware cursors.
+                  env.WLR_NO_HARDWARE_CURSORS = "1";
                 }
               ];
               application_scanner = [
@@ -195,7 +240,7 @@ in
       "nvidia-container-toolkit-cdi-generator.service"
     ];
 
-    # Each pinned to the CPUs nearest its GPU.
+    # Each pinned to the CPUs nearest its GPU. Those nodes have no memory, so it comes from the nearest one that has.
     vms = {
       scylla = {
         cid = 10;
@@ -204,6 +249,7 @@ in
         memoryMiB = 24 * 1024;
         gpu = "0000:e2:00.0";
         cpus = "64-79 192-207";
+        memoryNode = 5;
         volumes.home = {
           mountPoint = "/home";
           sizeMiB = 256 * 1024;
@@ -218,6 +264,7 @@ in
         memoryMiB = 24 * 1024;
         gpu = "0000:21:00.0";
         cpus = "32-47 160-175";
+        memoryNode = 1;
         volumes.home = {
           mountPoint = "/home";
           sizeMiB = 128 * 1024;

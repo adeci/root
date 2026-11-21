@@ -11,6 +11,12 @@
         description = "SSH public keys that log in as root.";
       };
 
+      options.microvmGuest.storeOnDisk = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Boot from an image of the system's closure instead of sharing the host's /nix/store. Built on every change; much faster to read.";
+      };
+
       options.microvmGuest.seed = {
         image = lib.mkOption {
           type = lib.types.str;
@@ -86,7 +92,7 @@
         };
 
         microvm = {
-          shares = [
+          shares = lib.mkIf (!guest.storeOnDisk) [
             {
               proto = "virtiofs";
               tag = "ro-store";

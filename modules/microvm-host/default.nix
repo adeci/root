@@ -112,6 +112,11 @@
                   default = null;
                   description = "Host CPUs, as for CPUAffinity=.";
                 };
+                memoryNode = lib.mkOption {
+                  type = lib.types.nullOr lib.types.ints.unsigned;
+                  default = null;
+                  description = "NUMA node the VM's memory comes from. Without it a VM whose CPUs are on a node without memory gets no 2 MiB pages.";
+                };
                 volumes = lib.mkOption {
                   default = { };
                   type = lib.types.attrsOf (
@@ -236,6 +241,9 @@
                       '')
                     ];
                     CPUAffinity = lib.mkIf (vm.cpus != null) vm.cpus;
+                    # Bound, not preferred: while this node reclaims, the kernel hands out pages from another.
+                    NUMAPolicy = lib.mkIf (vm.memoryNode != null) "bind";
+                    NUMAMask = lib.mkIf (vm.memoryNode != null) (toString vm.memoryNode);
                   };
 
                   "microvm-virtiofsd@${name}".serviceConfig.Slice = "microvm.slice";

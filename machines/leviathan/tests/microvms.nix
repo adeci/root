@@ -92,6 +92,7 @@ pkgs.testers.runNixOSTest {
         vms = lib.genAttrs seats (name: {
           gpu = lib.mkForce devices.${name};
           cpus = lib.mkForce null;
+          memoryNode = lib.mkForce null;
           vcpu = lib.mkForce 1;
           memoryMiB = lib.mkForce 1536;
           config =
