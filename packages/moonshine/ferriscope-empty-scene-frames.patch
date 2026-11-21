@@ -1,0 +1,244 @@
+Send frames while no window is open.
+
+ferriscope drew nothing until the application opened its first window, so
+Moonlight got no video while Steam started and gave up after ten seconds. It
+now sends a black frame at once and repeats it each second, as for any screen
+that does not change.
+
+Not upstream yet. Applies to the ferriscope crate that Moonshine vendors.
+
+diff --git a/src/shell/render/mod.rs b/src/shell/render/mod.rs
+index e0f8b7d..6e8043e 100644
+--- a/src/shell/render/mod.rs
++++ b/src/shell/render/mod.rs
+@@ -69,10 +69,14 @@ impl FerriscopeState {
+ 	/// window's surface id and location, each overlay's surface id, location and
+ 	/// layer, and the cursor position when a cursor would actually be drawn.
+ 	/// Content updates arrive as commits, so two ticks with the same signature
+-	/// composite the same pixels.
++	/// composite the same pixels. While no window or overlay is drawn, commits
++	/// are left out: they would only re-composite the empty output, spending
++	/// delivery tokens the application's first frame needs.
+ 	pub(in crate::shell) fn scene_signature(&self) -> u64 {
+ 		let mut hash = 0xcbf2_9ce4_8422_2325u64;
+-		fnv1a(&mut hash, self.scheduler.commit_epoch());
++		if self.space.elements().next().is_some() || !self.overlays.is_empty() {
++			fnv1a(&mut hash, self.scheduler.commit_epoch());
++		}
+ 		for window in self.space.elements() {
+ 			if let Some(surface) = self.window_content_surface(window) {
+ 				fnv1a(&mut hash, u64::from(surface.id().protocol_id()));
+diff --git a/src/shell/schedule.rs b/src/shell/schedule.rs
+index 731c0ad..003167b 100644
+--- a/src/shell/schedule.rs
++++ b/src/shell/schedule.rs
+@@ -266,15 +266,15 @@ impl Scheduler {
+ 
+ 	/// The next instant the loop needs to wake on its own.
+ 	///
+-	/// The earliest of the next frame-callback time and, when a slot is free and
+-	/// there is a scene to deliver, the instant that scene becomes deliverable
+-	/// (token refill while damaged, the keepalive otherwise). With no free slot
+-	/// nothing but a release can deliver, and that is an event, so no deadline is
+-	/// armed for it.
+-	pub(in crate::shell) fn next_deadline(&self, scene: Option<u64>, slot_free: bool, now: Instant) -> Instant {
+-		match scene {
+-			Some(scene) if slot_free => self.next_callback.min(self.ready_at(scene, now)),
+-			_ => self.next_callback,
++	/// The earliest of the next frame-callback time and, when a slot is free,
++	/// the instant the scene becomes deliverable (token refill while damaged,
++	/// the keepalive otherwise). With no free slot nothing but a release can
++	/// deliver, and that is an event, so no deadline is armed for it.
++	pub(in crate::shell) fn next_deadline(&self, scene: u64, slot_free: bool, now: Instant) -> Instant {
++		if slot_free {
++			self.next_callback.min(self.ready_at(scene, now))
++		} else {
++			self.next_callback
+ 		}
+ 	}
+ 
+@@ -361,50 +361,50 @@ impl FerriscopeState {
+ 		self.check_cursor_suspension(now);
+ 		let populated = self.space.elements().next().is_some() || !self.overlays.is_empty();
+ 		let slot_free = self.slot_free();
+-		let scene = populated.then(|| self.scene_signature());
++		// An empty scene is composited too, as black, so a consumer gets frames
++		// (and the keepalive) before the application maps its first window.
++		let scene = self.scene_signature();
+ 		if !populated && self.pending_screenshot {
+-			// Nothing is drawn, so no frame will come; answer anyway so Steam
+-			// does not wait on the request.
++			// Nothing is drawn, so there is nothing to capture; answer anyway
++			// so Steam does not wait on the request.
+ 			self.finish_screenshot(0, 0, Err::<&[u8], _>("the scene is empty"));
+ 		}
+ 
+-		if let Some(scene) = scene {
+-			self.scheduler.observe(scene, now);
+-			if self.scheduler.should_render(scene, slot_free, now) {
+-				let render_started = Instant::now();
+-				match self.render_frame() {
+-					Ok(RenderOutcome::Delivered { zero_copy }) => {
+-						let delivery = self.scheduler.delivered(scene, now);
+-						// Latency tooling: `sequence` is the delivered frame's
+-						// `FrameInfo::sequence`.
+-						tracing::trace!(
+-							target: "ferriscope::latency",
+-							sequence = self.scheduler.frames_delivered() - 1,
+-							"delivered"
+-						);
+-						// The frame is with the consumer now: that is when
+-						// its commits count as presented.
+-						self.send_presentation_feedback(self.scheduler.frames_delivered() - 1, zero_copy);
+-						tracing::trace!(
+-							target: "ferriscope::cadence",
+-							commit_to_delivery_us = delivery.commit_to_delivery.map(|d| d.as_micros() as u64),
+-							render_us = render_started.elapsed().as_micros() as u64,
+-							since_last_us = delivery.since_last.map(|d| d.as_micros() as u64),
+-							repeat = delivery.repeat,
+-							sequence = self.scheduler.frames_delivered() - 1,
+-							"delivered"
+-						);
+-					},
+-					// No pool slot was free; the scene is still dirty.
+-					Ok(RenderOutcome::Skipped) => {
+-						tracing::trace!(target: "ferriscope::cadence", "no free slot; retrying");
+-						self.scheduler.deferred(now);
+-					},
+-					Err(e) => {
+-						tracing::warn!("render: {e}");
+-						self.scheduler.deferred(now);
+-					},
+-				}
++		self.scheduler.observe(scene, now);
++		if self.scheduler.should_render(scene, slot_free, now) {
++			let render_started = Instant::now();
++			match self.render_frame() {
++				Ok(RenderOutcome::Delivered { zero_copy }) => {
++					let delivery = self.scheduler.delivered(scene, now);
++					// Latency tooling: `sequence` is the delivered frame's
++					// `FrameInfo::sequence`.
++					tracing::trace!(
++						target: "ferriscope::latency",
++						sequence = self.scheduler.frames_delivered() - 1,
++						"delivered"
++					);
++					// The frame is with the consumer now: that is when
++					// its commits count as presented.
++					self.send_presentation_feedback(self.scheduler.frames_delivered() - 1, zero_copy);
++					tracing::trace!(
++						target: "ferriscope::cadence",
++						commit_to_delivery_us = delivery.commit_to_delivery.map(|d| d.as_micros() as u64),
++						render_us = render_started.elapsed().as_micros() as u64,
++						since_last_us = delivery.since_last.map(|d| d.as_micros() as u64),
++						repeat = delivery.repeat,
++						sequence = self.scheduler.frames_delivered() - 1,
++						"delivered"
++					);
++				},
++				// No pool slot was free; the scene is still dirty.
++				Ok(RenderOutcome::Skipped) => {
++					tracing::trace!(target: "ferriscope::cadence", "no free slot; retrying");
++					self.scheduler.deferred(now);
++				},
++				Err(e) => {
++					tracing::warn!("render: {e}");
++					self.scheduler.deferred(now);
++				},
+ 			}
+ 		}
+ 
+@@ -416,7 +416,7 @@ impl FerriscopeState {
+ 		}
+ 
+ 		let slot_free = self.slot_free();
+-		let scene = scene.map(|_| self.scene_signature());
++		let scene = self.scene_signature();
+ 		let now = Instant::now();
+ 		let mut deadline = self.scheduler.next_deadline(scene, slot_free, now);
+ 		if let Some(hide_at) = self.cursor_suspension.deadline(now) {
+@@ -632,7 +632,7 @@ mod tests {
+ 			"a static screen keeps alive"
+ 		);
+ 		assert_eq!(
+-			s.next_deadline(Some(7), true, t0 + ms(5)),
++			s.next_deadline(7, true, t0 + ms(5)),
+ 			s.next_callback,
+ 			"the callback comes before the keepalive"
+ 		);
+@@ -647,7 +647,7 @@ mod tests {
+ 		assert!(!s.should_render(3, false, now));
+ 		// Only a release can end the wait, and that is an event: the only
+ 		// deadline left is the callback tick.
+-		assert_eq!(s.next_deadline(Some(3), false, now), s.next_callback);
++		assert_eq!(s.next_deadline(3, false, now), s.next_callback);
+ 	}
+ 
+ 	#[test]
+@@ -660,10 +660,7 @@ mod tests {
+ 		s.commit(now);
+ 		assert!(!s.should_render(2, false, now));
+ 		assert!(s.should_render(2, true, now), "a freed slot must deliver at once");
+-		assert!(
+-			s.next_deadline(Some(2), true, now) <= now,
+-			"and the deadline is already due"
+-		);
++		assert!(s.next_deadline(2, true, now) <= now, "and the deadline is already due");
+ 	}
+ 
+ 	#[test]
+@@ -721,7 +718,7 @@ mod tests {
+ 				delivered += 1;
+ 			} else {
+ 				// Delivered at the token's refill, before the next commit.
+-				let due = s.next_deadline(Some(epoch), true, now);
++				let due = s.next_deadline(epoch, true, now);
+ 				if due < now + period && s.should_render(epoch, true, due) {
+ 					s.delivered(epoch, due);
+ 					delivered += 1;
+@@ -796,7 +793,7 @@ mod tests {
+ 		s.delivered(2, t0);
+ 		s.commit(t0);
+ 		assert!(!s.should_render(3, true, t0));
+-		let deadline = s.next_deadline(Some(3), true, t0);
++		let deadline = s.next_deadline(3, true, t0);
+ 		assert_eq!(
+ 			deadline,
+ 			s.next_callback.min(t0 + s.refill_period()),
+@@ -819,9 +816,7 @@ mod tests {
+ 			s.commit(commit_at);
+ 			let mut now = commit_at;
+ 			while !s.should_render(epoch, true, now) {
+-				now = s
+-					.next_deadline(Some(epoch), true, now)
+-					.max(now + Duration::from_micros(1));
++				now = s.next_deadline(epoch, true, now).max(now + Duration::from_micros(1));
+ 			}
+ 			s.delivered(epoch, now);
+ 			waits.push(now - commit_at);
+@@ -840,14 +835,12 @@ mod tests {
+ 		let (mut s, t0) = scheduler();
+ 		s.delivered(1, t0);
+ 		// Idle: callbacks every interval beat the one-second keepalive.
+-		assert_eq!(s.next_deadline(Some(1), true, t0), t0 + INTERVAL);
++		assert_eq!(s.next_deadline(1, true, t0), t0 + INTERVAL);
+ 		// Slower than the keepalive: the keepalive wins.
+ 		let mut slow = Scheduler::new(1.0, t0);
+ 		slow.delivered(1, t0);
+ 		slow.next_callback = t0 + 5 * STATIC_KEEPALIVE;
+-		assert_eq!(slow.next_deadline(Some(1), true, t0), t0 + STATIC_KEEPALIVE);
+-		// Nothing to show: only the callback tick.
+-		assert_eq!(s.next_deadline(None, true, t0), s.next_callback);
++		assert_eq!(slow.next_deadline(1, true, t0), t0 + STATIC_KEEPALIVE);
+ 	}
+ 
+ 	#[test]
+@@ -857,7 +850,7 @@ mod tests {
+ 		assert!(s.should_render(1, true, t0));
+ 		s.deferred(t0);
+ 		assert!(!s.should_render(1, true, t0 + ms(1)));
+-		assert_eq!(s.next_deadline(Some(1), true, t0), s.next_callback.min(t0 + INTERVAL));
++		assert_eq!(s.next_deadline(1, true, t0), s.next_callback.min(t0 + INTERVAL));
+ 		assert!(s.should_render(1, true, t0 + INTERVAL));
+ 	}
+ 

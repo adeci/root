@@ -1,0 +1,245 @@
+End a pairing attempt when it finishes, and take one PIN for each.
+
+Moonshine kept every pairing attempt and each kept accepting PINs. A PIN could
+then go to an attempt that had already paired, failed or been abandoned, while
+the device that waited got none. An attempt now ends when its device pairs,
+fails, disconnects or gives up, and it accepts one PIN.
+
+Not upstream yet.
+
+diff --git a/src/clients.rs b/src/clients.rs
+index d3c5ea4..e1d4a0e 100644
+--- a/src/clients.rs
++++ b/src/clients.rs
+@@ -130,6 +130,29 @@ impl ClientManager {
+ 		Ok(())
+ 	}
+ 
++	/// End a pairing attempt that will not complete, unless a newer one replaced it.
++	pub(crate) fn end_pairing(&self, id: &str, salt: &[u8; 16]) -> Result<(), ()> {
++		let mut inner = self.pending_clients.write().map_err(|poison| {
++			tracing::error!("RwLock poisoned: {poison}");
++		})?;
++		if inner.get(id).is_some_and(|client| client.salt == *salt) {
++			inner.remove(id);
++		}
++		Ok(())
++	}
++
++	/// End the attempt of a client that gave up after it got its PIN, e.g. because the PIN was wrong.
++	/// An attempt that still waits for its PIN is kept, as it may be of another client with the same id.
++	pub(crate) fn abort_pairing(&self, id: &str) -> Result<(), ()> {
++		let mut inner = self.pending_clients.write().map_err(|poison| {
++			tracing::error!("RwLock poisoned: {poison}");
++		})?;
++		if inner.get(id).is_some_and(|client| client.key.is_some()) {
++			inner.remove(id);
++		}
++		Ok(())
++	}
++
+ 	/// Devices that ask to pair and wait for their PIN, oldest first.
+ 	pub fn pairing_requests(&self) -> Vec<PairingRequest> {
+ 		let Ok(inner) = self.pending_clients.read() else {
+@@ -194,12 +217,13 @@ impl ClientManager {
+ 		let mut inner = self.pending_clients.write().map_err(|poison| {
+ 			tracing::error!("RwLock poisoned: {poison}");
+ 		})?;
+-		let client = inner.get_mut(id).ok_or_else(|| {
+-			tracing::warn!("No known client with id {id}");
++		let client = inner.get_mut(id).filter(|client| client.key.is_none()).ok_or_else(|| {
++			tracing::warn!("No client with id {id} is waiting for a PIN");
+ 		})?;
+ 		let key = create_key(&client.salt, pin).map_err(|e| tracing::warn!("Failed to create client key: {e}"))?;
+ 		client.key = Some(key);
+-		client.pin_notify.notify_waiters();
++		// Stores a permit if get_server_cert isn't waiting yet.
++		client.pin_notify.notify_one();
+ 		Ok(())
+ 	}
+ 
+@@ -286,10 +310,10 @@ impl ClientManager {
+ 		let mut inner = self.pending_clients.write().map_err(|poison| {
+ 			tracing::error!("RwLock poisoned: {poison}");
+ 		})?;
+-		let client = inner.get_mut(id).ok_or_else(|| {
++		let mut client = inner.remove(id).ok_or_else(|| {
+ 			tracing::warn!("No known client with id {id}");
+ 		})?;
+-		verify_pairing_secret(client, client_secret)
++		verify_pairing_secret(&mut client, client_secret)
+ 			.map_err(|e| tracing::warn!("Failed to verify client pairing secret: {e}"))?;
+ 
+ 		let fingerprint = cert_pem_fingerprint(&client.pem);
+@@ -455,3 +479,91 @@ fn cert_pem_fingerprint(pem: &str) -> Option<String> {
+ 	let (_, pem_obj) = parse_x509_pem(pem.as_bytes()).ok()?;
+ 	Some(hex::encode(Sha256::digest(&pem_obj.contents)))
+ }
++
++#[cfg(test)]
++mod tests {
++	use super::*;
++
++	fn manager() -> ClientManager {
++		ClientManager {
++			pending_clients: Default::default(),
++			state: PersistentState::for_tests(),
++			server_cert_pem: String::new(),
++			server_private_key_pem: String::new(),
++		}
++	}
++
++	fn pending_client(id: &str, salt: u8) -> PendingClient {
++		PendingClient {
++			id: id.to_string(),
++			pem: String::new(),
++			salt: [salt; 16],
++			pin_notify: Arc::new(Notify::new()),
++			key: None,
++			server_secret: None,
++			server_challenge: None,
++			client_hash: None,
++			since: SystemTime::now(),
++		}
++	}
++
++	#[test]
++	fn pin_is_accepted_once() {
++		let manager = manager();
++		assert!(manager.register_pin("aaaa", "1234").is_err());
++
++		manager.start_pairing(pending_client("aaaa", 1)).unwrap();
++		manager.register_pin("aaaa", "1234").unwrap();
++		assert!(manager.register_pin("aaaa", "1234").is_err());
++	}
++
++	#[test]
++	fn ending_pairing_keeps_a_newer_attempt() {
++		let manager = manager();
++		manager.start_pairing(pending_client("aaaa", 1)).unwrap();
++		manager.start_pairing(pending_client("aaaa", 2)).unwrap();
++
++		manager.end_pairing("aaaa", &[1; 16]).unwrap();
++		assert_eq!(manager.pairing_requests().len(), 1);
++
++		manager.end_pairing("aaaa", &[2; 16]).unwrap();
++		assert!(manager.pairing_requests().is_empty());
++	}
++
++	#[test]
++	fn failed_pairing_is_removed() {
++		let manager = manager();
++		manager.start_pairing(pending_client("aaaa", 1)).unwrap();
++		manager.register_pin("aaaa", "1234").unwrap();
++
++		assert!(manager.check_client_pairing_secret("aaaa", vec![0; 32]).is_err());
++		assert!(manager.pending_clients.read().unwrap().is_empty());
++	}
++
++	#[test]
++	fn aborting_ends_only_an_attempt_with_a_pin() {
++		let manager = manager();
++		manager.start_pairing(pending_client("aaaa", 1)).unwrap();
++		manager.abort_pairing("aaaa").unwrap();
++		assert_eq!(manager.pairing_requests().len(), 1);
++
++		manager.register_pin("aaaa", "1234").unwrap();
++		manager.abort_pairing("aaaa").unwrap();
++		assert!(manager.pending_clients.read().unwrap().is_empty());
++	}
++
++	#[tokio::test]
++	async fn pin_before_waiting_is_not_lost() {
++		let manager = manager();
++		let client = pending_client("aaaa", 1);
++		let pin_notify = client.pin_notify.clone();
++		manager.start_pairing(client).unwrap();
++		manager.register_pin("aaaa", "1234").unwrap();
++
++		tokio::select! {
++			biased;
++			_ = pin_notify.notified() => {},
++			_ = tokio::task::yield_now() => panic!("PIN notification was lost"),
++		}
++	}
++}
+diff --git a/src/state.rs b/src/state.rs
+index 64d1759..fa372e8 100644
+--- a/src/state.rs
++++ b/src/state.rs
+@@ -76,6 +76,15 @@ impl PersistentState {
+ 		Ok(state)
+ 	}
+ 
++	/// Fresh state that saves to a temporary file.
++	#[cfg(test)]
++	pub(crate) fn for_tests() -> Self {
++		Self {
++			data: Arc::new(RwLock::new(StateData::new())),
++			path: std::env::temp_dir().join(format!("moonshine-state-{}.toml", uuid::Uuid::new_v4())),
++		}
++	}
++
+ 	pub fn get_uuid(&self) -> Result<String, ()> {
+ 		let data = self
+ 			.data
+diff --git a/src/webserver/mod.rs b/src/webserver/mod.rs
+index 3b7d91e..7308cbb 100644
+--- a/src/webserver/mod.rs
++++ b/src/webserver/mod.rs
+@@ -706,7 +706,11 @@ impl Webserver {
+ 		}
+ 	}
+ 
+-	async fn unpair(&self, _params: HashMap<String, String>) -> Response<Full<Bytes>> {
++	async fn unpair(&self, params: HashMap<String, String>) -> Response<Full<Bytes>> {
++		// Moonlight unpairs when pairing fails, e.g. after a wrong PIN.
++		if let Some(unique_id) = params.get("uniqueid") {
++			let _ = self.client_manager.abort_pairing(unique_id);
++		}
+ 		let xml = r#"<root status_code="200"/>"#;
+ 		let mut response = Response::new(Full::new(Bytes::from(xml)));
+ 		response
+diff --git a/src/webserver/pairing.rs b/src/webserver/pairing.rs
+index bd159c6..d484f68 100644
+--- a/src/webserver/pairing.rs
++++ b/src/webserver/pairing.rs
+@@ -202,8 +202,14 @@ async fn get_server_cert(
+ 			});
+ 	}
+ 
++	let mut guard = PairingGuard {
++		client_manager,
++		id: unique_id.clone(),
++		salt,
++		pin_received: false,
++	};
+ 	tokio::select! {
+-		_ = pin_notifier.notified() => {},
++		_ = pin_notifier.notified() => guard.pin_received = true,
+ 		_ = shutdown.wait_shutdown_triggered() => {
+ 			tracing::info!("Shutdown triggered, aborting pairing.");
+ 			return bad_request("Server is shutting down.".to_string());
+@@ -213,6 +219,22 @@ async fn get_server_cert(
+ 	paired_xml_response(format!("<plaincert>{}</plaincert>", hex::encode(server_pem_str)))
+ }
+ 
++/// Ends the pairing attempt if the request is dropped before the PIN arrives, e.g. when the client disconnects.
++struct PairingGuard<'a> {
++	client_manager: &'a ClientManager,
++	id: String,
++	salt: [u8; 16],
++	pin_received: bool,
++}
++
++impl Drop for PairingGuard<'_> {
++	fn drop(&mut self) {
++		if !self.pin_received {
++			let _ = self.client_manager.end_pairing(&self.id, &self.salt);
++		}
++	}
++}
++
+ fn client_challenge(mut params: HashMap<String, String>, client_manager: &ClientManager) -> Response<Full<Bytes>> {
+ 	let unique_id = require_param!(params, "uniqueid");
+ 	let challenge = require_param!(params, "clientchallenge");

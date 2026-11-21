@@ -148,6 +148,11 @@ let
               OnUnitActiveSec = "1min";
             };
           };
+
+          # Without a cursor theme named "default", Steam's pointer is a small X11 arrow.
+          user.tmpfiles.users.gamer.rules = [
+            "L+ %h/.local/share/icons/default - - - - ${pkgs.adwaita-icon-theme}/share/icons/Adwaita"
+          ];
         };
       };
     };

@@ -248,6 +248,23 @@
         "type": "github"
       }
     },
+    "ferriscope": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795156116,
+        "narHash": "sha256-PdZlj/xwJSgX4Pd/hg+7EFcfEMqPJRPtkYeYGXa2A3U=",
+        "owner": "hgaiser",
+        "repo": "ferriscope",
+        "rev": "ede3767dc477046c496985ca4fff6f888c2a0664",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hgaiser",
+        "ref": "v0.2.0",
+        "repo": "ferriscope",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -439,6 +456,28 @@
       "original": {
         "owner": "microvm-nix",
         "repo": "microvm.nix",
+        "type": "github"
+      }
+    },
+    "moonshine": {
+      "inputs": {
+        "ferriscope": "ferriscope",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795219148,
+        "narHash": "sha256-R7MC4BcfZVw67I0RuTb3RE8NOGbxp0jrC2iDL7U9s9U=",
+        "owner": "hgaiser",
+        "repo": "moonshine",
+        "rev": "cb9dfa662d4f8d5edaf9d1cd914567c78e30e84d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hgaiser",
+        "repo": "moonshine",
+        "rev": "cb9dfa662d4f8d5edaf9d1cd914567c78e30e84d",
         "type": "github"
       }
     },
@@ -679,6 +718,7 @@
         "llm-agents": "llm-agents",
         "mandate": "mandate",
         "microvm": "microvm",
+        "moonshine": "moonshine",
         "nix-darwin": "nix-darwin",
         "nix-index-database": "nix-index-database",
         "nixbot": "nixbot",

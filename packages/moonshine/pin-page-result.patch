@@ -1,0 +1,198 @@
+Show on the PIN page whether the device paired.
+
+The page said "Successfully paired." for every PIN it passed on, also for a
+wrong one. It now waits until the device finishes pairing and shows the result.
+Needs pairing-attempts-end.patch.
+
+Not upstream yet.
+
+diff --git a/assets/pin.html b/assets/pin.html
+index 41ef86d..dd95df9 100644
+--- a/assets/pin.html
++++ b/assets/pin.html
+@@ -109,7 +109,7 @@
+ 			<button id="submit" type="submit" disabled>Submit</button>
+ 		</form>
+ 
+-		<div id="error-message">Error submitting PIN. Please try again or check the server logs.</div>
++		<div id="error-message">Pairing failed. Start pairing again in Moonlight.</div>
+ 		<div id="success-message">Successfully paired.</div>
+ 	</div>
+ 
+@@ -123,6 +123,10 @@
+ 
+ 		pin_form.addEventListener("submit", async (event) => {
+ 			event.preventDefault();
++			submit_button.disabled = true;
++			submit_button.textContent = "Pairing...";
++			error_message.style.display = "none";
++			success_message.style.display = "none";
+ 
+ 			let pin = "";
+ 			for (const field of pin_fields) {
+@@ -136,12 +140,12 @@
+ 				body: `uniqueid=${uniqueid}&pin=${pin}`
+ 			});
+ 
++			submit_button.textContent = "Submit";
+ 			if (response.ok) {
+-				error_message.style.display = "none";
+ 				success_message.style.display = "block";
+ 			} else {
+ 				error_message.style.display = "block";
+-				success_message.style.display = "none";
++				submit_button.disabled = false;
+ 			}
+ 		});
+ 
+diff --git a/src/clients.rs b/src/clients.rs
+index e1d4a0e..5a51548 100644
+--- a/src/clients.rs
++++ b/src/clients.rs
+@@ -17,6 +17,7 @@ use aws_lc_rs::signature::RsaKeyPair;
+ use sha2::Digest;
+ use sha2::Sha256;
+ use tokio::sync::Notify;
++use tokio::sync::oneshot;
+ use x509_parser::prelude::*;
+ 
+ use crate::state::PersistentState;
+@@ -35,6 +36,9 @@ pub(crate) struct PendingClient {
+ 	/// A channel that sends a notification when a PIN has been received for this client.
+ 	pub(crate) pin_notify: Arc<Notify>,
+ 
++	/// Notified once the client has paired, dropped if pairing fails.
++	pub(crate) paired: Option<oneshot::Sender<()>>,
++
+ 	/// Cryptographic key.
+ 	pub(crate) key: Option<[u8; 16]>,
+ 
+@@ -210,10 +214,11 @@ impl ClientManager {
+ 
+ 	/// Send the PIN for a pairing request.
+ 	pub fn submit_pin(&self, id: &str, pin: &str) -> Result<(), ()> {
+-		self.register_pin(id, pin)
++		self.register_pin(id, pin).map(|_paired| ())
+ 	}
+ 
+-	pub(crate) fn register_pin(&self, id: &str, pin: &str) -> Result<(), ()> {
++	/// Returns a channel that is notified once the client has paired, and is closed if pairing fails.
++	pub(crate) fn register_pin(&self, id: &str, pin: &str) -> Result<oneshot::Receiver<()>, ()> {
+ 		let mut inner = self.pending_clients.write().map_err(|poison| {
+ 			tracing::error!("RwLock poisoned: {poison}");
+ 		})?;
+@@ -222,9 +227,11 @@ impl ClientManager {
+ 		})?;
+ 		let key = create_key(&client.salt, pin).map_err(|e| tracing::warn!("Failed to create client key: {e}"))?;
+ 		client.key = Some(key);
++		let (sender, receiver) = oneshot::channel();
++		client.paired = Some(sender);
+ 		// Stores a permit if get_server_cert isn't waiting yet.
+ 		client.pin_notify.notify_one();
+-		Ok(())
++		Ok(receiver)
+ 	}
+ 
+ 	pub(crate) fn client_challenge(&self, id: &str, challenge: Vec<u8>) -> Result<Vec<u8>, ()> {
+@@ -343,6 +350,10 @@ impl ClientManager {
+ 				.map_err(|_| tracing::warn!("Failed to persist client '{id}'"))?;
+ 		}
+ 
++		if let Some(paired) = client.paired {
++			let _ = paired.send(());
++		}
++
+ 		Ok(())
+ 	}
+ }
+@@ -499,6 +510,7 @@ mod tests {
+ 			pem: String::new(),
+ 			salt: [salt; 16],
+ 			pin_notify: Arc::new(Notify::new()),
++			paired: None,
+ 			key: None,
+ 			server_secret: None,
+ 			server_challenge: None,
+@@ -540,6 +552,21 @@ mod tests {
+ 		assert!(manager.pending_clients.read().unwrap().is_empty());
+ 	}
+ 
++	#[test]
++	fn failed_pairing_is_reported() {
++		let manager = manager();
++		manager.start_pairing(pending_client("aaaa", 1)).unwrap();
++		let mut paired = manager.register_pin("aaaa", "1234").unwrap();
++		assert_eq!(paired.try_recv(), Err(oneshot::error::TryRecvError::Empty));
++		assert!(manager.check_client_pairing_secret("aaaa", vec![0; 32]).is_err());
++		assert_eq!(paired.try_recv(), Err(oneshot::error::TryRecvError::Closed));
++
++		manager.start_pairing(pending_client("aaaa", 2)).unwrap();
++		let mut paired = manager.register_pin("aaaa", "1234").unwrap();
++		manager.abort_pairing("aaaa").unwrap();
++		assert_eq!(paired.try_recv(), Err(oneshot::error::TryRecvError::Closed));
++	}
++
+ 	#[test]
+ 	fn aborting_ends_only_an_attempt_with_a_pin() {
+ 		let manager = manager();
+diff --git a/src/webserver/mod.rs b/src/webserver/mod.rs
+index 7308cbb..b9f5572 100644
+--- a/src/webserver/mod.rs
++++ b/src/webserver/mod.rs
+@@ -81,6 +81,9 @@ impl Default for WebserverConfig {
+ const SERVERINFO_APP_VERSION: &str = "7.1.431.-1";
+ const SERVERINFO_GFE_VERSION: &str = "3.23.0.74";
+ 
++/// Timeout in seconds for a PIN submission to wait for the client to finish pairing.
++const PAIRING_RESULT_TIMEOUT_SECS: u64 = 10;
++
+ #[derive(Clone)]
+ pub struct Webserver {
+ 	name: String,
+@@ -687,22 +690,19 @@ impl Webserver {
+ 			},
+ 		};
+ 
+-		let response = self.client_manager.register_pin(unique_id, pin);
+-		match response {
+-			Ok(()) => {
+-				tracing::info!("PIN registered successfully.");
+-				match Response::builder()
+-					.status(StatusCode::OK)
+-					.body(Full::new(Bytes::from("PIN accepted.")))
+-				{
+-					Ok(response) => response,
+-					Err(e) => {
+-						tracing::warn!("Failed to create response: {e}");
+-						bad_request("Bad request.".to_string())
+-					},
+-				}
++		let paired = match self.client_manager.register_pin(unique_id, pin) {
++			Ok(paired) => paired,
++			Err(()) => return bad_request("Failed to register PIN.".to_string()),
++		};
++		tracing::info!("PIN registered successfully.");
++
++		// The client only finds out whether the PIN was right in the remaining pairing steps.
++		match tokio::time::timeout(std::time::Duration::from_secs(PAIRING_RESULT_TIMEOUT_SECS), paired).await {
++			Ok(Ok(())) => Response::new(Full::new(Bytes::from("Paired."))),
++			_ => {
++				tracing::warn!("The client did not finish pairing, the PIN may have been wrong.");
++				bad_request("Pairing failed.".to_string())
+ 			},
+-			Err(()) => bad_request("Failed to register PIN.".to_string()),
+ 		}
+ 	}
+ 
+diff --git a/src/webserver/pairing.rs b/src/webserver/pairing.rs
+index d484f68..c38a7cf 100644
+--- a/src/webserver/pairing.rs
++++ b/src/webserver/pairing.rs
+@@ -151,6 +151,7 @@ async fn get_server_cert(
+ 			pem: client_pem,
+ 			salt,
+ 			pin_notify: Arc::new(Notify::new()),
++			paired: None,
+ 			key: None,
+ 			server_secret: None,
+ 			server_challenge: None,

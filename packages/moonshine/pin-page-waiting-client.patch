@@ -1,0 +1,55 @@
+Open the PIN page for the device that waits.
+
+Without ?uniqueid= the page used a fixed id, which Moonlight on Android sends
+and Moonlight on a computer does not, so a computer's PIN was refused. The page
+and /submit-pin now use the device that waits for its PIN.
+
+Not upstream yet.
+
+diff --git a/src/clients.rs b/src/clients.rs
+index 5a51548..e6cc492 100644
+--- a/src/clients.rs
++++ b/src/clients.rs
+@@ -175,6 +175,11 @@ impl ClientManager {
+ 		requests
+ 	}
+ 
++	/// The id of the client that waits for its PIN, of the newest request if several wait.
++	pub(crate) fn waiting_client_id(&self) -> Option<String> {
++		self.pairing_requests().pop().map(|request| request.id)
++	}
++
+ 	/// The paired devices, newest first.
+ 	pub fn paired_devices(&self) -> Result<Vec<PairedDevice>, ()> {
+ 		Ok(self
+diff --git a/src/webserver/mod.rs b/src/webserver/mod.rs
+index b9f5572..50bd4a8 100644
+--- a/src/webserver/mod.rs
++++ b/src/webserver/mod.rs
+@@ -639,9 +639,11 @@ impl Webserver {
+ 	}
+ 
+ 	fn pin(&self, params: HashMap<String, String>) -> Response<Full<Bytes>> {
++		// Without an id, show the page for the client that waits for its PIN.
+ 		let unique_id = params
+ 			.get("uniqueid")
+ 			.cloned()
++			.or_else(|| self.client_manager.waiting_client_id())
+ 			.map(|id| {
+ 				id.chars()
+ 					.filter(|c| c.is_ascii_hexdigit())
+@@ -674,10 +676,12 @@ impl Webserver {
+ 
+ 		let params: HashMap<String, String> = url::form_urlencoded::parse(&body).into_owned().collect();
+ 
+-		let unique_id = match params.get("uniqueid") {
++		// Without an id, the PIN is for the client that waits for it.
++		let waiting_client_id = self.client_manager.waiting_client_id();
++		let unique_id = match params.get("uniqueid").or(waiting_client_id.as_ref()) {
+ 			Some(unique_id) => unique_id,
+ 			None => {
+-				tracing::warn!("Missing 'uniqueid' in PIN submission.");
++				tracing::warn!("Missing 'uniqueid' in PIN submission, and no client waits for a PIN.");
+ 				return bad_request("Bad request.".to_string());
+ 			},
+ 		};
