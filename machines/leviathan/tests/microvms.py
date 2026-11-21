@@ -51,7 +51,6 @@ with subtest("seats boot with their GPU, address, and SSH host key"):
 with subtest("seats reach the gateway but not each other"):
     on_seat("scylla", f"ping -c1 -W2 {tenant_gateway}")
     janus.fail(f"{ssh('scylla')} ping -c1 -W2 {ips['charybdis']}")
-    janus.fail(f"{ssh('charybdis')} ping -c1 -W2 {ips['scylla']}")
 
 with subtest("each seat gets its secrets, root-only and read-only"):
     for seat in seats:

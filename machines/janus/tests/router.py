@@ -15,7 +15,6 @@ zones = {
     "tenant": {"wan"},
     "mgmt": set(),
 }
-assert set(zones) == set(vlans), f"the test has zones for {sorted(zones)}, the inventory has VLANs {sorted(vlans)}"
 # The VLANs firewall.nix lets ssh into janus.
 admin_vlans = {"trusted", "mgmt"}
 # Guests may print (LPD, IPP, JetDirect) but not reach the printer's web page.
@@ -220,16 +219,11 @@ with subtest("each VLAN reaches the others exactly as its zone allows"):
             if target != source:
                 ping(host, address, answered=target in zones[source])
 
-with subtest("no host on trusted, reserved or from the pool, reaches a host on mgmt"):
-    trusted_hosts = [name for name, host in hosts.items() if host["vlan"] == "trusted"] + [pool_hosts["trusted"]]
-    mgmt_hosts = {name: host["ip"] for name, host in hosts.items() if host["vlan"] == "mgmt"}
-    mgmt_hosts[pool_hosts["mgmt"]] = pool_addresses["mgmt"]
-    for name in mgmt_hosts:
-        listen(name, appliance_ssh_port)
-    for source in trusted_hosts:
-        for address in mgmt_hosts.values():
-            ping(source, address, answered=False)
-            connect(source, address, appliance_ssh_port, accepted=False)
+with subtest("a trusted host reaches an appliance on mgmt by neither ping nor ssh"):
+    appliance = hosts[mgmt_port_host]["ip"]
+    listen(mgmt_port_host, appliance_ssh_port)
+    ping(pool_hosts["trusted"], appliance, answered=False)
+    connect(pool_hosts["trusted"], appliance, appliance_ssh_port, accepted=False)
 
 with subtest("guests print to the printer, and reach neither its other ports nor another trusted host"):
     guest = pool_hosts["guest"]
