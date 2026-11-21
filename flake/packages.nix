@@ -25,6 +25,11 @@ in
       packages = availablePackages pkgs.stdenv.hostPlatform (
         lib.mapAttrs (_: path: callPackage path { }) (nixEntries ../packages)
       );
+
+      # availablePackages hides a package that fails to evaluate; one available on no system is broken.
+      unavailableEverywhere = lib.filter (
+        name: !lib.any (systemPackages: systemPackages ? ${name}) (lib.attrValues self.packages)
+      ) (lib.attrNames (nixEntries ../packages // nixEntries ../wrappers));
     in
     {
       inherit packages;
@@ -37,6 +42,10 @@ in
         removeAttrs (
           packages // lib.getAttrs (lib.attrNames config.wrappers.packages) config.packages
         ) skipChecks
+        // lib.genAttrs unavailableEverywhere (
+          name:
+          throw "${name} is available on no system: it fails to evaluate, or its platforms exclude them all"
+        )
       );
     };
 }
