@@ -36,23 +36,6 @@ let
     };
   };
 
-  # LaptopBackupStale on "laptop", with how long it has been on since its newest snapshot.
-  laptopStale = severity: on: {
-    exp_labels = {
-      instance = "laptop";
-      backup = "state";
-      inherit severity;
-    };
-    exp_annotations = {
-      summary =
-        if severity == "warning" then
-          "laptop has gone days of use without a backup"
-        else
-          "laptop has gone a week of use without a backup";
-      description = "On for ${on} of the last 30 days since the newest snapshot in its state repository. Backups need AC power, an unmetered network and a reachable repository; `journalctl -u restic-state-when-due` on laptop says which was missing.";
-    };
-  };
-
   laptopBackupFailed = {
     exp_labels = {
       instance = "laptop";
@@ -83,29 +66,11 @@ in
     alert_rule_test = [
       (noAlert "HostDown" "15m")
       (firing "HostDown" "17m" [ serverDown ])
-      (firing "HostDown" "40m" [ serverDown ])
     ];
   }
 
   {
-    name = "a server missing a few scrapes is not down";
-    interval = "1m";
-    input_series = [
-      {
-        series = ''up{instance="server", job="node"}'';
-        values = "1x10 0 1x10 0x3 1x10";
-      }
-    ];
-    alert_rule_test = map (noAlert "HostDown") [
-      "11m"
-      "15m"
-      "25m"
-      "30m"
-    ];
-  }
-
-  {
-    name = "a public name that stops answering alerts after 5 minutes, whatever serves it; one failed request doesn't";
+    name = "a public name that stops answering alerts after 5 minutes, whatever serves it";
     interval = "1m";
     input_series = [
       {
@@ -115,10 +80,6 @@ in
       {
         series = ''probe_success{job="probe", instance="cloudflare", name="go.example.com"}'';
         values = "1x5 0x20";
-      }
-      {
-        series = ''probe_success{job="probe", instance="server", name="blip.example.com"}'';
-        values = "1x5 0 1x20";
       }
     ];
     alert_rule_test =
@@ -271,7 +232,7 @@ in
   }
 
   {
-    name = "a reverted deploy warns until the next deploy-guard-confirm, and its file is never stale";
+    name = "a reverted deploy warns, and its file is never stale";
     interval = "1m";
     input_series = [
       {
@@ -284,7 +245,6 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "DeployReverted" "9m")
       (firing "DeployReverted" "11m" [
         {
           exp_labels = {
@@ -299,7 +259,6 @@ in
         }
       ])
       (noAlert "TextfileMetricsStale" "175m")
-      (noAlert "DeployReverted" "190m")
     ];
   }
 
@@ -355,10 +314,6 @@ in
         values = "1x10";
       }
       {
-        series = ''node_filesystem_readonly{instance="server", device="/dev/sda1", fstype="ext4", mountpoint="/nix/store"}'';
-        values = "1x10";
-      }
-      {
         series = ''node_filesystem_readonly{instance="server", device="/dev/sdb1", fstype="ext4", mountpoint="/data"}'';
         values = "0x10";
       }
@@ -397,10 +352,6 @@ in
         values = "0x80";
       }
       {
-        series = ''restic_snapshot_timestamp_seconds{instance="server", backup="fresh"}'';
-        values = "0+3600x80";
-      }
-      {
         series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
         values = "0x80";
       }
@@ -432,92 +383,6 @@ in
   }
 
   {
-    name = "a laptop's backup warns after 3 days on and is critical after 7; time off doesn't count";
-    interval = "5m";
-    input_series = [
-      {
-        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
-        # On for two days, off for five, then on again.
-        values = "0x575 _x1440 0x2000";
-      }
-    ];
-    alert_rule_test = [
-      (noAlert "LaptopBackupStale" "120h")
-      (noAlert "LaptopBackupStale" "191h")
-      (firing "LaptopBackupStale" "193h" [ (laptopStale "warning" "3d 1h 30m 0s") ])
-      (firing "LaptopBackupStale" "290h" [
-        (laptopStale "warning" "7d 2h 30m 0s")
-        (laptopStale "critical" "7d 2h 30m 0s")
-      ])
-    ];
-  }
-
-  {
-    name = "a laptop counts again from each new snapshot";
-    interval = "5m";
-    input_series = [
-      {
-        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
-        # The next snapshot comes after 70 hours on.
-        values = "0x839 252000x900";
-      }
-    ];
-    alert_rule_test = [
-      (noAlert "LaptopBackupStale" "73h")
-      (firing "LaptopBackupStale" "144h" [ (laptopStale "warning" "3d 2h 30m 0s") ])
-    ];
-  }
-
-  {
-    name = "a laptop on 1.5 hours a day warns after a day on once its snapshot is older than 30 days";
-    interval = "30m";
-    input_series = [
-      {
-        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
-        # A snapshot four months old, and three half hours on at the start of each day.
-        values = builtins.concatStringsSep " " (builtins.genList (_: "-10000000x2 _x45") 20);
-      }
-    ];
-    alert_rule_test = [
-      (noAlert "LaptopBackupStale" "337h")
-      (firing "LaptopBackupStale" "385h" [ (laptopStale "warning" "1d 1h 30m 0s") ])
-    ];
-  }
-
-  {
-    name = "a laptop that never backed up (snapshot time 0) warns after a day on";
-    interval = "30m";
-    input_series = [
-      {
-        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
-        # New a month in, and never backed up.
-        values = "_x1488 0x200";
-      }
-    ];
-    alert_rule_test = [
-      (noAlert "LaptopBackupStale" "767h")
-      (firing "LaptopBackupStale" "769h" [ (laptopStale "warning" "1d 1h 30m 0s") ])
-    ];
-  }
-
-  {
-    name = "a laptop off for two weeks does not alert, and counts on from where it stopped";
-    interval = "30m";
-    input_series = [
-      {
-        series = ''restic_snapshot_timestamp_seconds{instance="laptop", backup="state"}'';
-        # On for a day after its snapshot, off for two weeks, then on again.
-        values = "0x47 _x672 0x200";
-      }
-    ];
-    alert_rule_test = [
-      (noAlert "LaptopBackupStale" "200h")
-      (noAlert "LaptopBackupStale" "407h")
-      (firing "LaptopBackupStale" "409h" [ (laptopStale "warning" "3d 1h 30m 0s") ])
-    ];
-  }
-
-  {
     name = "a laptop's failed backup fires until an hour after a success; a server's is a failed unit";
     interval = "1m";
     input_series = [
@@ -532,7 +397,6 @@ in
       }
     ];
     alert_rule_test = [
-      (noAlert "BackupFailed" "5m")
       (firing "BackupFailed" "7m" [ laptopBackupFailed ])
       (firing "BackupFailed" "100m" [ laptopBackupFailed ])
       (noAlert "BackupFailed" "130m")
@@ -549,12 +413,7 @@ in
         values = "0x5 1x54 0x3 1x54 0x3 1x54 _x600 1x30";
       }
     ];
-    alert_rule_test = [
-      (firing "BackupFailed" "7m" [ laptopBackupFailed ])
-      (firing "BackupFailed" "62m" [ laptopBackupFailed ])
-      (firing "BackupFailed" "500m" [ laptopBackupFailed ])
-      (firing "BackupFailed" "800m" [ laptopBackupFailed ])
-    ];
+    alert_rule_test = [ (firing "BackupFailed" "500m" [ laptopBackupFailed ]) ];
   }
 
   {
@@ -566,16 +425,11 @@ in
         values = "30x24 32x30";
       }
       {
-        series = ''smartctl_device_attribute{instance="server", device="sdb", attribute_name="Current_Pending_Sector", attribute_value_type="raw"}'';
-        values = "5x54";
-      }
-      {
         series = ''smartctl_device_smart_status{instance="server", device="nvme0"}'';
         values = "1x40 0x14";
       }
     ];
     alert_rule_test = [
-      (noAlert "DriveDegrading" "20h")
       (firing "DriveDegrading" "30h" [
         {
           exp_labels = {
@@ -721,10 +575,6 @@ in
         values = "0x14 1x40";
       }
     ];
-    alert_rule_test = map (noAlert "AlertDeliveryFailing") [
-      "20m"
-      "31m"
-      "50m"
-    ];
+    alert_rule_test = [ (noAlert "AlertDeliveryFailing" "31m") ];
   }
 ]

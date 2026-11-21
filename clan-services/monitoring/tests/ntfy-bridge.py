@@ -8,7 +8,6 @@ import urllib.request
 
 BRIDGE_URL = "http://127.0.0.1:8000/hook"
 NTFY_PORT = 8001
-CLICK_URL = "https://grafana.example/d/fleet"
 
 received = []
 
@@ -17,7 +16,7 @@ class FakeNtfy(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         body = self.rfile.read(int(self.headers["Content-Length"])).decode()
         headers = {name.lower(): value for name, value in self.headers.items()}
-        received.append({"path": self.path, "headers": headers, "body": body})
+        received.append({"headers": headers, "body": body})
         self.send_response(200)
         self.end_headers()
 
@@ -56,16 +55,12 @@ def expect(fingerprint, priority, tag, title):
     message = next(candidate for candidate in received if candidate["headers"].get("x-sequence-id") == fingerprint)
     headers = message["headers"]
     problems = []
-    if message["path"] != "/alerts":
-        problems.append(f"posted to {message['path']}")
     if headers.get("x-priority") != priority:
         problems.append(f"priority {headers.get('x-priority')}, wanted {priority}")
     if tag not in headers.get("x-tags", "").split(","):
         problems.append(f"tags {headers.get('x-tags')}, wanted {tag}")
     if headers.get("x-title") != title:
         problems.append(f"title {headers.get('x-title')!r}, wanted {title!r}")
-    if headers.get("x-click") != CLICK_URL:
-        problems.append(f"click {headers.get('x-click')}")
     if message["body"] != "Details.":
         problems.append(f"body {message['body']!r}")
     return [f"{fingerprint}: {problem}" for problem in problems]

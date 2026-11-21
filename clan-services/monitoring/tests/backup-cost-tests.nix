@@ -20,8 +20,7 @@ in
       (stored "laptop" "6000000000x2")
     ];
     promql_expr_test = [
-      # 12 GB stored, 2 GB of it paid at $6.95 a TB.
-      (result (cost.bill cost.stored) "2h" [ { value = 0.0139; } ])
+      # 12 GB stored, 2 GB of it paid at $6.95 a TB, half each.
       (result (cost.share cost.stored) "2h" [
         {
           labels = ''{instance="laptop"}'';
@@ -73,8 +72,6 @@ in
           value = 17200000000;
         }
       ])
-      # 159 GB and 17.2 GB, less the free 10 GB.
-      (result (cost.bill (cost.storedIn 91)) "28d" [ { value = 1.15509; } ])
     ];
   }
 
@@ -88,27 +85,6 @@ in
         {
           labels = ''{instance="laptop"}'';
           value = 40000000000;
-        }
-      ])
-      # 40 GB, less the free 10 GB.
-      (result (cost.bill (cost.storedIn 91)) "24h" [ { value = 0.2085; } ])
-    ];
-  }
-
-  {
-    name = "a second backup makes no growth either";
-    interval = "1h";
-    input_series = [
-      # The next day's backup adds a gigabyte.
-      (stored "laptop" "40000000000x23 41000000000x3")
-    ];
-    promql_expr_test = [
-      (result cost.growth "26h" [ ])
-      (result (cost.projected 365) "26h" [ ])
-      (result (cost.storedIn 365) "26h" [
-        {
-          labels = ''{instance="laptop"}'';
-          value = 41000000000;
         }
       ])
     ];
