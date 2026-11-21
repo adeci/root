@@ -23,7 +23,7 @@ let
     address = "203.0.113.10";
   };
 
-  # Root zone signed with a test trust anchor; *.pool.ntp.org is the internet host.
+  # Root zone signed with a test trust anchor; *.pool.ntp.org and google.com, which janus's probe asks for, are the internet host.
   rootZone = pkgs.runCommand "root-zone" { nativeBuildInputs = [ pkgs.ldns.examples ]; } ''
     cat > root.zone <<EOF
     . 3600 IN SOA a.root-servers.net. hostmaster.root-servers.net. 1 1800 900 604800 86400
@@ -31,6 +31,7 @@ let
     a.root-servers.net. 3600 IN A ${wanGateway}
     ${internet.name}. 3600 IN A ${internet.address}
     *.pool.ntp.org. 3600 IN A ${internet.address}
+    google.com. 3600 IN A ${internet.address}
     EOF
     key=$(ldns-keygen -a ECDSAP256SHA256 -k .)
     mkdir "$out"

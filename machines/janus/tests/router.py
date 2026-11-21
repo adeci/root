@@ -213,11 +213,27 @@ with subtest("each VLAN whose zone allows it reaches the internet, which sees on
         # The ISP has no route to the LAN, so only answers to janus's own address come back.
         ping(host, internet_address, answered="wan" in zones[vlan])
 
+# The probe pings each of its targets for seconds, so it runs while the hosts ping each other.
+janus.succeed("systemctl start --no-block janus-network-probe.service")
+
 with subtest("each VLAN reaches the others exactly as its zone allows"):
     for source, host in pool_hosts.items():
         for target, address in pool_addresses.items():
             if target != source:
                 ping(host, address, answered=target in zones[source])
+
+with subtest("janus's probe reports its WAN gateway answering, with a latency, and google.com resolving"):
+    probe = janus.wait_until_succeeds(f"cat {textfile_directory}/janus-network-probe.prom")
+    probed = dict(re.findall(r'^janus_network_probe_(\w+)\{target="wan_gateway",.*\} (\S+)$', probe, re.M))
+    assert probed["up"] == "1" and probed["packet_loss_ratio"] == "0" and 0 < float(probed["latency_seconds"]) < 1, probed
+    assert re.search(r'^janus_dns_probe_up\{.*status="NOERROR"\} 1$', probe, re.M), probe
+
+with subtest("janus exports every counter its firewall declares, with what it counted"):
+    janus.succeed("systemctl start janus-firewall-counters.service")
+    exported = janus.succeed(f"cat {textfile_directory}/janus-firewall-counters.prom")
+    packets = dict(re.findall(r'_packets_total\{.*counter="(\w+)".*\} (\d+)', exported))
+    assert set(packets) == set(re.findall(r"counter (\w+) \{", janus.succeed("nft list counters"))), packets
+    assert int(packets["input_accept_dhcp_dns"]) > 0, packets
 
 with subtest("a trusted host reaches an appliance on mgmt by neither ping nor ssh"):
     appliance = hosts[mgmt_port_host]["ip"]
