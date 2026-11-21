@@ -51,12 +51,16 @@ let
 in
 [
   {
-    name = "a server is down after 5 minutes without node_exporter, a laptop never is";
+    name = "a server is down after 5 minutes without node_exporter, not when another exporter is; a laptop never is";
     interval = "1m";
     input_series = [
       {
         series = ''up{instance="server", job="node"}'';
         values = "1x10 0x30";
+      }
+      {
+        series = ''up{instance="server", job="smartctl"}'';
+        values = "0x30";
       }
       {
         series = ''up{instance="laptop", job="node"}'';
@@ -263,46 +267,69 @@ in
   }
 
   {
-    name = "a disk filling within a day warns on servers only, and its read-only bind mount stays quiet";
+    name = "a server's disk warns a day before it fills and is critical hours before, almost full or out of inodes; a laptop and the read-only bind mount stay quiet";
     interval = "5m";
     input_series =
       let
-        # 9% free of 100 GB, losing 600 MB an hour.
+        # 9% free of 100 GB, losing 600 MB an hour, and 4% of its inodes free.
         mount = instance: mountpoint: readonly: [
           {
             series = ''node_filesystem_avail_bytes{instance="${instance}", device="/dev/sda1", fstype="ext4", mountpoint="${mountpoint}"}'';
-            values = "9000000000-50000000x60";
+            values = "9000000000-50000000x144";
           }
           {
             series = ''node_filesystem_size_bytes{instance="${instance}", device="/dev/sda1", fstype="ext4", mountpoint="${mountpoint}"}'';
-            values = "100000000000x60";
+            values = "100000000000x144";
           }
           {
             series = ''node_filesystem_readonly{instance="${instance}", device="/dev/sda1", fstype="ext4", mountpoint="${mountpoint}"}'';
-            values = "${readonly}x60";
+            values = "${readonly}x144";
+          }
+          {
+            series = ''node_filesystem_files_free{instance="${instance}", device="/dev/sda1", fstype="ext4", mountpoint="${mountpoint}"}'';
+            values = "40000x144";
+          }
+          {
+            series = ''node_filesystem_files{instance="${instance}", device="/dev/sda1", fstype="ext4", mountpoint="${mountpoint}"}'';
+            values = "1000000x144";
           }
         ];
       in
       mount "server" "/" "0" ++ mount "server" "/nix/store" "1" ++ mount "laptop" "/" "0";
-    alert_rule_test = [
-      (noAlert "FilesystemFillingUp" "60m")
-      (firing "FilesystemFillingUp" "3h" [
-        {
+    alert_rule_test =
+      let
+        # An alert on server's root filesystem.
+        root = severity: summary: description: {
           exp_labels = {
             instance = "server";
             device = "/dev/sda1";
             fstype = "ext4";
             mountpoint = "/";
-            severity = "warning";
+            inherit severity;
           };
-          exp_annotations = {
-            summary = "/ on server fills up within a day";
-            description = "7.2% free, shrinking at the last day's rate.";
-          };
-        }
-      ])
-      (noAlert "FilesystemAlmostFull" "3h")
-    ];
+          exp_annotations = { inherit summary description; };
+        };
+      in
+      [
+        (noAlert "FilesystemFillingUp" "60m")
+        (firing "FilesystemFillingUp" "3h" [
+          (root "warning" "/ on server fills up within a day" "7.2% free, shrinking at the last day's rate.")
+        ])
+        (noAlert "FilesystemAlmostFull" "3h")
+        # Within 4 hours of full since 11h.
+        (firing "FilesystemFillingUp" "12h" [
+          (root "warning" "/ on server fills up within a day" "1.8% free, shrinking at the last day's rate.")
+          (root "critical" "/ on server fills up within hours"
+            "1.8% free, shrinking at the last 6 hours' rate."
+          )
+        ])
+        (firing "FilesystemAlmostFull" "12h" [
+          (root "critical" "/ on server is almost full" "Only 1.8% free.")
+        ])
+        (firing "FilesystemOutOfInodes" "12h" [
+          (root "critical" "/ on server is running out of inodes" "Only 4% of its inodes are free.")
+        ])
+      ];
   }
 
   {
