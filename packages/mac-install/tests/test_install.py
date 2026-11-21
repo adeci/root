@@ -17,7 +17,7 @@ from mac_install.install import (
     settings,
 )
 
-from .conftest import ED25519, Commands
+from .conftest import ED25519, OTHER, Commands
 
 # What a real Mac's /etc/mac-setup.json holds for a step.
 SCROLL = "/usr/bin/sqlite3 '/Library/Application Support/com.apple.TCC/TCC.db' 'select auth_value from access where service = '\\''kTCCServiceAccessibility'\\'' and client = '\\''com.pilotmoon.scroll-reverser'\\''' 2>/dev/null | /usr/bin/grep -qx 2"
@@ -98,6 +98,19 @@ def test_an_unconfirmed_host_key_stops_everything(
         install("macbook", "192.0.2.7", dry_run=False)
     assert macbook.on_mac == []
     assert not (tmp_path / ".ssh" / "known_hosts").exists()
+
+
+def test_a_changed_host_key_needs_confirming(
+    macbook: Commands, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    known_hosts = tmp_path / ".ssh" / "known_hosts"
+    known_hosts.parent.mkdir()
+    known_hosts.write_text(f"192.0.2.7 ssh-ed25519 {OTHER}\n")
+    macbook.on(r"^ssh-keygen -F ", known_hosts.read_text())
+    monkeypatch.setattr(ui, "ask", lambda question: False)
+    with pytest.raises(Error, match="host key not confirmed"):
+        install("macbook", "192.0.2.7", dry_run=False)
+    assert macbook.on_mac == []
 
 
 @pytest.mark.parametrize("flow", [install, settings])

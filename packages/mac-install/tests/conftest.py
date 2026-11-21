@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import pytest
 
 ED25519 = "AAAAC3NzaC1lZDI1NTE5AAAAIFT/O0m15CY1Km5q4zRAKozCi2dRRIj7k9ExUtidt/16"
+OTHER = "AAAAC3NzaC1lZDI1NTE5AAAAIOf0URzmusd83C/zYSVyJotzH+hqL3KiKAVlxTvuDpYq"
 
 
 class Started:

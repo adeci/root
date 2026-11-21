@@ -5,9 +5,8 @@ from pathlib import Path
 
 from mac_install.mac import HostKey, Trust, record, recorded, secrets_tarball, trust
 
-from .conftest import ED25519
+from .conftest import ED25519, OTHER
 
-OTHER = "AAAAC3NzaC1lZDI1NTE5AAAAIOf0URzmusd83C/zYSVyJotzH+hqL3KiKAVlxTvuDpYq"
 KEY = HostKey("192.0.2.7", "ssh-ed25519", ED25519)
 
 
