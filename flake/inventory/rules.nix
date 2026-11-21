@@ -1,12 +1,7 @@
 # Rules for network.nix that types can't express.
 { config, lib, ... }:
 let
-  inherit (config.lan)
-    cables
-    fallbackNetwork
-    hosts
-    vlans
-    ;
+  inherit (config.lan) cables hosts vlans;
   inherit (config) appliances router;
   inherit (config.routeros) models;
   inherit (import ./lib.nix { inherit lib; }) addressNumber carriedVlans inBlock;
@@ -172,10 +167,7 @@ let
         # Every port the appliance's entry mentions, at the path that mentions it.
         portsMentioned =
           lib.mapAttrsToList (port: _: valueAt "appliances.${name}.ports.${port}" port) appliance.ports
-          ++ [ (valueAt "appliances.${name}.managementPort" appliance.managementPort) ]
-          ++ lib.optional (appliance.fallbackPort != appliance.managementPort) (
-            valueAt "appliances.${name}.fallbackPort" appliance.fallbackPort
-          );
+          ++ [ (valueAt "appliances.${name}.managementPort" appliance.managementPort) ];
       in
       map (port: {
         assertion = lib.elem port.value models.${appliance.model}.ports;
@@ -183,11 +175,6 @@ let
       }) portsMentioned
     ) appliances
   );
-
-  fallbackAddressesInFallbackNetwork = lib.mapAttrsToList (name: appliance: {
-    assertion = inBlock fallbackNetwork (lib.head (lib.splitString "/" appliance.fallbackAddress));
-    message = "appliances.${name}.fallbackAddress: ${appliance.fallbackAddress} is outside lan.fallbackNetwork ${fallbackNetwork}";
-  }) appliances;
 
   cablesLeadToExistingPorts = map (cable: {
     assertion = leadsToExistingPort cable;
@@ -262,7 +249,6 @@ in
     uniqueDnsNames
     tailnetRecordsResolve
     appliancePortsExist
-    fallbackAddressesInFallbackNetwork
     cablesLeadToExistingPorts
     onePlugPerPort
     hostsCabledWithoutNicHaveOneCable

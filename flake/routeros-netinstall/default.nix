@@ -13,7 +13,7 @@ in
     let
       netinstall = self'.packages.routeros-netinstall;
 
-      # Reinstall with the model's packages and DHCP clients; the management port's sends the name.
+      # Reinstall with the model's packages and a DHCP client on the management port that sends the name.
       netinstallProgram =
         name: appliance:
         let
@@ -28,13 +28,8 @@ in
           ++ [
             "--management-port ${appliance.managementPort}"
             "--client-id ${appliance.lan.clientId}"
-          ]
-          ++ lib.optional (
-            appliance.fallbackPort != appliance.managementPort
-          ) "--fallback-port ${appliance.fallbackPort}"
-          # Process substitution keeps the password off argv and out of any file of our own.
-          ++ [
             "--admin-user ${lib.escapeShellArg admin.user}"
+            # Process substitution keeps the password off argv and out of any file of our own.
             "--admin-password-file <(clan secrets get ${lib.escapeShellArg admin.secret})"
           ];
         in

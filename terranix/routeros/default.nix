@@ -101,7 +101,7 @@ in
         winbox = 8291;
         api-ssl = 8729;
       };
-      # Only from the management VLAN and the fallback network.
+      # Only from the management VLAN.
       logins = appliance: {
         ssh = 22;
         api = appliance.api.port;
@@ -124,7 +124,7 @@ in
           provider = "routeros.${name}";
           numbers = service;
           inherit port;
-          address = "${lan.vlans.${appliance.lan.vlan}.cidr},${lan.fallbackNetwork}";
+          address = lan.vlans.${appliance.lan.vlan}.cidr;
         }
       ) (logins appliance)
     ) appliances;
@@ -159,14 +159,4 @@ in
     provider = "routeros.${name}";
     disable_ipv6 = true;
   }) appliances;
-
-  resource.routeros_ip_address = lib.mapAttrs' (
-    name: appliance:
-    lib.nameValuePair "${name}_fallback" {
-      provider = "routeros.${name}";
-      address = appliance.fallbackAddress;
-      interface = appliance.fallbackPort;
-      comment = "Static fallback — Managed by Terraform";
-    }
-  ) appliances;
 }

@@ -126,11 +126,6 @@ in
         );
       };
 
-      fallbackNetwork = mkOption {
-        type = types.str;
-        description = "Block every appliance's fallbackAddress is in, without host bits as RouterOS wants; appliance ssh and API allow it besides the management VLAN.";
-      };
-
       dns = mkOption {
         type = types.attrsOf (
           types.submodule {
@@ -488,15 +483,6 @@ in
                 managementPort = mkOption {
                   type = types.str;
                   description = "Port it's managed through; kept out of the bridge, with a DHCP client for the management address.";
-                };
-                fallbackPort = mkOption {
-                  type = types.str;
-                  default = config.managementPort;
-                  description = "The port that takes fallbackAddress and also keeps a DHCP client.";
-                };
-                fallbackAddress = mkOption {
-                  type = types.str;
-                  description = "A static address with prefix length in lan.fallbackNetwork, for reaching it from a laptop when DHCP fails.";
                 };
                 vlans = mkOption {
                   type = types.listOf vlanName;

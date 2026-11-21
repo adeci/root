@@ -25,8 +25,6 @@
       };
     };
 
-    fallbackNetwork = "172.16.0.0/24";
-
     dns = {
       paperless = {
         host = "paperless.decio.us";
@@ -262,7 +260,6 @@
         vlan = "mgmt";
       };
       managementPort = "ether1";
-      fallbackAddress = "172.16.0.2/24";
       vlans = [
         "trusted"
         "iot"
@@ -329,8 +326,6 @@
         vlan = "mgmt";
       };
       managementPort = "sfp-sfpplus1";
-      fallbackPort = "ether1";
-      fallbackAddress = "172.16.0.3/24";
       vlans = [
         "trusted"
         "iot"
@@ -364,7 +359,6 @@
         vlan = "mgmt";
       };
       managementPort = "ether1";
-      fallbackAddress = "172.16.0.5/24";
       wifi = [
         "main"
         "guest"
@@ -380,7 +374,6 @@
         vlan = "mgmt";
       };
       managementPort = "ether1";
-      fallbackAddress = "172.16.0.6/24";
       wifi = [
         "main"
         "guest"

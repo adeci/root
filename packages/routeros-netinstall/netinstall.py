@@ -91,7 +91,7 @@ def read_admin_password(path):
     return password
 
 
-def render_setup_script(admin_user, admin_password, management_port, client_id, fallback_port):
+def render_setup_script(admin_user, admin_password, management_port, client_id):
     user = routeros_string(admin_user, "Admin user")
     password = routeros_string(admin_password, "Admin password")
     client_id_hex = routeros_hex(client_id, "Client id")
@@ -101,9 +101,6 @@ def render_setup_script(admin_user, admin_password, management_port, client_id, 
         # The default list, hostname,clientid, with the name in place of the MAC-based id.
         f"/ip dhcp-client add interface={management_port} dhcp-options=hostname,clientid_name disabled=no",
     ]
-    if fallback_port:
-        # Client ids must be unique per subnet (RFC 2132, 9.14); keep the MAC-based one.
-        lines.append(f"/ip dhcp-client add interface={fallback_port} disabled=no")
     return "".join(f"{line}\n" for line in lines)
 
 
@@ -126,7 +123,6 @@ def main():
     )
     parser.add_argument("--management-port", required=True)
     parser.add_argument("--client-id", required=True)
-    parser.add_argument("--fallback-port")
     parser.add_argument("--admin-user", default="admin")
     parser.add_argument("--admin-password-file", required=True)
     args = parser.parse_args()
@@ -143,7 +139,6 @@ def main():
         read_admin_password(args.admin_password_file),
         args.management_port,
         args.client_id,
-        args.fallback_port,
     )
 
     print(f"RouterOS Netinstall: {args.device}, a {args.model} ({args.arch}, v{args.version})")
@@ -196,8 +191,6 @@ def main():
     print(f"    - {installed}")
     print(f"    - Password for {args.admin_user}")
     print(f"    - DHCP client on {args.management_port}, sending its name as client id {args.client_id}")
-    if args.fallback_port:
-        print(f"    - DHCP client on {args.fallback_port}")
     print("")
     print("  Plug ether1 back into its cable; the rebuild goes on from here.")
     print("")
