@@ -6,9 +6,14 @@
   ...
 }:
 let
-  inherit (self.inventory) appliances lan wifi;
+  inherit (self.inventory)
+    appliances
+    lan
+    wifi
+    wifiBlocked
+    ;
   inherit (self.inventory.routeros) models;
-  inherit (import ../lib.nix { inherit clan-cli lib; }) clanSecret;
+  inherit (import ../lib.nix { inherit clan-cli lib; }) clanSecret safeName;
 
   # Each Wi-Fi VLAN: tagged sub-interface on the management port, own bridge, no vlan_filtering.
   accessPoints = lib.filterAttrs (_: appliance: appliance.wifi != null) appliances;
@@ -144,6 +149,21 @@ in
           }
         ) (lib.tail accessPoint.wifi)
       ) (radios accessPoint)
+    )
+  ) accessPoints;
+
+  # Only the MAC may shape an entry: provider 1.99.1 crashes updating one in place.
+  resource.routeros_wifi_access_list = lib.concatMapAttrs (
+    name: _:
+    lib.genAttrs' wifiBlocked (
+      mac:
+      lib.nameValuePair "${name}_${safeName mac}" {
+        provider = "routeros.${name}";
+        # The provider takes upper case only.
+        mac_address = lib.toUpper mac;
+        action = "reject";
+        comment = "Blocked — Managed by Terraform";
+      }
     )
   ) accessPoints;
 

@@ -556,6 +556,12 @@ in
       description = "The Wi-Fi networks; each access point lists the ones it broadcasts.";
     };
 
+    wifiBlocked = mkOption {
+      type = types.listOf macAddress;
+      default = [ ];
+      description = "MAC addresses no access point lets onto any of its Wi-Fi networks.";
+    };
+
     # Not from network.nix.
 
     routeros = {

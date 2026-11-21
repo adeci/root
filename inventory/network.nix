@@ -399,4 +399,9 @@
       hidden = true;
     };
   };
+
+  wifiBlocked = [
+    # Unknown Sichuan AI-Link module, seen on Aether through nimbus; blocked since 20 Nov 2026.
+    "b4:61:e9:7a:0e:ab"
+  ];
 }

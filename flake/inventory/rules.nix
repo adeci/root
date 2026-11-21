@@ -128,10 +128,12 @@ let
     lib.mapAttrsToList (name: host: valueAt reservedAt.${name} host.ip) hosts
   );
 
+  # Blocking a host's MAC would silently keep it off the Wi-Fi.
   uniqueMacs = usedOnce "MAC" (
     lib.mapAttrsToList (name: host: valueAt reservedAt.${name} (lib.toLower host.mac)) (
       lib.filterAttrs (_: host: host.mac != null) hosts
     )
+    ++ map (mac: valueAt "wifiBlocked" (lib.toLower mac)) config.wifiBlocked
   );
 
   uniqueClientIds = usedOnce "DHCP client id" (

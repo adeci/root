@@ -10,6 +10,6 @@
   setClanVar =
     machine: var: "${lib.getExe clan-cli} vars set ${machine} ${var.generator}/${var.file}";
 
-  # Hostnames, zones and machine names as Terraform resource names.
-  safeName = builtins.replaceStrings [ "." "-" ] [ "_" "_" ];
+  # Hostnames, zones, machine names and MACs as Terraform resource names.
+  safeName = builtins.replaceStrings [ "." "-" ":" ] [ "_" "_" "_" ];
 }
