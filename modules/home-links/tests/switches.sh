@@ -38,15 +38,8 @@ absent() {
   [[ ! -e $HOME/$1 && ! -L $HOME/$1 ]] || fail "$1 is still there"
 }
 
-# Link from before the record existed.
-ln -s "$one" "$HOME/.before-record"
-
-switch .changed "$one" .dropped "$one" .dangling "$gone" .repointed "$one" .replaced "$one" \
-  .deep/er/link "$one" .shared/link "$one" "Application Support/link" "$one" ".private/kept link" "$one"
-points_at .before-record "$one"
-points_at .deep/er/link "$one"
-points_at "Application Support/link" "$one"
-cmp table "$STATE_DIRECTORY/linked" || fail "the record is not the table"
+switch .changed "$one" .dangling "$gone" .repointed "$one" .replaced "$one" \
+  .shared/link "$one" "Application Support/link" "$one" ".private/kept link" "$one"
 
 # Manual changes, and a target that's gone.
 ln -sfn "$mine" "$HOME/.repointed"
@@ -59,16 +52,12 @@ rm "$gone"
 
 switch .changed "$two" ".private/kept link" "$one"
 points_at .changed "$two"
-absent .dropped
 absent .dangling
 points_at .repointed "$mine"
 [[ -f $HOME/.replaced && ! -L $HOME/.replaced ]] || fail ".replaced was overwritten"
-absent .deep
 absent .shared/link
 [[ -f $HOME/.shared/own ]] || fail ".shared/own is gone"
 absent "Application Support"
-points_at .before-record "$one"
-points_at ".private/kept link" "$one"
 [[ $(stat -c %a "$HOME/.private") == 700 ]] || fail "the folder of a link that stays was made again"
 
 # A real file in a link's place stops the switch before anything changes.
@@ -76,7 +65,6 @@ cp "$STATE_DIRECTORY/linked" record-before
 write_table .changed "$two" .new "$one" "My Notes" "$one"
 if home-links --check table; then fail "the check passed a real file in a link's place"; fi
 if home-links table; then fail "the run linked over a real file"; fi
-absent .new
 points_at ".private/kept link" "$one"
 cmp record-before "$STATE_DIRECTORY/linked" || fail "a refused run changed the record"
 

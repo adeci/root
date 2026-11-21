@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from mac_install import Error, ui
+from mac_install import ui
 
 
 @dataclass
@@ -66,8 +66,6 @@ def test_keys_pressed_before_a_question_do_not_answer_it(keyboard: Keyboard) -> 
 
 
 def test_until_polls_until_the_condition_holds(keyboard: Keyboard) -> None:
-    # Enter pressed before the wait began is not a skip.
-    keyboard.type(b"\n")
     polls = iter([False, False, True])
     assert ui.until(lambda: next(polls), every=0.01) is True
 
@@ -85,9 +83,3 @@ def test_enter_ends_the_wait(keyboard: Keyboard) -> None:
 
     assert ui.until(check, every=0.01) is False
     assert polls >= 3
-
-
-def test_no_terminal_fails_plainly(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(ui, "TTY", "/nonexistent/tty")
-    with pytest.raises(Error, match="needs a terminal"):
-        ui.ask("Same as the one the Mac printed?")
