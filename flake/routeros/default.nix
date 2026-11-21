@@ -37,6 +37,18 @@ in
         };
         text = ''exec python3 ${./guarded-apply.py} "$@"'';
       };
+
+      rotatePassword = pkgs.writeShellApplication {
+        name = "net-rotate-password-on-devices";
+        runtimeInputs = [
+          (pkgs.python3.withPackages (python: [ python.librouteros ]))
+          pkgs.sops
+        ]
+        # sops needs clan's age plugins to decrypt the secret's previous version.
+        ++ map (plugin: pkgs.${plugin}) config.flake.clan.secrets.age.plugins;
+        runtimeEnv.ADMIN_SECRET = admin.secret;
+        text = ''exec python3 ${./rotate-password.py} "$@"'';
+      };
     in
     mkTofuWorkspace {
       name = "network";
@@ -68,6 +80,10 @@ in
       # Changed devices roll back unless every device answers afterwards.
       apply = guardedApply;
       scripts.state-rm-device = ./net-state-rm-device.sh;
-      runtimeInputs = [ pkgs.jq ];
+      scripts.rotate-password = ./net-rotate-password.sh;
+      runtimeInputs = [
+        pkgs.jq
+        rotatePassword
+      ];
     };
 }

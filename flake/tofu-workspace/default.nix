@@ -14,7 +14,7 @@
   appPrefix,
   commands,
   scripts ? { },
-  # Packages the scripts need besides tofu, git and clan, such as jq.
+  # Packages the scripts need besides tofu, git, clan and the tunnel, such as jq.
   runtimeInputs ? [ ],
   # { host, forwards }: one ssh connection; forwards are <local port>:<address>:<port>.
   tunnel ? null,
@@ -86,6 +86,8 @@ let
         tofu
         clan-cli
       ]
+      # A script that reaches the providers' endpoints runs its part through `<appPrefix>-tunnel`.
+      ++ lib.optional (tunnel != null) tunnelProgram
       ++ runtimeInputs;
       runtimeEnv = {
         WORKSPACE = name;
