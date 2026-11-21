@@ -5,7 +5,8 @@ rm -rf "${BACKUP_DIRECTORY:?}"/*
 for database in "$STATE_DIRECTORY"/connectors/*/data.db; do
   if [ -f "$database" ]; then
     snapshot=$BACKUP_DIRECTORY/$(basename "$(dirname "$database")").db
-    sqlite3 "$database" ".backup $snapshot"
+    # A connector may be mid-write; wait for it.
+    sqlite3 -cmd ".timeout 30000" "$database" ".backup $snapshot"
     # Media refs go, as some embed CDN keys.
     if [ -n "$(sqlite3 "$snapshot" "SELECT 1 FROM sqlite_master WHERE name = 'media'")" ]; then
       sqlite3 "$snapshot" "UPDATE media SET ref = NULL; VACUUM;"
