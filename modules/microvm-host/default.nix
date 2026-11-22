@@ -12,8 +12,6 @@
     let
       host = config.microvmHost;
       seedDirectory = "/run/microvm-seeds";
-      systemctl = lib.getExe' config.systemd.package "systemctl";
-      holders = lib.escapeShellArgs host.gpu.holders;
 
       secretsOf = name: config.microvm.vms.${name}.config.config.microvmGuest.secrets;
       seedOf = name: config.microvm.vms.${name}.config.config.microvmGuest.seed;
@@ -56,6 +54,7 @@
           pkgs.findutils
           pkgs.gnused
           pkgs.procps
+          pkgs.util-linux
         ];
         runtimeEnv = {
           GPU_HOST_DRIVER = host.gpu.hostDriver;
@@ -69,6 +68,7 @@
         runtimeInputs = [
           config.systemd.package
           pkgs.coreutils
+          pkgs.util-linux
         ];
         runtimeEnv = {
           GPU_HOST_DRIVER = host.gpu.hostDriver;
@@ -253,7 +253,6 @@
                     bindsTo = [ "microvm@${name}.service" ];
                     serviceConfig = {
                       ExecStartPre = [ "${lib.getExe releaseGpu} ${vm.gpu}" ];
-                      ExecStartPost = lib.optional (holders != "") "-${systemctl} start ${holders}";
                       # Runs even if the VM fails to start.
                       ExecStopPost = [ "${lib.getExe reclaimGpu} ${vm.gpu}" ];
                     };

@@ -4,6 +4,10 @@ device=/sys/bus/pci/devices/$gpu
 
 bound_driver() { basename "$(readlink "$device/driver" || true)"; }
 
+# The lock release-gpu.sh takes.
+exec 9> /run/microvm-gpu.lock
+flock 9
+
 echo > "$device/driver_override"
 if [[ $(bound_driver) != "$GPU_HOST_DRIVER" ]]; then
   if [[ -e $device/driver ]]; then

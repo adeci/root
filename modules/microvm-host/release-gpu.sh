@@ -1,5 +1,11 @@
 # shellcheck shell=bash
 gpu=$1
+device=/sys/bus/pci/devices/$gpu
+
+# One hand-over at a time. Two that overlap issue opposite jobs for the holders, systemd cancels one side's,
+# and that VM fails to start.
+exec 9> /run/microvm-gpu.lock
+flock 9
 
 if ((${#GPU_HOLDERS[@]} > 0)); then
   systemctl stop "${GPU_HOLDERS[@]}"
@@ -18,4 +24,14 @@ if [[ $GPU_HOST_DRIVER == nvidia ]]; then
     fi
     exit 1
   fi
+fi
+
+# Off the host's driver, and kept off it, before the holders come back. The VM's own setup binds it next.
+echo vfio-pci > "$device/driver_override"
+if [[ -e $device/driver ]]; then
+  echo "$gpu" > "$device/driver/unbind"
+fi
+# When this was the host's last GPU, some of them have nothing to hold and fail to start.
+if ((${#GPU_HOLDERS[@]} > 0)); then
+  systemctl start "${GPU_HOLDERS[@]}" || true
 fi
