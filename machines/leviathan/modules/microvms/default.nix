@@ -21,6 +21,8 @@ let
         name = "idle-poweroff";
         runtimeInputs = [
           pkgs.coreutils
+          pkgs.gawk
+          pkgs.iptables
           pkgs.jq
           config.systemd.package
         ];
@@ -39,13 +41,89 @@ let
         runtimeEnv.PROTONPATH = pkgs.proton-ge-bin.steamcompattool;
         text = builtins.readFile ./battlenet.sh;
       };
+
+      # Moonshine's compositor shows one window at a time and can't resize it. A program with several windows,
+      # or one whose window starts too small to use, runs inside labwc.
+      windowed = title: program: {
+        inherit title;
+        command = [
+          (lib.getExe pkgs.labwc)
+          "--session"
+          program
+        ];
+        # labwc stalls at start inside Moonshine's compositor with hardware cursors.
+        env.WLR_NO_HARDWARE_CURSORS = "1";
+      };
+
+      # The desktop is a bar: a button for each of these, the open windows, and a clock.
+      desktopPrograms = [
+        {
+          name = "Files";
+          program = lib.getExe pkgs.pcmanfm;
+        }
+        {
+          name = "Terminal";
+          program = lib.getExe pkgs.foot;
+        }
+        {
+          name = "Browser";
+          program = lib.getExe pkgs.firefox;
+        }
+        {
+          name = "Heroic";
+          program = lib.getExe pkgs.heroic;
+        }
+        {
+          name = "Lutris";
+          program = lib.getExe pkgs.lutris;
+        }
+        {
+          name = "Bottles";
+          program = lib.getExe pkgs.bottles;
+        }
+      ];
+      bar = pkgs.writeText "waybar.json" (
+        builtins.toJSON (
+          {
+            position = "bottom";
+            height = 36;
+            modules-left = map (entry: "custom/${entry.name}") desktopPrograms;
+            modules-center = [ "wlr/taskbar" ];
+            modules-right = [ "clock" ];
+            "wlr/taskbar" = {
+              format = "{title}";
+              on-click = "activate";
+            };
+          }
+          // lib.listToAttrs (
+            map (entry: {
+              name = "custom/${entry.name}";
+              value = {
+                format = entry.name;
+                on-click = entry.program;
+              };
+            }) desktopPrograms
+          )
+        )
+      );
+      barStyle = pkgs.writeText "waybar.css" ''
+        * { font-size: 15px; }
+        .module, #taskbar button { padding: 0 14px; }
+      '';
     in
     {
       imports = [ self.modules.nixos.wrappers ];
 
-      options.gamingSeat.idleMinutes = lib.mkOption {
-        type = lib.types.ints.positive;
-        default = 15;
+      options.gamingSeat = {
+        idleMinutes = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 15;
+        };
+        resumeMinutes = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 30;
+          description = "How long a game nobody is connected to keeps running, to resume into.";
+        };
       };
 
       config = {
@@ -66,6 +144,19 @@ let
 
         # Games don't ask for 2 MiB pages; with this they get them. Random memory reads took 29% less time.
         boot.kernelParams = [ "transparent_hugepage=always" ];
+
+        # Proton uses it in place of fsync when the device is there.
+        boot.kernelModules = [ "ntsync" ];
+
+        # The desktop's terminal wants a monospace font.
+        fonts.packages = [ pkgs.dejavu_fonts ];
+
+        # Counts what a Moonlight client sends to Moonshine's control port, for the idle check. Mangle sees the
+        # packets before the firewall's rule for established connections takes them.
+        networking.firewall.extraCommands = ''
+          iptables -t mangle -C PREROUTING -p udp --dport 47999 -m comment --comment moonlight-client 2> /dev/null ||
+            iptables -t mangle -A PREROUTING -p udp --dport 47999 -m comment --comment moonlight-client
+        '';
 
         microvmGuest.secrets.tailscale-gaming = {
           shared = true;
@@ -123,11 +214,13 @@ let
             settings = {
               name = config.networking.hostName;
               inhibit_sleep = false;
-              # A disconnected game keeps running this long, to resume into.
-              stream.timeout = 30 * 60;
+              # Moonshine can't tell that a client has gone and would keep the game for this long. The idle
+              # check ends it sooner; this only has to outlast a long download.
+              stream.timeout = 24 * 60 * 60;
               application = [
                 {
                   title = "Steam";
+                  boxart = "${pkgs.steam-unwrapped}/share/icons/hicolor/256x256/apps/steam.png";
                   command = [
                     steam
                     "steam://open/bigpicture"
@@ -136,20 +229,34 @@ let
                 }
                 {
                   title = "Battle.net";
+                  boxart = "${pkgs.fetchurl {
+                    url = "https://upload.wikimedia.org/wikipedia/commons/2/23/Blizzard_Battle.net_logo.png";
+                    hash = "sha256-rshBtQHCiNlgfN3ir2bITC30PSOesE42iUPleP6B4U8=";
+                  }}";
                   command = [ (lib.getExe battlenet) ];
                 }
-                # Moonshine's compositor can't resize a window, and WowUp at its starting size cuts its own
-                # buttons off. labwc lets it be maximised.
-                {
-                  title = "WoW addons";
-                  command = [
-                    (lib.getExe pkgs.labwc)
-                    "--session"
-                    (lib.getExe pkgs.wowup-cf)
-                  ];
-                  # labwc stalls at start inside Moonshine's compositor with hardware cursors.
-                  env.WLR_NO_HARDWARE_CURSORS = "1";
-                }
+                (
+                  windowed "WoW addons" (lib.getExe pkgs.wowup-cf)
+                  // {
+                    boxart = "${pkgs.wowup-cf}/share/icons/hicolor/512x512/apps/wowup-cf.png";
+                  }
+                )
+                (
+                  windowed "Dolphin" (lib.getExe pkgs.dolphin-emu)
+                  // {
+                    boxart = "${pkgs.dolphin-emu}/share/icons/hicolor/256x256/apps/dolphin-emu.png";
+                  }
+                )
+                (
+                  windowed "Desktop" "${lib.getExe pkgs.waybar} --config ${bar} --style ${barStyle}"
+                  // {
+                    # Moonshine reads no SVG.
+                    boxart = "${pkgs.runCommand "desktop-cover.png" { } ''
+                      ${lib.getExe' pkgs.librsvg "rsvg-convert"} --width 512 --height 512 --output $out \
+                        ${pkgs.adwaita-icon-theme}/share/icons/Adwaita/scalable/devices/computer.svg
+                    ''}";
+                  }
+                )
               ];
               application_scanner = [
                 {
@@ -159,6 +266,33 @@ let
                     steam
                     "-bigpicture"
                     "steam://rungameid/{game_id}"
+                  ];
+                }
+                # Games installed through the desktop's launchers show up in Moonlight next to Steam's.
+                {
+                  type = "heroic";
+                  command = [
+                    (lib.getExe pkgs.heroic)
+                    "--no-gui"
+                    "heroic://launch?appName={app_name}&runner={runner}"
+                  ];
+                }
+                {
+                  type = "lutris";
+                  command = [
+                    (lib.getExe pkgs.lutris)
+                    "lutris:rungame/{slug}"
+                  ];
+                }
+                {
+                  type = "bottles";
+                  command = [
+                    "${pkgs.bottles}/bin/bottles-cli"
+                    "run"
+                    "-b"
+                    "{bottle}"
+                    "--program-id"
+                    "{program_id}"
                   ];
                 }
               ];
@@ -182,7 +316,12 @@ let
 
             idle-poweroff.serviceConfig = {
               Type = "oneshot";
-              ExecStart = "${lib.getExe idlePoweroff} ${stream} ${toString (config.gamingSeat.idleMinutes * 60)}";
+              ExecStart = lib.concatStringsSep " " [
+                (lib.getExe idlePoweroff)
+                stream
+                (toString (config.gamingSeat.idleMinutes * 60))
+                (toString (config.gamingSeat.resumeMinutes * 60))
+              ];
             };
           };
 
@@ -267,7 +406,7 @@ in
         memoryNode = 1;
         volumes.home = {
           mountPoint = "/home";
-          sizeMiB = 128 * 1024;
+          sizeMiB = 256 * 1024;
         };
         config = gamingSeat;
       };
