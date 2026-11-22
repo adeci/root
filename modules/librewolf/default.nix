@@ -27,6 +27,13 @@ in
           '';
         })
       ];
+
+      xdg.mime.defaultApplications = {
+        "text/html" = "librewolf.desktop";
+        "application/xhtml+xml" = "librewolf.desktop";
+        "x-scheme-handler/http" = "librewolf.desktop";
+        "x-scheme-handler/https" = "librewolf.desktop";
+      };
     };
 
   darwin =
