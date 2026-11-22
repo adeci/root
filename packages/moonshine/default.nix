@@ -8,7 +8,7 @@
   ];
   # ferriscope is a vendored crate, so patch cargo's copy of it.
   postPatch = old.postPatch + ''
-    patch -d "$cargoDepsCopy"/ferriscope-0.2.0 -p1 < ${./ferriscope-empty-scene-frames.patch}
+    patch -d "$cargoDepsCopy"/ferriscope-0.2.2 -p1 < ${./ferriscope-empty-scene-frames.patch}
   '';
   meta = old.meta // {
     platforms = [ "x86_64-linux" ];
