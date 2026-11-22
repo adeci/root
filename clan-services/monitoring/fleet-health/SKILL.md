@@ -36,7 +36,7 @@ Laptops are often asleep: `up == 0` with `kind="laptop"` is normal.
 - **CPU clocks:** `avg by (instance) (node_cpu_scaling_frequency_hertz)`
 - **Slow boots:** `boot_ready_seconds`, `boot_finished_seconds` (includes catch-up jobs such as backups), `boot_phase_seconds`, and the slowest units `boot_unit_start_seconds`
 - **Slow shutdowns:** `shutdown_seconds` and the slowest units `shutdown_unit_stop_seconds`, for the previous shutdown, recorded at boot
-- **Out of date:** `system_nixpkgs_info` (the nixpkgs revision each machine runs), `system_nixpkgs_timestamp_seconds` (when that revision was committed; compare it across machines), `system_switch_timestamp_seconds` (when the machine last switched), `reboot_required == 1`. The repo's own commit is not recorded.
+- **Out of date:** `system_nixpkgs_info` (the nixpkgs revision each machine runs), `system_nixpkgs_timestamp_seconds` (when that revision was committed; compare it across machines), `system_switch_timestamp_seconds` (when the machine last switched), `reboot_required == 1` (the activated kernel or its modules differ from the booted ones; its `reason` label says how). The repo's own commit is not recorded.
 - **Mac memory pressure:** `macos_memory_pressure_level` (1 normal, 2 warning, 4 critical)
 
 `ALERTS` names each problem; the rules behind them are in `clan-services/monitoring/rules.nix`. The fleet page is Grafana's home on https://atlas.decio.us (login needed).

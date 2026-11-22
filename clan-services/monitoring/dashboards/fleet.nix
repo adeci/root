@@ -203,10 +203,8 @@ let
   newestNixpkgsTime = ''scalar(max(system_nixpkgs_timestamp_seconds{job="node"}))'';
   # Machines behind it, or whose kernel waits for a reboot: the only ones Updates lists.
   outdated = "(${newestNixpkgsTime} - max by (instance) (system_nixpkgs_timestamp_seconds{${node}}) > 0) or max by (instance) (reboot_required{${node}}) == 1";
-  # An outdated machine's reading, with the nixpkgs revision it runs.
-  update =
-    expr:
-    "max by (instance, revision_short) ((${expr}) * on (instance) group_left (revision_short) system_nixpkgs_info{${node}}) and on (instance) (${outdated})";
+  # An outdated machine's reading, keeping the reason label the Reboot column shows.
+  update = expr: "max by (instance, reason) (${expr}) and on (instance) (${outdated})";
 in
 ui.dashboard {
   uid = "fleet";
@@ -247,6 +245,7 @@ ui.dashboard {
         })
         (ui.mergedTable {
           title = "Updates";
+          description = "A machine is listed while its nixpkgs is older than the newest in the fleet or a changed kernel waits for a reboot: Behind is how many days older its nixpkgs is, Reboot what changed in the kernel.";
           w = 10;
           h = 5;
           noDataText = "No machine is behind or needs a reboot";
@@ -258,36 +257,31 @@ ui.dashboard {
           ];
           renamedColumns = {
             instance = "Host";
-            revision_short = "Nixpkgs";
+            reason = "Reboot";
           };
           firstColumns = [
             "instance"
-            "revision_short"
+            "reason"
           ];
-          labelColumns = {
-            Host.width = 80;
-            Nixpkgs.width = 76;
-          };
+          labelColumns.Host.width = 80;
           columns = [
+            {
+              name = "Reboot needed";
+              hidden = true;
+              # A Mac has no kernel to wait for; it counts as 0.
+              expr = update "reboot_required{${node}} or on (instance) 0 * system_nixpkgs_timestamp_seconds{${node}}";
+            }
             {
               name = "Behind";
               width = 64;
-              expr = update "${newestNixpkgsTime} - system_nixpkgs_timestamp_seconds{${node}}";
-              unit = "s";
+              expr = update "ceil((${newestNixpkgsTime} - system_nixpkgs_timestamp_seconds{${node}}) / 86400)";
+              unit = "suffix: d";
               valueMappings = ui.mappings.blankZero;
             }
             {
               name = "Switched";
               expr = update "1000 * system_switch_timestamp_seconds{${node}}";
               unit = "dateTimeFromNow";
-            }
-            {
-              name = "Reboot";
-              width = 66;
-              # A Mac has no kernel to wait for; it counts as 0.
-              expr = update "reboot_required{${node}} or 0 * system_nixpkgs_timestamp_seconds{${node}}";
-              threshold = ui.thresholds.cautionWhenNonZero;
-              valueMappings = ui.mappings.rebootNeeded;
             }
           ];
         })

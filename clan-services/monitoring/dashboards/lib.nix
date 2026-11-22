@@ -287,20 +287,6 @@ let
       }
     ];
 
-    # A kernel waiting for a reboot; nothing to see otherwise.
-    rebootNeeded = [
-      {
-        type = "value";
-        options = {
-          "0".text = "";
-          "1" = {
-            color = "yellow";
-            text = "needed";
-          };
-        };
-      }
-    ];
-
     # A drive's SMART self-assessment.
     passed = [
       {

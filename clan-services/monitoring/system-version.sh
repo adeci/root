@@ -7,6 +7,12 @@ system=${4:-}
 
 switch_time=$(stat --format=%Y /nix/var/nix/profiles/system)
 
+# A system's kernel version, as its modules directory is named.
+kernel_version() {
+  local directories=("$1"/kernel-modules/lib/modules/*)
+  basename "${directories[0]}"
+}
+
 mkdir -p "$(dirname "$output_file")"
 temporary_file=$(mktemp "$output_file.XXXXXX")
 trap 'rm -f "$temporary_file"' EXIT
@@ -14,7 +20,7 @@ trap 'rm -f "$temporary_file"' EXIT
 {
   echo '# HELP system_nixpkgs_info The nixpkgs revision the running system was built from.'
   echo '# TYPE system_nixpkgs_info gauge'
-  echo "system_nixpkgs_info{revision=\"$nixpkgs_revision\",revision_short=\"${nixpkgs_revision:0:7}\"} 1"
+  echo "system_nixpkgs_info{revision=\"$nixpkgs_revision\"} 1"
   echo '# HELP system_nixpkgs_timestamp_seconds When that nixpkgs revision was committed.'
   echo '# TYPE system_nixpkgs_timestamp_seconds gauge'
   echo "system_nixpkgs_timestamp_seconds $nixpkgs_time"
@@ -22,18 +28,25 @@ trap 'rm -f "$temporary_file"' EXIT
   echo '# TYPE system_switch_timestamp_seconds gauge'
   echo "system_switch_timestamp_seconds $switch_time"
   if [ -n "$system" ]; then
-    reboot_required=0
+    reason=
     # Activating at boot: /run/booted-system doesn't exist yet.
     if [ -e /run/booted-system ]; then
-      for part in kernel initrd kernel-modules; do
-        if [ "$(readlink -f "$system/$part")" != "$(readlink -f "/run/booted-system/$part")" ]; then
-          reboot_required=1
-        fi
-      done
+      booted=$(kernel_version /run/booted-system)
+      activated=$(kernel_version "$system")
+      if [ "$booted" != "$activated" ]; then
+        reason="kernel $booted → $activated"
+      elif [ "$(readlink -f "$system/kernel")" != "$(readlink -f /run/booted-system/kernel)" ] \
+        || [ "$(readlink -f "$system/kernel-modules")" != "$(readlink -f /run/booted-system/kernel-modules)" ]; then
+        reason="kernel rebuilt"
+      fi
     fi
-    echo '# HELP reboot_required 1 if the activated kernel, initrd or kernel modules differ from the booted ones.'
+    echo '# HELP reboot_required 1 if the activated kernel or its modules differ from the booted ones; the reason label says how.'
     echo '# TYPE reboot_required gauge'
-    echo "reboot_required $reboot_required"
+    if [ -n "$reason" ]; then
+      echo "reboot_required{reason=\"$reason\"} 1"
+    else
+      echo 'reboot_required 0'
+    fi
   fi
 } > "$temporary_file"
 
