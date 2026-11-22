@@ -19,6 +19,7 @@
     ./modules/ntfy.nix
     ./modules/paperless
     ./modules/paperless-xerox-ingest.nix
+    ./modules/underclass.nix
   ];
 
   cloudflared.token = self.inventory.cloudflare.tunnelToken;

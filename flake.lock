@@ -730,6 +730,7 @@
         "systems": "systems",
         "terranix": "terranix",
         "treefmt-nix": "treefmt-nix",
+        "underclass": "underclass",
         "wrapper-modules": "wrapper-modules"
       }
     },
@@ -888,6 +889,30 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "underclass": {
+      "inputs": {
+        "devenv": [],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "systems": [
+          "systems"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794882815,
+        "narHash": "sha256-c22S9ZbXOqngMpzqHfRgAzlymunCUT5kipbZL4rVlao=",
+        "owner": "brittonr",
+        "repo": "underclass",
+        "rev": "af8ca95df1a43ebf87ac61c674cf75fa863de697",
+        "type": "github"
+      },
+      "original": {
+        "owner": "brittonr",
+        "repo": "underclass",
         "type": "github"
       }
     },

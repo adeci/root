@@ -84,6 +84,11 @@
     earwig.url = "github:adeci/earwig";
     earwig.inputs.treefmt-nix.follows = "treefmt-nix";
     earwig.inputs.nixbot.follows = "nixbot";
+
+    underclass.url = "github:brittonr/underclass";
+    underclass.inputs.nixpkgs.follows = "nixpkgs";
+    underclass.inputs.systems.follows = "systems";
+    underclass.inputs.devenv.follows = "";
   };
 
   outputs =
