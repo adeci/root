@@ -134,6 +134,20 @@
         nix.enable = false;
         system.stateVersion = "26.11";
 
+        # systemd tells the host once that it has booted, and the host can drop that message (microvm.nix#637).
+        # It then stops the VM at its start timeout. Sent a few more times, one gets through.
+        systemd.services.microvm-ready = {
+          wantedBy = [ "multi-user.target" ];
+          unitConfig.ConditionPathExists = "/run/credentials/@system/vmm.notify_socket";
+          script = ''
+            systemctl is-system-running --wait > /dev/null || true
+            for _ in 1 2 3; do
+              sleep 2
+              NOTIFY_SOCKET=$(cat /run/credentials/@system/vmm.notify_socket) systemd-notify --ready || true
+            done
+          '';
+        };
+
         networking = {
           useNetworkd = true;
           useDHCP = false;
