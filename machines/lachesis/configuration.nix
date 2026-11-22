@@ -12,4 +12,7 @@
 
     ./modules/mandate
   ];
+
+  # The initrd only needs the wired port for ssh; facter would also add Wi-Fi and its firmware.
+  hardware.facter.detected.boot.initrd.networking.kernelModules = [ "e1000e" ];
 }
