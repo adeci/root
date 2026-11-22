@@ -85,16 +85,22 @@
           {
             imports = [ shared ];
             services.tailscale.enable = true;
-            launchd.daemons.tailscale-connect.serviceConfig = {
-              ProgramArguments = [
-                (lib.getExe connect)
-                config.clan.core.vars.generators.${generatorName}.files.auth_key.path
-                "--accept-routes=false"
-              ]
-              ++ settings.flags;
-              RunAtLoad = true;
-              KeepAlive.SuccessfulExit = false;
-              ThrottleInterval = 30;
+            # `command`, not ProgramArguments: nix-darwin waits for /nix/store, which at boot
+            # mounts after launchd loads daemons; a missing executable is never retried.
+            launchd.daemons.tailscale-connect = {
+              command = lib.escapeShellArgs (
+                [
+                  (lib.getExe connect)
+                  config.clan.core.vars.generators.${generatorName}.files.auth_key.path
+                  "--accept-routes=false"
+                ]
+                ++ settings.flags
+              );
+              serviceConfig = {
+                RunAtLoad = true;
+                KeepAlive.SuccessfulExit = false;
+                ThrottleInterval = 30;
+              };
             };
           };
       };
