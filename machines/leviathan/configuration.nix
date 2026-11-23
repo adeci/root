@@ -74,6 +74,7 @@
   };
 
   nix.settings.max-jobs = 16;
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
   # farid's cursed stuff:
 

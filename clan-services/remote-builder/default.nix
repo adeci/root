@@ -197,7 +197,7 @@
           default = "foreign";
           description = ''
             Which builds go remote automatically: only systems this machine can't
-            build itself (foreign), anything a server supports (all), or nothing
+            build natively (foreign), anything a server supports (all), or nothing
             (none). /etc/nix/machines-all always lists every server for opting in
             per build.
           '';
@@ -224,12 +224,11 @@
             inherit (config.clan.core.settings) domain;
             servers = lib.removeAttrs roles.server.machines [ machineName ];
 
-            # x86_64 Linux builds i686 natively; binfmt, as nix.settings depends on distributedBuilds.
+            # x86_64 Linux builds i686 natively; binfmt-emulated systems still go remote, emulation is the fallback.
             system = pkgs.stdenv.hostPlatform.system;
             nativeSystems = [
               system
             ]
-            ++ (config.boot.binfmt.emulatedSystems or [ ])
             ++ lib.optional (system == "x86_64-linux") "i686-linux";
 
             key = config.clan.core.vars.generators.${instanceName}.files.id_ed25519.path;
