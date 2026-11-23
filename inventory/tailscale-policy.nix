@@ -106,19 +106,18 @@ in
         "udp:9094"
       ];
     }
-    # Linux journals go to Loki on sequoia; personal devices open Grafana there.
+    # Linux journals go to Loki on sequoia; personal devices open Grafana there,
+    # and agents on servers reach raidho.
     {
       src = [
         "autogroup:member"
         "tag:server"
       ];
       dst = [ "sequoia" ];
-      ip = [ "tcp:80" ];
-    }
-    {
-      src = [ "autogroup:member" ];
-      dst = [ "sequoia" ];
-      ip = [ "tcp:443" ];
+      ip = [
+        "tcp:80"
+        "tcp:443"
+      ];
     }
     # Shell history sync.
     {
@@ -314,6 +313,7 @@ in
       accept = [
         "leviathan:5000"
         "sequoia:80"
+        "sequoia:443"
       ];
     }
     {

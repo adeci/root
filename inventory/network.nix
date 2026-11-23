@@ -38,6 +38,10 @@
         host = "mandate.decio.us";
         tailnet = "lachesis";
       };
+      raidho = {
+        host = "raidho.decio.us";
+        tailnet = "sequoia";
+      };
       underclass = {
         host = "underclass.decio.us";
         tailnet = "sequoia";

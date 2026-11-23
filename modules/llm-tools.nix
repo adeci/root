@@ -46,6 +46,12 @@ let
           "${herdrIntegrations}/.omp/agent/extensions/herdr-omp-agent-state.ts";
         ".pi/agent/extensions/herdr-agent-state.ts" =
           "${herdrIntegrations}/.pi/agent/extensions/herdr-agent-state.ts";
+        # raidho as a provider in omp and pi, once the machine has a key in
+        # ~/.config/raidho/key.
+        ".omp/agent/extensions/raidho.ts" = "${inputs.raidho}/clients/pi/raidho.ts";
+        ".pi/agent/extensions/raidho.ts" = "${inputs.raidho}/clients/pi/raidho.ts";
+        ".config/raidho/url" =
+          pkgs.writeText "raidho-url" "https://${self.inventory.lan.dns.raidho.host}\n";
         ".agents/skills/fleet-health" = ../clan-services/monitoring/fleet-health;
       };
     };

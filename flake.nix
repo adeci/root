@@ -85,6 +85,9 @@
     earwig.inputs.treefmt-nix.follows = "treefmt-nix";
     earwig.inputs.nixbot.follows = "nixbot";
 
+    raidho.url = "git+ssh://git@github.com/adeci/raidho";
+    raidho.inputs.nixpkgs.follows = "nixpkgs";
+
     underclass.url = "github:brittonr/underclass";
     underclass.inputs.nixpkgs.follows = "nixpkgs";
     underclass.inputs.systems.follows = "systems";

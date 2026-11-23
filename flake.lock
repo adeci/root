@@ -705,6 +705,26 @@
         "type": "github"
       }
     },
+    "raidho": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795478050,
+        "narHash": "sha256-fcB5t0BMnLq+2cOuJcXwptguHnfgWdaZraN5ugrcWm0=",
+        "ref": "refs/heads/main",
+        "rev": "90b90ecab0514959c126a9ed8c27c9426eb3dc4f",
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://git@github.com/adeci/raidho"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/adeci/raidho"
+      }
+    },
     "root": {
       "inputs": {
         "bootvine": "bootvine",
@@ -725,6 +745,7 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_3",
         "pelican": "pelican",
+        "raidho": "raidho",
         "sdwire-cli": "sdwire-cli",
         "sops-nix": "sops-nix",
         "systems": "systems",

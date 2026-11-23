@@ -19,6 +19,7 @@
     ./modules/ntfy.nix
     ./modules/paperless
     ./modules/paperless-xerox-ingest.nix
+    ./modules/raidho.nix
     ./modules/underclass.nix
   ];
 
