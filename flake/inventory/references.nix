@@ -137,12 +137,13 @@ let
     let
       beyond = lib.subtractLists [
         "leviathan"
+        "daedalus"
         "tag:gaming"
       ] grant.dst;
     in
     {
       assertion = beyond == [ ];
-      message = "inventory/tailscale-policy.nix grants: shared users may reach only leviathan and tag:gaming, not ${toString beyond}";
+      message = "inventory/tailscale-policy.nix grants: shared users may reach only leviathan, daedalus and tag:gaming, not ${toString beyond}";
     }
   ) (lib.filter (grant: lib.elem "autogroup:shared" grant.src) tailscalePolicy.grants);
 in

@@ -2,6 +2,7 @@
 {
   imports = with self.modules.darwin; [
     self.users.alex.darwinModule
+    self.users.fmzakari.darwinModule
 
     base
     zsh
@@ -11,6 +12,18 @@
   ];
 
   networking.computerName = "daedalus";
+  system.primaryUser = self.users.alex.username;
+
+  # Farid logs in over SSH as a standard user; macOS gave alex 501.
+  users.users.fmzakari = {
+    uid = 502;
+    createHome = true;
+    shell = "/bin/bash";
+  };
+  # Remote Login admits only admins and members of com.apple.access_ssh.
+  system.activationScripts.postActivation.text = ''
+    /usr/sbin/dseditgroup -o edit -a fmzakari -t user com.apple.access_ssh
+  '';
 
   # Headless: never sleeps, and comes back by itself after a power cut or a freeze.
   power = {

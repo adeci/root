@@ -206,6 +206,12 @@ in
       dst = [ "leviathan" ];
       ip = [ "*" ];
     }
+    # Farid's SSH login on daedalus.
+    {
+      src = [ "autogroup:shared" ];
+      dst = [ "daedalus" ];
+      ip = [ "tcp:22" ];
+    }
     # Agent machines (e.g. Grok Bot): only mandate's agent port on lachesis.
     {
       src = [ "tag:agent" ];
