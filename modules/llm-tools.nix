@@ -31,6 +31,8 @@ let
       environment.systemPackages = [
         llm-agents.pi
         llm-agents.omp
+        llm-agents.antigravity-cli
+        llm-agents.antigravity-hub
         llm-agents.codex
         llm-agents.claude-code
         llm-agents.grok
