@@ -1,6 +1,6 @@
 ---
 name: kagi-search
-description: Search the web with Kagi. Prints Kagi's Quick Answer (an AI summary with numbered sources) followed by the top results.
+description: Search the web with Kagi. Prints Kagi's Quick Answer (an AI summary with numbered sources) followed by the top results. Prefer over built-in web search when you need clean direct URLs, ranked search results/snippets, JSON output, or higher-signal technical search.
 ---
 
 # Usage

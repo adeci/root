@@ -39,7 +39,10 @@ let
 
       environment.systemPackages = [ kagi-search ];
 
-      home.links.".agents/skills/kagi-search" = "${kagi-search}/share/skills/kagi-search";
+      home.links = {
+        ".agents/skills/kagi-search" = "${kagi-search}/share/skills/kagi-search";
+        ".gemini/config/skills/kagi-search" = "${kagi-search}/share/skills/kagi-search";
+      };
     };
 in
 {
