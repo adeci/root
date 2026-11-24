@@ -1,0 +1,177 @@
+--- a/clan_lib/flake/flake.py
++++ b/clan_lib/flake/flake.py
+@@ -5,13 +5,15 @@
+ import re
+ import shlex
+ import traceback
++from collections.abc import Callable
+ from dataclasses import asdict, dataclass, field
+ from enum import StrEnum
+-from functools import cache, cached_property
++from functools import cache, cached_property, wraps
+ from hashlib import sha1
+ from pathlib import Path
+ from tempfile import NamedTemporaryFile
+-from typing import TYPE_CHECKING, Any
++from threading import RLock
++from typing import TYPE_CHECKING, Any, Concatenate
+ 
+ from clan_lib.cmd import Log, RunOpts, run
+ from clan_lib.dirs import clan_tmp_dir, select_source
+@@ -791,6 +793,17 @@
+             self.cache = FlakeCacheEntry.from_json(data["cache"])
+ 
+ 
++def _cache_locked[**P, T](
++    method: Callable[Concatenate["Flake", P], T],
++) -> Callable[Concatenate["Flake", P], T]:
++    @wraps(method)
++    def locked(self: "Flake", *args: P.args, **kwargs: P.kwargs) -> T:
++        with self._cache_lock:
++            return method(self, *args, **kwargs)
++
++    return locked
++
++
+ @dataclass
+ class Flake:
+     """Represents a flake, and is used to interact with it.
+@@ -807,6 +820,11 @@
+     _path: Path | None = field(init=False, default=None)
+     _is_local: bool | None = field(init=False, default=None)
+     _cache_miss_stack_traces: list[str] = field(init=False, default_factory=list)
+ 
++    def __post_init__(self) -> None:
++        # Updates share this Flake across threads. Keep lookup/fetch/reload/read
++        # atomic, including reentrant initialization. The lock is not flake data.
++        self._cache_lock = RLock()
++
+     @classmethod
+     def from_json(
+@@ -882,6 +900,7 @@
+             raise ClanError(msg)
+         return self._path
+ 
++    @_cache_locked
+     def load_cache(self) -> None:
+         if os.environ.get("CLAN_NO_SELECT_DISK_CACHE") == "1":
+             log.debug("Skipping select cache load (CLAN_NO_SELECT_DISK_CACHE=1)")
+@@ -906,6 +925,7 @@
+         module = importlib.import_module(secret_module)
+         return module.VarsStore(flake=self)
+ 
++    @_cache_locked
+     def prefetch(self) -> None:
+         """Loads the flake into the store and populates self.store_path and self.hash such that the flake can evaluate locally and offline"""
+         if self.nix_options is None:
+@@ -949,6 +969,7 @@
+         self.hash = flake_metadata["hash"]
+         self.flake_metadata = flake_metadata
+ 
++    @_cache_locked
+     def invalidate_cache(self, reset_tracking: bool = False) -> None:
+         """Invalidate the cache and reload it.
+ 
+@@ -989,6 +1010,7 @@
+                 raise ClanError(msg)
+             self._path = Path(self.store_path)
+ 
++    @_cache_locked
+     def get_from_nix(
+         self,
+         selectors: list[str],
+@@ -1111,6 +1133,7 @@
+         if self.flake_cache_path and os.environ.get("CLAN_NO_SELECT_DISK_CACHE") != "1":
+             self._cache.save_to_file(self.flake_cache_path)
+ 
++    @_cache_locked
+     def precache(self, selectors: list[str]) -> None:
+         """Ensures that the specified selectors are cached locally.
+ 
+@@ -1150,6 +1173,7 @@
+             )
+             self.get_from_nix(not_fetched_selectors)
+ 
++    @_cache_locked
+     def select(
+         self,
+         selector: str,
+--- a/clan_lib/flake/flake_concurrency_test.py
++++ b/clan_lib/flake/flake_concurrency_test.py
+@@ -0,0 +1,76 @@
++"""Exercise selector reads against a concurrent disk-cache replacement."""
++
++from concurrent.futures import ThreadPoolExecutor
++from pathlib import Path
++from threading import Event, RLock
++from types import TracebackType
++from unittest.mock import patch
++
++from clan_lib.flake.flake import Flake, FlakeCache
++
++
++class _ObservedLock:
++    """Expose a competing acquisition so the test needs no scheduling sleeps."""
++
++    def __init__(self, attempted: Event) -> None:
++        self.lock = RLock()
++        self.attempted = attempted
++
++    def __enter__(self) -> None:
++        if self.lock.acquire(blocking=False):
++            return
++        self.attempted.set()
++        self.lock.acquire()
++
++    def __exit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc: BaseException | None,
++        traceback: TracebackType | None,
++    ) -> None:
++        self.lock.release()
++
++
++def test_select_survives_concurrent_cache_reload(tmp_path: Path) -> None:
++    selector = "clanInternals.vars.settings.publicModule"
++    value = "clan_lib.vars.public_modules.in_repo"
++    cache = FlakeCache()
++    cache.insert("sops", "clanInternals.vars.settings.secretModule")
++    cache_path = tmp_path / "cache.json"
++    cache.save_to_file(cache_path)
++    # Another evaluation has produced a value not yet present in the disk snapshot.
++    cache.insert(value, selector)
++    flake = Flake("unused")
++    flake._cache = cache
++    flake.flake_cache_path = cache_path
++
++    reading = Event()
++    reload_attempted = Event()
++    select = cache.select
++
++    def paused_select(request: str) -> object:
++        reading.set()
++        if not reload_attempted.wait(5):
++            raise TimeoutError("Cache reload thread never reached the read")
++        return select(request)
++
++    def reload_cache() -> None:
++        if not reading.wait(5):
++            raise TimeoutError("Selector thread never reached the cache read")
++        try:
++            flake.load_cache()
++        finally:
++            # Without synchronization, release the reader only after replacement.
++            # With synchronization, _ObservedLock releases it before blocking.
++            reload_attempted.set()
++
++    with (
++        patch.dict("os.environ", {"CLAN_NO_SELECT_DISK_CACHE": "0"}),
++        patch.object(flake, "_cache_lock", _ObservedLock(reload_attempted), create=True),
++        patch.object(cache, "select", paused_select),
++        ThreadPoolExecutor(max_workers=2) as pool,
++    ):
++        reader = pool.submit(flake.select, selector)
++        reloader = pool.submit(reload_cache)
++        assert reader.result(timeout=10) == value
++        reloader.result(timeout=10)
