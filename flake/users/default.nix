@@ -51,6 +51,9 @@ let
     let
       profile = config;
       user = profile.username;
+      # nixpkgs' plain bash lacks readline.
+      shellPackage =
+        pkgs: if profile.shell == "bash" then pkgs.bashInteractive else pkgs.${profile.shell};
     in
     {
       options = {
@@ -144,28 +147,35 @@ let
             users.users.${user} = {
               inherit (profile) uid description;
               isNormalUser = true;
-              shell = lib.mkIf (profile.shell != "bash") (lib.mkDefault pkgs.${profile.shell});
+              # Else NixOS's mkDefault users.defaultUserShell collides with the profile's shell.
+              useDefaultShell = false;
+              shell = lib.mkDefault (shellPackage pkgs);
               extraGroups = profile.groups;
               openssh.authorizedKeys.keys = profile.sshKeys;
             };
           };
 
-        darwinModule = {
-          imports = [ modules.darwin.primary-user ];
+        darwinModule =
+          { lib, pkgs, ... }:
+          {
+            imports = [ modules.darwin.primary-user ];
 
-          system.primaryUser = lib.mkDefault user;
-          system.userProfiles.${user} = profile;
+            system.primaryUser = lib.mkDefault user;
+            system.userProfiles.${user} = profile;
 
-          # nix-darwin owns the account, so users.users sets its login shell and keys without dscl.
-          users.knownUsers = [ user ];
-          users.users.${user} = {
-            # macOS gives the first account 501.
-            uid = lib.mkDefault 501;
-            inherit (profile) description;
-            home = "/Users/${user}";
-            openssh.authorizedKeys.keys = profile.sshKeys;
+            # nix-darwin owns the account, so users.users sets its login shell and keys without dscl.
+            users.knownUsers = [ user ];
+            users.users.${user} = {
+              # macOS gives the first account 501.
+              uid = lib.mkDefault 501;
+              inherit (profile) description;
+              home = "/Users/${user}";
+              createHome = true;
+              # Apple's /bin/bash skips /etc/bashrc for `ssh host cmd`, leaving nix off PATH.
+              shell = lib.mkDefault (shellPackage pkgs);
+              openssh.authorizedKeys.keys = profile.sshKeys;
+            };
           };
-        };
       };
     }
   );

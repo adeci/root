@@ -15,11 +15,8 @@
   system.primaryUser = self.users.alex.username;
 
   # Farid logs in over SSH as a standard user; macOS gave alex 501.
-  users.users.fmzakari = {
-    uid = 502;
-    createHome = true;
-    shell = "/bin/bash";
-  };
+  users.users.fmzakari.uid = 502;
+  nix.settings.trusted-users = [ self.users.fmzakari.username ];
   # Remote Login admits only admins and members of com.apple.access_ssh.
   system.activationScripts.postActivation.text = ''
     /usr/sbin/dseditgroup -o edit -a fmzakari -t user com.apple.access_ssh
