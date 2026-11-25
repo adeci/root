@@ -42,11 +42,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790001035,
-        "narHash": "sha256-1/SLBjSYBzDdDhvLQ83wrzBakyS/xNGgtxHGNuveOEQ=",
+        "lastModified": 1795172407,
+        "narHash": "sha256-fSkAj71qq1cD7k6+zb8oJbd77feGRO++WX50XOcHBM0=",
         "owner": "Mic92",
         "repo": "bun2nix",
-        "rev": "07a5bfc8ac36c5370199343fa620b69f63186e33",
+        "rev": "b8243c1e7ccacfe66210311884708687c883ae47",
         "type": "github"
       },
       "original": {
@@ -401,11 +401,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794808658,
-        "narHash": "sha256-RbvK/ghvMuWWx/riUqtCZCxjZFji2n3onTo2Kg60T3s=",
+        "lastModified": 1795663188,
+        "narHash": "sha256-j1S8p6N1lAu0Ab4csCu3JmSDS1xzPc5nlUqFUcjMNBg=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "733d5b0fa81d5aad7c623dca8d8170ce411fba1d",
+        "rev": "a8e2ca87ef6a622821d175555d320e196cac2d34",
         "type": "github"
       },
       "original": {
@@ -633,11 +633,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1793977579,
-        "narHash": "sha256-WrSODdZFVIs/Hh2NzC0bY+ROByi0bATg8WfePX8dPj8=",
+        "lastModified": 1795249095,
+        "narHash": "sha256-8JDgyVvWUZg5m9hNlL8Ge9aT647ng3Ukc8NPMiKNTPQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "4fe25e12eb9f4c744966dd3de5a05246cf098601",
+        "rev": "93a9ed0a866099a230ed5146a5bb7d16fd5c9b14",
         "type": "github"
       },
       "original": {
@@ -712,11 +712,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795478050,
-        "narHash": "sha256-fcB5t0BMnLq+2cOuJcXwptguHnfgWdaZraN5ugrcWm0=",
+        "lastModified": 1795673486,
+        "narHash": "sha256-rNNpNXrajxtGvdsy5mx1YXiSAP44R5dk8FEfRrLNqaU=",
         "ref": "refs/heads/main",
-        "rev": "90b90ecab0514959c126a9ed8c27c9426eb3dc4f",
-        "revCount": 1,
+        "rev": "4215857e5190cd069acc3628eb50a7ea21504a97",
+        "revCount": 17,
         "type": "git",
         "url": "ssh://git@github.com/adeci/raidho"
       },
