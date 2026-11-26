@@ -7,7 +7,7 @@
 }:
 let
   inherit (import ../lib.nix { inherit clan-cli lib; }) safeName;
-  inherit (self.inventory) ingress tailnet;
+  inherit (self.inventory) ingress;
   inherit (self.inventory.cloudflare) dns redirects zones;
   inherit (import ./lib.nix { inherit lib zones; }) zoneOf;
 
@@ -38,7 +38,6 @@ in
         "host"
         "target"
         "edge"
-        "tailnet"
         "ingressStream"
         "healthPath"
       ]
@@ -51,9 +50,6 @@ in
       }
       // lib.optionalAttrs (record ? edge) {
         content = edgeAddress record.edge;
-      }
-      // lib.optionalAttrs (record ? tailnet) {
-        content = tailnet.addresses.${record.tailnet};
       }
       // lib.optionalAttrs (record ? ingressStream) {
         data = (record.data or { }) // {

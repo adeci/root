@@ -79,19 +79,6 @@ let
     }
   ) (lib.filterAttrs (_: record: record ? ingressStream) cloudflare.dns);
 
-  dnsTailnet = lib.concatLists (
-    lib.mapAttrsToList (
-      name: record:
-      [
-        (mustBeMachine "inventory/cloudflare.nix dns.${name}.tailnet" record.tailnet)
-      ]
-      ++ lib.optional (isMachine record.tailnet) {
-        assertion = config.tailnet.addresses ? ${record.tailnet};
-        message = "inventory/cloudflare.nix dns.${name}.tailnet: ${record.tailnet} has no tailnet address";
-      }
-    ) (lib.filterAttrs (_: record: record ? tailnet) cloudflare.dns)
-  );
-
   # A stream's upstream: <machine>.<tailnet domain>:<port>.
   upstreamPattern = "([^.]+)\\.${lib.escapeRegex config.tailnet.domain}:([0-9]{1,5})";
 
@@ -182,7 +169,6 @@ in
     bucketMachines
     dnsEdges
     dnsStreams
-    dnsTailnet
     streamUpstreams
     uniqueEdgePorts
     instanceMachines
