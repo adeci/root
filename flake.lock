@@ -712,11 +712,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795681352,
-        "narHash": "sha256-0EXCm/oOdHGkgpeKnV/Oz6k17iubStWnqeTin096olc=",
+        "lastModified": 1795684301,
+        "narHash": "sha256-Fa4illh4VadZv1ChIiV5pHn1pNYa0fbJ6WIi0uwsNUE=",
         "ref": "refs/heads/main",
-        "rev": "de30ec38933239c27ceeeff0667209be2faba3ad",
-        "revCount": 19,
+        "rev": "91f5cb065eeef5a116bf89e9536f9311ed2b6ffc",
+        "revCount": 20,
         "type": "git",
         "url": "ssh://git@github.com/adeci/raidho"
       },

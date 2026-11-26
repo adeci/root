@@ -8,11 +8,15 @@
 let
   inherit (self.inventory) tailnet;
   inherit (self.inventory.lan.dns.raidho) host;
+  tsHost = "sequoia.${tailnet.domain}";
+  sharedPort = 8443;
+  sharedBackendPort = 8485;
   cfg = config.services.raidho;
   vars = config.clan.core.vars.generators.raidho.files;
   stateDir = "/var/lib/raidho";
   backupDir = "/var/backup/raidho";
   systemctl = lib.getExe' config.systemd.package "systemctl";
+  tailscale = lib.getExe config.services.tailscale.package;
 
   preBackup = pkgs.writeShellApplication {
     name = "raidho-pre-backup";
@@ -98,7 +102,7 @@ in
 
   services.raidho = {
     enable = true;
-    hostname = host;
+    hostname = "${host},${tsHost}";
     environmentFile = vars."raidho.env".path;
   };
 
@@ -146,32 +150,79 @@ in
     };
 
     "${host}-shared" = {
-      serverName = host;
-      useACMEHost = "decio.us";
-      onlySSL = true;
+      serverName = tsHost;
       listen = [
         {
-          addr = "0.0.0.0";
-          port = 8443;
-          ssl = true;
-        }
-        {
-          addr = "[::]";
-          port = 8443;
-          ssl = true;
+          addr = "127.0.0.1";
+          port = sharedBackendPort;
         }
       ];
       extraConfig = ''
         allow 127.0.0.1;
-        allow ${tailnet.cidr};
-        allow fd7a:115c:a1e0::/48;
         deny all;
       '';
       locations = {
         "^~ /admin".return = "403";
         "^~ /api/admin".return = "403";
-        "/" = proxyLocation;
+        "/" = proxyLocation // {
+          recommendedProxySettings = false;
+          extraConfig = ''
+            ${proxyLocation.extraConfig}
+            proxy_http_version 1.1;
+            proxy_set_header Host ${tsHost}:${toString sharedPort};
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-Host ${tsHost}:${toString sharedPort};
+            proxy_set_header Tailscale-User-Login "";
+            proxy_set_header Tailscale-User-Name "";
+            proxy_set_header Tailscale-User-Profile-Pic "";
+            proxy_set_header Tailscale-Headers-Info "";
+          '';
+        };
       };
+    };
+  };
+
+  systemd.services.raidho-tailscale-serve = {
+    description = "Expose shared raidho endpoint on Tailscale port ${toString sharedPort}";
+    after = [
+      "network-online.target"
+      "tailscaled.service"
+      "tailscaled-autoconnect.service"
+      "nginx.service"
+    ];
+    wants = [
+      "network-online.target"
+      "tailscaled.service"
+      "nginx.service"
+    ];
+    wantedBy = [
+      "multi-user.target"
+      "tailscaled.service"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = lib.getExe (
+        pkgs.writeShellApplication {
+          name = "raidho-tailscale-serve-start";
+          runtimeInputs = [
+            pkgs.coreutils
+            config.services.tailscale.package
+          ];
+          text = ''
+            for _ in $(seq 1 30); do
+              if tailscale status --peers=false >/dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            exec tailscale serve --yes --bg --https=${toString sharedPort} http://127.0.0.1:${toString sharedBackendPort}
+          '';
+        }
+      );
+      ExecStop = "-${tailscale} serve --https=${toString sharedPort} off";
     };
   };
 }
