@@ -211,6 +211,12 @@ in
       dst = [ "daedalus" ];
       ip = [ "tcp:22" ];
     }
+    # raidho's shared port; keeps sequoia:443 off-limits.
+    {
+      src = [ "autogroup:shared" ];
+      dst = [ "sequoia" ];
+      ip = [ "tcp:8443" ];
+    }
     # Agent machines (e.g. Grok Bot): only mandate's agent port on lachesis.
     {
       src = [ "tag:agent" ];
@@ -402,6 +408,7 @@ in
       src = "tag:server";
       deny = [
         "lachesis:443"
+        "sequoia:8443"
         "${lan.hosts.leviathan-idrac.ip}:443"
         "1.1.1.1:443"
       ];
@@ -414,6 +421,7 @@ in
       ];
       deny = [
         "${owner}:22"
+        "sequoia:8443"
         "${lan.hosts.sequoia.ip}:443"
         "${lan.hosts.leviathan-idrac.ip}:443"
       ];
@@ -425,6 +433,7 @@ in
         "lachesis:22"
         "lachesis:443"
         "leviathan:22"
+        "sequoia:8443"
         "${lan.hosts.sequoia.ip}:443"
         "tag:work:22"
       ];
@@ -443,6 +452,7 @@ in
         "leviathan:22"
         "lachesis:443"
         "lachesis:8443"
+        "sequoia:8443"
         "${lan.hosts.sequoia.ip}:443"
         "${lan.hosts.leviathan-idrac.ip}:443"
         "${owner}:22"

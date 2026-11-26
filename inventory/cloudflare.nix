@@ -99,6 +99,14 @@ in
       healthPath = "/v1/health";
     };
 
+    # Shared Tailscale users don't get split DNS.
+    raidho = {
+      host = "raidho.decio.us";
+      type = "A";
+      tailnet = "sequoia";
+      proxied = false;
+    };
+
     mc_dj2 = minecraftA "dj2";
     mc_gab = minecraftA "gab";
 

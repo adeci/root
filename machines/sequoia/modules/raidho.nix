@@ -81,6 +81,17 @@ let
       install -m 0600 -o raidho -g raidho "$BACKUP_DIR/router.db" "$STATE_DIR/router.db"
     '';
   };
+
+  proxyLocation = {
+    proxyPass = "http://${cfg.listen}";
+    extraConfig = ''
+      proxy_buffering off;
+      proxy_request_buffering off;
+      proxy_read_timeout 1h;
+      proxy_send_timeout 1h;
+      client_max_body_size 64m;
+    '';
+  };
 in
 {
   imports = [ self.inputs.raidho.nixosModules.default ];
@@ -122,23 +133,45 @@ in
     '';
   };
 
-  services.nginx.virtualHosts.${host} = {
-    useACMEHost = "decio.us";
-    forceSSL = true;
-    extraConfig = ''
-      allow 127.0.0.1;
-      allow ${tailnet.cidr};
-      deny all;
-    '';
-    locations."/" = {
-      proxyPass = "http://${cfg.listen}";
+  services.nginx.virtualHosts = {
+    ${host} = {
+      useACMEHost = "decio.us";
+      forceSSL = true;
       extraConfig = ''
-        proxy_buffering off;
-        proxy_request_buffering off;
-        proxy_read_timeout 1h;
-        proxy_send_timeout 1h;
-        client_max_body_size 64m;
+        allow 127.0.0.1;
+        allow ${tailnet.cidr};
+        deny all;
       '';
+      locations."/" = proxyLocation;
+    };
+
+    "${host}-shared" = {
+      serverName = host;
+      useACMEHost = "decio.us";
+      onlySSL = true;
+      listen = [
+        {
+          addr = "0.0.0.0";
+          port = 8443;
+          ssl = true;
+        }
+        {
+          addr = "[::]";
+          port = 8443;
+          ssl = true;
+        }
+      ];
+      extraConfig = ''
+        allow 127.0.0.1;
+        allow ${tailnet.cidr};
+        allow fd7a:115c:a1e0::/48;
+        deny all;
+      '';
+      locations = {
+        "^~ /admin".return = "403";
+        "^~ /api/admin".return = "403";
+        "/" = proxyLocation;
+      };
     };
   };
 }

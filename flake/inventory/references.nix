@@ -79,6 +79,19 @@ let
     }
   ) (lib.filterAttrs (_: record: record ? ingressStream) cloudflare.dns);
 
+  dnsTailnet = lib.concatLists (
+    lib.mapAttrsToList (
+      name: record:
+      [
+        (mustBeMachine "inventory/cloudflare.nix dns.${name}.tailnet" record.tailnet)
+      ]
+      ++ lib.optional (isMachine record.tailnet) {
+        assertion = config.tailnet.addresses ? ${record.tailnet};
+        message = "inventory/cloudflare.nix dns.${name}.tailnet: ${record.tailnet} has no tailnet address";
+      }
+    ) (lib.filterAttrs (_: record: record ? tailnet) cloudflare.dns)
+  );
+
   # A stream's upstream: <machine>.<tailnet domain>:<port>.
   upstreamPattern = "([^.]+)\\.${lib.escapeRegex config.tailnet.domain}:([0-9]{1,5})";
 
@@ -132,20 +145,34 @@ let
   );
 
   # Policy tests can't use autogroup:shared as src (tailscale/tailscale#4416).
-  sharedUserDestinations = map (
-    grant:
-    let
-      beyond = lib.subtractLists [
-        "leviathan"
-        "daedalus"
-        "tag:gaming"
-      ] grant.dst;
-    in
-    {
-      assertion = beyond == [ ];
-      message = "inventory/tailscale-policy.nix grants: shared users may reach only leviathan, daedalus and tag:gaming, not ${toString beyond}";
-    }
-  ) (lib.filter (grant: lib.elem "autogroup:shared" grant.src) tailscalePolicy.grants);
+  sharedUserGrants = lib.filter (grant: lib.elem "autogroup:shared" grant.src) tailscalePolicy.grants;
+
+  sharedUserDestinations =
+    map (
+      grant:
+      let
+        beyond = lib.subtractLists [
+          "leviathan"
+          "daedalus"
+          "sequoia"
+          "tag:gaming"
+        ] grant.dst;
+      in
+      {
+        assertion = beyond == [ ];
+        message = "inventory/tailscale-policy.nix grants: shared users may reach only leviathan, daedalus, sequoia and tag:gaming, not ${toString beyond}";
+      }
+    ) sharedUserGrants
+    ++ map (
+      grant:
+      let
+        beyond = lib.subtractLists [ "tcp:8443" ] grant.ip;
+      in
+      {
+        assertion = beyond == [ ];
+        message = "inventory/tailscale-policy.nix grants: shared users on sequoia may reach only tcp:8443, not ${toString beyond}";
+      }
+    ) (lib.filter (grant: lib.elem "sequoia" grant.dst) sharedUserGrants);
 in
 {
   assertions = lib.concatLists [
@@ -155,6 +182,7 @@ in
     bucketMachines
     dnsEdges
     dnsStreams
+    dnsTailnet
     streamUpstreams
     uniqueEdgePorts
     instanceMachines
