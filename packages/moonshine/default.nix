@@ -2,12 +2,12 @@
 (inputs.moonshine.overlays.default pkgs pkgs).moonshine.overrideAttrs (old: {
   patches = (old.patches or [ ]) ++ [
     ./pairing-attempts-end.patch
-    ./pin-page-result.patch
     ./pin-page-waiting-client.patch
     ./unknown-mac-as-zeros.patch
+    ./healthcheck-inhibit-off.patch
   ];
   # ferriscope is a vendored crate, so patch cargo's copy of it.
-  postPatch = old.postPatch + ''
+  postPatch = (old.postPatch or "") + ''
     patch -d "$cargoDepsCopy"/ferriscope-0.2.2 -p1 < ${./ferriscope-empty-scene-frames.patch}
   '';
   meta = old.meta // {

@@ -71,7 +71,7 @@
     sdwire-cli.url = "github:Badger-Embedded/sdwire-cli";
     sdwire-cli.flake = false;
 
-    moonshine.url = "github:hgaiser/moonshine/b75683c8d20fd60a0b95b732f4718919a77cff86";
+    moonshine.url = "github:hgaiser/moonshine/f184d5e3693e09c3a6ab1025bde6cdb67f36a6bc";
     moonshine.inputs.nixpkgs.follows = "nixpkgs";
 
     pelican.url = "github:adeci/vencord-pelican";

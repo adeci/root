@@ -15,16 +15,23 @@ grown() {
 downloaded=$(grown rx "$(cat /sys/class/net/lan/statistics/rx_bytes)")
 # Moonshine keeps a session, and keeps sending, long after its client has gone. What the client sends is the
 # only sign that one is there. Without the counting rule this fails, and the seat stays on.
-packets=$(iptables -t mangle -vnxL PREROUTING | awk '/moonlight-client/ { n += $1; found = 1 } END { if (found) print n }')
-client=$(grown client "${packets:?no rule counts the client}")
+count_packets() {
+  "$1" -t mangle -vnxL PREROUTING 2> /dev/null |
+    awk '/moonlight-client/ { n += $1; found = 1 } END { if (found) print n }'
+}
+v4=$(count_packets iptables)
+v6=$(count_packets ip6tables || true)
+packets=$((${v4:?no rule counts the client} + ${v6:-0}))
+client=$(grown client "$packets")
 
+now=$(cut -d. -f1 /proc/uptime)
 if [ ! -e busy ] || [ "$client" -gt 0 ] || [ "$downloaded" -ge $((60 << 20)) ] ||
   loginctl list-sessions --json=short | jq -e 'any(.[]; .class == "user")' > /dev/null; then
-  date +%s > busy
+  echo "$now" > busy
 else
   # A game left running waits longer than an empty seat.
   [ ! -e "$stream" ] || idle_seconds=$resume_seconds
-  if [ $(($(date +%s) - $(cat busy))) -ge "$idle_seconds" ]; then
+  if [ $((now - $(cat busy))) -ge "$idle_seconds" ]; then
     systemctl poweroff
   fi
 fi

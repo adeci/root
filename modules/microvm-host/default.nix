@@ -45,7 +45,7 @@
           text = builtins.readFile ./write-seed.sh;
         };
 
-      # Both take the GPU's PCI address.
+      # releaseGpu takes the GPU's PCI address and microvm.nix's pci-setup script; reclaimGpu takes the PCI address.
       releaseGpu = pkgs.writeShellApplication {
         name = "microvm-release-gpu";
         runtimeInputs = [
@@ -252,7 +252,11 @@
                   "microvm-pci-devices@${name}" = {
                     bindsTo = [ "microvm@${name}.service" ];
                     serviceConfig = {
-                      ExecStartPre = [ "${lib.getExe releaseGpu} ${vm.gpu}" ];
+                      # Wrap pci-setup under the GPU lock so vfio-pci is bound before holders restart.
+                      ExecStart = [
+                        ""
+                        "${lib.getExe releaseGpu} ${vm.gpu} ${config.microvm.stateDir}/${name}/current/bin/pci-setup"
+                      ];
                       # Runs even if the VM fails to start.
                       ExecStopPost = [ "${lib.getExe reclaimGpu} ${vm.gpu}" ];
                     };

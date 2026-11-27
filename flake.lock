@@ -446,11 +446,11 @@
         "spectrum": "spectrum"
       },
       "locked": {
-        "lastModified": 1793281488,
-        "narHash": "sha256-ErGIqtoWEX9KKC8NFtJDx2pGGG02Cr6LGxrvzLd2sqA=",
+        "lastModified": 1795298370,
+        "narHash": "sha256-mruPu1cqOVBxPiRwrh6r1tnX1OAzMggy+rDk6YuqhK8=",
         "owner": "microvm-nix",
         "repo": "microvm.nix",
-        "rev": "b7bd556974fa8a171b5b639200e81d52244dfde4",
+        "rev": "430a46d03ef15f1b8b715fafa85f21847960b783",
         "type": "github"
       },
       "original": {
@@ -467,17 +467,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1795250187,
-        "narHash": "sha256-9nHJpSQg/yK9RgTSnxPPpKcIYzAZONTMyD9DNpPbKZw=",
+        "lastModified": 1795507449,
+        "narHash": "sha256-dBbYa2i8Sq0KjHPYh5hgoRQCA2CfleJs94Q5OcIXIdo=",
         "owner": "hgaiser",
         "repo": "moonshine",
-        "rev": "b75683c8d20fd60a0b95b732f4718919a77cff86",
+        "rev": "f184d5e3693e09c3a6ab1025bde6cdb67f36a6bc",
         "type": "github"
       },
       "original": {
         "owner": "hgaiser",
         "repo": "moonshine",
-        "rev": "b75683c8d20fd60a0b95b732f4718919a77cff86",
+        "rev": "f184d5e3693e09c3a6ab1025bde6cdb67f36a6bc",
         "type": "github"
       }
     },

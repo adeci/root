@@ -140,7 +140,11 @@
           wantedBy = [ "multi-user.target" ];
           unitConfig.ConditionPathExists = "/run/credentials/@system/vmm.notify_socket";
           script = ''
-            systemctl is-system-running --wait > /dev/null || true
+            state=$(systemctl is-system-running --wait || true)
+            case "$state" in
+              running | degraded) ;;
+              *) exit 0 ;;
+            esac
             for _ in 1 2 3; do
               sleep 2
               NOTIFY_SOCKET=$(cat /run/credentials/@system/vmm.notify_socket) systemd-notify --ready || true

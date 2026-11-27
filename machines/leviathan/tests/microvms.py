@@ -60,7 +60,7 @@ with subtest("each seat gets its secrets, root-only and read-only"):
         on_seat(seat, "findmnt -n -o OPTIONS /run/seed | grep -qw ro")
 
 with subtest("homes are per seat, sized per seat, and freed space returns to the host"):
-    for seat, size in [("scylla", 256), ("charybdis", 128)]:
+    for seat, size in [("scylla", 256), ("charybdis", 256)]:
         home = int(on_seat(seat, "df --output=size -BG /home | tail -1").strip().rstrip("G"))
         assert size - 6 <= home <= size, (seat, home)
     on_seat("scylla", "touch /home/gamer/game")

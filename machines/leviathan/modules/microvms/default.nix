@@ -14,6 +14,7 @@ let
     let
       steam = lib.getExe config.programs.steam.package;
       uid = 1000;
+      controlPort = config.services.moonshine.settings.stream.control.port or 47999;
       # Moonshine runs each Moonlight app as this unit in the gamer's manager.
       stream = "/sys/fs/cgroup/user.slice/user-${toString uid}.slice/user@${toString uid}.service/moonshine.slice/moonshine-session.service";
 
@@ -154,8 +155,12 @@ let
         # Counts what a Moonlight client sends to Moonshine's control port, for the idle check. Mangle sees the
         # packets before the firewall's rule for established connections takes them.
         networking.firewall.extraCommands = ''
-          iptables -t mangle -C PREROUTING -p udp --dport 47999 -m comment --comment moonlight-client 2> /dev/null ||
-            iptables -t mangle -A PREROUTING -p udp --dport 47999 -m comment --comment moonlight-client
+          iptables -t mangle -C PREROUTING -p udp --dport ${toString controlPort} -m comment --comment moonlight-client 2> /dev/null ||
+            iptables -t mangle -A PREROUTING -p udp --dport ${toString controlPort} -m comment --comment moonlight-client
+        ''
+        + lib.optionalString config.networking.enableIPv6 ''
+          ip6tables -t mangle -C PREROUTING -p udp --dport ${toString controlPort} -m comment --comment moonlight-client 2> /dev/null ||
+            ip6tables -t mangle -A PREROUTING -p udp --dport ${toString controlPort} -m comment --comment moonlight-client
         '';
 
         microvmGuest.secrets.tailscale-gaming = {
@@ -330,6 +335,7 @@ let
             timerConfig = {
               OnBootSec = "1min";
               OnUnitActiveSec = "1min";
+              AccuracySec = "5s";
             };
           };
 

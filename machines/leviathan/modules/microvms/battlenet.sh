@@ -47,9 +47,13 @@ while kill -0 "$umu" 2> /dev/null; do
     waitpid --exited "${pids[@]}"
   elif $started; then
     # The last program has gone. The launcher may be handing over to a game or restarting itself to update:
-    # give a successor ten seconds.
-    waitpid --exited --timeout 10 "$umu" || [ -n "$(programs)" ] || break
+    # give a successor thirty seconds.
+    waitpid --exited --timeout 30 "$umu" || [ -n "$(programs)" ] || break
   else
     waitpid --exited --timeout 1 "$umu" || true
   fi
 done
+
+if ! $started; then
+  wait "$umu"
+fi

@@ -1,0 +1,23 @@
+Skip the sleep inhibitor health check when inhibit_sleep is off.
+
+With inhibit_sleep = false, Moonshine still tried to acquire a logind sleep
+inhibitor during startup health checks, `moonshine healthcheck`, and the control
+panel's Health page, warning about system D-Bus or the `moonshine` group.
+
+Not upstream yet.
+
+diff --git a/src/healthcheck.rs b/src/healthcheck.rs
+index d6fa110..ab95409 100644
+--- a/src/healthcheck.rs
++++ b/src/healthcheck.rs
+@@ -282,7 +282,9 @@ pub fn run_healthcheck(config: Option<&Config>, gpu: &GpuContext) -> HealthRepor
+ 
+ 	check_xwayland(&mut report);
+ 	check_xdg_runtime(&mut report);
+-	check_inhibit(&mut report);
++	if config.is_none_or(|config| config.inhibit_sleep) {
++		check_inhibit(&mut report);
++	}
+ 	check_kcmp(&mut report);
+ 
+ 	// --- Ports (requires config) ---
